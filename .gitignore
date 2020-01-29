@@ -1,3 +1,5 @@
 venv
 .idea
 data
+*.swp
+*__pycache__

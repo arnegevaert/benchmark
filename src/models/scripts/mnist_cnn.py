@@ -16,7 +16,7 @@ class Net(nn.Module):
         self.fc1 = nn.Linear(9216, 128)
         self.fc2 = nn.Linear(128, 10)
 
-    def forward(self, x):
+    def get_logits(self, x):
         x = self.conv1(x)
         x = F.relu(x)
         x = self.conv2(x)
@@ -26,9 +26,10 @@ class Net(nn.Module):
         x = self.fc1(x)
         x = F.relu(x)
         x = self.dropout2(x)
-        x = self.fc2(x)
-        output = F.log_softmax(x, dim=1)
-        return output
+        return self.fc2(x)
+
+    def forward(self, x):
+        return F.log_softmax(self.get_logits(x), dim=1)
 
 
 def train(model, device, train_loader, optimizer, epoch, log_interval):
