@@ -36,7 +36,6 @@ if __name__ == '__main__':
 
     for i, attr in enumerate(attrs):
         plt.figure(i)
-        print(i)
         plt.imshow(np.reshape(image.detach().numpy(), [28, 28]), cmap='gray')
         plt.imshow(np.reshape(attr[1].detach().numpy(), [28, 28]), cmap='hot', alpha=0.5)
         plt.colorbar()
