@@ -29,7 +29,10 @@ class Net(nn.Module):
         return self.fc2(x)
 
     def forward(self, x):
-        return F.log_softmax(self.get_logits(x), dim=1)
+        if x.dtype != torch.float32:
+            x = x.float()
+        logits = self.get_logits(x)
+        return F.softmax(logits, dim=1)
 
 
 def train(model, device, train_loader, optimizer, epoch, log_interval):
@@ -38,7 +41,7 @@ def train(model, device, train_loader, optimizer, epoch, log_interval):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
-        loss = F.nll_loss(output, target)
+        loss = F.cross_entropy(output, target)
         loss.backward()
         optimizer.step()
         if batch_idx % log_interval == 0:
@@ -55,7 +58,7 @@ def test(model, device, test_loader):
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
+            test_loss += F.cross_entropy(output, target, reduction='sum').item()  # sum up batch loss
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
 
