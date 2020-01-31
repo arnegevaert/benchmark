@@ -49,7 +49,7 @@ def train(model, iterator, optimizer, loss):
             print(f"Batch {i+1}/{len(iterator)}")
         optimizer.zero_grad()
         predictions = model(batch.text).squeeze(1)
-        l = loss(predictions, batch.label.float())
+        l = loss(predictions, batch.label)
         acc = binary_accuracy(predictions, batch.label)
         l.backward()
         optimizer.step()
@@ -66,7 +66,7 @@ def evaluate(model, iterator, loss):
     with torch.no_grad():
         for batch in iterator:
             predictions = model(batch.text).squeeze(1)
-            l = loss(predictions, batch.label.float())
+            l = loss(predictions, batch.label)
             acc = binary_accuracy(predictions, batch.label)
             epoch_loss += l.item()
             epoch_acc += acc.item()
@@ -85,16 +85,16 @@ if __name__ == '__main__':
     data_path = path.join(path.dirname(__file__), "../../../data")
     print(f"Getting IMDB dataset")
     text = data.Field(batch_first=True)
-    label = data.LabelField()
+    label = data.LabelField(dtype=torch.float)
     fields = {"text": ("text", text), "label": ("label", label)}
-    train_data, test_data = data.TabularDataset.splits(
+    train_data, valid_data, test_data = data.TabularDataset.splits(
         path=path.join(data_path, "imdb_preproc"),
         train="train.json",
         test="test.json",
+        validation="valid.json",
         format="json",
         fields=fields
     )
-    train_data, valid_data = train_data.split()
     print(f"Building vocab")
     max_vocab_size = 25000
     text.build_vocab(train_data,
@@ -109,7 +109,8 @@ if __name__ == '__main__':
     train_iterator, valid_iterator, test_iterator = data.BucketIterator.splits(
         (train_data, valid_data, test_data),
         batch_size=batch_size,
-        device=device
+        device=device,
+        sort_key=lambda x: len(x.text)
     )
 
     input_dim = len(text.vocab)
