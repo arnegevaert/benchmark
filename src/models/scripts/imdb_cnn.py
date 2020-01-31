@@ -6,6 +6,8 @@ import torch.optim as optim
 from os import path
 import time
 
+# Source: https://github.com/bentrevett/pytorch-sentiment-analysis/blob/master/4%20-%20Convolutional%20Sentiment%20Analysis.ipynb
+
 
 class CNN(nn.Module):
     def __init__(self, vocab_size, embedding_dim, n_filters, filter_sizes, output_dim, dropout, pad_idx):
@@ -42,10 +44,12 @@ def train(model, iterator, optimizer, loss):
     epoch_acc = 0
     model.train()
 
-    for batch in iterator:
+    for i, batch in enumerate(iterator):
+        if (i+1)%25 == 0:
+            print(f"Batch {i+1}/{len(iterator)}")
         optimizer.zero_grad()
         predictions = model(batch.text).squeeze(1)
-        l = loss(predictions, batch.label)
+        l = loss(predictions, batch.label.float())
         acc = binary_accuracy(predictions, batch.label)
         l.backward()
         optimizer.step()
@@ -62,7 +66,7 @@ def evaluate(model, iterator, loss):
     with torch.no_grad():
         for batch in iterator:
             predictions = model(batch.text).squeeze(1)
-            l = loss(predictions, batch.label)
+            l = loss(predictions, batch.label.float())
             acc = binary_accuracy(predictions, batch.label)
             epoch_loss += l.item()
             epoch_acc += acc.item()
@@ -78,14 +82,19 @@ def epoch_time(start_time, end_time):
 
 if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    text = data.Field(tokenize="spacy", batch_first=True)
-    label = data.LabelField(dtype=torch.float)
     data_path = path.join(path.dirname(__file__), "../../../data")
-
     print(f"Getting IMDB dataset")
-    train_data, test_data = datasets.IMDB.splits(text, label, root=data_path)
+    text = data.Field(batch_first=True)
+    label = data.LabelField()
+    fields = {"text": ("text", text), "label": ("label", label)}
+    train_data, test_data = data.TabularDataset.splits(
+        path=path.join(data_path, "imdb_preproc"),
+        train="train.json",
+        test="test.json",
+        format="json",
+        fields=fields
+    )
     train_data, valid_data = train_data.split()
-
     print(f"Building vocab")
     max_vocab_size = 25000
     text.build_vocab(train_data,
