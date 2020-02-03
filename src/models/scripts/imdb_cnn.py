@@ -1,10 +1,11 @@
 import torch
-from torchtext import data, datasets
+from torchtext import data
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from os import path
 import time
+import spacy
 
 # Source: https://github.com/bentrevett/pytorch-sentiment-analysis/blob/master/4%20-%20Convolutional%20Sentiment%20Analysis.ipynb
 
@@ -49,7 +50,7 @@ def train(model, iterator, optimizer, loss):
             print(f"Batch {i+1}/{len(iterator)}")
         optimizer.zero_grad()
         predictions = model(batch.text).squeeze(1)
-        l = loss(predictions, batch.label)
+        l = loss(predictions, 1 - batch.label)  # labels are parsed as 'pos' = 0, 'neg' = 1 => flip
         acc = binary_accuracy(predictions, batch.label)
         l.backward()
         optimizer.step()
@@ -80,38 +81,9 @@ def epoch_time(start_time, end_time):
     return elapsed_mins, elapsed_secs
 
 
-if __name__ == '__main__':
+def build_and_train(save=False):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    data_path = path.join(path.dirname(__file__), "../../../data")
-    print(f"Getting IMDB dataset")
-    text = data.Field(batch_first=True)
-    label = data.LabelField(dtype=torch.float)
-    fields = {"text": ("text", text), "label": ("label", label)}
-    train_data, valid_data, test_data = data.TabularDataset.splits(
-        path=path.join(data_path, "imdb_preproc"),
-        train="train.json",
-        test="test.json",
-        validation="valid.json",
-        format="json",
-        fields=fields
-    )
-    print(f"Building vocab")
-    max_vocab_size = 25000
-    text.build_vocab(train_data,
-                     max_size=max_vocab_size,
-                     vectors="glove.6B.100d",
-                     unk_init=torch.Tensor.normal_,
-                     vectors_cache=path.join(data_path, "glove"))
-    label.build_vocab(train_data)
-
-    print(f"Getting data iterators")
-    batch_size = 64
-    train_iterator, valid_iterator, test_iterator = data.BucketIterator.splits(
-        (train_data, valid_data, test_data),
-        batch_size=batch_size,
-        device=device,
-        sort_key=lambda x: len(x.text)
-    )
+    text, label, train_iterator, valid_iterator, test_iterator = get_dataset()
 
     input_dim = len(text.vocab)
     embedding_dim = 100
@@ -150,10 +122,84 @@ if __name__ == '__main__':
 
         epoch_mins, epoch_secs = epoch_time(start_time, end_time)
 
-        if valid_loss < best_valid_loss:
+        if valid_loss < best_valid_loss and save:
             best_valid_loss = valid_loss
             torch.save(model.state_dict(), path.join(save_location, 'imdb_cnn.pt'))
 
         print(f'Epoch: {epoch + 1:02} | Epoch Time: {epoch_mins}m {epoch_secs}s')
         print(f'\tTrain Loss: {train_loss:.3f} | Train Acc: {train_acc * 100:.2f}%')
         print(f'\t Val. Loss: {valid_loss:.3f} |  Val. Acc: {valid_acc * 100:.2f}%')
+    return model, text, label
+
+
+def get_dataset():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    data_path = path.join(path.dirname(__file__), "../../../data")
+    print(f"Getting IMDB dataset")
+    text = data.Field(batch_first=True)
+    label = data.LabelField(dtype=torch.float)
+    fields = {"text": ("text", text), "label": ("label", label)}
+    train_data, valid_data, test_data = data.TabularDataset.splits(
+        path=path.join(data_path, "imdb_preproc"),
+        train="train.json",
+        test="test.json",
+        validation="valid.json",
+        format="json",
+        fields=fields
+    )
+    print(f"Building vocab")
+    max_vocab_size = 25000
+    text.build_vocab(train_data,
+                     max_size=max_vocab_size,
+                     vectors="glove.6B.100d",
+                     unk_init=torch.Tensor.normal_,
+                     vectors_cache=path.join(data_path, "glove"))
+    label.build_vocab(train_data)
+
+    print(f"Getting data iterators")
+    batch_size = 64
+    train_iterator, valid_iterator, test_iterator = data.BucketIterator.splits(
+        (train_data, valid_data, test_data),
+        batch_size=batch_size,
+        device=device,
+        sort_key=lambda x: len(x.text)
+    )
+    return text, label, train_iterator, valid_iterator, test_iterator
+
+
+def predict_sentiment(model, sentence, text, min_len=5):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.eval()
+    nlp = spacy.load('en')
+    tokenized = [tok.text for tok in nlp.tokenizer(sentence)]
+    if len(tokenized) < min_len:
+        tokenized += ['<pad>'] * (min_len - len(tokenized))
+    indexed = [text.vocab.stoi[t] for t in tokenized]
+    tensor = torch.LongTensor(indexed).to(device)
+    tensor = tensor.unsqueeze(0)
+    prediction = torch.sigmoid(model(tensor))
+    return prediction.item()
+
+
+def load_model():
+    text, label, _, _, _ = get_dataset()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model_path = path.join(path.dirname(__file__), "../saved_models/imdb_cnn.pt")
+    input_dim = len(text.vocab)
+    embedding_dim = 100
+    n_filters = 100
+    filter_sizes = [3, 4, 5]
+    output_dim = 1
+    dropout = 0.5
+    pad_idx = text.vocab.stoi[text.pad_token]
+    model = CNN(input_dim, embedding_dim, n_filters, filter_sizes, output_dim, dropout, pad_idx)
+    model.load_state_dict(torch.load(model_path))
+    model = model.to(device)
+    return model, text, label
+
+
+if __name__ == '__main__':
+    model, text, label = build_and_train(save=True)
+    print(predict_sentiment(model, "This film is terrible", text))
+    print(predict_sentiment(model, "This film is great", text))
+    #m = load_model()
