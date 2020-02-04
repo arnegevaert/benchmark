@@ -40,13 +40,15 @@ class Net(nn.Module):
 
 
 class MNISTCNN(Model):
-    def __init__(self, load=True, location=None):
+    def __init__(self, load=True, location=None, dataset=None):
         super().__init__()
         self.net = Net().to(DEVICE)
         if load:
             params_loc = location if location else path.join(path.dirname(__file__), "saved_models", "mnist_cnn.pt")
-            self.net.load_state_dict(torch.load(params_loc))
-        self.dataset = MNIST(batch_size=64, download=False)
+            # map_location allows taking a model trained on GPU and loading it on CPU
+            # without it, a model trained on GPU will be loaded in GPU even if DEVICE is CPU
+            self.net.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
+        self.dataset = dataset if dataset else MNIST(batch_size=64, download=False)
         self.optimizer = optim.Adadelta(self.net.parameters(), lr=1.0)
 
     def train(self, epochs, save=True):

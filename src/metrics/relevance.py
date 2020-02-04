@@ -10,10 +10,12 @@ class Relevance(Metric):
         super().__init__(model, method)
         self.dataset = dataset
 
+    # TODO add random selection as baseline
     def measure(self, n_batches=1, n_pixels=256):
         test_loader = self.dataset.get_test_loader()
         result = []
         for b in range(n_batches):
+            batch_result = []
             # Get samples
             samples, labels = next(iter(test_loader))
             orig_shape = samples.shape
@@ -31,8 +33,10 @@ class Relevance(Metric):
                 # Set attribution values to 0
                 attrs[range(orig_shape[0]), amax] = 0.
                 # Get model output on masked image
-                result.append(self.model.predict(samples).gather(1, labels.reshape(-1, 1)))
-        return torch.cat(result, 1).detach().numpy()
+                batch_result.append(self.model.predict(samples).gather(1, labels.reshape(-1, 1)))
+            batch_result = torch.cat(batch_result, 1)  # [batch_size, n_pixels]
+            result.append(batch_result)
+        return torch.cat(result, 0).detach().numpy()  # [n_batches*batch_size, n_pixels]
 
 
 if __name__ == '__main__':
@@ -54,6 +58,6 @@ if __name__ == '__main__':
     x = np.linspace(0, 256, 256)
     for key in methods:
         metric = Relevance(model, methods[key], dataset)
-        result = metric.measure().mean(axis=0)
-        ax.plot(x, result, label=key)
+        res = metric.measure(n_batches=2).mean(axis=0)
+        ax.plot(x, res, label=key)
     ax.legend()
