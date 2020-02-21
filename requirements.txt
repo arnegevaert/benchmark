@@ -104,7 +104,7 @@ srsly==1.0.1
 statsd==3.3.0
 stevedore==1.31.0
 tensorboard==1.14.0
-tensorflow==1.14.0
+tensorflow==1.15.2
 tensorflow-estimator==1.14.0
 termcolor==1.1.0
 testtools==2.3.0
