@@ -8,8 +8,12 @@
 - Sufficient Input Subsets (Carter et al. 2018)
 
 ## Implemented performance measures
-- Robustness
-- Relevance
+- (Robustness)
+- FI: Relevance
+
+## TODO
+- RB: Generality
+- IB: Sparsity (change as few features as possible on tabular data)
 
 ## Personal notes
 Anchors package (anchor_exp) contains bugs:

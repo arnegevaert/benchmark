@@ -1,6 +1,7 @@
 from methods import Method
 from captum import attr
 import torch.nn as nn
+import torch
 
 
 class Saliency(Method):
@@ -45,3 +46,12 @@ class DeepLift(Method):
     def attribute(self, x, target):
         self.net.eval()
         return self.deeplift.attribute(x, target=target)
+
+
+# This is not really an attribution technique, just to establish a baseline
+class Random(Method):
+    def __init__(self):
+        super().__init__()
+
+    def attribute(self, x, target):
+        return torch.rand_like(x)

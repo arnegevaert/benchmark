@@ -1,12 +1,12 @@
 from metrics import Metric
 from models import Model
 from methods import Method
-from datasets import Dataset
+from datasets import ImageDataset
 import torch
 
 
 class Relevance(Metric):
-    def __init__(self, model: Model, method: Method, dataset: Dataset):
+    def __init__(self, model: Model, method: Method, dataset: ImageDataset):
         super().__init__(model, method)
         self.dataset = dataset
 
@@ -42,16 +42,17 @@ class Relevance(Metric):
 if __name__ == '__main__':
     from models import MNISTCNN
     from datasets import MNIST
-    from methods import Saliency, InputXGradient, IntegratedGradients, DeepLift
+    from methods import Saliency, InputXGradient, IntegratedGradients, DeepLift, Random
     import matplotlib.pyplot as plt
     import numpy as np
     model = MNISTCNN()
     dataset = MNIST(batch_size=64)
     methods = {
-        "Saliency": Saliency(model.net),
+        "Gradient": Saliency(model.net),
         "InputXGradient": InputXGradient(model.net),
         "IntegratedGradients": IntegratedGradients(model.net),
-        "DeepLift": DeepLift(model.net)
+        "DeepLift": DeepLift(model.net),
+        "Random": Random()
     }
     fig = plt.figure()
     ax = plt.axes()
@@ -60,4 +61,7 @@ if __name__ == '__main__':
         metric = Relevance(model, methods[key], dataset)
         res = metric.measure(n_batches=2).mean(axis=0)
         ax.plot(x, res, label=key)
-    ax.legend()
+    ax.set_xlabel("Number of masked pixels")
+    ax.set_ylabel("Classifier confidence")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.15), ncol=3, fancybox=True)
+    plt.savefig("test.svg")

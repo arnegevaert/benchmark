@@ -1,10 +1,10 @@
 import torch
 from torchvision import datasets, transforms
-from datasets.dataset import Dataset
+from datasets.image_dataset import ImageDataset
 from os import path
 
 
-class MNIST(Dataset):
+class MNIST(ImageDataset):
     def __init__(self, batch_size, data_location=path.join(path.dirname(__file__), "../../data"), download=False):
         super().__init__(batch_size)
         self.train_loader = torch.utils.data.DataLoader(

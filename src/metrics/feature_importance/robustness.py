@@ -3,11 +3,11 @@ import numpy as np
 from metrics import Metric
 from models import Model
 from methods import Method
-from datasets import Dataset
+from datasets import ImageDataset
 
 
 class Robustness(Metric):
-    def __init__(self, model: Model, method: Method, dataset: Dataset):
+    def __init__(self, model: Model, method: Method, dataset: ImageDataset):
         super().__init__(model, method)
         self.dataset = dataset
 
