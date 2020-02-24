@@ -59,7 +59,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import numpy as np
     start_t = time.time()
-    dataset = MNIST(batch_size=1, download=False)
+    dataset = MNIST(batch_size=4, download=False)
     model = MNISTCNN(dataset=dataset)
     methods = {
         "Saliency": Saliency(model.net),
@@ -67,7 +67,7 @@ if __name__ == '__main__':
         #"IntegratedGradients": IntegratedGradients(model.net),
         "DeepLift": DeepLift(model.net)
     }
-    noise_levels = np.linspace(0, 2, 20)
+    noise_levels = np.linspace(0, 2, 10)
     n_levels = len(noise_levels)
     fig = plt.figure()
     ax = plt.axes()
