@@ -23,9 +23,14 @@ class MNIST(ImageDataset):
                            ])),
             batch_size=batch_size, shuffle=True)
         self.mask_value = -0.4242
+        self.sample_shape = (1, 28, 28)
 
     def get_train_loader(self):
         return self.train_loader
 
     def get_test_loader(self):
         return self.test_loader
+
+    def get_sample_shape(self):
+        return self.sample_shape
+

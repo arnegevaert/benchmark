@@ -9,4 +9,8 @@ class ImageDataset:
     def get_test_loader(self):
         raise NotImplementedError
 
+    def get_sample_shape(self):
+        raise NotImplementedError
 
+    def get_batch_size(self):
+        return self.batch_size
