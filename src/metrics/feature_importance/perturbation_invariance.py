@@ -23,48 +23,32 @@ def perturbation_invariance(originals: np.ndarray, perturbed: np.ndarray, labels
     return np.concatenate(all_diffs, axis=1)  # [n_levels, n_batches*batch_size]
 
 
-def plot_noise_invariance():
-    noise_levels = np.linspace(0, 2, 10)
+def plot_robustness(levels, perturbation_fn):
     originals, perturbed, labels = perturb_dataset(dataset, model, n_batches=64,
-                                                   perturbation_fn="noise", perturbation_levels=noise_levels)
-    fig = plt.figure()
-    ax = plt.axes()
-    all_diffs = {}
-    for key in methods:
-        print(f"Calculating Robustness for {key}...")
-        diffs = perturbation_invariance(originals, perturbed, labels, methods[key])
-        all_diffs[key] = diffs
-        ax.plot(noise_levels, diffs.mean(axis=1), label=key)
-    ax.legend()
-
-
-def plot_mean_shift_invariance():
-    shift_levels = np.linspace(-.1, .1, 11)
-    originals, perturbed, labels = perturb_dataset(dataset, model, n_batches=64,
-                                                   perturbation_fn="mean_shift", perturbation_levels=shift_levels)
-
+                                                   perturbation_fn=perturbation_fn, perturbation_levels=levels)
     fig = plt.figure()
     ax = plt.axes()
     for key in methods:
         print(f"Calculating Mean Shift Invariance for {key}...")
         diffs = perturbation_invariance(originals, perturbed, labels, methods[key])
-        ax.plot(shift_levels, diffs.mean(axis=1), label=key)
+        ax.plot(levels, diffs.mean(axis=1), label=key)
     ax.legend()
+
 
 if __name__ == '__main__':
     from models import MNISTCNN
     from datasets import MNIST
-    from methods import Saliency, InputXGradient, IntegratedGradients, DeepLift
+    from methods import Gradient, InputXGradient, IntegratedGradients, DeepLift
     import matplotlib.pyplot as plt
     import numpy as np
     dataset = MNIST(batch_size=4, download=False)
     model = MNISTCNN(dataset=dataset)
     methods = {
-        "Saliency": Saliency(model.net),
+        #"Saliency": Saliency(model.net),
         "InputXGradient": InputXGradient(model.net),
-        "IntegratedGradients": IntegratedGradients(model.net),
+        #"IntegratedGradients": IntegratedGradients(model.net),
         "DeepLift": DeepLift(model.net)
     }
 
-    plot_mean_shift_invariance()
-    #plot_noise_invariance()
+    #plot_robustness(np.linspace(-.1, .1, 11), "mean_shift")
+    #plot_robustness(np.linspace(0, 2, 10), "noise")

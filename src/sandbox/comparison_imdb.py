@@ -1,5 +1,5 @@
 from os import path
-from models.scripts.imdb_cnn import load_model, predict_sentiment
+from models.scripts.train_imdb_cnn import load_model, predict_sentiment
 import torch
 from captum.attr import TokenReferenceBase, configure_interpretable_embedding_layer, IntegratedGradients
 

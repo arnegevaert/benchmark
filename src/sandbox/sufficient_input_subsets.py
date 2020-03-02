@@ -1,7 +1,7 @@
 import torch
 from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
-from models.scripts.mnist_cnn import Net
+from models.scripts.train_mnist_cnn import Net
 import numpy as np
 from lib.sufficient_input_subsets import sis_collection, produce_masked_inputs
 

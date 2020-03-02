@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch
 
 
-class Saliency(Method):
+class Gradient(Method):
     def __init__(self, net: nn.Module):
         super().__init__()
         self.net = net
