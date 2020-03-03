@@ -2,6 +2,9 @@ import torch
 import numpy as np
 from models import Model
 from datasets import ImageDataset
+from typing import Iterator
+import h5py
+from os import path
 
 
 # TODO unnecessary conversion back and forth between NP and PT
@@ -44,4 +47,3 @@ def perturb_dataset(dataset: ImageDataset, model: Model, n_batches,
     # [noise_levels, n_batches, batch_size, *sample_shape]
     perturbed = np.concatenate(perturbed, axis=1)
     return torch.tensor(originals), torch.tensor(perturbed), torch.tensor(labels)
-
