@@ -39,6 +39,7 @@ class Net(nn.Module):
         return F.softmax(logits, dim=1)
 
 
+# TODO dataset shouldn't be required on construction
 class MNISTCNN(Model):
     def __init__(self, load=True, location=None, dataset=None):
         super().__init__()

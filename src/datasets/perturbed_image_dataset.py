@@ -2,6 +2,7 @@ import h5py
 import torch
 import json
 import numpy as np
+import warnings
 from os import path
 from typing import Iterator
 
@@ -18,12 +19,15 @@ class PerturbedImageDataset:
         self.file = h5py.File(self.filename, 'r')
         self.metadata = json.load(open(self.metadata_filename))
 
-    def _iterator(self, l):
-        dataset = self.file[f"level_{l}"]
+    def __iter__(self):
         count = 0
-        while count + self.batch_size <= dataset.shape[0]:
-            print(count + self.batch_size)
-            yield dataset[count:count+self.batch_size, :]
+        while count + self.batch_size <= self.file["original"].shape[0]:
+            yield {
+                "perturbed": [self.file[f"level_{l}"][count:count+self.batch_size, :]
+                              for l in range(len(self.get_levels()))],
+                "original": self.file[f"original"][count:count+self.batch_size, :],
+                "labels": self.file[f"labels"][count:count+self.batch_size]
+            }
             count += self.batch_size
 
     def get_levels(self):
@@ -32,14 +36,10 @@ class PerturbedImageDataset:
     def get_fn(self):
         return self.metadata["perturbation_fn"]
 
-    def get_iterators(self):
-        return [
-            self._iterator(level) for level in range(len(self.get_levels()))
-        ]
-
     @staticmethod
     def generate(data_location, name, data_iterator: Iterator, model: Model,
-                 perturbation_fn="noise", perturbation_levels=np.linspace(0, 1, 10), max_tries=10):
+                 perturbation_fn="noise", perturbation_levels=np.linspace(0, 1, 10), max_tries=10,
+                 n_batches=64):
         assert(perturbation_fn in ["noise", "mean_shift"])
         p_fns = {
             "noise": lambda s, l: s + (np.random.rand(*s.shape)) * l,
@@ -51,8 +51,13 @@ class PerturbedImageDataset:
         datasets_created = False
         row_count = 0
         batch_size = None
-        # [batch_size, *sample_shape], [batch_size]
-        for samples, labels in data_iterator:
+        successful_batches = 0
+        while successful_batches < n_batches:
+            batch = next(data_iterator, None)
+            if not batch:
+                break
+            # [batch_size, *sample_shape], [batch_size]
+            samples, labels = batch
             # Convert to numpy if necessary
             if type(samples) == torch.Tensor:
                 samples = samples.numpy()
@@ -85,26 +90,33 @@ class PerturbedImageDataset:
             batch = []
             # Try to create a perturbed batch that doesn't change the model output
             while tries < max_tries and not batch_ok:
+                batch_ok = True
                 tries += 1
                 batch = []
                 # Perturb and check if output hasn't changed
                 for p_l in perturbation_levels:
                     perturbed_samples = p_fns[perturbation_fn](samples, p_l)
                     predictions = model.predict(torch.tensor(perturbed_samples))
-                    batch_ok = not torch.any(predictions.argmax(axis=1) != torch.tensor(labels))
+                    batch_ok = batch_ok and not torch.any(predictions.argmax(axis=1) != torch.tensor(labels))
                     batch.append(perturbed_samples)
             if batch_ok:
                 # Append each level of the batch to its corresponding HDF5 dataset
                 for l, l_batch in enumerate(batch):
                     file[f"level_{l}"].resize(row_count + batch_size, axis=0)
                     file[f"level_{l}"][row_count:] = l_batch
+                successful_batches += 1
             else:
-                raise Exception("Maximum number of tries exceeded. Aborting.")
+                print("Skipped batch.")
             row_count += batch_size
         # Save metadata
+        if successful_batches < n_batches:
+            warnings.warn(f"Only {successful_batches}/{n_batches} were successful.")
+        else:
+            print(f"Successfully generated {successful_batches} batches.")
         metadata = {
             "perturbation_fn": perturbation_fn,
             "perturbation_levels": list(perturbation_levels)
         }
         json.dump(metadata, open(metadata_filename, "w"))
+        file.flush()
         return PerturbedImageDataset(data_location, name, batch_size)
