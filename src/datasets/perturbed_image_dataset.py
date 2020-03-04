@@ -58,33 +58,11 @@ class PerturbedImageDataset:
                 break
             # [batch_size, *sample_shape], [batch_size]
             samples, labels = batch
+            batch_size = samples.shape[0]
             # Convert to numpy if necessary
             if type(samples) == torch.Tensor:
                 samples = samples.numpy()
                 labels = labels.numpy()
-            # If datasets are already initialized, just append originals and labels
-            if datasets_created:
-                file["original"].resize(row_count + samples.shape[0], axis=0)
-                file["original"][row_count:] = samples
-                file["labels"].resize(row_count + labels.shape[0], axis=0)
-                file["labels"][row_count:] = labels
-            # Initialize datasets if necessary
-            else:
-                # Shape is now known, create datasets
-                batch_size = samples.shape[0]
-                file.create_dataset("original", shape=samples.shape, maxshape=(None,) + samples.shape[1:],
-                                    chunks=samples.shape, dtype=samples.dtype)
-                file.create_dataset("labels", shape=labels.shape, maxshape=(None,),
-                                    chunks=labels.shape, dtype=labels.dtype)
-                file["original"][:] = samples
-                file["labels"][:] = labels
-                # Each perturbation level has a separate HDF5 dataset inside the file
-                for i, l in enumerate(perturbation_levels):
-                    file.create_dataset(f"level_{i}", shape=samples.shape,
-                                        maxshape=(None,) + samples.shape[1:],
-                                        chunks=samples.shape,
-                                        dtype=samples.dtype)
-                datasets_created = True
             tries = 0
             batch_ok = False
             batch = []
@@ -100,14 +78,34 @@ class PerturbedImageDataset:
                     batch_ok = batch_ok and not torch.any(predictions.argmax(axis=1) != torch.tensor(labels))
                     batch.append(perturbed_samples)
             if batch_ok:
-                # Append each level of the batch to its corresponding HDF5 dataset
-                for l, l_batch in enumerate(batch):
-                    file[f"level_{l}"].resize(row_count + batch_size, axis=0)
-                    file[f"level_{l}"][row_count:] = l_batch
+                if datasets_created:
+                    # Resize datasets to accommodate for new batch
+                    file["original"].resize(row_count + batch_size, axis=0)
+                    file["labels"].resize(row_count + batch_size, axis=0)
+                    for l, l_batch in enumerate(batch):
+                        file[f"level_{l}"].resize(row_count + batch_size, axis=0)
+                else:
+                    # Create datasets and allocate room for first batch
+                    file.create_dataset("original", shape=samples.shape, maxshape=(None,) + samples.shape[1:],
+                                        chunks=samples.shape, dtype=samples.dtype)
+                    file.create_dataset("labels", shape=labels.shape, maxshape=(None,),
+                                        chunks=labels.shape, dtype=labels.dtype)
+                    for i, l_batch in enumerate(batch):
+                        file.create_dataset(f"level_{i}", shape=samples.shape,
+                                            maxshape=(None,) + samples.shape[1:],
+                                            chunks=samples.shape,
+                                            dtype=samples.dtype)
+                    datasets_created = True
+
+                # Add batch to datasets
+                file["original"][row_count:] = samples
+                file["labels"][row_count:] = labels
+                for i, l_batch in enumerate(batch):
+                    file[f"level_{i}"][row_count:] = l_batch
                 successful_batches += 1
+                row_count += batch_size
             else:
                 print("Skipped batch.")
-            row_count += batch_size
         # Save metadata
         if successful_batches < n_batches:
             warnings.warn(f"Only {successful_batches}/{n_batches} were successful.")

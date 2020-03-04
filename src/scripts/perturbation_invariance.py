@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
-GENERATE = False
+GENERATE = True
 DATA_ROOT = "../../data"
 DATASET = "MNIST_noise"
 BATCH_SIZE = 4
