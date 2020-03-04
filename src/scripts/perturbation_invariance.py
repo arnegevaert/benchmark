@@ -6,11 +6,11 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
-GENERATE = True
+GENERATE = False
 DATA_ROOT = "../../data"
 DATASET = "MNIST_noise"
 BATCH_SIZE = 4
-N_BATCHES = 64
+N_BATCHES = 128
 
 model = MNISTCNN()
 
@@ -21,8 +21,8 @@ methods = {
 }
 
 if GENERATE:
-    dataset = MNIST(batch_size=BATCH_SIZE, download=False)
-    iterator = iter(dataset.get_test_loader())
+    dataset = MNIST(batch_size=BATCH_SIZE, download=False, shuffle=True)
+    iterator = iter(dataset.get_test_data())
     perturbed_dataset = PerturbedImageDataset.generate("../../data", "MNIST_noise", iterator, model,
                                                        perturbation_fn="noise",
                                                        perturbation_levels=np.linspace(0, 2, 10),
@@ -37,7 +37,7 @@ for key in methods:
     method = methods[key]
     diffs = [[] for _ in range(len(perturbed_dataset.get_levels()))]
     for b, b_dict in enumerate(perturbed_dataset):
-        print(f"Batch {b}/{N_BATCHES}")
+        print(f"Batch {b+1}/{N_BATCHES}")
         orig = torch.tensor(b_dict["original"])
         labels = torch.tensor(b_dict["labels"])
         orig_attr = method.attribute(orig, target=labels).detach()

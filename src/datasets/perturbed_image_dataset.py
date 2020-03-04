@@ -12,8 +12,8 @@ from models import Model
 class PerturbedImageDataset:
     def __init__(self, data_location, name, batch_size):
         self.name = name
-        self.data_location = data_location
         self.batch_size = batch_size
+        self.data_location = data_location
         self.filename = path.join(data_location, name, "dataset.hdf5")
         self.metadata_filename = path.join(data_location, name, "meta.json")
         self.file = h5py.File(self.filename, 'r')

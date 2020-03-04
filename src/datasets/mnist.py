@@ -1,10 +1,10 @@
 import torch
 from torchvision import datasets, transforms
-from datasets.image_dataset import ImageDataset
+from datasets.dataset import Dataset
 from os import path
 
 
-class MNIST(ImageDataset):
+class MNIST(Dataset):
     def __init__(self, batch_size, data_location=path.join(path.dirname(__file__), "../../data"),
                  download=False, shuffle=True):
         super().__init__(batch_size)
@@ -26,10 +26,10 @@ class MNIST(ImageDataset):
         self.mask_value = -0.4242
         self.sample_shape = (1, 28, 28)
 
-    def get_train_loader(self):
+    def get_train_data(self):
         return self.train_loader
 
-    def get_test_loader(self):
+    def get_test_data(self):
         return self.test_loader
 
     def get_sample_shape(self):

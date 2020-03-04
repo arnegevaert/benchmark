@@ -52,7 +52,7 @@ if __name__ == '__main__':
     ax = plt.axes()
     x = np.linspace(0, 256, 256)
     for key in methods:
-        res = relevance(dataset.get_test_loader(), model, methods[key],
+        res = relevance(dataset.get_test_data(), model, methods[key],
                         n_pixels=256, n_batches=2, mask_value=dataset.mask_value).mean(dim=0)
         ax.plot(x, res, label=key)
     ax.set_xlabel("Number of masked pixels")

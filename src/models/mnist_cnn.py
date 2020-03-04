@@ -54,8 +54,8 @@ class MNISTCNN(Model):
 
     def train(self, epochs, save=True):
         scheduler = StepLR(self.optimizer, step_size=1, gamma=0.7)
-        train_loader = self.dataset.get_train_loader()
-        test_loader = self.dataset.get_test_loader()
+        train_loader = self.dataset.get_train_data()
+        test_loader = self.dataset.get_test_data()
         for epoch in range(epochs):
             # Train for 1 epoch
             self.net.train()
