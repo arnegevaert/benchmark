@@ -21,14 +21,15 @@ class Net(nn.Module):
         self.fc2 = nn.Linear(128, 10)
 
     def get_logits(self, x):
+        relu = nn.ReLU()
         x = self.conv1(x)
-        x = F.relu(x)
+        x = relu(x)
         x = self.conv2(x)
         x = F.max_pool2d(x, 2)
         x = self.dropout1(x)
         x = torch.flatten(x, 1)
         x = self.fc1(x)
-        x = F.relu(x)
+        x = relu(x)
         x = self.dropout2(x)
         return self.fc2(x)
 

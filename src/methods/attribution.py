@@ -36,7 +36,8 @@ class IntegratedGradients(Method):
         self.net.eval()
         return self.integrated_gradients.attribute(x, target=target)
 
-
+# TODO by default, DeepLift is equivalent to InputXGradient. Read DeepLift paper for more details.
+"""
 class DeepLift(Method):
     def __init__(self, net: nn.Module):
         super().__init__()
@@ -46,7 +47,7 @@ class DeepLift(Method):
     def attribute(self, x, target):
         self.net.eval()
         return self.deeplift.attribute(x, target=target)
-
+"""
 
 # This is not really an attribution technique, just to establish a baseline
 class Random(Method):
