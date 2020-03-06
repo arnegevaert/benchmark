@@ -1,6 +1,6 @@
 # ML Interpretability Benchmark
 Benchmark for ML interpretability techniques.
-<hr/>
+
 ## Techniques
 
 #### Feature Attribution (FA) techniques
