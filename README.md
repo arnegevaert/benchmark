@@ -10,6 +10,11 @@ Benchmark for ML interpretability techniques.
 | InputXGradient | [link](https://arxiv.org/abs/1611.07270) | [Captum](https://captum.ai/api/input_x_gradient.html) | Differentiable | Any | :heavy_check_mark: |
 | IntegratedGradients | [link](http://arxiv.org/abs/1703.01365) | [Captum](https://captum.ai/api/integrated_gradients.html) | Differentiable | Any | :heavy_check_mark: |
 | DeepLIFT<sup>1</sup> | [link](https://arxiv.org/abs/1704.02685) | [Captum **(WIP)**](https://captum.ai/api/deep_lift.html) | DNN | Image | :x: |
+| Guided Backprop | | Captum **(WIP)** | | | :x: |
+| Deconvolution | | Captum **(WIP)** | | | :x: |
+| Feature Ablation | | Captum **(WIP)** | | | :x: |
+| Occlusion | | Captum **(WIP)** | | | :x: |
+| Feature Permutation | | Captum **(WIP)** | | | :x: |
 | LIME | [link](https://www.kdd.org/kdd2016/papers/files/rfp0573-ribeiroA.pdf) | [Github](https://github.com/marcotcr/lime) | None | Any | :x: |
 | SHAP | [link](https://arxiv.org/abs/1705.07874) | [Github](https://github.com/slundberg/shap) | None | Any | :x: |
 | CGI | [link](https://arxiv.org/abs/1905.12152) | None | Differentiable | Any | :x: |
@@ -20,26 +25,18 @@ Benchmark for ML interpretability techniques.
 
 <sup>1</sup>: DeepLIFT has 3 assignment rules (Linear, RC, RS), so should be split in DeepLIFT-{Linear,RC,RS}.
 
-#### Rule-based (RB) techniques
-No rule-based techniques have been implemented yet.
+#### Other techniques
+No rule-based or counterfactual techniques have been implemented yet. This is a preliminary list of possibly useful techniques.
 
-- [Anchors](https://www.aaai.org/ocs/index.php/AAAI/AAAI18/paper/view/16982)
-- [Sufficient Input Subsets](http://arxiv.org/abs/1810.03805)
-- [MES](https://ieeexplore.ieee.org/document/7738872)
-- [MARLENA](https://link.springer.com/chapter/10.1007/978-3-030-24409-5_9)
-- [BETA](http://arxiv.org/abs/1707.01154)
-- [LORE](http://arxiv.org/abs/1805.10820)
-- [CEM/PP](http://arxiv.org/abs/1802.07623)
-
-#### Counterfactual (CF) techniques
-No counterfactual techniques have been implemented yet.
-
-- [Wachter et al.](http://arxiv.org/abs/1711.00399)
-- [CERTIFAI](http://arxiv.org/abs/1905.07857)
-- [CEM/PN](http://arxiv.org/abs/1802.07623)
-- [Van Looveren et al.](http://arxiv.org/abs/1907.02584)
-- [McGrath et al.](http://arxiv.org/abs/1811.05245)
-- [Growing Spheres](http://arxiv.org/abs/1712.08443)
+| Rule-based | Counterfactual |
+| ---------- | -------------- |
+| [Anchors](https://www.aaai.org/ocs/index.php/AAAI/AAAI18/paper/view/16982) | [Wachter et al.](http://arxiv.org/abs/1711.00399)
+| [Sufficient Input Subsets](http://arxiv.org/abs/1810.03805) | [CERTIFAI](http://arxiv.org/abs/1905.07857)
+| [MES](https://ieeexplore.ieee.org/document/7738872) | [CEM/PN](http://arxiv.org/abs/1802.07623)
+| [MARLENA](https://link.springer.com/chapter/10.1007/978-3-030-24409-5_9) | [Van Looveren et al.](http://arxiv.org/abs/1907.02584)
+| [BETA](http://arxiv.org/abs/1707.01154) | [McGrath et al.](http://arxiv.org/abs/1811.05245)
+| [LORE](http://arxiv.org/abs/1805.10820) | [Growing Spheres](http://arxiv.org/abs/1712.08443)
+| [CEM/PP](http://arxiv.org/abs/1802.07623)
 
 ## Metrics
 We provide a list of metrics that can be used to assess the quality of explainability techniques.
