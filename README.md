@@ -21,13 +21,25 @@ Benchmark for ML interpretability techniques.
 <sup>1</sup>: DeepLIFT has 3 assignment rules (Linear, RC, RS), so should be split in DeepLIFT-{Linear,RC,RS}.
 
 #### Rule-based (RB) techniques
-| Name | Paper | Source | Model requirements | Data type | Implemented |
-| ---- | ----- | ------ | ------------------ | --------- | ----------- |
+No rule-based techniques have been implemented yet.
+
+- [Anchors](https://www.aaai.org/ocs/index.php/AAAI/AAAI18/paper/view/16982)
+- [Sufficient Input Subsets](http://arxiv.org/abs/1810.03805)
+- [MES](https://ieeexplore.ieee.org/document/7738872)
+- [MARLENA](https://link.springer.com/chapter/10.1007/978-3-030-24409-5_9)
+- [BETA](http://arxiv.org/abs/1707.01154)
+- [LORE](http://arxiv.org/abs/1805.10820)
+- [CEM/PP](http://arxiv.org/abs/1802.07623)
 
 #### Counterfactual (CF) techniques
-| Name | Paper | Source | Model requirements | Data type | Implemented |
-| ---- | ----- | ------ | ------------------ | --------- | ----------- |
+No counterfactual techniques have been implemented yet.
 
+- [Wachter et al.](http://arxiv.org/abs/1711.00399)
+- [CERTIFAI](http://arxiv.org/abs/1905.07857)
+- [CEM/PN](http://arxiv.org/abs/1802.07623)
+- [Van Looveren et al.](http://arxiv.org/abs/1907.02584)
+- [McGrath et al.](http://arxiv.org/abs/1811.05245)
+- [Growing Spheres](http://arxiv.org/abs/1712.08443)
 
 ## Metrics
 We provide a list of metrics that can be used to assess the quality of explainability techniques.
@@ -63,8 +75,8 @@ Features that are deemed important (i.e. have a large attribution) should have a
 #### Model dependence
 Applicable to FA techniques. Explanations for a random or trained model should differ significantly. See also: [Sanity Checks for Saliency Maps](https://arxiv.org/abs/1810.03292).
 
-- Get explanation for randomized model vs trained model and measure difference
-- Get explanation for trained model vs model trained on random labels and measure difference
+- Get explanation for randomized model vs trained model and measure difference :x:
+- Get explanation for trained model vs model trained on random labels and measure difference :x:
 
 #### Stability
 Applicable to all techniques. Output should change as little as possible if hyperparameters are varied.
@@ -74,6 +86,6 @@ Applicable to all techniques. Output should change as little as possible if hype
 #### Scalability
 Applicable to all techniques.
 
-- **w.r.t. dimensionality:** Measure execution time (assess theoretical complexity) per sample for varying dimensionality.
-- **w.r.t. amount of explanations:** Measure average execution time per sample for varying amount of samples.
+- w.r.t. dimensionality: Measure execution time (assess theoretical complexity) per sample for varying dimensionality :x:
+- w.r.t. amount of explanations: Measure average execution time per sample for varying amount of samples :x:
 
