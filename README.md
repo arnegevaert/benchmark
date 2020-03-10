@@ -14,18 +14,18 @@ Benchmark for ML interpretability techniques.
 | InputXGradient | [link](https://arxiv.org/abs/1611.07270) | [Captum](https://captum.ai/api/input_x_gradient.html) | Differentiable | Any | :heavy_check_mark: |
 | IntegratedGradients | [link](http://arxiv.org/abs/1703.01365) | [Captum](https://captum.ai/api/integrated_gradients.html) | Differentiable | Any | :heavy_check_mark: |
 | DeepLIFT<sup>1</sup> | [link](https://arxiv.org/abs/1704.02685) | [Captum **(UNR)**](https://captum.ai/api/deep_lift.html) | DNN | Image | :x: |
-| Guided Backprop | [link](https://arxiv.org/abs/1412.6806) | [Captum **(UNR)**](https://captum.ai/api/guided_backprop.html) | DNN | Image | :x: |
-| Deconvolution | [link](https://arxiv.org/abs/1311.2901) | [Captum **(UNR)**](https://captum.ai/api/deconvolution.html) | CNN | Image | :x: |
+| Guided Backprop | [link](https://arxiv.org/abs/1412.6806) | [Captum **(UNR)**](https://captum.ai/api/guided_backprop.html) | DNN | Image | :construction: |
+| Deconvolution | [link](https://arxiv.org/abs/1311.2901) | [Captum **(UNR)**](https://captum.ai/api/deconvolution.html) | CNN | Image | :construction: |
 | Feature Ablation | None | [Captum **(UNR)**](https://captum.ai/api/feature_ablation.html) | None | Any | :x: |
 | Occlusion | [link](https://arxiv.org/abs/1311.2901) | [Captum **(UNR)**](https://captum.ai/api/occlusion.html) | none | Any | :x: |
 | Feature Permutation | [link](https://christophm.github.io/interpretable-ml-book/feature-importance.html) | [Captum **(UNR)**](https://captum.ai/api/feature_permutation.html) | None | Any | :x: |
-| LIME | [link](https://www.kdd.org/kdd2016/papers/files/rfp0573-ribeiroA.pdf) | [Github](https://github.com/marcotcr/lime) | None | Any | :x: |
-| SHAP | [link](https://arxiv.org/abs/1705.07874) | [Github](https://github.com/slundberg/shap) | None | Any | :x: |
+| Guided Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Captum (**UNR**)](https://captum.ai/api/guided_grad_cam.html) | CNN | Image | :construction: |
+| LIME | [link](https://www.kdd.org/kdd2016/papers/files/rfp0573-ribeiroA.pdf) | [PyPi](https://pypi.org/project/lime/) | None | Any | :construction: |
+| SHAP | [link](https://arxiv.org/abs/1705.07874) | [PyPi](https://pypi.org/project/shap/) | None | Any | :construction: |
 | CGI | [link](https://arxiv.org/abs/1905.12152) | None | Differentiable | Any | :x: |
 | XRAI | [link](https://arxiv.org/abs/1906.02825) | [Github](https://github.com/PAIR-code/saliency) | Differentiable | Image | :x: |
 | CAM | [link](http://cnnlocalization.csail.mit.edu/Zhou_Learning_Deep_Features_CVPR_2016_paper.pdf) | [Github](https://github.com/zhoubolei/CAM) | CNN (GAP layer) | Image | :x: |
 | Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Github](https://github.com/ramprs/grad-cam/) | CNN | Image | :x: |
-| Guided Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Github](https://github.com/ramprs/grad-cam/) | CNN | Image | :x: |
 | Masking model | [link](https://arxiv.org/abs/1705.07857) | None | Differentiable | Image | :x: |
 
 <sup>1</sup>: DeepLIFT has 3 assignment rules (Linear, RC, RS), so should be split in DeepLIFT-{Linear,RC,RS}.
@@ -50,14 +50,14 @@ We provide a list of metrics that can be used to assess the quality of explainab
 Applicable to FA techniques.
 Given (partial) ground truth about feature importances, FA method should match this ground truth as well as possible. Ways to measure this:
 
-- **Using adversarial examples :x::**
+- **Using adversarial examples :x:: (NOTE: this is very similar to impact coverage, see further)**
     - Generate (localized https://arxiv.org/abs/1801.02608) adversarial noise to change the output of the model
     - Calculate feature attribution on adversarial example
     - Feature attribution (change in feature attribution?) should correlate with adversarial noise
 - **Using synthetic data :x::**
     - Generate dataset where parts of input cause the output label, other parts are noise
     - Feature attribution should match these parts
-- **Using model masking :x::**
+- **Using model masking :construction::**
     - Create a model on an existing dataset that only looks at part of the input
     - Train it to predict a property that depends on ALL the remaining features (e.g. Y=1 iff ALL remaining features > 0.5)
     - Attribution should match exactly with the unmasked parts of the input, as the method by definition doesn't look at the masked parts, and needs ALL of the unmasked parts to accurately predict.
@@ -92,7 +92,7 @@ Applicable to all techniques.
 - w.r.t. amount of explanations: Measure average execution time per sample for varying amount of samples :x:
 
 #### From sources
-- Sensitivity-n: Towards Better Understanding of Gradient-Based Attribution Methods for Deep Neural Networks. :x:
+- Sensitivity-n: Towards Better Understanding of Gradient-Based Attribution Methods for Deep Neural Networks. :construction:
 - Impact score: Do Explanation Reflect Decisions? A Machine-centric Strategy to Quantify the Performance of Explainability Algorithms :x:
 - Impact coverage: Do Explanation Reflect Decisions? A Machine-centric Strategy to Quantify the Performance of Explainability Algorithms :x:
 - AIC/SIC: XRAI: Better Attributions Through Regions :x:
