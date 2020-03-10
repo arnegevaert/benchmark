@@ -4,17 +4,21 @@ Benchmark for ML interpretability techniques.
 ## Techniques
 
 #### Feature Attribution (FA) techniques
+- Implemented: :heavy_check_mark:
+- Work in progress: :construction:
+- Not implemented: :x:
+
 | Name | Paper | Source | Model requirements | Data type | Implemented |
 | ---- | ----- | ------ | ------------------ | --------- | ----------- |
 | Gradient | [link](https://arxiv.org/abs/1312.6034) | [Captum](https://captum.ai/api/saliency.html) | Differentiable | Any | :heavy_check_mark: |
 | InputXGradient | [link](https://arxiv.org/abs/1611.07270) | [Captum](https://captum.ai/api/input_x_gradient.html) | Differentiable | Any | :heavy_check_mark: |
 | IntegratedGradients | [link](http://arxiv.org/abs/1703.01365) | [Captum](https://captum.ai/api/integrated_gradients.html) | Differentiable | Any | :heavy_check_mark: |
-| DeepLIFT<sup>1</sup> | [link](https://arxiv.org/abs/1704.02685) | [Captum **(WIP)**](https://captum.ai/api/deep_lift.html) | DNN | Image | :x: |
-| Guided Backprop | | Captum **(WIP)** | | | :x: |
-| Deconvolution | | Captum **(WIP)** | | | :x: |
-| Feature Ablation | | Captum **(WIP)** | | | :x: |
-| Occlusion | | Captum **(WIP)** | | | :x: |
-| Feature Permutation | | Captum **(WIP)** | | | :x: |
+| DeepLIFT<sup>1</sup> | [link](https://arxiv.org/abs/1704.02685) | [Captum **(UNR)**](https://captum.ai/api/deep_lift.html) | DNN | Image | :x: |
+| Guided Backprop | [link](https://arxiv.org/abs/1412.6806) | [Captum **(UNR)**](https://captum.ai/api/guided_backprop.html) | DNN | Image | :x: |
+| Deconvolution | [link](https://arxiv.org/abs/1311.2901) | [Captum **(UNR)**](https://captum.ai/api/deconvolution.html) | CNN | Image | :x: |
+| Feature Ablation | None | [Captum **(UNR)**](https://captum.ai/api/feature_ablation.html) | None | Any | :x: |
+| Occlusion | [link](https://arxiv.org/abs/1311.2901) | [Captum **(UNR)**](https://captum.ai/api/occlusion.html) | none | Any | :x: |
+| Feature Permutation | [link](https://christophm.github.io/interpretable-ml-book/feature-importance.html) | [Captum **(UNR)**](https://captum.ai/api/feature_permutation.html) | None | Any | :x: |
 | LIME | [link](https://www.kdd.org/kdd2016/papers/files/rfp0573-ribeiroA.pdf) | [Github](https://github.com/marcotcr/lime) | None | Any | :x: |
 | SHAP | [link](https://arxiv.org/abs/1705.07874) | [Github](https://github.com/slundberg/shap) | None | Any | :x: |
 | CGI | [link](https://arxiv.org/abs/1905.12152) | None | Differentiable | Any | :x: |
@@ -22,6 +26,7 @@ Benchmark for ML interpretability techniques.
 | CAM | [link](http://cnnlocalization.csail.mit.edu/Zhou_Learning_Deep_Features_CVPR_2016_paper.pdf) | [Github](https://github.com/zhoubolei/CAM) | CNN (GAP layer) | Image | :x: |
 | Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Github](https://github.com/ramprs/grad-cam/) | CNN | Image | :x: |
 | Guided Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Github](https://github.com/ramprs/grad-cam/) | CNN | Image | :x: |
+| Masking model | [link](https://arxiv.org/abs/1705.07857) | None | Differentiable | Image | :x: |
 
 <sup>1</sup>: DeepLIFT has 3 assignment rules (Linear, RC, RS), so should be split in DeepLIFT-{Linear,RC,RS}.
 
@@ -85,4 +90,14 @@ Applicable to all techniques.
 
 - w.r.t. dimensionality: Measure execution time (assess theoretical complexity) per sample for varying dimensionality :x:
 - w.r.t. amount of explanations: Measure average execution time per sample for varying amount of samples :x:
+
+#### From sources
+- Sensitivity-n: Towards Better Understanding of Gradient-Based Attribution Methods for Deep Neural Networks. :x:
+- Impact score: Do Explanation Reflect Decisions? A Machine-centric Strategy to Quantify the Performance of Explainability Algorithms :x:
+- Impact coverage: Do Explanation Reflect Decisions? A Machine-centric Strategy to Quantify the Performance of Explainability Algorithms :x:
+- AIC/SIC: XRAI: Better Attributions Through Regions :x:
+
+
+
+
 
