@@ -1,22 +1,31 @@
-from models import MNISTCNN
-from datasets import MNIST
-from methods import Gradient, InputXGradient, IntegratedGradients, Random, Method
+from models import MNISTCNN, CifarResNet
+from datasets import MNIST, Cifar
+from methods import Gradient, InputXGradient, IntegratedGradients, Random
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Iterable
 import torch
 
 
 DATA_ROOT = "../../data"
-DATASET = "MNIST"
-DOWNLOAD_DATASET = True
-MODEL = "CNN"
-BATCH_SIZE = 64
+DATASET = "CIFAR10"
+DOWNLOAD_DATASET = False
+MODEL = "resnet20"
+BATCH_SIZE = 32
 N_BATCHES = 4
-N_PIXELS = 256
+N_PIXELS = 128
 
 datasets = {
-    "MNIST": {"constructor": MNIST, "models": {"CNN": MNISTCNN}}
+    "MNIST": {"constructor": MNIST, "models": {"CNN": MNISTCNN}},
+    "CIFAR10": {"constructor": lambda **kwargs: Cifar(version="cifar10", **kwargs),
+                "models": {"resnet20": lambda: CifarResNet(dataset="cifar10", resnet="resnet20"),
+                           "resnet32": lambda: CifarResNet(dataset="cifar10", resnet="resnet32"),
+                           "resnet44": lambda: CifarResNet(dataset="cifar10", resnet="resnet44"),
+                           "resnet56": lambda: CifarResNet(dataset="cifar10", resnet="resnet56")}},
+    "CIFAR100": {"constructor": lambda **kwargs: Cifar(version="cifar100", **kwargs),
+                 "models": {"resnet20": lambda: CifarResNet(dataset="cifar100", resnet="resnet20"),
+                            "resnet32": lambda: CifarResNet(dataset="cifar100", resnet="resnet32"),
+                            "resnet44": lambda: CifarResNet(dataset="cifar100", resnet="resnet44"),
+                            "resnet56": lambda: CifarResNet(dataset="cifar100", resnet="resnet56")}}
 }
 
 dataset_constructor = datasets[DATASET]["constructor"]
@@ -36,6 +45,7 @@ fig = plt.figure()
 ax = plt.axes()
 x = np.linspace(0, N_PIXELS, N_PIXELS)
 for key in methods:
+    print(f"Method: {key}")
     result = []
     iterator = iter(dataset.get_test_data())
     for b in range(N_BATCHES):

@@ -117,14 +117,14 @@ class CifarResNet(Model):
             "resnet20": [3, 3, 3], "resnet32": [5, 5, 5],
             "resnet44": [7, 7, 7], "resnet56": [9, 9, 9]
         }
-        self.model = Net(BasicBlock, layers[resnet], num_classes=10 if dataset is "cifar10" else 100)
+        self.net = Net(BasicBlock, layers[resnet], num_classes=10 if dataset is "cifar10" else 100)
         if not path.exists(params_loc):
             url = base_url + pretrained_settings[dataset][resnet]
             print(f"Downloading parameters from {url}...")
             urllib.request.urlretrieve(url, params_loc)
             print(f"Download finished.")
-        self.model.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
+        self.net.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
 
     def predict(self, x):
-        self.model.eval()
-        return self.model(x)
+        self.net.eval()
+        return self.net(x)
