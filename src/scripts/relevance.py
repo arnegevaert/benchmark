@@ -1,4 +1,4 @@
-from models import MNISTCNN, Model
+from models import MNISTCNN
 from datasets import MNIST
 from methods import Gradient, InputXGradient, IntegratedGradients, Random, Method
 import matplotlib.pyplot as plt
@@ -9,12 +9,21 @@ import torch
 
 DATA_ROOT = "../../data"
 DATASET = "MNIST"
+DOWNLOAD_DATASET = True
+MODEL = "CNN"
 BATCH_SIZE = 64
 N_BATCHES = 4
 N_PIXELS = 256
 
-model = MNISTCNN()
-dataset = MNIST(batch_size=BATCH_SIZE, shuffle=False, download=False)
+datasets = {
+    "MNIST": {"constructor": MNIST, "models": {"CNN": MNISTCNN}}
+}
+
+dataset_constructor = datasets[DATASET]["constructor"]
+model_constructor = datasets[DATASET]["models"][MODEL]
+
+model = model_constructor()
+dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOWNLOAD_DATASET)
 
 methods = {
     "Gradient": Gradient(model.net),

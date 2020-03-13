@@ -4,3 +4,4 @@ data
 *.swp
 *__pycache__
 *.pt
+*.pth
