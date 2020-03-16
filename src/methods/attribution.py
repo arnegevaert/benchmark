@@ -37,14 +37,15 @@ class GuidedGradCAM(Method):
 
 
 class Occlusion(Method):
-    def __init__(self, net: nn.Module):
+    def __init__(self, net: nn.Module, sliding_window_shapes):
         super().__init__()
         self.net = net
         self.occlusion = attr.Occlusion(net)
+        self.sliding_window_shapes = sliding_window_shapes
 
     def attribute(self, x, target):
         self.net.eval()
-        return self.occlusion.attribute(x, target=target, sliding_window_shapes=(1, 1, 1))
+        return self.occlusion.attribute(x, target=target, sliding_window_shapes=self.sliding_window_shapes)
 
 
 # TODO by default, DeepLift is equivalent to InputXGradient. Read DeepLift paper for more details.

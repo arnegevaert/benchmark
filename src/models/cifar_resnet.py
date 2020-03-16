@@ -55,6 +55,7 @@ class Net(nn.Module):
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(64 * block.expansion, num_classes)
+        self.softmax = nn.Softmax(dim=1)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -87,6 +88,8 @@ class Net(nn.Module):
 
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
+        # TODO use logits or softmax??
+        #return self.softmax(self.fc(x))
         return self.fc(x)
 
 

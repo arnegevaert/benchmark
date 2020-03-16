@@ -6,9 +6,9 @@ import torch
 
 
 DATA_ROOT = "../../data"
-DATASET = "MNIST"
+DATASET = "CIFAR10"
 DOWNLOAD_DATASET = False
-MODEL = "CNN"
+MODEL = "resnet20"
 BATCH_SIZE = 32
 N_BATCHES = 4
 N_PIXELS = 128
@@ -17,6 +17,8 @@ PIXEL_STEP = 4
 dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
 model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
 method_constructors = get_all_method_constructors()
+
+all_kwargs = {"Occlusion": {"sliding_window_shapes": (1, 1, 1)}}
 
 model = model_constructor()
 dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOWNLOAD_DATASET)
@@ -28,7 +30,9 @@ for key in method_constructors:
     print(f"Method: {key}")
     result = []
     iterator = iter(dataset.get_test_data())
-    method = method_constructors[key](model)
+    # Get any provided kwargs for this method
+    kwargs = all_kwargs.get(key, {})
+    method = method_constructors[key](model, **kwargs)
     for b in range(N_BATCHES):
         print(f"Batch {b+1}/{N_BATCHES}")
         samples, labels = next(iterator)
