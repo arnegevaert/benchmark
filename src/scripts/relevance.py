@@ -5,18 +5,14 @@ import numpy as np
 import torch
 
 
-def mask_most_important(x, attr):
-    pass
-
-
 DATA_ROOT = "../../data"
-DATASET = "CIFAR10"
+DATASET = "MNIST"
 DOWNLOAD_DATASET = False
-MODEL = "resnet20"
+MODEL = "CNN"
 BATCH_SIZE = 32
 N_BATCHES = 4
 N_PIXELS = 128
-PIXEL_STEP = 1
+PIXEL_STEP = 4
 
 dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
 model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
@@ -27,7 +23,7 @@ dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOW
 
 fig = plt.figure()
 ax = plt.axes()
-x = np.linspace(0, N_PIXELS, N_PIXELS//PIXEL_STEP)
+x = np.array(range(1, N_PIXELS, PIXEL_STEP))
 for key in method_constructors:
     print(f"Method: {key}")
     result = []
@@ -37,20 +33,20 @@ for key in method_constructors:
         print(f"Batch {b+1}/{N_BATCHES}")
         samples, labels = next(iterator)
         batch_result = []
-        # [batch_size, *sample_shape]
-        attrs = method.attribute(samples, target=labels)
-        # Flatten each sample in order to get argmax per sample
+        attrs = method.attribute(samples, target=labels)  # [batch_size, *sample_shape]
+        # Flatten each sample in order to sort indices per sample
         attrs = attrs.reshape(attrs.shape[0], -1)  # [batch_size, -1]
-        for i in range(0, N_PIXELS, PIXEL_STEP):
-            # Get maximum attribution index for each image
-            amax = torch.argmax(attrs, 1)  # [batch_size]
-            # Mask value in images
-            # unravel_index converts flat index (indices) to given shape
-            unraveled_amax = np.unravel_index(amax, samples.shape[1:])
-            samples[(range(BATCH_SIZE), *unraveled_amax)] = dataset.mask_value
-            # Set original attribution values to 0
-            attrs[(range(BATCH_SIZE), amax)] = 0
-            # Get model output on masked image
+        # Sort indices of attrs in ascending order
+        sorted_indices = attrs.argsort()  # [batch_size, -1]
+        for i in range(1, N_PIXELS, PIXEL_STEP):
+            # Get indices of i most important inputs
+            to_mask = sorted_indices[:, -i:]  # [batch_size, i]
+            unraveled = np.unravel_index(to_mask, samples.shape[1:])
+            # Mask i most important inputs
+            # Batch_dim: [BATCH_SIZE, i] (made to match unravel_index output)
+            batch_dim = np.array(list(range(BATCH_SIZE))*i).reshape(-1, BATCH_SIZE).transpose()
+            samples[(batch_dim, *unraveled)] = dataset.mask_value
+            # Get predictions for result
             batch_result.append(model.predict(samples).gather(1, labels.reshape(-1, 1)))
         batch_result = torch.cat(batch_result, 1)  # [batch_size, n_pixels]
         result.append(batch_result)
