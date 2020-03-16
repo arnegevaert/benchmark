@@ -1,6 +1,5 @@
-from models import MNISTCNN, CifarResNet
-from datasets import MNIST, Cifar
 from methods import Gradient, InputXGradient, IntegratedGradients, Random
+from vars import DATASET_MODELS
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -14,22 +13,8 @@ BATCH_SIZE = 32
 N_BATCHES = 4
 N_PIXELS = 128
 
-datasets = {
-    "MNIST": {"constructor": MNIST, "models": {"CNN": MNISTCNN}},
-    "CIFAR10": {"constructor": lambda **kwargs: Cifar(version="cifar10", **kwargs),
-                "models": {"resnet20": lambda: CifarResNet(dataset="cifar10", resnet="resnet20"),
-                           "resnet32": lambda: CifarResNet(dataset="cifar10", resnet="resnet32"),
-                           "resnet44": lambda: CifarResNet(dataset="cifar10", resnet="resnet44"),
-                           "resnet56": lambda: CifarResNet(dataset="cifar10", resnet="resnet56")}},
-    "CIFAR100": {"constructor": lambda **kwargs: Cifar(version="cifar100", **kwargs),
-                 "models": {"resnet20": lambda: CifarResNet(dataset="cifar100", resnet="resnet20"),
-                            "resnet32": lambda: CifarResNet(dataset="cifar100", resnet="resnet32"),
-                            "resnet44": lambda: CifarResNet(dataset="cifar100", resnet="resnet44"),
-                            "resnet56": lambda: CifarResNet(dataset="cifar100", resnet="resnet56")}}
-}
-
-dataset_constructor = datasets[DATASET]["constructor"]
-model_constructor = datasets[DATASET]["models"][MODEL]
+dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
+model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
 
 model = model_constructor()
 dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOWNLOAD_DATASET)
