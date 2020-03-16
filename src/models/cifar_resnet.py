@@ -8,7 +8,7 @@ Based on: https://github.com/chenyaofo/CIFAR-pretrained-models/blob/master/cifar
 import torch
 import urllib
 import torch.nn as nn
-from models import Model
+from models import ConvolutionalNetworkModel
 from os import path
 
 
@@ -55,6 +55,7 @@ class Net(nn.Module):
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(64 * block.expansion, num_classes)
+        self.softmax = nn.Softmax(dim=1)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -87,6 +88,8 @@ class Net(nn.Module):
 
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
+        # TODO use logits or softmax??
+        #return self.softmax(self.fc(x))
         return self.fc(x)
 
 
@@ -105,7 +108,7 @@ pretrained_settings = {
 }
 
 
-class CifarResNet(Model):
+class CifarResNet(ConvolutionalNetworkModel):
     def __init__(self, dataset="cifar10", resnet="resnet20"):
         super().__init__()
         if dataset not in ["cifar10", "cifar100"]:
@@ -128,3 +131,10 @@ class CifarResNet(Model):
     def predict(self, x):
         self.net.eval()
         return self.net(x)
+
+    def get_last_conv_layer(self) -> nn.Module:
+        last_block = self.net.layer3[-1]  # Last BasicBlock of layer 3
+        return last_block.conv2  # Second convolutional layer of last BasicBlock
+
+    def get_conv_net(self) -> nn.Module:
+        return self.net

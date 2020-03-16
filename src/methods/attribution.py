@@ -1,40 +1,52 @@
 from methods import Method
+from models import ConvolutionalNetworkModel
 from captum import attr
 import torch.nn as nn
 import torch
 
 
-class Gradient(Method):
-    def __init__(self, net: nn.Module):
+class SimpleCaptumMethod(Method):
+    METHODS = {
+        "Gradient": attr.Saliency,
+        "InputXGradient": attr.InputXGradient,
+        "IntegratedGradients": attr.IntegratedGradients,
+        "GuidedBackprop": attr.GuidedBackprop,
+        "Deconvolution": attr.Deconvolution,
+        "Ablation": attr.FeatureAblation,
+    }
+
+    def __init__(self, net: nn.Module, method: str):
         super().__init__()
         self.net = net
-        self.saliency = attr.Saliency(net)
+        self.method = SimpleCaptumMethod.METHODS[method](net)
 
     def attribute(self, x, target):
         self.net.eval()
-        return self.saliency.attribute(x, target=target)
+        return self.method.attribute(x, target=target)
 
 
-class InputXGradient(Method):
-    def __init__(self, net: nn.Module):
+class GuidedGradCAM(Method):
+    def __init__(self, model: ConvolutionalNetworkModel):
         super().__init__()
-        self.net = net
-        self.input_x_grad = attr.InputXGradient(net)
+        self.net = model.get_conv_net()
+        self.guided_gradcam = attr.GuidedGradCam(self.net, model.get_last_conv_layer())
 
     def attribute(self, x, target):
         self.net.eval()
-        return self.input_x_grad.attribute(x, target=target)
+        return self.guided_gradcam.attribute(x, target=target)
 
 
-class IntegratedGradients(Method):
-    def __init__(self, net: nn.Module):
+class Occlusion(Method):
+    def __init__(self, net: nn.Module, sliding_window_shapes):
         super().__init__()
         self.net = net
-        self.integrated_gradients = attr.IntegratedGradients(net)
+        self.occlusion = attr.Occlusion(net)
+        self.sliding_window_shapes = sliding_window_shapes
 
     def attribute(self, x, target):
         self.net.eval()
-        return self.integrated_gradients.attribute(x, target=target)
+        return self.occlusion.attribute(x, target=target, sliding_window_shapes=self.sliding_window_shapes)
+
 
 # TODO by default, DeepLift is equivalent to InputXGradient. Read DeepLift paper for more details.
 """
@@ -48,6 +60,7 @@ class DeepLift(Method):
         self.net.eval()
         return self.deeplift.attribute(x, target=target)
 """
+
 
 # This is not really an attribution technique, just to establish a baseline
 class Random(Method):
