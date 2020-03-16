@@ -3,6 +3,7 @@ from captum import attr
 import torch.nn as nn
 import torch
 
+# TODO lot of duplicated code here
 
 class Gradient(Method):
     def __init__(self, net: nn.Module):
@@ -35,6 +36,40 @@ class IntegratedGradients(Method):
     def attribute(self, x, target):
         self.net.eval()
         return self.integrated_gradients.attribute(x, target=target)
+
+
+class GuidedBackprop(Method):
+    def __init__(self, net: nn.Module):
+        super().__init__()
+        self.net = net
+        self.guided_backprop = attr.GuidedBackprop(net)
+
+    def attribute(self, x, target):
+        self.net.eval()
+        return self.guided_backprop.attribute(x, target=target)
+
+
+class Deconvolution(Method):
+    def __init__(self, net: nn.Module):
+        super().__init__()
+        self.net = net
+        self.deconvolution = attr.Deconvolution(net)
+
+    def attribute(self, x, target):
+        self.net.eval()
+        return self.deconvolution.attribute(x, target=target)
+
+
+class GuidedGradCAM(Method):
+    def __init__(self, net: nn.Module):
+        super().__init__()
+        self.net = net
+        self.guided_gradcam = attr.GuidedGradCam(net)
+
+    def attribute(self, x, target):
+        self.net.eval()
+        return self.guided_gradcam.attribute(x, target=target)
+
 
 # TODO by default, DeepLift is equivalent to InputXGradient. Read DeepLift paper for more details.
 """

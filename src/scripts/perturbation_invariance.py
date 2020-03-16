@@ -1,15 +1,15 @@
 from datasets import PerturbedImageDataset
 from vars import DATASET_MODELS
-from methods import Gradient, InputXGradient, IntegratedGradients
+from methods import get_all_method_constructors
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
-GENERATE = True
+GENERATE = False
 DATA_ROOT = "../../data"
-DATASET = "CIFAR10"
+DATASET = "MNIST"
 PERT_FN = "mean_shift"
-MODEL = "resnet20"
+MODEL = "CNN"
 BATCH_SIZE = 4
 N_BATCHES = 128
 
@@ -18,11 +18,7 @@ dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
 model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
 model = model_constructor()
 
-methods = {
-    "Gradient": Gradient(model.net),
-    "InputXGradient": InputXGradient(model.net),
-    "IntegratedGradients": IntegratedGradients(model.net)
-}
+method_constructors = get_all_method_constructors(include_random=False)
 
 if GENERATE:
     dataset = dataset_constructor(batch_size=BATCH_SIZE, download=False, shuffle=True)
@@ -36,9 +32,9 @@ else:
 
 fig = plt.figure()
 ax = plt.axes()
-for key in methods:
+for key in method_constructors:
     print(f"Calculating for {key}...")
-    method = methods[key]
+    method = method_constructors[key](model)
     diffs = [[] for _ in range(len(perturbed_dataset.get_levels()))]
     for b, b_dict in enumerate(perturbed_dataset):
         print(f"Batch {b+1}/{N_BATCHES}")

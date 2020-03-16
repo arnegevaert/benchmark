@@ -1,4 +1,4 @@
-from methods import Gradient, InputXGradient, IntegratedGradients, Random
+from methods import get_all_method_constructors
 from vars import DATASET_MODELS
 import matplotlib.pyplot as plt
 import numpy as np
@@ -6,40 +6,34 @@ import torch
 
 
 DATA_ROOT = "../../data"
-DATASET = "CIFAR10"
+DATASET = "MNIST"
 DOWNLOAD_DATASET = False
-MODEL = "resnet20"
+MODEL = "CNN"
 BATCH_SIZE = 32
 N_BATCHES = 4
 N_PIXELS = 128
 
 dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
 model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
+method_constructors = get_all_method_constructors()
 
 model = model_constructor()
 dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOWNLOAD_DATASET)
 
-methods = {
-    "Gradient": Gradient(model.net),
-    "InputXGradient": InputXGradient(model.net),
-    "IntegratedGradients": IntegratedGradients(model.net),
-    "Random": Random()
-}
-
 fig = plt.figure()
 ax = plt.axes()
 x = np.linspace(0, N_PIXELS, N_PIXELS)
-for key in methods:
+for key in method_constructors:
     print(f"Method: {key}")
     result = []
     iterator = iter(dataset.get_test_data())
+    method = method_constructors[key](model)
     for b in range(N_BATCHES):
         print(f"Batch {b+1}/{N_BATCHES}")
         samples, labels = next(iterator)
-        print(labels)
         batch_result = []
         # [batch_size, *sample_shape]
-        attrs = methods[key].attribute(samples, target=labels)
+        attrs = method.attribute(samples, target=labels)
         # Flatten each sample in order to get argmax per sample
         attrs = attrs.reshape(attrs.shape[0], -1)  # [batch_size, -1]
         for i in range(N_PIXELS):
