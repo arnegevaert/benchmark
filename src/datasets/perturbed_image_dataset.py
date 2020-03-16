@@ -3,6 +3,7 @@ import torch
 import json
 import numpy as np
 import warnings
+import os
 from os import path
 from typing import Iterator
 
@@ -15,6 +16,8 @@ class PerturbedImageDataset:
         self.batch_size = batch_size
         self.data_location = data_location
         self.filename = path.join(data_location, name, "dataset.hdf5")
+        if not path.exists(self.filename):
+            raise FileNotFoundError("Dataset not found, has it been generated?")
         self.metadata_filename = path.join(data_location, name, "meta.json")
         self.file = h5py.File(self.filename, 'r')
         self.metadata = json.load(open(self.metadata_filename))
@@ -47,6 +50,8 @@ class PerturbedImageDataset:
         }
         filename = path.join(data_location, name, "dataset.hdf5")
         metadata_filename = path.join(data_location, name, "meta.json")
+        if not path.exists(filename):
+            os.makedirs(path.join(data_location, name))
         file = h5py.File(filename, 'w')
         datasets_created = False
         row_count = 0
@@ -104,6 +109,7 @@ class PerturbedImageDataset:
                     file[f"level_{i}"][row_count:] = l_batch
                 successful_batches += 1
                 row_count += batch_size
+                print(f"Batch successful: {successful_batches}/{n_batches}")
             else:
                 print("Skipped batch.")
         # Save metadata

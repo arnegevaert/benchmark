@@ -1,18 +1,22 @@
-from datasets import PerturbedImageDataset, MNIST
-from models import MNISTCNN
-from itertools import islice
+from datasets import PerturbedImageDataset
+from vars import DATASET_MODELS
 from methods import Gradient, InputXGradient, IntegratedGradients
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
-GENERATE = False
+GENERATE = True
 DATA_ROOT = "../../data"
-DATASET = "MNIST_noise"
+DATASET = "CIFAR10"
+PERT_FN = "mean_shift"
+MODEL = "resnet20"
 BATCH_SIZE = 4
 N_BATCHES = 128
 
-model = MNISTCNN()
+dataset_name = f"{DATASET}_{PERT_FN}"
+dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
+model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
+model = model_constructor()
 
 methods = {
     "Gradient": Gradient(model.net),
@@ -21,14 +25,14 @@ methods = {
 }
 
 if GENERATE:
-    dataset = MNIST(batch_size=BATCH_SIZE, download=False, shuffle=True)
+    dataset = dataset_constructor(batch_size=BATCH_SIZE, download=False, shuffle=True)
     iterator = iter(dataset.get_test_data())
-    perturbed_dataset = PerturbedImageDataset.generate("../../data", "MNIST_noise", iterator, model,
-                                                       perturbation_fn="noise",
+    perturbed_dataset = PerturbedImageDataset.generate(DATA_ROOT, dataset_name, iterator, model,
+                                                       perturbation_fn=PERT_FN,
                                                        perturbation_levels=np.linspace(0, 2, 10),
                                                        n_batches=N_BATCHES)
 else:
-    perturbed_dataset = PerturbedImageDataset(DATA_ROOT, DATASET, BATCH_SIZE)
+    perturbed_dataset = PerturbedImageDataset(DATA_ROOT, dataset_name, BATCH_SIZE)
 
 fig = plt.figure()
 ax = plt.axes()

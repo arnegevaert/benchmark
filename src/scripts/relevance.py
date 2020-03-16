@@ -1,20 +1,23 @@
-from models import MNISTCNN, Model
-from datasets import MNIST
-from methods import Gradient, InputXGradient, IntegratedGradients, Random, Method
+from methods import Gradient, InputXGradient, IntegratedGradients, Random
+from vars import DATASET_MODELS
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Iterable
 import torch
 
 
 DATA_ROOT = "../../data"
-DATASET = "MNIST"
-BATCH_SIZE = 64
+DATASET = "CIFAR10"
+DOWNLOAD_DATASET = False
+MODEL = "resnet20"
+BATCH_SIZE = 32
 N_BATCHES = 4
-N_PIXELS = 256
+N_PIXELS = 128
 
-model = MNISTCNN()
-dataset = MNIST(batch_size=BATCH_SIZE, shuffle=False, download=False)
+dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
+model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
+
+model = model_constructor()
+dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOWNLOAD_DATASET)
 
 methods = {
     "Gradient": Gradient(model.net),
@@ -27,6 +30,7 @@ fig = plt.figure()
 ax = plt.axes()
 x = np.linspace(0, N_PIXELS, N_PIXELS)
 for key in methods:
+    print(f"Method: {key}")
     result = []
     iterator = iter(dataset.get_test_data())
     for b in range(N_BATCHES):
