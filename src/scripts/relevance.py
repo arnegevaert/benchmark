@@ -5,13 +5,18 @@ import numpy as np
 import torch
 
 
+def mask_most_important(x, attr):
+    pass
+
+
 DATA_ROOT = "../../data"
-DATASET = "MNIST"
+DATASET = "CIFAR10"
 DOWNLOAD_DATASET = False
-MODEL = "CNN"
+MODEL = "resnet20"
 BATCH_SIZE = 32
 N_BATCHES = 4
 N_PIXELS = 128
+PIXEL_STEP = 1
 
 dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
 model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
@@ -22,7 +27,7 @@ dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOW
 
 fig = plt.figure()
 ax = plt.axes()
-x = np.linspace(0, N_PIXELS, N_PIXELS)
+x = np.linspace(0, N_PIXELS, N_PIXELS//PIXEL_STEP)
 for key in method_constructors:
     print(f"Method: {key}")
     result = []
@@ -36,7 +41,7 @@ for key in method_constructors:
         attrs = method.attribute(samples, target=labels)
         # Flatten each sample in order to get argmax per sample
         attrs = attrs.reshape(attrs.shape[0], -1)  # [batch_size, -1]
-        for i in range(N_PIXELS):
+        for i in range(0, N_PIXELS, PIXEL_STEP):
             # Get maximum attribution index for each image
             amax = torch.argmax(attrs, 1)  # [batch_size]
             # Mask value in images

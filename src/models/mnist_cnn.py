@@ -1,9 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
 from os import path, getenv
-from models.model import Model
+from models.model import ConvolutionalNetworkModel
 
 DEVICE = torch.device(getenv("TORCH_DEVICE", "cpu"))
 
@@ -38,7 +37,7 @@ class Net(nn.Module):
         return F.softmax(logits, dim=1)
 
 
-class MNISTCNN(Model):
+class MNISTCNN(ConvolutionalNetworkModel):
     def __init__(self):
         super().__init__()
         self.net = Net().to(DEVICE)
@@ -53,3 +52,9 @@ class MNISTCNN(Model):
     def predict(self, x):
         self.net.eval()
         return self.net(x)
+
+    def get_conv_net(self) -> nn.Module:
+        return self.net
+
+    def get_last_conv_layer(self) -> nn.Module:
+        return self.net.conv2

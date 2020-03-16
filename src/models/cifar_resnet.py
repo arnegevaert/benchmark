@@ -8,7 +8,7 @@ Based on: https://github.com/chenyaofo/CIFAR-pretrained-models/blob/master/cifar
 import torch
 import urllib
 import torch.nn as nn
-from models import Model
+from models import ConvolutionalNetworkModel
 from os import path
 
 
@@ -105,7 +105,7 @@ pretrained_settings = {
 }
 
 
-class CifarResNet(Model):
+class CifarResNet(ConvolutionalNetworkModel):
     def __init__(self, dataset="cifar10", resnet="resnet20"):
         super().__init__()
         if dataset not in ["cifar10", "cifar100"]:
@@ -128,3 +128,10 @@ class CifarResNet(Model):
     def predict(self, x):
         self.net.eval()
         return self.net(x)
+
+    def get_last_conv_layer(self) -> nn.Module:
+        last_block = self.net.layer3[-1]  # Last BasicBlock of layer 3
+        return last_block.conv2  # Second convolutional layer of last BasicBlock
+
+    def get_conv_net(self) -> nn.Module:
+        return self.net

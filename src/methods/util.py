@@ -5,8 +5,10 @@ METHODS = {
     "InputXGradient": lambda model: InputXGradient(model.net),
     "IntegratedGradients": lambda model: IntegratedGradients(model.net),
     "GuidedBackprop": lambda model: GuidedBackprop(model.net),
-    #"GuidedGradCAM": lambda model: GuidedGradCAM(model.net),
+    "GuidedGradCAM": lambda model: GuidedGradCAM(model),
     "Deconvolution": lambda model: Deconvolution(model.net),
+    "Ablation": lambda model: Ablation(model.net),
+    "Occlusion": lambda model: Occlusion(model.net),
     "Random": lambda _: Random()
 }
 

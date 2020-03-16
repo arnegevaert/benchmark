@@ -1,4 +1,5 @@
 from methods import Method
+from models import ConvolutionalNetworkModel
 from captum import attr
 import torch.nn as nn
 import torch
@@ -61,14 +62,36 @@ class Deconvolution(Method):
 
 
 class GuidedGradCAM(Method):
-    def __init__(self, net: nn.Module):
+    def __init__(self, model: ConvolutionalNetworkModel):
         super().__init__()
-        self.net = net
-        self.guided_gradcam = attr.GuidedGradCam(net)
+        self.net = model.get_conv_net()
+        self.guided_gradcam = attr.GuidedGradCam(self.net, model.get_last_conv_layer())
 
     def attribute(self, x, target):
         self.net.eval()
         return self.guided_gradcam.attribute(x, target=target)
+
+
+class Ablation(Method):
+    def __init__(self, net: nn.Module):
+        super().__init__()
+        self.net = net
+        self.ablation = attr.FeatureAblation(net)
+
+    def attribute(self, x, target):
+        self.net.eval()
+        return self.ablation.attribute(x, target=target)
+
+
+class Occlusion(Method):
+    def __init__(self, net: nn.Module):
+        super().__init__()
+        self.net = net
+        self.occlusion = attr.Occlusion(net)
+
+    def attribute(self, x, target):
+        self.net.eval()
+        return self.occlusion.attribute(x, target=target, sliding_window_shapes=(1, 1, 1))
 
 
 # TODO by default, DeepLift is equivalent to InputXGradient. Read DeepLift paper for more details.
