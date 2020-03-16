@@ -4,61 +4,25 @@ from captum import attr
 import torch.nn as nn
 import torch
 
-# TODO lot of duplicated code here
 
-class Gradient(Method):
-    def __init__(self, net: nn.Module):
+class SimpleCaptumMethod(Method):
+    METHODS = {
+        "Gradient": attr.Saliency,
+        "InputXGradient": attr.InputXGradient,
+        "IntegratedGradients": attr.IntegratedGradients,
+        "GuidedBackprop": attr.GuidedBackprop,
+        "Deconvolution": attr.Deconvolution,
+        "Ablation": attr.FeatureAblation,
+    }
+
+    def __init__(self, net: nn.Module, method: str):
         super().__init__()
         self.net = net
-        self.saliency = attr.Saliency(net)
+        self.method = SimpleCaptumMethod.METHODS[method](net)
 
     def attribute(self, x, target):
         self.net.eval()
-        return self.saliency.attribute(x, target=target)
-
-
-class InputXGradient(Method):
-    def __init__(self, net: nn.Module):
-        super().__init__()
-        self.net = net
-        self.input_x_grad = attr.InputXGradient(net)
-
-    def attribute(self, x, target):
-        self.net.eval()
-        return self.input_x_grad.attribute(x, target=target)
-
-
-class IntegratedGradients(Method):
-    def __init__(self, net: nn.Module):
-        super().__init__()
-        self.net = net
-        self.integrated_gradients = attr.IntegratedGradients(net)
-
-    def attribute(self, x, target):
-        self.net.eval()
-        return self.integrated_gradients.attribute(x, target=target)
-
-
-class GuidedBackprop(Method):
-    def __init__(self, net: nn.Module):
-        super().__init__()
-        self.net = net
-        self.guided_backprop = attr.GuidedBackprop(net)
-
-    def attribute(self, x, target):
-        self.net.eval()
-        return self.guided_backprop.attribute(x, target=target)
-
-
-class Deconvolution(Method):
-    def __init__(self, net: nn.Module):
-        super().__init__()
-        self.net = net
-        self.deconvolution = attr.Deconvolution(net)
-
-    def attribute(self, x, target):
-        self.net.eval()
-        return self.deconvolution.attribute(x, target=target)
+        return self.method.attribute(x, target=target)
 
 
 class GuidedGradCAM(Method):
@@ -70,17 +34,6 @@ class GuidedGradCAM(Method):
     def attribute(self, x, target):
         self.net.eval()
         return self.guided_gradcam.attribute(x, target=target)
-
-
-class Ablation(Method):
-    def __init__(self, net: nn.Module):
-        super().__init__()
-        self.net = net
-        self.ablation = attr.FeatureAblation(net)
-
-    def attribute(self, x, target):
-        self.net.eval()
-        return self.ablation.attribute(x, target=target)
 
 
 class Occlusion(Method):
@@ -106,6 +59,7 @@ class DeepLift(Method):
         self.net.eval()
         return self.deeplift.attribute(x, target=target)
 """
+
 
 # This is not really an attribution technique, just to establish a baseline
 class Random(Method):
