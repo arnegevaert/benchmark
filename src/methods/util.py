@@ -23,3 +23,7 @@ def get_method_constructors(names=None):
     if names:
         return {k: METHODS[k] for k in names}
     return METHODS
+
+
+def get_method(name, model):
+    return METHODS[name](model)
