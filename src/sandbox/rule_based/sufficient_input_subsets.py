@@ -65,7 +65,7 @@ if __name__ == '__main__':
     y_train = np.array(y_train)
     """
 
-    model_path = "../models/saved_models/mnist_cnn.pth"
+    model_path = "../../models/saved_models/mnist_cnn.pth"
     net = Net()
     net.load_state_dict(torch.load(model_path))
     net.eval()

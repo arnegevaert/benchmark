@@ -38,13 +38,12 @@ for key in method_constructors:
     diffs = [[] for _ in range(len(perturbed_dataset.get_levels()))]
     for b, b_dict in enumerate(perturbed_dataset):
         print(f"Batch {b+1}/{N_BATCHES}")
-        orig = torch.tensor(b_dict["original"])
-        labels = torch.tensor(b_dict["labels"])
-        orig_attr = method.attribute(orig, target=labels).detach()
+        orig = torch.tensor(b_dict["original"])  # [batch_size, *sample_shape]
+        labels = torch.tensor(b_dict["labels"])  # [batch_size]
+        orig_attr = method.attribute(orig, target=labels).detach()  # [batch_size, *sample_shape]
         for n_l, noise_level_batch in enumerate(b_dict["perturbed"]):
-            noise_level_batch = torch.tensor(noise_level_batch)
-            perturbed_attr = method.attribute(noise_level_batch, target=labels).detach()
-            # [batch_size]
+            noise_level_batch = torch.tensor(noise_level_batch)  # [batch_size, *sample_shape]
+            perturbed_attr = method.attribute(noise_level_batch, target=labels).detach()  # [batch_size, *sample_shape]
             avg_diff = np.average(np.abs(orig_attr - perturbed_attr))
             diffs[n_l].append(avg_diff)
     diffs = np.array(diffs)

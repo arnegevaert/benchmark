@@ -10,5 +10,5 @@ iterator = iter(dataset.get_test_data())
 
 images, labels = next(iterator)
 attrs = method.attribute(images, target=labels)
-#plot_images(images, 4, 2)
+# plot_images(images, 4, 2)
 plot_attributions(images, attrs, 4, 2, absolute=False)
