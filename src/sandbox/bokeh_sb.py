@@ -19,7 +19,7 @@ def plot_image(img):
     if type(img) == torch.Tensor:
         img = img.detach().numpy()
 
-    plot_images(np.expand_dims(img, 0), 1, 1)
+    plot_images(np.expand_dims(img, 0), 1, 1)  # Use MPL plots to compare
 
     is_grayscale = img.shape[0] == 1
     # Convert range to 0..255 uint32
@@ -43,10 +43,11 @@ def plot_image(img):
     p.grid.visible = False
     plot_fn = p.image if is_grayscale else p.image_rgba
     plot_fn([img], x=0, y=0, dw=1, dh=1)
-    show(p)
+    return p
 
 
-plot_image(images[0])
+p = plot_image(images[0])
+show(p)
 
 
 """
