@@ -63,7 +63,8 @@ class Report:
                 img = rgba_img
             img = np.flip(img, axis=0)
             concat_imgs.append(img)
-        concat_imgs = np.concatenate(concat_imgs, axis=-1)
+        concat_axis = -1 if is_grayscale else -2
+        concat_imgs = np.concatenate(concat_imgs, axis=concat_axis)
         p = plotting.figure(width=200*n_imgs, height=200)
         p.toolbar_location = None
         p.axis.visible = False
