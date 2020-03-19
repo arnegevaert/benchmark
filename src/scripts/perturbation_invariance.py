@@ -1,9 +1,9 @@
 from datasets import PerturbedImageDataset
 from vars import DATASET_MODELS
 from methods import *
+from lib import Report
 import numpy as np
 import torch
-from bokeh import plotting, layouts, palettes, models
 import itertools
 
 GENERATE = False
@@ -32,47 +32,13 @@ if GENERATE:
 else:
     perturbed_dataset = PerturbedImageDataset(DATA_ROOT, dataset_name, BATCH_SIZE)
 
-
-def plot_image(img, width=200, height=200, dw=1, dh=1):
-    if type(img) == torch.Tensor:
-        img = img.detach().numpy()
-
-    is_grayscale = img.shape[0] == 1
-    # Convert range to 0..255 uint32
-    img = (img - np.min(img))/(np.max(img) - np.min(img))
-    img *= 255
-    img = np.array(img, dtype=np.uint32)
-
-    # If grayscale, just provide rows/cols. If RGBA, convert to RGBA
-    if is_grayscale:
-        img = np.squeeze(img)
-    else:
-        img = img.transpose((1, 2, 0))
-        rgba_img = np.empty(shape=(img.shape[0], img.shape[1], 4), dtype=np.uint8)
-        rgba_img[:, :, :3] = img
-        rgba_img[:, :, 3] = 255
-        img = rgba_img
-    img = np.flip(img, axis=0)
-    p = plotting.figure(width=width, height=height)
-    p.toolbar_location = None
-    p.axis.visible = False
-    p.grid.visible = False
-    plot_fn = p.image if is_grayscale else p.image_rgba
-    plot_fn([img], x=0, y=0, dw=dw, dh=dh)
-    return p
-
-
-result_plot = plotting.figure()
-colors = itertools.cycle(palettes.Dark2_5)
+report = Report(list(method_constructors.keys()))
 imgplots = []
 for key in method_constructors:
     print(f"Calculating for {key}...")
     method = method_constructors[key](model)
     diffs = [[] for _ in range(len(perturbed_dataset.get_levels()))]
     cur_max_diff = 0
-    cur_max_diff_imgs = {
-        "original": None, "perturbed": None, "orig_attr": None, "perturbed_attr": None
-    }
     for b, b_dict in enumerate(perturbed_dataset):
         print(f"Batch {b+1}/{N_BATCHES}")
         orig = torch.tensor(b_dict["original"])  # [batch_size, *sample_shape]
@@ -90,21 +56,9 @@ for key in method_constructors:
             max_diff_idx = np.argmax(avg_diff_per_image).item()
             if avg_diff_per_image[max_diff_idx] > cur_max_diff:
                 cur_max_diff = avg_diff_per_image[max_diff_idx]
-                cur_max_diff_imgs = {
-                    "original": orig[max_diff_idx], "perturbed": noise_level_batch[max_diff_idx],
-                    "orig_attr": orig_attr[max_diff_idx], "perturbed_attr": perturbed_attr[max_diff_idx]
-                }
-            avg_diff = np.average(np.abs(orig_attr - perturbed_attr))
-            diffs[n_l].append(avg_diff)
-    diffs = np.array(diffs)
-    avg_diffs = np.average(diffs, axis=1)
-
-    result_plot.line(perturbed_dataset.get_levels(), diffs.mean(axis=1), legend_label=key,
-                     color=next(colors), line_width=3)
-
-    imgplots.append([models.Div(text=f"<h1>{key}</h1>", sizing_mode="stretch_width")])
-    stacked_imgs = np.concatenate([cur_max_diff_imgs["original"], cur_max_diff_imgs["perturbed"]], axis=-1)
-    stacked_imgs = np.clip(stacked_imgs, a_min=cur_max_diff_imgs["original"].min().item(), a_max=cur_max_diff_imgs["original"].max().item())
-    imgplots.append([plot_image(stacked_imgs, width=400, dw=2),
-                    plot_image(cur_max_diff_imgs["orig_attr"]), plot_image(cur_max_diff_imgs["perturbed_attr"])])
-plotting.show(layouts.layout([[result_plot]] + imgplots))
+                report.set_method_examples(key, [arr[max_diff_idx]
+                                                 for arr in (orig, noise_level_batch, orig_attr, perturbed_attr)])
+            diffs[n_l].append(np.average(avg_diff_per_image))
+    diffs = np.array(diffs)  # [noise_levels, n_batches]
+    report.add_summary_line(perturbed_dataset.get_levels(), diffs.mean(axis=1), label=key)
+report.render()
