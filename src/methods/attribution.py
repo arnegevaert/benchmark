@@ -21,8 +21,16 @@ class SimpleCaptumMethod(Method):
         self.method = SimpleCaptumMethod.METHODS[method](net)
 
     def attribute(self, x, target):
+        batch_size = x.shape[0]
+        sample_shape = x.shape[1:]
         self.net.eval()
-        return self.method.attribute(x, target=target)
+        attrs = self.method.attribute(x, target=target)
+        flattened_attrs = attrs.reshape(batch_size, -1)
+        min_per_img = flattened_attrs.min(dim=-1)[0].unsqueeze(dim=-1)
+        max_per_img = flattened_attrs.max(dim=-1)[0].unsqueeze(dim=-1)
+        normalized = (flattened_attrs - min_per_img) / (max_per_img - min_per_img)  # Normalize: [0,1] per image
+        result = normalized.reshape((batch_size, *sample_shape))
+        return result
 
 
 class GuidedGradCAM(Method):
@@ -32,8 +40,16 @@ class GuidedGradCAM(Method):
         self.guided_gradcam = attr.GuidedGradCam(self.net, model.get_last_conv_layer())
 
     def attribute(self, x, target):
+        batch_size = x.shape[0]
+        sample_shape = x.shape[1:]
         self.net.eval()
-        return self.guided_gradcam.attribute(x, target=target)
+        attrs = self.guided_gradcam.attribute(x, target=target)
+        flattened_attrs = attrs.reshape(batch_size, -1)
+        min_per_img = flattened_attrs.min(dim=-1)[0].unsqueeze(dim=-1)
+        max_per_img = flattened_attrs.max(dim=-1)[0].unsqueeze(dim=-1)
+        normalized = (flattened_attrs - min_per_img) / (max_per_img - min_per_img + 1e-20)  # Normalize: [0,1] per image
+        result = normalized.reshape((batch_size, *sample_shape))
+        return result
 
 
 class Occlusion(Method):
@@ -45,7 +61,8 @@ class Occlusion(Method):
 
     def attribute(self, x, target):
         self.net.eval()
-        return self.occlusion.attribute(x, target=target, sliding_window_shapes=self.sliding_window_shapes)
+        attrs = self.occlusion.attribute(x, target=target, sliding_window_shapes=self.sliding_window_shapes)
+        return (attrs - attrs.min()) / (attrs.max() - attrs.min())  # Normalize: [0,1]
 
 
 # TODO by default, DeepLift is equivalent to InputXGradient. Read DeepLift paper for more details.

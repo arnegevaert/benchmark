@@ -24,8 +24,7 @@ method_constructors = get_method_constructors(["Gradient", "InputXGradient", "Gu
 
 if GENERATE:
     dataset = dataset_constructor(batch_size=BATCH_SIZE, download=False, shuffle=True)
-    iterator = iter(dataset.get_test_data())
-    perturbed_dataset = PerturbedImageDataset.generate(DATA_ROOT, dataset_name, iterator, model,
+    perturbed_dataset = PerturbedImageDataset.generate(DATA_ROOT, dataset_name, dataset, model,
                                                        perturbation_fn=PERT_FN,
                                                        perturbation_levels=np.linspace(-1, 1, 10),
                                                        n_batches=N_BATCHES)
@@ -56,8 +55,9 @@ for key in method_constructors:
             max_diff_idx = np.argmax(avg_diff_per_image).item()
             if avg_diff_per_image[max_diff_idx] > cur_max_diff:
                 cur_max_diff = avg_diff_per_image[max_diff_idx]
-                report.set_method_examples(key, [arr[max_diff_idx]
-                                                 for arr in (orig, noise_level_batch, orig_attr, perturbed_attr)])
+                report.reset_method_examples(key)
+                report.add_method_example_row(key, [orig[max_diff_idx], noise_level_batch[max_diff_idx]])
+                report.add_method_example_row(key, [orig_attr[max_diff_idx], perturbed_attr[max_diff_idx]])
             diffs[n_l].append(np.average(avg_diff_per_image))
     diffs = np.array(diffs)  # [noise_levels, n_batches]
     report.add_summary_line(perturbed_dataset.get_levels(), diffs.mean(axis=1), label=key)

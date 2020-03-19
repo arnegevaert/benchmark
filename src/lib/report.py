@@ -15,11 +15,11 @@ class Report:
         self.summary_plot = plotting.figure()
         self.colors = itertools.cycle(palettes.Dark2_5)
 
-    def set_method_examples(self, method, examples):
-        self.method_examples[method] = examples
+    def add_method_example_row(self, method, examples):
+        self.method_examples[method].append(examples)
 
-    def append_method_example(self, method, example):
-        self.method_examples[method].append(example)
+    def reset_method_examples(self, method):
+        self.method_examples[method] = []
 
     def add_summary_line(self, x, y, label):
         self.summary_plot.line(x, y, legend_label=label, color=next(self.colors), line_width=3)
@@ -28,7 +28,8 @@ class Report:
         plots = [[self.summary_plot]]
         for method in self.methods:
             plots.append([models.Div(text=f"<h1>{method}</h1>", sizing_mode="stretch_width")])
-            plots.append(self._plot_images_row(np.stack(self.method_examples[method], axis=0)))
+            for row in self.method_examples[method]:
+                plots.append(self._plot_images_row(np.stack(row, axis=0)))
         plotting.show(layouts.layout(plots))
 
     def save(self, location):
@@ -47,7 +48,7 @@ class Report:
         for i in range(n_imgs):
             img = imgs[i]
             # Convert range to 0..255 uint32
-            img = (img - np.min(img))/(np.max(img) - np.min(img))
+            img = (img - np.min(imgs))/(np.max(imgs) - np.min(imgs))
             img *= 255
             img = np.array(img, dtype=np.uint32)
 
