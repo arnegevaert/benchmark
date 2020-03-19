@@ -4,12 +4,11 @@ from methods import *
 from lib import Report
 import numpy as np
 import torch
-import itertools
 
-GENERATE = False
+GENERATE = True
 DATA_ROOT = "../../data"
 DATASET = "MNIST"
-PERT_FN = "mean_shift"
+PERT_FN = "noise"
 MODEL = "CNN"
 BATCH_SIZE = 4
 N_BATCHES = 16  # 128
@@ -26,7 +25,7 @@ if GENERATE:
     dataset = dataset_constructor(batch_size=BATCH_SIZE, download=False, shuffle=True)
     perturbed_dataset = PerturbedImageDataset.generate(DATA_ROOT, dataset_name, dataset, model,
                                                        perturbation_fn=PERT_FN,
-                                                       perturbation_levels=np.linspace(-1, 1, 10),
+                                                       perturbation_levels=np.linspace(0, 2, 10),
                                                        n_batches=N_BATCHES)
 else:
     perturbed_dataset = PerturbedImageDataset(DATA_ROOT, dataset_name, BATCH_SIZE)

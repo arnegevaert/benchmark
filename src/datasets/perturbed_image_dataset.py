@@ -66,6 +66,7 @@ class PerturbedImageDataset:
             # [batch_size, *sample_shape], [batch_size]
             samples, labels = batch
             batch_size = samples.shape[0]
+            channels = samples.shape[1]
             # Convert to numpy if necessary
             if type(samples) == torch.Tensor:
                 samples = samples.numpy()
@@ -80,7 +81,14 @@ class PerturbedImageDataset:
                 batch = []
                 # Perturb and check if output hasn't changed
                 for p_l in perturbation_levels:
-                    perturbed_samples = dataset.transform_batch(p_fns[perturbation_fn](samples, p_l))
+                    perturbed_samples = p_fns[perturbation_fn](samples, p_l)
+
+                    im_mean = perturbed_samples.reshape((batch_size, channels, -1)).mean(2)\
+                        .reshape((batch_size, channels, 1, 1))
+                    im_std = perturbed_samples.reshape((batch_size, channels, -1)).std(2)\
+                        .reshape((batch_size, channels, 1, 1))
+                    perturbed_samples = (perturbed_samples - im_mean) / im_std
+
                     predictions = model.predict(torch.tensor(perturbed_samples))
                     batch_ok = batch_ok and not torch.any(predictions.argmax(axis=1) != torch.tensor(labels))
                     batch.append(perturbed_samples)
