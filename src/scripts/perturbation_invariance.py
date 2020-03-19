@@ -5,21 +5,21 @@ from lib import Report
 import numpy as np
 import torch
 
-GENERATE = True
+GENERATE = False
 DATA_ROOT = "../../data"
 DATASET = "MNIST"
 PERT_FN = "noise"
 MODEL = "CNN"
-BATCH_SIZE = 4
-N_BATCHES = 16  # 128
+BATCH_SIZE = 32
+N_BATCHES = 4
 
 dataset_name = f"{DATASET}_{PERT_FN}"
 dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
 model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
 model = model_constructor()
 
-# method_constructors = get_all_method_constructors(include_random=False)
-method_constructors = get_method_constructors(["Gradient", "InputXGradient", "GuidedGradCAM"])
+all_kwargs = {"Occlusion": {"sliding_window_shapes": (1, 1, 1)}}
+method_constructors = get_all_method_constructors(include_random=False)
 
 if GENERATE:
     dataset = dataset_constructor(batch_size=BATCH_SIZE, download=False, shuffle=True)
@@ -31,10 +31,10 @@ else:
     perturbed_dataset = PerturbedImageDataset(DATA_ROOT, dataset_name, BATCH_SIZE)
 
 report = Report(list(method_constructors.keys()))
-imgplots = []
 for key in method_constructors:
     print(f"Calculating for {key}...")
-    method = method_constructors[key](model)
+    kwargs = all_kwargs.get(key, {})
+    method = method_constructors[key](model, **kwargs)
     diffs = [[] for _ in range(len(perturbed_dataset.get_levels()))]
     cur_max_diff = 0
     for b, b_dict in enumerate(perturbed_dataset):

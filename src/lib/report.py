@@ -13,7 +13,7 @@ class Report:
         self.methods = methods
         self.method_examples = {method: [] for method in methods}
         self.summary_plot = plotting.figure()
-        self.colors = itertools.cycle(palettes.Dark2_5)
+        self.colors = itertools.cycle(palettes.Dark2_8)
 
     def add_method_example_row(self, method, examples):
         self.method_examples[method].append(examples)

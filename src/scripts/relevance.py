@@ -1,6 +1,6 @@
 from methods import get_all_method_constructors
 from vars import DATASET_MODELS
-import matplotlib.pyplot as plt
+from lib import Report
 import numpy as np
 import torch
 
@@ -11,8 +11,8 @@ DOWNLOAD_DATASET = False
 MODEL = "resnet20"
 BATCH_SIZE = 32
 N_BATCHES = 4
-N_PIXELS = 128
-PIXEL_STEP = 4
+N_INPUTS = 128
+INPUT_STEP = 4
 
 dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
 model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
@@ -23,9 +23,8 @@ all_kwargs = {"Occlusion": {"sliding_window_shapes": (1, 1, 1)}}
 model = model_constructor()
 dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOWNLOAD_DATASET)
 
-fig = plt.figure()
-ax = plt.axes()
-x = np.array(range(1, N_PIXELS, PIXEL_STEP))
+x = np.array(range(1, N_INPUTS, INPUT_STEP))
+report = Report(list(method_constructors.keys()))
 for key in method_constructors:
     print(f"Method: {key}")
     result = []
@@ -42,7 +41,7 @@ for key in method_constructors:
         attrs = attrs.reshape(attrs.shape[0], -1)  # [batch_size, -1]
         # Sort indices of attrs in ascending order
         sorted_indices = attrs.argsort()  # [batch_size, -1]
-        for i in range(1, N_PIXELS, PIXEL_STEP):
+        for i in range(1, N_INPUTS, INPUT_STEP):
             # Get indices of i most important inputs
             to_mask = sorted_indices[:, -i:]  # [batch_size, i]
             unraveled = np.unravel_index(to_mask, samples.shape[1:])
@@ -54,8 +53,6 @@ for key in method_constructors:
             batch_result.append(model.predict(samples).gather(1, labels.reshape(-1, 1)))
         batch_result = torch.cat(batch_result, 1)  # [batch_size, n_pixels]
         result.append(batch_result)
-    result = torch.cat(result, 0).detach().mean(dim=0)  # [n_batches*batch_size, n_pixels]
-    ax.plot(x, result, label=key)
-ax.set_xlabel("Number of masked pixels")
-ax.set_ylabel("Classifier confidence")
-ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.15), ncol=3, fancybox=True)
+    result = torch.cat(result, 0).detach().numpy().mean(axis=0)  # [n_batches*batch_size, n_pixels]
+    report.add_summary_line(x, result, label=key)
+report.render()
