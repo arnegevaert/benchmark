@@ -3,17 +3,19 @@ from vars import DATASET_MODELS
 from lib import Report
 import numpy as np
 import torch
+import pickle
 
 
-DATA_ROOT = "../../data"
 DATASET = "CIFAR10"
 DOWNLOAD_DATASET = False
 MODEL = "resnet20"
-BATCH_SIZE = 32
-N_BATCHES = 4
+BATCH_SIZE = 4  #32
+N_BATCHES = 2  #4
 N_INPUTS = 128
 INPUT_STEP = 4
 N_EXAMPLES = 4
+SAVE_REPORT = True
+REPORT_LOC = "testreport"
 
 dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
 model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
@@ -63,3 +65,6 @@ for key in method_constructors:
     report.add_summary_line(x, result, label=key)
     report.add_method_example_row(key, method_examples)
 report.render()
+
+if SAVE_REPORT:
+    report.save(REPORT_LOC)

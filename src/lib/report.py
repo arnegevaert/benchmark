@@ -2,6 +2,7 @@ from bokeh import plotting, palettes, models, layouts
 import itertools
 import torch
 import numpy as np
+import pickle
 
 
 class Report:
@@ -12,8 +13,8 @@ class Report:
     def __init__(self, methods):
         self.methods = methods
         self.method_examples = {method: [] for method in methods}
-        self.summary_plot = plotting.figure()
         self.colors = itertools.cycle(palettes.Dark2_8)
+        self.summary_plot_data = []
 
     def add_method_example_row(self, method, examples):
         self.method_examples[method].append(examples)
@@ -22,10 +23,15 @@ class Report:
         self.method_examples[method] = []
 
     def add_summary_line(self, x, y, label):
-        self.summary_plot.line(x, y, legend_label=label, color=next(self.colors), line_width=3)
+        self.summary_plot_data.append({
+            "x": x, "y": y, "legend_label": label, "color": next(self.colors), "line_width": 3
+        })
 
     def render(self):
-        plots = [[self.summary_plot]]
+        summary_plot = plotting.figure()
+        for d in self.summary_plot_data:
+            summary_plot.line(**d)
+        plots = [[summary_plot]]
         for method in self.methods:
             plots.append([models.Div(text=f"<h1>{method}</h1>", sizing_mode="stretch_width")])
             for row in self.method_examples[method]:
@@ -33,10 +39,11 @@ class Report:
         plotting.show(layouts.layout(plots))
 
     def save(self, location):
-        pass
+        pickle.dump(self, open(f"{location}.pkl", "wb"))
 
-    def load(self, location):
-        pass
+    @staticmethod
+    def load(location):
+        return pickle.load(open(f"{location}.pkl", "rb"))
 
     @staticmethod
     def _plot_images_row(imgs):
