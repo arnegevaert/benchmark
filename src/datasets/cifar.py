@@ -10,10 +10,10 @@ class Cifar(Dataset):
         super().__init__(batch_size)
         if version not in ["cifar10", "cifar100"]:
             raise ValueError("version must be in {cifar10, cifar100}")
-        transform = transforms.Compose(
-            [transforms.ToTensor(),
-             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
-        )
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
         ds_constructors = {"cifar10": datasets.CIFAR10, "cifar100": datasets.CIFAR100}
         self.train_loader = torch.utils.data.DataLoader(
             ds_constructors[version](data_location, train=True, download=download, transform=transform),

@@ -10,7 +10,8 @@ class MNIST(Dataset):
         super().__init__(batch_size)
         transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))])
+            transforms.Normalize((0.1307,), (0.3081,))
+        ])
         self.train_loader = torch.utils.data.DataLoader(
             datasets.MNIST(data_location, train=True, download=download, transform=transform),
             batch_size=batch_size, shuffle=shuffle)

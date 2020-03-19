@@ -8,6 +8,7 @@ from os import path
 from typing import Iterator
 
 from models import Model
+from datasets import Dataset
 
 
 class PerturbedImageDataset:
@@ -40,7 +41,7 @@ class PerturbedImageDataset:
         return self.metadata["perturbation_fn"]
 
     @staticmethod
-    def generate(data_location, name, data_iterator: Iterator, model: Model,
+    def generate(data_location, name, dataset: Dataset, model: Model,
                  perturbation_fn="noise", perturbation_levels=np.linspace(0, 1, 10), max_tries=10,
                  n_batches=64):
         assert(perturbation_fn in ["noise", "mean_shift"])
@@ -48,6 +49,7 @@ class PerturbedImageDataset:
             "noise": lambda s, l: s + (np.random.rand(*s.shape)) * l,
             "mean_shift": lambda s, l: s + l
         }
+        data_iterator = iter(dataset.get_test_data())
         filename = path.join(data_location, name, "dataset.hdf5")
         metadata_filename = path.join(data_location, name, "meta.json")
         if not path.exists(filename):
@@ -64,6 +66,7 @@ class PerturbedImageDataset:
             # [batch_size, *sample_shape], [batch_size]
             samples, labels = batch
             batch_size = samples.shape[0]
+            channels = samples.shape[1]
             # Convert to numpy if necessary
             if type(samples) == torch.Tensor:
                 samples = samples.numpy()
@@ -79,6 +82,13 @@ class PerturbedImageDataset:
                 # Perturb and check if output hasn't changed
                 for p_l in perturbation_levels:
                     perturbed_samples = p_fns[perturbation_fn](samples, p_l)
+
+                    im_mean = perturbed_samples.reshape((batch_size, channels, -1)).mean(2)\
+                        .reshape((batch_size, channels, 1, 1))
+                    im_std = perturbed_samples.reshape((batch_size, channels, -1)).std(2)\
+                        .reshape((batch_size, channels, 1, 1))
+                    perturbed_samples = (perturbed_samples - im_mean) / im_std
+
                     predictions = model.predict(torch.tensor(perturbed_samples))
                     batch_ok = batch_ok and not torch.any(predictions.argmax(axis=1) != torch.tensor(labels))
                     batch.append(perturbed_samples)
