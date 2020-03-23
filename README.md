@@ -13,13 +13,13 @@ Benchmark for ML interpretability techniques.
 | Gradient | [link](https://arxiv.org/abs/1312.6034) | [Captum](https://captum.ai/api/saliency.html) | Differentiable | Any | :heavy_check_mark: |
 | InputXGradient | [link](https://arxiv.org/abs/1611.07270) | [Captum](https://captum.ai/api/input_x_gradient.html) | Differentiable | Any | :heavy_check_mark: |
 | IntegratedGradients | [link](http://arxiv.org/abs/1703.01365) | [Captum](https://captum.ai/api/integrated_gradients.html) | Differentiable | Any | :heavy_check_mark: |
-| DeepLIFT<sup>1</sup> | [link](https://arxiv.org/abs/1704.02685) | [Captum **(UNR)**](https://captum.ai/api/deep_lift.html) | DNN | Image | :x: |
-| Guided Backprop | [link](https://arxiv.org/abs/1412.6806) | [Captum **(UNR)**](https://captum.ai/api/guided_backprop.html) | DNN | Image | :construction: |
-| Deconvolution | [link](https://arxiv.org/abs/1311.2901) | [Captum **(UNR)**](https://captum.ai/api/deconvolution.html) | CNN | Image | :construction: |
-| Feature Ablation | None | [Captum **(UNR)**](https://captum.ai/api/feature_ablation.html) | None | Any | :x: |
-| Occlusion | [link](https://arxiv.org/abs/1311.2901) | [Captum **(UNR)**](https://captum.ai/api/occlusion.html) | none | Any | :x: |
+| DeepLIFT<sup>1</sup> | [link](https://arxiv.org/abs/1704.02685) | [Captum **(UNR)**](https://captum.ai/api/deep_lift.html) | DNN | Image | :construction: |
+| Guided Backprop | [link](https://arxiv.org/abs/1412.6806) | [Captum](https://captum.ai/api/guided_backprop.html) | DNN | Image | :heavy_check_mark: |
+| Deconvolution | [link](https://arxiv.org/abs/1311.2901) | [Captum](https://captum.ai/api/deconvolution.html) | CNN | Image | :heavy_check_mark: |
+| Feature Ablation | None | [Captum](https://captum.ai/api/feature_ablation.html) | None | Any | :construction: |
+| Occlusion | [link](https://arxiv.org/abs/1311.2901) | [Captum](https://captum.ai/api/occlusion.html) | none | Any | :construction: |
 | Feature Permutation | [link](https://christophm.github.io/interpretable-ml-book/feature-importance.html) | [Captum **(UNR)**](https://captum.ai/api/feature_permutation.html) | None | Any | :x: |
-| Guided Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Captum (**UNR**)](https://captum.ai/api/guided_grad_cam.html) | CNN | Image | :construction: |
+| Guided Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Captum](https://captum.ai/api/guided_grad_cam.html) | CNN | Image | :heavy_check_mark: |
 | LIME | [link](https://www.kdd.org/kdd2016/papers/files/rfp0573-ribeiroA.pdf) | [PyPi](https://pypi.org/project/lime/) | None | Any | :construction: |
 | SHAP | [link](https://arxiv.org/abs/1705.07874) | [PyPi](https://pypi.org/project/shap/) | None | Any | :construction: |
 | CGI | [link](https://arxiv.org/abs/1905.12152) | None | Differentiable | Any | :x: |
@@ -63,10 +63,10 @@ Given (partial) ground truth about feature importances, FA method should match t
     - Attribution should match exactly with the unmasked parts of the input, as the method by definition doesn't look at the masked parts, and needs ALL of the unmasked parts to accurately predict.
 
 #### Robustness
-Applicable to FA techniques. Noise/constant shifts in input that don't change the model output should not change the attribution. Might also be applicable to RB/CF techniques.
+Applicable to FA techniques. Noise/constant shifts in input that don't change the model output (after renormalization) should not change the attribution. Might also be applicable to RB/CF techniques.
 
 - Add uniform noise to image and measure change in attribution :heavy_check_mark:
-- Add constant mean shift to image and measure change in attribution :heavy_check_mark:
+- Add constant shift to image (saturating values that exceed minimum/maximum) and measure change in attribution :construction:
 
 #### Relevance
 Features that are deemed important (i.e. have a large attribution) should have a large influence on the model output.
