@@ -21,7 +21,7 @@ class Cifar(Dataset):
         self.test_loader = torch.utils.data.DataLoader(
             ds_constructors[version](data_location, train=False, download=download, transform=transform),
             batch_size=batch_size, shuffle=shuffle)
-        self.mask_value = 0  # TODO verify if this is ok
+        self.mask_value = -0.4242
         self.sample_shape = (3, 32, 32)
 
     def get_train_data(self):
