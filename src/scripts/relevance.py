@@ -3,18 +3,16 @@ from vars import DATASET_MODELS
 from lib import Report
 import numpy as np
 import torch
-import pickle
 
 
-DATASET = "CIFAR10"
+DATASET = "MNIST"
 DOWNLOAD_DATASET = False
-MODEL = "resnet20"
+MODEL = "CNN"
 BATCH_SIZE = 4  #32
 N_BATCHES = 2  #4
-N_INPUTS = 128
-INPUT_STEP = 4
+MASK_RANGE = range(1, 129, 4)
 N_EXAMPLES = 4
-SAVE_REPORT = True
+SAVE_REPORT = False
 REPORT_LOC = "testreport"
 
 dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
@@ -27,7 +25,7 @@ all_kwargs = {"Occlusion": {"sliding_window_shapes": (1, 1, 1)}}
 model = model_constructor()
 dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOWNLOAD_DATASET)
 
-x = np.array(range(1, N_INPUTS+1, INPUT_STEP))
+x = np.array(MASK_RANGE)
 report = Report(list(method_constructors.keys()))
 example_idxs = x[np.round(np.linspace(0, len(x) - 1, N_EXAMPLES)).astype(int)]
 for key in method_constructors:
@@ -47,7 +45,7 @@ for key in method_constructors:
         attrs = attrs.reshape(attrs.shape[0], -1)  # [batch_size, -1]
         # Sort indices of attrs in ascending order
         sorted_indices = attrs.argsort()  # [batch_size, -1]
-        for i in range(1, N_INPUTS+1, INPUT_STEP):
+        for i in MASK_RANGE:
             # Get indices of i most important inputs
             to_mask = sorted_indices[:, -i:]  # [batch_size, i]
             unraveled = np.unravel_index(to_mask, samples.shape[1:])

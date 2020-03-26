@@ -3,6 +3,7 @@ from models import ConvolutionalNetworkModel
 from captum import attr
 import torch.nn as nn
 import torch
+import warnings
 
 
 class SimpleCaptumMethod(Method):
@@ -62,6 +63,9 @@ class Occlusion(Method):
     def attribute(self, x, target):
         self.net.eval()
         attrs = self.occlusion.attribute(x, target=target, sliding_window_shapes=self.sliding_window_shapes)
+        denom = attrs.max() - attrs.min()
+        if denom == 0:
+            warnings.warn("Occlusion: denominator is 0. Values will be nan.")
         return (attrs - attrs.min()) / (attrs.max() - attrs.min())  # Normalize: [0,1]
 
 
