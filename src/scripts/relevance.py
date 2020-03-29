@@ -3,7 +3,6 @@ from vars import DATASET_MODELS
 from lib import Report
 import numpy as np
 import torch
-import pickle
 
 
 DATASET = "CIFAR10"
