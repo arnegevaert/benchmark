@@ -29,8 +29,11 @@ class Report:
 
     def render(self):
         summary_plot = plotting.figure()
+        counter = 0
+        lds = ["dashed", "dotted", "dotdash", "dashdot"]
         for d in self.summary_plot_data:
-            summary_plot.line(**d)
+            summary_plot.line(**d, line_dash=lds[counter % 4])
+            counter += 1
         plots = [[summary_plot]]
         for method in self.methods:
             plots.append([models.Div(text=f"<h1>{method}</h1>", sizing_mode="stretch_width")])
