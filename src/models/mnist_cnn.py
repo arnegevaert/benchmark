@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from os import path, getenv
 from models.model import ConvolutionalNetworkModel
+import numpy as np
 
 DEVICE = torch.device(getenv("TORCH_DEVICE", "cpu"))
 
@@ -34,7 +35,8 @@ class Net(nn.Module):
         if x.dtype != torch.float32:
             x = x.float()
         logits = self.get_logits(x)
-        return F.softmax(logits, dim=1)
+        return logits
+        #return F.softmax(logits, dim=1)
 
 
 class MNISTCNN(ConvolutionalNetworkModel):
@@ -49,8 +51,12 @@ class MNISTCNN(ConvolutionalNetworkModel):
         # without it, a model trained on GPU will be loaded in GPU even if DEVICE is CPU
         self.net.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
 
-    def predict(self, x):
+    def predict(self, x, logits=False):
         self.net.eval()
+        if type(x) == np.ndarray:
+            x = torch.tensor(x)
+        if logits:
+            return self.net.get_logits(x)
         return self.net(x)
 
     def get_conv_net(self) -> nn.Module:

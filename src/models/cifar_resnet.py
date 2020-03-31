@@ -10,6 +10,7 @@ import urllib
 import torch.nn as nn
 from models import ConvolutionalNetworkModel
 from os import path
+import numpy as np
 
 
 class BasicBlock(nn.Module):
@@ -128,6 +129,8 @@ class CifarResNet(ConvolutionalNetworkModel):
 
     def predict(self, x):
         self.net.eval()
+        if type(x) == np.ndarray:
+            x = torch.tensor(x)
         return self.net(x)
 
     def get_last_conv_layer(self) -> nn.Module:
