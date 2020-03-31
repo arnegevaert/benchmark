@@ -27,8 +27,8 @@ class Report:
             "x": x, "y": y, "legend_label": label, "color": next(self.colors), "line_width": 3
         })
 
-    def render(self):
-        summary_plot = plotting.figure()
+    def render(self, x_axis_type="linear"):
+        summary_plot = plotting.figure(x_axis_type=x_axis_type)
         counter = 0
         lds = ["dashed", "dotted", "dotdash", "dashdot"]
         for d in self.summary_plot_data:

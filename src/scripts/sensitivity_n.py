@@ -30,14 +30,6 @@ report = Report(list(method_constructors.keys()))
 methods = {m_name: method_constructors[m_name](model, **all_kwargs.get(m_name, {})) for m_name in METHODS}
 iterator = iter(dataset.get_test_data())
 method_corrs = {m_name: [] for m_name in METHODS}
-"""
-for key in method_constructors:
-    print(f"Method: {key}")
-    iterator = iter(dataset.get_test_data())
-    kwargs = all_kwargs.get(key, {})
-    method = method_constructors[key](model, **kwargs)
-    all_corrs = []
-"""
 
 all_corrs = {m_name: [] for m_name in METHODS}
 # TODO put time prediction code in class to plug-in easily
@@ -87,4 +79,4 @@ for m_name in METHODS:
     # all_corrs has shape [N_BATCHES, len(MASK_RANGE)]
     result = np.average(all_corrs[m_name], axis=0)
     report.add_summary_line(x, result, label=m_name)
-report.render()
+report.render(x_axis_type="log")
