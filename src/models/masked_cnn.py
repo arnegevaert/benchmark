@@ -3,6 +3,7 @@ from models.model import ConvolutionalNetworkModel
 from models.masked_input import MaskedInputLayer
 import torch
 import torch.nn.functional as F
+import pickle as pkl
 
 
 class Net(nn.Module):
@@ -45,10 +46,14 @@ class Net(nn.Module):
         return self.masked_input_layer(x)
 
 
-class MaskedCifar10CNN(ConvolutionalNetworkModel):
+# TODO automatic loading of parameters (see MNISTCNN)
+class MaskedCNN(ConvolutionalNetworkModel):
     def __init__(self, sample_shape, mask_radius, mask_value):
         super().__init__()
         self.net = Net(sample_shape, mask_radius, mask_value)
+        self.sample_shape = sample_shape
+        self.mask_radius = mask_radius
+        self.mask_value = mask_value
 
     def predict(self, x):
         self.net.eval()
@@ -59,3 +64,27 @@ class MaskedCifar10CNN(ConvolutionalNetworkModel):
 
     def get_last_conv_layer(self) -> nn.Module:
         return self.net.conv2
+
+    def get_mask(self):
+        return self.net.masked_input_layer.mask
+
+    def mask(self, x):
+        return self.net.mask(x)
+
+    def save(self, location):
+        d = {
+            "params": {
+                "sample_shape": self.sample_shape,
+                "mask_radius": self.mask_radius,
+                "mask_value": self.mask_value
+            },
+            "state_dict": self.net.state_dict()
+        }
+        pkl.dump(d, open(location, "wb"))
+
+    @staticmethod
+    def load(location):
+        d = pkl.load(open(location, "rb"))
+        cnn = MaskedCNN(**d["params"])
+        cnn.net.load_state_dict(d["state_dict"])
+        return cnn

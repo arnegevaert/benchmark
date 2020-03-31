@@ -2,7 +2,7 @@ from vars import DATASET_MODELS
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from models import MaskedCifar10CNN
+from models import MaskedCNN
 
 def get_medians(data):
     maxs = []
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
     dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=True, download=False)
 
-    model = MaskedCifar10CNN(dataset.sample_shape, mask_radius=5, mask_value=dataset.mask_value)
+    model = MaskedCNN(dataset.sample_shape, mask_radius=5, mask_value=dataset.mask_value)
     optimizer = optim.Adadelta(model.net.parameters(), lr=LR)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=GAMMA)
     for epoch in range(1, EPOCHS+1):

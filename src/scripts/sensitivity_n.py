@@ -26,7 +26,6 @@ dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOW
 
 x = np.array(MASK_RANGE)
 report = Report(list(method_constructors.keys()))
-# TODO this might go faster if we bring the method loop inside (generate samples and model output only once)
 methods = {m_name: method_constructors[m_name](model, **all_kwargs.get(m_name, {})) for m_name in METHODS}
 iterator = iter(dataset.get_test_data())
 method_corrs = {m_name: [] for m_name in METHODS}
