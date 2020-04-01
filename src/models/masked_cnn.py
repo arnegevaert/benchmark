@@ -69,7 +69,8 @@ class MaskedCNN(ConvolutionalNetworkModel):
         return self.net.masked_input_layer.mask
 
     def mask(self, x):
-        return self.net.mask(x)
+        with torch.no_grad():
+            return self.net.mask(x)
 
     def save(self, location):
         d = {

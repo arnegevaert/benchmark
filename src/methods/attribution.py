@@ -20,6 +20,7 @@ class SimpleCaptumMethod(Method):
         super().__init__()
         self.net = net
         self.method = SimpleCaptumMethod.METHODS[method](net)
+        self.name = method
 
     def attribute(self, x, target):
         batch_size = x.shape[0]
@@ -30,6 +31,9 @@ class SimpleCaptumMethod(Method):
         min_per_img = flattened_attrs.min(dim=-1)[0].unsqueeze(dim=-1)
         max_per_img = flattened_attrs.max(dim=-1)[0].unsqueeze(dim=-1)
         normalized = (flattened_attrs - min_per_img) / (max_per_img - min_per_img)  # Normalize: [0,1] per image
+        if torch.any(torch.isnan(normalized)):
+            warnings.warn(f"NaNs detected in {self.name} attributions: replaced by 0.")
+            normalized[torch.where(torch.isnan(normalized))] = 0
         result = normalized.reshape((batch_size, *sample_shape))
         return result
 
