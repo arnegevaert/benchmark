@@ -3,16 +3,17 @@ from vars import DATASET_MODELS
 from methods import get_method_constructors
 import time
 import torch
-from scipy import stats
 from lib import Report
+import numpy as np
 
 # TODO this code only works for CIFAR10 now
 DATASET = "CIFAR10"
 BATCH_SIZE = 64
-N_BATCHES = 1
+N_BATCHES = 16
 MEDIAN_VALUE = -.788235
 METHODS = ["GuidedGradCAM", "Gradient", "InputXGradient", "IntegratedGradients",
            "GuidedBackprop", "Deconvolution", "Random"]  # , "Occlusion"]
+threshold_range = np.arange(0, 1, 0.1)
 
 model = MaskedCNN.load("../models/saved_models/cifar10_masked_cnn.pkl")
 
@@ -23,9 +24,7 @@ all_kwargs = {"Occlusion": {"sliding_window_shapes": (1, 1, 1)}}
 methods = {m_name: method_constructors[m_name](model, **all_kwargs.get(m_name, {})) for m_name in METHODS}
 
 iterator = iter(dataset.get_test_data())
-jaccards = {m_name: [] for m_name in METHODS}
-worst_jaccards = {m_name: {"image": None, "attrs": None, "value": None} for m_name in METHODS}
-best_jaccards = {m_name: {"image": None, "attrs": None, "value": None} for m_name in METHODS}
+jaccards = {m_name: [[] for _ in threshold_range] for m_name in METHODS}
 report = Report(METHODS)
 for b in range(N_BATCHES):
     start_t = time.time()
@@ -40,27 +39,13 @@ for b in range(N_BATCHES):
         attrs = methods[m_name].attribute(samples, target=labels)
         # Compute jaccard index of attrs with mask
         mask = model.get_mask()
-        card_intersect = (attrs * mask).detach().reshape(BATCH_SIZE, -1).sum(dim=1)
-        card_attrs_sq = (attrs**2).detach().reshape(BATCH_SIZE, -1).sum(dim=1)
-        card_mask_sq = (mask**2).sum()
-        jaccard = card_intersect / (card_attrs_sq + card_mask_sq - card_intersect)
-        min_j, argmin_j = torch.min(jaccard, dim=0)
-        max_j, argmax_j = torch.max(jaccard, dim=0)
-        if not worst_jaccards[m_name]["value"] or min_j < worst_jaccards[m_name]["value"]:
-            print(f"setting worst jaccards for {m_name}")
-            worst_jaccards[m_name] = {
-                "image": samples[argmin_j].detach().numpy(),
-                "attrs": attrs[argmin_j].detach().numpy(),
-                "value": min_j
-            }
-        if not best_jaccards[m_name]["value"] or max_j > best_jaccards[m_name]["value"]:
-            print(f"setting best jaccards for {m_name}")
-            best_jaccards[m_name] = {
-                "image": samples[argmax_j].detach().numpy(),
-                "attrs": attrs[argmax_j].detach().numpy(),
-                "value": max_j
-            }
-        jaccards[m_name].append(jaccard)
+        for i, thresh in enumerate(threshold_range):
+            thresh_attrs = (attrs > thresh).long()
+            card_intersect = (thresh_attrs * mask).detach().reshape(BATCH_SIZE, -1).sum(dim=1)
+            card_attrs = thresh_attrs.detach().reshape(BATCH_SIZE, -1).sum(dim=1)
+            card_mask = mask.sum()
+            jaccard = card_intersect / (card_attrs + card_mask - card_intersect)
+            jaccards[m_name][i].append(jaccard)
 
     end_t = time.time()
     seconds = end_t - start_t
@@ -68,11 +53,9 @@ for b in range(N_BATCHES):
 
 # TODO violin plots
 for m_name in METHODS:
-    report.add_method_example_row(m_name, [worst_jaccards[m_name]["image"], worst_jaccards[m_name]["attrs"]])
-    report.add_method_example_row(m_name, [best_jaccards[m_name]["image"], best_jaccards[m_name]["attrs"]])
-    m_jaccards = torch.cat(jaccards[m_name]).detach().numpy()
-    print(f"{m_name}:")
-    print(stats.describe(m_jaccards))
-    print()
-report.render()
+    m_avg_jaccards = []
+    for i, thresh in enumerate(threshold_range):
+        m_avg_jaccards.append(torch.cat(jaccards[m_name][i]).mean().item())
+    report.add_summary_line(threshold_range, m_avg_jaccards, m_name)
+report.render(x_label="threshold", y_label="avg jaccard index")
 
