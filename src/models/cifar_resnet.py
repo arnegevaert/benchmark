@@ -78,7 +78,7 @@ class Net(nn.Module):
             layers.append(block(self.inplanes, planes))
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def get_logits(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -89,7 +89,12 @@ class Net(nn.Module):
 
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        return self.softmax(self.fc(x))
+        return self.fc(x)
+
+    def forward(self, x):
+        if x.dtype != torch.float32:
+            x = x.float()
+        return self.softmax(self.get_logits(x))
 
 
 base_url = 'https://github.com/chenyaofo/CIFAR-pretrained-models/releases/download/resnet/'
@@ -127,10 +132,12 @@ class CifarResNet(ConvolutionalNetworkModel):
             print(f"Download finished.")
         self.net.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
 
-    def predict(self, x):
+    def predict(self, x, logits=False):
         self.net.eval()
         if type(x) == np.ndarray:
             x = torch.tensor(x)
+        if logits:
+            return self.net.get_logits(x)
         return self.net(x)
 
     def get_last_conv_layer(self) -> nn.Module:

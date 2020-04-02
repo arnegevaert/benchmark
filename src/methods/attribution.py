@@ -26,7 +26,8 @@ class SimpleCaptumMethod(Method):
         batch_size = x.shape[0]
         sample_shape = x.shape[1:]
         self.net.eval()
-        attrs = torch.abs(self.method.attribute(x, target=target))
+        attrs = self.method.attribute(x, target=target)
+        """
         flattened_attrs = attrs.reshape(batch_size, -1)
         min_per_img = flattened_attrs.min(dim=-1)[0].unsqueeze(dim=-1)
         max_per_img = flattened_attrs.max(dim=-1)[0].unsqueeze(dim=-1)
@@ -36,6 +37,8 @@ class SimpleCaptumMethod(Method):
             normalized[torch.where(torch.isnan(normalized))] = 0
         result = normalized.reshape((batch_size, *sample_shape))
         return result
+        """
+        return attrs
 
 
 class GuidedGradCAM(Method):
@@ -49,12 +52,15 @@ class GuidedGradCAM(Method):
         sample_shape = x.shape[1:]
         self.net.eval()
         attrs = self.guided_gradcam.attribute(x, target=target)
+        """
         flattened_attrs = attrs.reshape(batch_size, -1)
         min_per_img = flattened_attrs.min(dim=-1)[0].unsqueeze(dim=-1)
         max_per_img = flattened_attrs.max(dim=-1)[0].unsqueeze(dim=-1)
         normalized = (flattened_attrs - min_per_img) / (max_per_img - min_per_img + 1e-20)  # Normalize: [0,1] per image
         result = normalized.reshape((batch_size, *sample_shape))
         return result
+        """
+        return attrs
 
 
 class Occlusion(Method):

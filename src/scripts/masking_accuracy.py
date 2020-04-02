@@ -13,7 +13,7 @@ N_BATCHES = 16
 MEDIAN_VALUE = -.788235
 METHODS = ["GuidedGradCAM", "Gradient", "InputXGradient", "IntegratedGradients",
            "GuidedBackprop", "Deconvolution", "Random"]  # , "Occlusion"]
-threshold_range = np.arange(0, 1, 0.1)
+threshold_range = np.arange(0, 0.05, 0.005)
 
 model = MaskedCNN.load("../models/saved_models/cifar10_masked_cnn.pkl")
 
@@ -36,11 +36,11 @@ for b in range(N_BATCHES):
 
     for m_name in METHODS:
         # Get attributions [BATCH_SIZE, channels, rows, cols]
-        attrs = methods[m_name].attribute(samples, target=labels)
+        attrs = torch.abs(methods[m_name].attribute(samples, target=labels))
         # Compute jaccard index of attrs with mask
         mask = model.get_mask()
         for i, thresh in enumerate(threshold_range):
-            thresh_attrs = (attrs > thresh).long()
+            thresh_attrs = ((attrs/attrs.max()) > (thresh*attrs.max())).long()
             card_intersect = (thresh_attrs * mask).detach().reshape(BATCH_SIZE, -1).sum(dim=1)
             card_attrs = thresh_attrs.detach().reshape(BATCH_SIZE, -1).sum(dim=1)
             card_mask = mask.sum()

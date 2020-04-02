@@ -7,10 +7,11 @@ import time
 DATASET = "MNIST"
 DOWNLOAD_DATASET = False
 MODEL = "CNN"
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 N_BATCHES = 16
 N_SUBSETS = 100
-MASK_RANGE = range(1, 700, 30)
+#MASK_RANGE = range(1, 1000, 100)
+MASK_RANGE = range(1, 700, 50)
 METHODS = ["GuidedGradCAM", "Gradient", "InputXGradient", "IntegratedGradients",
            "GuidedBackprop", "Deconvolution", "Random"]
 
@@ -78,4 +79,5 @@ for m_name in METHODS:
     # all_corrs has shape [N_BATCHES, len(MASK_RANGE)]
     result = np.average(all_corrs[m_name], axis=0)
     report.add_summary_line(x, result, label=m_name)
-report.render(x_axis_type="log")
+report.render(x_label="Number of masked pixels", y_label="Pearson Correlation between output change and attribution",
+              y_range=(-.1, 1))

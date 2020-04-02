@@ -35,8 +35,7 @@ class Net(nn.Module):
         if x.dtype != torch.float32:
             x = x.float()
         logits = self.get_logits(x)
-        return logits
-        #return F.softmax(logits, dim=1)
+        return F.softmax(logits, dim=1)
 
 
 class MNISTCNN(ConvolutionalNetworkModel):

@@ -1,4 +1,4 @@
-from methods import get_all_method_constructors, get_method_constructors
+from methods import get_method_constructors
 from vars import DATASET_MODELS
 from lib import Report
 import numpy as np
@@ -8,17 +8,19 @@ import torch
 DATASET = "MNIST"
 DOWNLOAD_DATASET = False
 MODEL = "CNN"
-BATCH_SIZE = 4  #32
-N_BATCHES = 2  #4
-MASK_RANGE = range(1, 129, 4)
+BATCH_SIZE = 64
+N_BATCHES = 16
+MASK_RANGE = range(1, 128, 10)
 N_EXAMPLES = 4
 SAVE_REPORT = False
 REPORT_LOC = "testreport"
+METHODS = ["GuidedGradCAM", "Gradient", "InputXGradient", "IntegratedGradients",
+           "GuidedBackprop", "Deconvolution", "Random"]
 
 dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
 model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
 # method_constructors = get_all_method_constructors()
-method_constructors = get_method_constructors(["InputXGradient", "Gradient"])
+method_constructors = get_method_constructors(METHODS)
 
 all_kwargs = {"Occlusion": {"sliding_window_shapes": (1, 1, 1)}}
 
@@ -62,7 +64,7 @@ for key in method_constructors:
     result = torch.cat(result, 0).detach().numpy().mean(axis=0)  # [n_batches*batch_size, n_pixels]
     report.add_summary_line(x, result, label=key)
     report.add_method_example_row(key, method_examples)
-report.render()
+report.render(x_label="Number of masked pixels", y_label="Difference in model output")
 
 if SAVE_REPORT:
     report.save(REPORT_LOC)
