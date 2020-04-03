@@ -1,9 +1,10 @@
-from models import MNISTCNN, CifarResNet
-from datasets import MNIST, Cifar
-
+from models import MNISTCNN, CifarResNet, MNISTFCNN, AptosDensenet
+from datasets import MNIST, Cifar, Aptos
 
 DATASET_MODELS = {
-    "MNIST": {"constructor": MNIST, "models": {"CNN": MNISTCNN}},
+    "MNIST": {"constructor": MNIST,
+              "models": {"CNN": MNISTCNN,
+                         "FCNN": MNISTFCNN}},
     "CIFAR10": {"constructor": lambda **kwargs: Cifar(version="cifar10", **kwargs),
                 "models": {"resnet20": lambda: CifarResNet(dataset="cifar10", resnet="resnet20"),
                            "resnet32": lambda: CifarResNet(dataset="cifar10", resnet="resnet32"),
@@ -13,5 +14,7 @@ DATASET_MODELS = {
                  "models": {"resnet20": lambda: CifarResNet(dataset="cifar100", resnet="resnet20"),
                             "resnet32": lambda: CifarResNet(dataset="cifar100", resnet="resnet32"),
                             "resnet44": lambda: CifarResNet(dataset="cifar100", resnet="resnet44"),
-                            "resnet56": lambda: CifarResNet(dataset="cifar100", resnet="resnet56")}}
+                            "resnet56": lambda: CifarResNet(dataset="cifar100", resnet="resnet56")}},
+    "APTOS": {"constructor": lambda **kwargs: Aptos(**kwargs),
+              "models": {"densenet121": lambda: AptosDensenet(densenet="densenet121")}}
 }
