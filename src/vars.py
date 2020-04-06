@@ -1,5 +1,8 @@
 from models import MNISTCNN, CifarResNet, MNISTFCNN, AptosDensenet
 from datasets import MNIST, Cifar, Aptos
+import torch
+
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 DATASET_MODELS = {
     "MNIST": {"constructor": MNIST,

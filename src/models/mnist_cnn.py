@@ -58,3 +58,6 @@ class MNISTCNN(ConvolutionalNetworkModel):
 
     def get_last_conv_layer(self) -> nn.Module:
         return self.net.conv2
+
+    def to(self, *args, **kwargs):
+        self.net.to(*args, **kwargs)

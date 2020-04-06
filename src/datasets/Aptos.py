@@ -1,5 +1,4 @@
 from datasets import Dataset
-from torchvision import datasets, transforms
 from os import path
 
 import numpy as np
@@ -22,6 +21,10 @@ class _IaaWrapper:
         x = self.aug(images=x)
         return x[-1]
 
+def _move_axis_lambda(x, *args):
+    # for use in transformation. python cant pickle lambda functions, so named function is needed
+    # if we want dataloader to use multiprocessing
+    return np.moveaxis(x, 3, 1) / 255
 
 class MyNumpyDataset(torch.utils.data.Dataset):
     """" creates a torch dataset that returns tensors from numpy arrays of images,
@@ -71,17 +74,17 @@ def get_aptos_dataset(data_loc, imsize=224, batch_size=8):
         Train['diagnosis'].tolist())
     class_weights = torch.FloatTensor(class_weights)
 
+    # make transforms for images
     aug = iaa.Sequential([
-        iaa.Affine(rotate=(-30, 30), scale=(0.95, 1.25), translate_percent=(-0.2, 0.2), shear=(-5, 5), mode="constant",
+        iaa.Affine(rotate=(-30, 30), scale=(0.95, 1.25), translate_percent=(-0.1, 0.1), shear=(-5, 5), mode="constant",
                    cval=127),
         iaa.Fliplr(0.5),
-        iaa.Lambda(lambda x, *args: np.moveaxis(x, 3, 1) / 255)
+        iaa.Lambda(_move_axis_lambda)
     ])
-
     transform = _IaaWrapper(aug)
 
     ds_train = MyNumpyDataset(x_train, y_train, transforms=transform)
-    dl_train = DataLoader(ds_train, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True)
+    dl_train = DataLoader(ds_train, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True)
 
     ds_val = MyNumpyDataset(x_test, y_test,
                             transforms=_IaaWrapper(iaa.Lambda(lambda x, *args: np.moveaxis(x, 3, 1) / 255)))

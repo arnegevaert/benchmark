@@ -136,3 +136,8 @@ class CifarResNet(ConvolutionalNetworkModel):
 
     def get_conv_net(self) -> nn.Module:
         return self.net
+
+    def to(self, *args, **kwargs):
+        self.net.to(*args, **kwargs)
+
+

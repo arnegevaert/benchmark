@@ -6,6 +6,9 @@ class Model:
     def predict(self, x):
         raise NotImplementedError
 
+    def to(self, *args, **kwargs):
+        raise NotImplementedError
+
 
 class ConvolutionalNetworkModel(Model):
     def predict(self, x):

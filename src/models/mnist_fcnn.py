@@ -51,3 +51,6 @@ class MNISTFCNN(Model):
 
     def get_last_conv_layer(self) -> nn.Module:
         return self.net.dense2
+
+    def to(self, *args, **kwargs):
+        self.net.to(*args, **kwargs)
