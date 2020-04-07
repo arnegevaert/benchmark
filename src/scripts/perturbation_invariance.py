@@ -5,7 +5,7 @@ from lib import Report
 import numpy as np
 import torch
 
-GENERATE = True
+GENERATE = False
 DATA_ROOT = "../../data"
 DATASET = "CIFAR10"
 PERT_FN = "noise"
@@ -63,3 +63,6 @@ for key in method_constructors:
     diffs = np.array(diffs)  # [noise_levels, n_batches]
     report.add_summary_line(perturbed_dataset.get_levels(), diffs.mean(axis=1), label=key)
 report.render(x_label="Noise level", y_label="Average attribution difference")
+
+import os
+report.save(os.path.join(__file__, "../../../out/cifar_perturbation_invariance.pkl"))
