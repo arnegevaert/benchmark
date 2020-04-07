@@ -17,10 +17,10 @@ class Cifar(Dataset):
         ds_constructors = {"cifar10": datasets.CIFAR10, "cifar100": datasets.CIFAR100}
         self.train_loader = torch.utils.data.DataLoader(
             ds_constructors[version](data_location, train=True, download=download, transform=transform),
-            batch_size=batch_size, shuffle=shuffle)
+            batch_size=batch_size, shuffle=shuffle, drop_last=True)
         self.test_loader = torch.utils.data.DataLoader(
             ds_constructors[version](data_location, train=False, download=download, transform=transform),
-            batch_size=batch_size, shuffle=shuffle)
+            batch_size=batch_size, shuffle=shuffle, drop_last=True)
         self.mask_value = -0.4242
         self.sample_shape = (3, 32, 32)
 

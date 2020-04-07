@@ -27,10 +27,13 @@ class Report:
             "x": x, "y": y, "legend_label": label, "color": next(self.colors), "line_width": 3
         })
 
-    def render(self):
-        summary_plot = plotting.figure()
+    def render(self, x_label="x", y_label="y", x_axis_type="linear", y_range=None):
+        summary_plot = plotting.figure(x_axis_type=x_axis_type, x_axis_label=x_label, y_axis_label=y_label, width=800, height=600, y_range=y_range)
+        counter = 0
+        lds = ["dashed", "dotted", "dotdash", "dashdot"]
         for d in self.summary_plot_data:
-            summary_plot.line(**d)
+            summary_plot.line(**d, line_dash=lds[counter % 4])
+            counter += 1
         plots = [[summary_plot]]
         for method in self.methods:
             plots.append([models.Div(text=f"<h1>{method}</h1>", sizing_mode="stretch_width")])

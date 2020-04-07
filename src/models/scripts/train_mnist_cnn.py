@@ -105,4 +105,4 @@ if __name__ == '__main__':
         scheduler.step()
 
     if save_model:
-        torch.save(model.state_dict(), "../saved_models/mnist_cnn.pt")
+        torch.save(model.state_dict(), "../saved_models/mnist_cnn.pth")

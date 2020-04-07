@@ -1,17 +1,19 @@
 from datasets import PerturbedImageDataset
 from vars import DATASET_MODELS
-from methods import *
+from methods import get_method_constructors
 from lib import Report
 import numpy as np
 import torch
 
 GENERATE = False
 DATA_ROOT = "../../data"
-DATASET = "MNIST"
+DATASET = "CIFAR10"
 PERT_FN = "noise"
-MODEL = "CNN"
-BATCH_SIZE = 32
-N_BATCHES = 4
+MODEL = "resnet20"
+BATCH_SIZE = 4
+N_BATCHES = 256
+METHODS = ["GuidedGradCAM", "Gradient", "InputXGradient", "IntegratedGradients",
+           "GuidedBackprop", "Deconvolution"]
 
 dataset_name = f"{DATASET}_{PERT_FN}"
 dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
@@ -19,13 +21,13 @@ model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
 model = model_constructor()
 
 all_kwargs = {"Occlusion": {"sliding_window_shapes": (1, 1, 1)}}
-method_constructors = get_all_method_constructors(include_random=False)
+method_constructors = get_method_constructors(METHODS)
 
 if GENERATE:
     dataset = dataset_constructor(batch_size=BATCH_SIZE, download=False, shuffle=True)
     perturbed_dataset = PerturbedImageDataset.generate(DATA_ROOT, dataset_name, dataset, model,
                                                        perturbation_fn=PERT_FN,
-                                                       perturbation_levels=np.linspace(0, 2, 10),
+                                                       perturbation_levels=np.linspace(0, 0.25, 10),  # np.linspace(0, 1, 10)
                                                        n_batches=N_BATCHES)
 else:
     perturbed_dataset = PerturbedImageDataset(DATA_ROOT, dataset_name, BATCH_SIZE)
@@ -60,4 +62,7 @@ for key in method_constructors:
             diffs[n_l].append(np.average(avg_diff_per_image))
     diffs = np.array(diffs)  # [noise_levels, n_batches]
     report.add_summary_line(perturbed_dataset.get_levels(), diffs.mean(axis=1), label=key)
-report.render()
+report.render(x_label="Noise level", y_label="Average attribution difference")
+
+import os
+report.save(os.path.join(__file__, "../../../out/cifar_perturbation_invariance.pkl"))
