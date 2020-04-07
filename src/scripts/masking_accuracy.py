@@ -3,8 +3,6 @@ from vars import DATASET_MODELS
 from methods import get_method_constructors
 import time
 import torch
-from lib import Report
-import numpy as np
 from scipy import stats
 
 # TODO this code only works for CIFAR10 now
