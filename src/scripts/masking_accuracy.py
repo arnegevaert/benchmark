@@ -37,15 +37,18 @@ for b in range(N_BATCHES):
     # TODO calculation of jaccard index needs to be revised
     for m_name in METHODS:
         # Get attributions [BATCH_SIZE, channels, rows, cols]
-        attrs = torch.abs(methods[m_name].attribute(samples, target=labels))
-        # Compute jaccard index of attrs with mask
+        attrs = methods[m_name].attribute(samples, target=labels)
+        # Ignore negative attributions for now
+        # Any feature is "important" if its attribution is > 0.01
+        # TODO take this into account in the future
+        attrs = (attrs > 0.01).int()
+        # Compute classical jaccard index of attrs with mask
         mask = model.get_mask()
 
         card_intersect = (attrs * mask).detach().reshape(BATCH_SIZE, -1).sum(dim=1)
-        card_attrs = (attrs**2).detach().reshape(BATCH_SIZE, -1).sum(dim=1)
-        card_mask = (mask**2).sum()
-        #jaccard = card_intersect / (card_attrs + card_mask - card_intersect)
-        jaccard = card_intersect / card_mask
+        card_attrs = attrs.detach().reshape(BATCH_SIZE, -1).sum(dim=1)
+        card_mask = mask.sum()
+        jaccard = card_intersect / (card_attrs + card_mask - card_intersect)
         jaccards[m_name].append(jaccard)
 
     end_t = time.time()
