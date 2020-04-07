@@ -24,12 +24,12 @@ def _normalize_attributions(attrs):
 class SimpleCaptumMethod(Method):
     METHODS = {
         # TODO set the values for abs according to the actual method properties
-        "Gradient": {"constructor": attr.Saliency, "abs": True},
-        "InputXGradient": {"constructor": attr.InputXGradient, "abs": True},
-        "IntegratedGradients": {"constructor": attr.IntegratedGradients, "abs": True},
-        "GuidedBackprop": {"constructor": attr.GuidedBackprop, "abs": True},
-        "Deconvolution": {"constructor": attr.Deconvolution, "abs": True},
-        "Ablation": {"constructor": attr.FeatureAblation, "abs": True}
+        "Gradient": {"constructor": attr.Saliency, "abs": True},  # Gradient abs can be set to False by passing abs=False in constructor kwargs
+        "InputXGradient": {"constructor": attr.InputXGradient, "abs": False},
+        "IntegratedGradients": {"constructor": attr.IntegratedGradients, "abs": False},
+        "GuidedBackprop": {"constructor": attr.GuidedBackprop, "abs": False},
+        "Deconvolution": {"constructor": attr.Deconvolution, "abs": False},
+        "Ablation": {"constructor": attr.FeatureAblation, "abs": False}
     }
 
     def __init__(self, net: nn.Module, method: str, normalize=True, **kwargs):
@@ -72,6 +72,7 @@ class Occlusion(Method):
         self.occlusion = attr.Occlusion(net)
         self.sliding_window_shapes = sliding_window_shapes
         self.normalize = normalize
+        self.is_absolute = False
 
     def attribute(self, x, target):
         self.net.eval()
@@ -97,8 +98,13 @@ class DeepLift(Method):
 
 # This is not really an attribution technique, just to establish a baseline
 class Random(Method):
-    def __init__(self):
+    def __init__(self, normalize=True):
         super().__init__()
+        self.normalize = normalize
+        self.is_absolute = False
 
     def attribute(self, x, target):
-        return torch.rand_like(x)
+        attrs = torch.rand_like(x) * 2 - 1
+        if self.normalize:
+            return _normalize_attributions(attrs)
+        return attrs
