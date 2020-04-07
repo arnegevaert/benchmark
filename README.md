@@ -92,7 +92,7 @@ Applicable to all techniques.
 - w.r.t. amount of explanations: Measure average execution time per sample for varying amount of samples :x:
 
 #### From sources
-- Sensitivity-n: Towards Better Understanding of Gradient-Based Attribution Methods for Deep Neural Networks. :construction:
+- Sensitivity-n: Towards Better Understanding of Gradient-Based Attribution Methods for Deep Neural Networks. :heavy_check_mark:
 - Impact score: Do Explanation Reflect Decisions? A Machine-centric Strategy to Quantify the Performance of Explainability Algorithms :x:
 - Impact coverage: Do Explanation Reflect Decisions? A Machine-centric Strategy to Quantify the Performance of Explainability Algorithms :x:
 - AIC/SIC: XRAI: Better Attributions Through Regions :x:
