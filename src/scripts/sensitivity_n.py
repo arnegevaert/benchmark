@@ -4,14 +4,14 @@ from lib import Report
 import numpy as np
 import time
 
-DATASET = "MNIST"
+DATASET = "CIFAR10"
 DOWNLOAD_DATASET = False
-MODEL = "CNN"
+MODEL = "resnet20"
 BATCH_SIZE = 64
 N_BATCHES = 16
 N_SUBSETS = 100
-#MASK_RANGE = range(1, 1000, 100)
-MASK_RANGE = range(1, 700, 50)
+MASK_RANGE = range(1, 1000, 100)
+#MASK_RANGE = range(1, 700, 50)
 METHODS = ["GuidedGradCAM", "Gradient", "InputXGradient", "IntegratedGradients",
            "GuidedBackprop", "Deconvolution", "Random"]
 
@@ -22,12 +22,12 @@ method_constructors = get_method_constructors(METHODS)
 
 all_kwargs = {"Occlusion": {"sliding_window_shapes": (1, 1, 1)}}
 
-model = model_constructor()
+model = model_constructor(output_logits=True)
 dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOWNLOAD_DATASET)
 
 x = np.array(MASK_RANGE)
 report = Report(list(method_constructors.keys()))
-methods = {m_name: method_constructors[m_name](model, **all_kwargs.get(m_name, {})) for m_name in METHODS}
+methods = {m_name: method_constructors[m_name](model, normalize=True, **all_kwargs.get(m_name, {})) for m_name in METHODS}
 iterator = iter(dataset.get_test_data())
 method_corrs = {m_name: [] for m_name in METHODS}
 
@@ -39,7 +39,7 @@ for b in range(N_BATCHES):
     samples, labels = next(iterator)
     sample_size = np.prod(samples.shape[1:])
     # Get original output and attributions
-    orig_output = model.predict(samples, logits=True)
+    orig_output = model.predict(samples)
     attrs = {m_name: methods[m_name].attribute(samples, target=labels) for m_name in METHODS}
     corrs = {m_name: [] for m_name in METHODS}
     for n in MASK_RANGE:
@@ -54,7 +54,7 @@ for b in range(N_BATCHES):
             masked_samples = samples.clone()
             masked_samples[(batch_dim, *unraveled)] = dataset.mask_value
             # Get model output of masked samples
-            output = model.predict(masked_samples, logits=True)
+            output = model.predict(masked_samples)
             # Get sum of absolute difference in outputs ([BATCH_SIZE, 1])
             sum_diffs.append(
                 (orig_output - output).gather(1, labels.reshape(-1, 1)).reshape(BATCH_SIZE, -1).sum(dim=1).reshape(BATCH_SIZE, 1)
