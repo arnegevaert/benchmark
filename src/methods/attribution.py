@@ -14,17 +14,28 @@ class SimpleCaptumMethod(Method):
         "Deconvolution": attr.Deconvolution,
         "Ablation": attr.FeatureAblation,
     }
+    # optional arguments
+    KWAGS = {
+        "Gradient": {},
+        "InputXGradient": {},
+        "IntegratedGradients": {"internal_batch_size": 8},# would be better to 
+        "GuidedBackprop": {},
+        "Deconvolution": {},
+        "Ablation": {},
+
+    }
 
     def __init__(self, net: nn.Module, method: str):
         super().__init__()
         self.net = net
         self.method = SimpleCaptumMethod.METHODS[method](net)
+        self.kwargs = SimpleCaptumMethod.KWAGS[method]
 
     def attribute(self, x, target):
         batch_size = x.shape[0]
         sample_shape = x.shape[1:]
         self.net.eval()
-        attrs = self.method.attribute(x, target=target)
+        attrs = self.method.attribute(x, target=target, **self.kwargs)
         flattened_attrs = attrs.reshape(batch_size, -1)
         min_per_img = flattened_attrs.min(dim=-1)[0].unsqueeze(dim=-1)
         max_per_img = flattened_attrs.max(dim=-1)[0].unsqueeze(dim=-1)
