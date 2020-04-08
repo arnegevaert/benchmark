@@ -43,8 +43,9 @@ class BasicBlock(nn.Module):
 
 
 class Net(nn.Module):
-    def __init__(self, block, layers, num_classes=10):
+    def __init__(self, block, layers, num_classes=10, output_logits=False):
         super(Net, self).__init__()
+        self.output_logits = output_logits
         self.inplanes = 16
         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(16)
@@ -94,7 +95,10 @@ class Net(nn.Module):
     def forward(self, x):
         if x.dtype != torch.float32:
             x = x.float()
-        return self.softmax(self.get_logits(x))
+        logits = self.get_logits(x)
+        if self.output_logits:
+            return logits
+        return self.softmax(logits)
 
 
 base_url = 'https://github.com/chenyaofo/CIFAR-pretrained-models/releases/download/resnet/'
@@ -113,7 +117,7 @@ pretrained_settings = {
 
 
 class CifarResNet(ConvolutionalNetworkModel):
-    def __init__(self, dataset="cifar10", resnet="resnet20"):
+    def __init__(self, output_logits=False, dataset="cifar10", resnet="resnet20"):
         super().__init__()
         if dataset not in ["cifar10", "cifar100"]:
             raise ValueError("dataset must be in {cifar10, cifar100}")
@@ -124,20 +128,19 @@ class CifarResNet(ConvolutionalNetworkModel):
             "resnet20": [3, 3, 3], "resnet32": [5, 5, 5],
             "resnet44": [7, 7, 7], "resnet56": [9, 9, 9]
         }
-        self.net = Net(BasicBlock, layers[resnet], num_classes=10 if dataset is "cifar10" else 100)
+        self.net = Net(BasicBlock, layers[resnet], num_classes=10 if dataset is "cifar10" else 100, output_logits=output_logits)
         if not path.exists(params_loc):
             url = base_url + pretrained_settings[dataset][resnet]
             print(f"Downloading parameters from {url}...")
             urllib.request.urlretrieve(url, params_loc)
             print(f"Download finished.")
         self.net.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
+        self.output_logits = output_logits
 
-    def predict(self, x, logits=False):
+    def predict(self, x):
         self.net.eval()
         if type(x) == np.ndarray:
             x = torch.tensor(x)
-        if logits:
-            return self.net.get_logits(x)
         return self.net(x)
 
     def get_last_conv_layer(self) -> nn.Module:

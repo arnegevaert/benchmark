@@ -1,15 +1,15 @@
 from methods import *
 
 METHODS = {
-    "GuidedGradCAM": lambda model: GuidedGradCAM(model),
-    "Gradient": lambda model: SimpleCaptumMethod(model.net, "Gradient"),
-    "InputXGradient": lambda model: SimpleCaptumMethod(model.net, "InputXGradient"),
-    "IntegratedGradients": lambda model: SimpleCaptumMethod(model.net, "IntegratedGradients"),
-    "GuidedBackprop": lambda model: SimpleCaptumMethod(model.net, "GuidedBackprop"),
-    "Deconvolution": lambda model: SimpleCaptumMethod(model.net, "Deconvolution"),
+    "GuidedGradCAM": lambda model, **kwargs: GuidedGradCAM(model, **kwargs),
+    "Gradient": lambda model, **kwargs: SimpleCaptumMethod(model.net, "Gradient", **kwargs),
+    "InputXGradient": lambda model, **kwargs: SimpleCaptumMethod(model.net, "InputXGradient", **kwargs),
+    "IntegratedGradients": lambda model, **kwargs: SimpleCaptumMethod(model.net, "IntegratedGradients", **kwargs),
+    "GuidedBackprop": lambda model, **kwargs: SimpleCaptumMethod(model.net, "GuidedBackprop", **kwargs),
+    "Deconvolution": lambda model, **kwargs: SimpleCaptumMethod(model.net, "Deconvolution", **kwargs),
     "Occlusion": lambda model, **kwargs: Occlusion(model.net, **kwargs),
-    "Ablation": lambda model: SimpleCaptumMethod(model.net, "Ablation"),
-    "Random": lambda _: Random()
+    "Ablation": lambda model, **kwargs: SimpleCaptumMethod(model.net, "Ablation", **kwargs),
+    "Random": lambda _, **kwargs: Random(**kwargs)
 }
 
 
