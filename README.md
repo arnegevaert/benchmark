@@ -13,6 +13,8 @@ Benchmark for ML interpretability techniques.
 | Gradient | [link](https://arxiv.org/abs/1312.6034) | [Captum](https://captum.ai/api/saliency.html) | Differentiable | Any | :heavy_check_mark: |
 | InputXGradient | [link](https://arxiv.org/abs/1611.07270) | [Captum](https://captum.ai/api/input_x_gradient.html) | Differentiable | Any | :heavy_check_mark: |
 | IntegratedGradients | [link](http://arxiv.org/abs/1703.01365) | [Captum](https://captum.ai/api/integrated_gradients.html) | Differentiable | Any | :heavy_check_mark: |
+| SmoothGrad | [link](https://arxiv.org/abs/1706.03825) | None | Differentiable | Any | :x: |
+| Expected Gradients | [link](https://arxiv.org/abs/1906.10670) | None | Differentiable | Any | :x: |
 | DeepLIFT<sup>1</sup> | [link](https://arxiv.org/abs/1704.02685) | [Captum **(UNR)**](https://captum.ai/api/deep_lift.html) | DNN | Image | :construction: |
 | Guided Backprop | [link](https://arxiv.org/abs/1412.6806) | [Captum](https://captum.ai/api/guided_backprop.html) | DNN | Image | :heavy_check_mark: |
 | Deconvolution | [link](https://arxiv.org/abs/1311.2901) | [Captum](https://captum.ai/api/deconvolution.html) | CNN | Image | :heavy_check_mark: |
@@ -96,6 +98,8 @@ Applicable to all techniques.
 - Impact score: Do Explanation Reflect Decisions? A Machine-centric Strategy to Quantify the Performance of Explainability Algorithms :x:
 - Impact coverage: Do Explanation Reflect Decisions? A Machine-centric Strategy to Quantify the Performance of Explainability Algorithms :x:
 - AIC/SIC: XRAI: Better Attributions Through Regions :x:
+- (In)fidelity and sensitivity: On the (In)fidelity and Sensitivity for Explanations ([Arxiv](https://arxiv.org/abs/1901.09392))
+- BAM: Benchmarking Attribution Methods with Relative Feature Importance ([Arxiv](https://arxiv.org/abs/1907.09701))
 
 
 
