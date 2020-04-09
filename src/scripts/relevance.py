@@ -1,16 +1,16 @@
 from methods import get_all_method_constructors, get_method_constructors
-from vars import DATASET_MODELS, DEVICE
+from vars import DATASET_MODELS
 from lib import Report
 import numpy as np
 import torch
 
-DEVICE = "cpu"
-DATASET = "MNIST"
+DEVICE = "cuda"
+DATASET = "APTOS"
 DOWNLOAD_DATASET = False
-MODEL = "CNN"
+MODEL = "densenet121"
 
-BATCH_SIZE = 64
-N_BATCHES = 16
+BATCH_SIZE = 8
+N_BATCHES = 2
 MASK_RANGE = range(1, 128, 10)
 N_EXAMPLES = 4
 SAVE_REPORT = False
@@ -47,7 +47,7 @@ for key in method_constructors:
         samples, labels = next(iterator)
 
         samples = samples.to(DEVICE, non_blocking=True)
-        labels=labels.to(DEVICE,non_blocking=True)
+        labels = labels.to(DEVICE, non_blocking=True)
 
         batch_result = []
         attrs = method.attribute(samples, target=labels)  # [batch_size, *sample_shape]

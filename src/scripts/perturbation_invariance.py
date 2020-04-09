@@ -5,13 +5,14 @@ from lib import Report
 import numpy as np
 import torch
 
+DEVICE = "cuda"
 GENERATE = False
 DATA_ROOT = "../../data"
 DATASET = "CIFAR10"
 PERT_FN = "noise"
 MODEL = "resnet20"
 BATCH_SIZE = 4
-N_BATCHES = 256
+N_BATCHES = 4
 METHODS = ["GuidedGradCAM", "Gradient", "InputXGradient", "IntegratedGradients",
            "GuidedBackprop", "Deconvolution"]
 
@@ -19,6 +20,7 @@ dataset_name = f"{DATASET}_{PERT_FN}"
 dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
 model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
 model = model_constructor()
+model.to(DEVICE)
 
 all_kwargs = {"Occlusion": {"sliding_window_shapes": (1, 1, 1)}}
 method_constructors = get_method_constructors(METHODS)
@@ -41,12 +43,12 @@ for key in method_constructors:
     cur_max_diff = 0
     for b, b_dict in enumerate(perturbed_dataset):
         print(f"Batch {b+1}/{N_BATCHES}")
-        orig = torch.tensor(b_dict["original"])  # [batch_size, *sample_shape]
-        labels = torch.tensor(b_dict["labels"])  # [batch_size]
-        orig_attr = method.attribute(orig, target=labels).detach()  # [batch_size, *sample_shape]
+        orig = torch.tensor(b_dict["original"]).to(DEVICE, non_blocking=True)  # [batch_size, *sample_shape]
+        labels = torch.tensor(b_dict["labels"]).to(DEVICE, non_blocking=True)  # [batch_size]
+        orig_attr = method.attribute(orig, target=labels).detach().cpu()  # [batch_size, *sample_shape]
         for n_l, noise_level_batch in enumerate(b_dict["perturbed"]):
-            noise_level_batch = torch.tensor(noise_level_batch)  # [batch_size, *sample_shape]
-            perturbed_attr = method.attribute(noise_level_batch, target=labels).detach()  # [batch_size, *sample_shape]
+            noise_level_batch = torch.tensor(noise_level_batch).to(DEVICE, non_blocking=True)  # [batch_size, *sample_shape]
+            perturbed_attr = method.attribute(noise_level_batch, target=labels).detach().cpu()  # [batch_size, *sample_shape]
 
             avg_diff_per_image = np.average(
                 np.reshape(

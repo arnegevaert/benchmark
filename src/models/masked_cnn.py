@@ -89,3 +89,6 @@ class MaskedCNN(ConvolutionalNetworkModel):
         cnn = MaskedCNN(**d["params"])
         cnn.net.load_state_dict(d["state_dict"])
         return cnn
+
+    def to(self, *args, **kwargs):
+        self.net.to(*args, **kwargs)

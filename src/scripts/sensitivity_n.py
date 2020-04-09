@@ -4,6 +4,7 @@ from lib import Report
 import numpy as np
 import time
 
+DEVICE = "cuda"
 DATASET = "CIFAR10"
 DOWNLOAD_DATASET = False
 MODEL = "resnet20"
@@ -23,6 +24,7 @@ method_constructors = get_method_constructors(METHODS)
 all_kwargs = {"Occlusion": {"sliding_window_shapes": (1, 1, 1)}}
 
 model = model_constructor(output_logits=True)
+model.to(DEVICE)
 dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOWNLOAD_DATASET)
 
 x = np.array(MASK_RANGE)
@@ -37,6 +39,9 @@ for b in range(N_BATCHES):
     start_t = time.time()
     print(f"Batch {b + 1}/{N_BATCHES}...")
     samples, labels = next(iterator)
+    samples = samples.to(DEVICE, non_blocking=True)
+    labels = labels.to(DEVICE, non_blocking=True)
+
     sample_size = np.prod(samples.shape[1:])
     # Get original output and attributions
     orig_output = model.predict(samples)
@@ -58,12 +63,12 @@ for b in range(N_BATCHES):
             # Get sum of absolute difference in outputs ([BATCH_SIZE, 1])
             sum_diffs.append(
                 (orig_output - output).gather(1, labels.reshape(-1, 1)).reshape(BATCH_SIZE, -1).sum(dim=1).reshape(BATCH_SIZE, 1)
-                    .detach().numpy())
+                    .detach().cpu().numpy())
             # Get sum of attributions for each method ([BATCH_SIZE, 1])
             for m_name in METHODS:
                 sum_attrs[m_name].append(
                     (attrs[m_name][(batch_dim, *unraveled)]).reshape(BATCH_SIZE, -1).sum(dim=1).reshape(BATCH_SIZE, 1)
-                        .detach().numpy())
+                        .detach().cpu().numpy())
         sum_diffs = np.hstack(sum_diffs)
         for m_name in METHODS:
             sum_attrs[m_name] = np.hstack(sum_attrs[m_name])
