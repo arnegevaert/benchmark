@@ -6,7 +6,7 @@ dataset = DATASET_MODELS["CIFAR10"]["constructor"](batch_size=8)
 model = DATASET_MODELS["CIFAR10"]["models"]["resnet20"]()
 method = get_method("InputXGradient", model)
 
-iterator = iter(dataset.get_test_data())
+iterator = iter(dataset.get_test_loader())
 
 images, labels = next(iterator)
 attrs = method.attribute(images, target=labels)

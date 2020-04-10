@@ -1,4 +1,4 @@
-from datasets import PerturbedImageDataset
+from datasets import NoisePerturbedDataset
 from vars import DATASET_MODELS
 from methods import get_method_constructors
 from lib import Report
@@ -25,12 +25,12 @@ method_constructors = get_method_constructors(METHODS)
 
 if GENERATE:
     dataset = dataset_constructor(batch_size=BATCH_SIZE, download=False, shuffle=True)
-    perturbed_dataset = PerturbedImageDataset.generate(DATA_ROOT, dataset_name, dataset, model,
+    perturbed_dataset = NoisePerturbedDataset.generate(DATA_ROOT, dataset_name, dataset, model,
                                                        perturbation_fn=PERT_FN,
                                                        perturbation_levels=np.linspace(0, 0.25, 10),  # np.linspace(0, 1, 10)
                                                        n_batches=N_BATCHES)
 else:
-    perturbed_dataset = PerturbedImageDataset(DATA_ROOT, dataset_name, BATCH_SIZE)
+    perturbed_dataset = NoisePerturbedDataset(DATA_ROOT, dataset_name, BATCH_SIZE)
 
 report = Report(list(method_constructors.keys()))
 for key in method_constructors:

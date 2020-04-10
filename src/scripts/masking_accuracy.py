@@ -22,7 +22,7 @@ all_kwargs = {"Occlusion": {"sliding_window_shapes": (1, 1, 1)}}
 methods = {m_name: method_constructors[m_name](model, **all_kwargs.get(m_name, {})) for m_name in METHODS}
 
 
-iterator = iter(dataset.get_test_data())
+iterator = iter(dataset.get_test_loader())
 jaccards = {m_name: [] for m_name in METHODS}
 for b in range(N_BATCHES):
     start_t = time.time()

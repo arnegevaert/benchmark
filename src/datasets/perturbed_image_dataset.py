@@ -5,13 +5,12 @@ import numpy as np
 import warnings
 import os
 from os import path
-from typing import Iterator
 
 from models import Model
-from datasets import Dataset
+from datasets import DerivedDataset
 
 
-class PerturbedImageDataset:
+class NoisePerturbedDataset(DerivedDataset):
     def __init__(self, data_location, name, batch_size):
         self.name = name
         self.batch_size = batch_size
@@ -133,4 +132,4 @@ class PerturbedImageDataset:
         }
         json.dump(metadata, open(metadata_filename, "w"))
         file.flush()
-        return PerturbedImageDataset(data_location, name, batch_size)
+        return NoisePerturbedDataset(data_location, name, batch_size)

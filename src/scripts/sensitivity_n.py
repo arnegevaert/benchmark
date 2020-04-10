@@ -28,7 +28,7 @@ dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOW
 x = np.array(MASK_RANGE)
 report = Report(list(method_constructors.keys()))
 methods = {m_name: method_constructors[m_name](model, normalize=True, **all_kwargs.get(m_name, {})) for m_name in METHODS}
-iterator = iter(dataset.get_test_data())
+iterator = iter(dataset.get_test_loader())
 method_corrs = {m_name: [] for m_name in METHODS}
 
 all_corrs = {m_name: [] for m_name in METHODS}

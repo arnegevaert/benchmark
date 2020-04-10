@@ -34,7 +34,7 @@ for key in method_constructors:
     method_examples = []
     print(f"Method: {key}")
     result = []
-    iterator = iter(dataset.get_test_data())
+    iterator = iter(dataset.get_test_loader())
     # Get any provided kwargs for this method
     kwargs = all_kwargs.get(key, {})
     method = method_constructors[key](model, **kwargs)

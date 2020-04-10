@@ -67,6 +67,6 @@ if __name__ == '__main__':
     optimizer = optim.Adadelta(model.net.parameters(), lr=LR)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=GAMMA)
     for epoch in range(1, EPOCHS+1):
-        train(model.net, train_loader=dataset.get_train_data(), optimizer=optimizer, epoch=epoch, log_interval=100)
-        test(model.net, test_loader=dataset.get_test_data())
+        train(model.net, train_loader=dataset.get_train_loader(), optimizer=optimizer, epoch=epoch, log_interval=100)
+        test(model.net, test_loader=dataset.get_test_loader())
         scheduler.step()
