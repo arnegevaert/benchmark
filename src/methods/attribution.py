@@ -4,19 +4,20 @@ from captum import attr
 import torch.nn as nn
 import torch
 import warnings
+import numpy as np
 
 
 def _normalize_attributions(attrs):
-    abs_attrs = attrs.reshape(attrs.shape[0], -1).abs()
-    max_abs_attr_per_image = abs_attrs.max(dim=-1)[0]
-    if torch.any(max_abs_attr_per_image == 0):
+    abs_attrs = np.abs(attrs.reshape(attrs.shape[0], -1))
+    max_abs_attr_per_image = np.max(abs_attrs, axis=1)[0]
+    if np.any(max_abs_attr_per_image == 0):
         warnings.warn("Completely 0 attributions returned for sample.")
         # If an image has 0 max abs attr, all attrs are 0 for that image
         # Divide by 1 to return the original constant 0 attributions
-        max_abs_attr_per_image[torch.where(max_abs_attr_per_image == 0)] = 1
+        max_abs_attr_per_image[np.where(max_abs_attr_per_image == 0)] = 1
     # Add as many singleton dimensions to max_abs_attr_per_image as necessary to divide
     while len(max_abs_attr_per_image.shape) < len(attrs.shape):
-        max_abs_attr_per_image = max_abs_attr_per_image.unsqueeze(-1)
+        max_abs_attr_per_image = np.expand_dims(max_abs_attr_per_image, axis=-1)
     normalized = attrs / max_abs_attr_per_image
     return normalized.reshape(attrs.shape)
 
@@ -41,9 +42,9 @@ class SimpleCaptumMethod(Method):
         self.is_absolute = method_dict["abs"] if "abs" not in kwargs else kwargs["abs"]
         self.normalize = normalize
 
-    def attribute(self, x, target):
+    def __call__(self, x: np.ndarray, target: np.ndarray):
         self.net.eval()
-        attrs = self.method.attribute(x, target=target)
+        attrs = self.method.attribute(torch.tensor(x), target=torch.tensor(target)).detach().numpy()
         if self.normalize:
             return _normalize_attributions(attrs)
         return attrs
@@ -57,9 +58,9 @@ class GuidedGradCAM(Method):
         self.normalize = normalize
         self.is_absolute = False
 
-    def attribute(self, x, target):
+    def __call__(self, x: np.ndarray, target: np.ndarray):
         self.net.eval()
-        attrs = self.guided_gradcam.attribute(x, target=target)
+        attrs = self.guided_gradcam.attribute(torch.tensor(x), target=torch.tensor(target)).detach().numpy()
         if self.normalize:
             return _normalize_attributions(attrs)
         return attrs
@@ -74,9 +75,10 @@ class Occlusion(Method):
         self.normalize = normalize
         self.is_absolute = False
 
-    def attribute(self, x, target):
+    def __call__(self, x: np.ndarray, target: np.ndarray):
         self.net.eval()
-        attrs = self.occlusion.attribute(x, target=target, sliding_window_shapes=self.sliding_window_shapes)
+        attrs = self.occlusion.attribute(torch.tensor(x), target=torch.tensor(target),
+                                         sliding_window_shapes=self.sliding_window_shapes).detach().numpy()
         if self.normalize:
             return _normalize_attributions(attrs)
         return attrs
@@ -103,8 +105,8 @@ class Random(Method):
         self.normalize = normalize
         self.is_absolute = False
 
-    def attribute(self, x, target):
-        attrs = torch.rand_like(x) * 2 - 1
+    def __call__(self, x: np.ndarray, target: np.ndarray):
+        attrs = np.random.rand(*x.shape) * 2 - 1
         if self.normalize:
             return _normalize_attributions(attrs)
         return attrs

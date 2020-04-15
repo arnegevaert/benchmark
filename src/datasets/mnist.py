@@ -1,12 +1,11 @@
 from torchvision import datasets, transforms
 from datasets import TrainableDataset
-from os import path
 from torch.utils.data import DataLoader
 
 
 class MNIST(TrainableDataset):
     def __init__(self, batch_size, data_location, download=False, shuffle=True):
-        super().__init__(batch_size)
+        super().__init__(batch_size, (1, 28, 28))
         transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.1307,), (0.3081,))
@@ -19,7 +18,6 @@ class MNIST(TrainableDataset):
             datasets.MNIST(data_location, train=False, transform=transform),
             batch_size=batch_size, shuffle=shuffle)
         self.mask_value = -0.4242
-        self.sample_shape = (1, 28, 28)
 
     def get_train_loader(self):
         return self.train_loader

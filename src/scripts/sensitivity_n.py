@@ -4,14 +4,14 @@ from lib import Report
 import numpy as np
 import time
 
-DATASET = "CIFAR10"
+DATASET = "MNIST"
 DOWNLOAD_DATASET = False
-MODEL = "resnet20"
+MODEL = "CNN"
 BATCH_SIZE = 64
-N_BATCHES = 16
+N_BATCHES = 2
 N_SUBSETS = 100
-MASK_RANGE = range(1, 1000, 100)
-#MASK_RANGE = range(1, 700, 50)
+#MASK_RANGE = range(1, 1000, 100)
+MASK_RANGE = range(1, 700, 50)
 METHODS = ["GuidedGradCAM", "Gradient", "InputXGradient", "IntegratedGradients",
            "GuidedBackprop", "Deconvolution", "Random"]
 
@@ -23,7 +23,7 @@ method_constructors = get_method_constructors(METHODS)
 all_kwargs = {"Occlusion": {"sliding_window_shapes": (1, 1, 1)}}
 
 model = model_constructor(output_logits=True)
-dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOWNLOAD_DATASET)
+dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOWNLOAD_DATASET, data_location="../../data/MNIST/default")
 
 x = np.array(MASK_RANGE)
 report = Report(list(method_constructors.keys()))
