@@ -9,12 +9,12 @@ import numpy as np
 
 def _normalize_attributions(attrs):
     abs_attrs = np.abs(attrs.reshape(attrs.shape[0], -1))
-    max_abs_attr_per_image = np.max(abs_attrs, axis=1)[0]
+    max_abs_attr_per_image = np.max(abs_attrs, axis=1)
     if np.any(max_abs_attr_per_image == 0):
         warnings.warn("Completely 0 attributions returned for sample.")
         # If an image has 0 max abs attr, all attrs are 0 for that image
         # Divide by 1 to return the original constant 0 attributions
-        max_abs_attr_per_image[np.where(max_abs_attr_per_image == 0)] = 1
+        max_abs_attr_per_image[np.where(max_abs_attr_per_image == 0)] = 1.0
     # Add as many singleton dimensions to max_abs_attr_per_image as necessary to divide
     while len(max_abs_attr_per_image.shape) < len(attrs.shape):
         max_abs_attr_per_image = np.expand_dims(max_abs_attr_per_image, axis=-1)
@@ -44,7 +44,7 @@ class SimpleCaptumMethod(Method):
 
     def __call__(self, x: np.ndarray, target: np.ndarray):
         self.net.eval()
-        attrs = self.method.attribute(torch.tensor(x), target=torch.tensor(target)).detach().numpy()
+        attrs = self.method.attribute(torch.tensor(x), target=torch.tensor(target, dtype=torch.long)).detach().numpy()
         if self.normalize:
             return _normalize_attributions(attrs)
         return attrs
@@ -60,7 +60,7 @@ class GuidedGradCAM(Method):
 
     def __call__(self, x: np.ndarray, target: np.ndarray):
         self.net.eval()
-        attrs = self.guided_gradcam.attribute(torch.tensor(x), target=torch.tensor(target)).detach().numpy()
+        attrs = self.guided_gradcam.attribute(torch.tensor(x), target=torch.tensor(target, dtype=torch.long)).detach().numpy()
         if self.normalize:
             return _normalize_attributions(attrs)
         return attrs
@@ -77,7 +77,7 @@ class Occlusion(Method):
 
     def __call__(self, x: np.ndarray, target: np.ndarray):
         self.net.eval()
-        attrs = self.occlusion.attribute(torch.tensor(x), target=torch.tensor(target),
+        attrs = self.occlusion.attribute(torch.tensor(x), target=torch.tensor(target, dtype=torch.long),
                                          sliding_window_shapes=self.sliding_window_shapes).detach().numpy()
         if self.normalize:
             return _normalize_attributions(attrs)

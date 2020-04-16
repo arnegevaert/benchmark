@@ -1,5 +1,3 @@
-from models import Model
-from datasets import Dataset
 from typing import Iterable, List, Callable
 from os import path
 import numpy as np
@@ -10,15 +8,15 @@ import warnings
 import json
 
 
-class NoisePerturbedDataset(Dataset):
+class NoisePerturbedDataset:
     def __init__(self, location):
+        self.filename = path.join(location, "dataset.hdf5")
+        assert(path.exists(self.filename))
         metadata = json.load(open(path.join(location, "meta.json")))
         self.perturbation_levels = metadata["perturbation_levels"]
         self.batch_size = metadata["batch_size"]
         self.sample_shape = metadata["sample_shape"]
-        super(NoisePerturbedDataset).__init__(self.batch_size, self.sample_shape)
-        self.filename = path.join(location, "dataset.hdf5")
-        assert(path.exists(self.filename))
+        self.n_batches = metadata["n_batches"]
         self.file = h5py.File(self.filename, "r")
 
     def __iter__(self):
@@ -34,8 +32,8 @@ class NoisePerturbedDataset(Dataset):
 
 
 def generate_noise_perturbed_dataset(data: Iterable, location: str, perturbation_levels: List,
-                                     max_tries: int, n_batches: int, model: Model = None,
-                                     normalization_fn: Callable = None):
+                                     max_tries: int, n_batches: int, model: Callable[[np.ndarray], np.ndarray] = None,
+                                     normalization_fn: Callable[[np.ndarray], np.ndarray] = None):
     iterator = iter(data)
     # [batch_size, *sample_shape], [batch_size]
     batch, labels = next(iterator, None)
@@ -52,26 +50,27 @@ def generate_noise_perturbed_dataset(data: Iterable, location: str, perturbation
     file.create_dataset("original", shape=batch.shape, maxshape=(None,) + sample_shape,
                         chunks=batch.shape, dtype=batch.dtype)
     # Dataset containing labels of original samples
-    file.create_dataset("labels", shape=labels.shape, maxshape=(None,), chunks=batch_size, dtype=batch.dtype)
-    for i, l_batch in enumerate(perturbation_levels):
+    file.create_dataset("labels", shape=labels.shape, maxshape=(None,), chunks=(batch_size,), dtype=batch.dtype)
+    for l in range(len(perturbation_levels)):
         # A new dataset for every noise level
-        file.create_dataset(f"level_{i}", shape=batch.shape, maxshape=(None,) + sample_shape,
+        file.create_dataset(f"level_{l}", shape=batch.shape, maxshape=(None,) + sample_shape,
                             chunks=batch.shape, dtype=batch.dtype)
 
     row_count, successful_batches = 0, 0
-    while successful_batches < n_batches and batch:
-        if type(batch) == torch.Tensor:
-            batch = batch.detach().numpy()
-            labels = labels.detach().numpy()
+    while successful_batches < n_batches and batch is not None:
         tries, batch_ok, perturbed_batch = 0, False, []
         # Try to make a batch until it works or until maximum number of tries is reached
         while tries < max_tries and not batch_ok:
+            batch_ok, perturbed_batch = True, []
+            tries += 1
             for p_l in perturbation_levels:
                 perturbed_samples = batch + (np.random.rand(*batch.shape)) * p_l
                 if normalization_fn:
                     perturbed_samples = normalization_fn(perturbed_samples)
-                predictions = model.predict(torch.tensor(perturbed_samples))
-                batch_ok = batch_ok and not torch.any(predictions.argmax(axis=1)) != torch.tensor(labels)
+                predictions = model(perturbed_samples)
+                batch_ok = batch_ok and not np.any(predictions.argmax(axis=1) != labels)
+                if not batch_ok:
+                    break
                 perturbed_batch.append(perturbed_samples)
         if batch_ok:
             # Resize datasets to accommodate for new batch
@@ -80,17 +79,17 @@ def generate_noise_perturbed_dataset(data: Iterable, location: str, perturbation
             for level, l_batch in enumerate(perturbed_batch):
                 file[f"level_{level}"].resize(row_count + batch_size, axis=0)
 
-                # Add batch to datasets
-                file["original"][row_count:] = batch
-                file["labels"][row_count:] = labels
-                for i, l_batch in enumerate(perturbed_batch):
-                    file[f"level_{i}"][row_count:] = l_batch
-                successful_batches += 1
-                row_count += batch_size
-                print(f"Batch successful: {successful_batches}/{n_batches}")
+            # Add batch to datasets
+            file["original"][row_count:] = batch
+            file["labels"][row_count:] = labels
+            for i, l_batch in enumerate(perturbed_batch):
+                file[f"level_{i}"][row_count:] = l_batch
+            successful_batches += 1
+            row_count += batch_size
+            print(f"Batch successful: {successful_batches}/{n_batches}")
         else:
             print("Skipped batch.")
-        batch, labels = next(iterator, None)
+        batch, labels = next(iterator, (None, None))
     if successful_batches < n_batches:
         warnings.warn(f"Only {successful_batches}/{n_batches} were successful.")
     else:
@@ -98,7 +97,8 @@ def generate_noise_perturbed_dataset(data: Iterable, location: str, perturbation
     metadata = {
         "perturbation_levels": perturbation_levels,
         "batch_size": batch_size,
-        "sample_shape": sample_shape
+        "sample_shape": sample_shape,
+        "n_batches": successful_batches
     }
     json.dump(metadata, open(metadata_filename, "w"))
     file.flush()

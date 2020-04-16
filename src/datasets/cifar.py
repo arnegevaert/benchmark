@@ -27,5 +27,9 @@ class Cifar(TrainableDataset):
     def get_test_loader(self):
         return self.test_loader
 
+    def get_test_loader_numpy(self):
+        for i, batch in enumerate(self.test_loader):
+            yield batch[0].detach().numpy(), batch[1].detach().numpy()
+
     def get_sample_shape(self):
         return self.sample_shape
