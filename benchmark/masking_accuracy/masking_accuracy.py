@@ -1,6 +1,10 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
+from benchmark.masking_accuracy import MaskedDataset
+from typing import Dict, Callable
+import numpy as np
+import itertools
 
 
 class Net(nn.Module):
@@ -38,27 +42,73 @@ class Net(nn.Module):
         return F.softmax(logits, dim=1)
 
 
+def masking_accuracy(data: MaskedDataset, methods: Dict[str, Callable[[np.ndarray, np.ndarray], np.ndarray]]):
+    iterator = itertools.islice(iter(data.get_test_data()), 8)  # TODO remove this islice
+    jaccards = {m_name: [] for m_name in methods}
+    mask = data.get_mask()
+    for b, (samples, labels) in enumerate(iterator):
+        print(f"Batch {b+1}...")
+        for m_name in methods:
+            # Get attributions [batch_size, *sample_shape]
+            attrs = methods[m_name](samples, labels)
+            # Ignoring negative attributions, any feature is "important" if its attributions is > 0.01
+            # TODO the way Jaccard indexes are being calculated should be configurable
+            attrs = (attrs > 0.01).astype(int)
+            # Compute jaccard index of attrs with mask
+            card_intersect = np.sum((attrs * mask).reshape((samples.shape[0], -1)), axis=1)
+            card_attrs = np.sum(attrs.reshape((attrs.shape[0], -1)), axis=1)
+            card_mask = np.sum(mask)
+            jaccard = card_intersect / (card_attrs + card_mask - card_intersect)
+            jaccards[m_name].append(jaccard)
+    for m_name in methods:
+        jaccards[m_name] = np.concatenate(jaccards[m_name])
+    return jaccards
+
+
 if __name__ == '__main__':
-    from benchmark.masking_accuracy import MaskedNeuralNetwork, train_masked_network, MaskedDataset
+    from benchmark.masking_accuracy import MaskedNeuralNetwork, train_masked_network, test_masked_network, MaskedDataset
+    from util.methods import get_method_constructors
     from util.datasets import Cifar
     import pickle as pkl
+    from scipy import stats
 
     # Initialization
     DATASET = "CIFAR10"
     BATCH_SIZE = 64
     N_BATCHES = 16
     MEDIAN_VALUE = -.788235
-    METHODS = ["GuidedGradCAM", "Gradient", "InputXGradient", "IntegratedGradients",
+    METHODS = ["Gradient", "InputXGradient", "IntegratedGradients",
                "GuidedBackprop", "Deconvolution", "Random"]  # , "Occlusion"]
     MODEL_LOC = "../../data/models/cifar10_masked_cnn.pkl"
+    LOAD_MODEL = True
 
     # Create masked model and masked dataset
-    model = MaskedNeuralNetwork(sample_shape=(3, 32, 32), mask_radius=5, mask_value=0., net=Net())
     orig_ds = Cifar(version="cifar10", batch_size=BATCH_SIZE, shuffle=False,
                     download=False, data_location="../../data/CIFAR10")
     masked_ds = MaskedDataset(orig_ds.get_train_loader(), orig_ds.get_test_loader(), radius=5,
                               mask_value=0., med_of_min=MEDIAN_VALUE)
+    if LOAD_MODEL:
+        with open(MODEL_LOC, "rb") as f:
+            model = pkl.load(f)
+        test_masked_network(model, masked_ds)
+    else:
+        model = MaskedNeuralNetwork(sample_shape=(3, 32, 32), mask_radius=5, mask_value=0., net=Net())
+        # Train the model on synthetic labels
+        train_masked_network(model, masked_ds, lr=1.0, gamma=0.7, epochs=2)
+        with open(MODEL_LOC, "wb") as f:
+            pkl.dump(model, f)
 
-    # Train the model on synthetic labels
-    train_masked_network(model, masked_ds, lr=1.0, gamma=0.7, epochs=10)
-    pkl.dump(model, open(MODEL_LOC, "wb"))
+    # Get methods
+    method_constructors = get_method_constructors(METHODS)
+    methods = {m_name: method_constructors[m_name](model) for m_name in METHODS}
+
+    results = masking_accuracy(masked_ds, methods)
+    for key in results:
+        print(f"{key}:")
+        print(stats.describe(results[key]))
+
+    import pandas as pd
+    import seaborn as sns
+    data = pd.DataFrame.from_dict(results)
+    sns.boxplot(data=data)
+

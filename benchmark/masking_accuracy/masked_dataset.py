@@ -39,3 +39,6 @@ class MaskedDataset:
         reshaped_samples = masked_samples.reshape(masked_samples.shape[0], -1)
         labels = torch.all(reshaped_samples > self.med_of_min, dim=1).long()
         return samples, labels
+
+    def get_mask(self):
+        return self.masking_layer.mask.detach().numpy()
