@@ -3,7 +3,7 @@ from datasets import Aptos
 import numpy as np
 import time
 from sklearn.metrics import cohen_kappa_score, confusion_matrix, plot_confusion_matrix
-
+from models.aptos_densenet import AptosDensenet
 
 
 
@@ -11,8 +11,9 @@ from sklearn.metrics import cohen_kappa_score, confusion_matrix, plot_confusion_
 if __name__ == '__main__':
 
     Aptos_data = Aptos(batch_size=8, img_size=320)
-    model = torch.load('./best_model_checkpoint.pt')
-
+    # model = torch.load('./best_model_checkpoint.pt')
+    model = AptosDensenet(densenet="densenet121")
+    model.net.load_state_dict(torch.load("./best_model_checkpoint.pt"))
     dl_train = Aptos_data.get_train_data()
     dl_val = Aptos_data.get_test_data()
 
@@ -22,10 +23,9 @@ if __name__ == '__main__':
     true_classes = []
     start_time = time.time()
     with torch.no_grad():
-        model.eval()
         for data, targets in dl_val:
             data, targets = data.cuda(non_blocking=True), targets.cuda(non_blocking=True)
-            out = model(data)
+            out = model.predict(data)
             pred.extend(out.cpu().numpy())
             true_classes.extend(targets.cpu().numpy())
     stop_time = time.time()

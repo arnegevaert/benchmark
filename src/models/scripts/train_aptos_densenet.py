@@ -20,7 +20,7 @@ class ModelCheckpointCb():
         if loss < self.best_loss:
             print("saving best model")
             self.best_loss = loss
-            torch.save(model, 'best_model_checkpoint.pt')
+            torch.save(model.state_dict(), 'best_model_checkpoint.pt')
 
 
 def train_model(model, train_dl, val_dl, epochs, loss_function, optimizer, device=None, schedule=None, cb=None):
@@ -64,12 +64,11 @@ if __name__ == '__main__':
 
     Aptos_data = Aptos(batch_size=16, img_size=320)
     # model = Net("densenet121")
-    model = torch.load('./best_model_checkpoint.pt')
+    # model = torch.load('./best_model_checkpoint.pt')
 
-    # model = torchvision.models.densenet121(pretrained=True, progress=True)
-    # model.classifier = nn.Sequential(
-    #     nn.Linear(1024, 5),
-    #     nn.Softmax(dim=1))
+    model = torchvision.models.densenet121(pretrained=True, progress=True)
+    model.classifier = nn.Sequential(
+        nn.Linear(1024, 5))
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
@@ -79,7 +78,7 @@ if __name__ == '__main__':
     dl_val = Aptos_data.get_test_data()
     cb = ModelCheckpointCb()
     epochs = 15
-    for cycle in range(1):
+    for cycle in range(2):
         schedule = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=5e-3,
                                                        steps_per_epoch=len(dl_train), epochs=epochs, div_factor=25,
                                                        final_div_factor=30)

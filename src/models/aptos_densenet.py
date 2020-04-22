@@ -16,21 +16,28 @@ model_constructor_dict = {"densenet121": torchvision.models.densenet121}
 
 
 class Net(nn.Module):
-    def __init__(self, model):
+    def __init__(self, model, logits):
         super(Net, self).__init__()
         base_model = model_constructor_dict[model](pretrained=True, progress=True)
         self.features = base_model.features
         self.classifier = nn.Sequential(
-            nn.Linear(1024, 5),
-            nn.Softmax(dim=1))
+            nn.Linear(1024, 5))
+        self.logits = logits
+        self.softmax = nn.Softmax(dim=1)
 
 
-    def forward(self, x):
+    def get_logits(self, x):
         x = self.features(x)
         x = F.relu(x, inplace=True)
         x = F.adaptive_avg_pool2d(x, (1, 1)) # Global avg pooling
         x = torch.flatten(x, 1)
         return self.classifier(x)
+
+    def forward(self, x):
+        logits = self.get_logits(x)
+        if self.logits:
+            return logits
+        return self.softmax(logits)
 
 
 pretrained_settings = {
@@ -41,7 +48,7 @@ pretrained_settings = {
 
 
 class AptosDensenet(ConvolutionalNetworkModel):
-    def __init__(self, dataset="aptos", densenet="densenet121", device='cuda'):
+    def __init__(self, dataset="aptos", densenet="densenet121", device='cuda', output_logits=False):
         super().__init__()
         if dataset not in ["aptos"]:
             raise ValueError("dataset must be in {aptos}")
@@ -49,11 +56,12 @@ class AptosDensenet(ConvolutionalNetworkModel):
             raise ValueError("densenet must be in {densenet121}")
         params_loc = path.join(path.dirname(__file__), "saved_models", pretrained_settings[dataset][densenet])
 
-        self.net = Net(densenet).to(device)
+        self.net = Net(densenet, output_logits).to(device)
         if not path.exists(params_loc):
             raise FileNotFoundError(f"{params_loc} does not exist. "
                                     f"Use the train_aptos_densenet.py script to train and save weights.")
         self.net.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
+        self.output_logits = output_logits
 
     def predict(self, x):
         self.net.eval()
