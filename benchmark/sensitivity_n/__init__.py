@@ -1,1 +1,1 @@
-from .sensitivity_n import SensitivityN
+from .sensitivity_n import sensitivity_n
