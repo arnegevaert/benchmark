@@ -5,7 +5,7 @@ import numpy as np
 
 
 class MNISTCNN(nn.Module):
-    def __init__(self, output_logits=False, params_loc=None):
+    def __init__(self, params_loc=None, output_logits=False):
         super(MNISTCNN, self).__init__()
         self.conv1 = nn.Conv2d(1, 32, 3, 1)
         self.conv2 = nn.Conv2d(32, 64, 3, 1)

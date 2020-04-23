@@ -23,7 +23,7 @@ def sensitivity_n(data: Iterable, model: Callable[[np.ndarray], np.ndarray],
                 mask = np.random.choice(sample_size, n)
                 unraveled = np.unravel_index(mask, samples.shape[1:])
                 batch_dim = np.array(list(range(samples.shape[0])) * n).reshape(-1, samples.shape[0]).transpose()
-                masked_samples = samples.clone()
+                masked_samples = np.copy(samples)
                 masked_samples[(batch_dim, *unraveled)] = mask_value
 
                 output = model(masked_samples)
@@ -41,6 +41,8 @@ def sensitivity_n(data: Iterable, model: Callable[[np.ndarray], np.ndarray],
                 sum_of_attrs[m_name] = np.hstack(sum_of_attrs[m_name])
                 result[m_name][n_idx] += [np.corrcoef(output_diffs[i], sum_of_attrs[m_name][i])[0, 1]
                                           for i in range(samples.shape[0])]
+    for m_name in methods:
+        result[m_name] = np.array(result[m_name])
     return result
 
 
