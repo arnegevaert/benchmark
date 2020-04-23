@@ -4,13 +4,27 @@ Deep Residual Learning for Image Recognition.
 In CVPR, 2016.
 Based on: https://github.com/chenyaofo/CIFAR-pretrained-models/blob/master/cifar_pretrainedmodels/resnet.py
 """
-
 import torch
 import urllib
 import torch.nn as nn
-from util.models import ConvolutionalNetworkModel
 from os import path
 import numpy as np
+
+base_url = 'https://github.com/chenyaofo/CIFAR-pretrained-models/releases/download/resnet/'
+dl_filenames = {
+    "cifar10": {
+        'resnet20': 'cifar10-resnet20-30abc31d.pth', 'resnet32': 'cifar10-resnet32-e96f90cf.pth',
+        'resnet44': 'cifar10-resnet44-f2c66da5.pth', 'resnet56': 'cifar10-resnet56-f5939a66.pth',
+    },
+    "cifar100": {
+        'resnet20': 'cifar100-resnet20-8412cc70.pth', 'resnet32': 'cifar100-resnet32-6568a0a0.pth',
+        'resnet44': 'cifar100-resnet44-20aaa8cf.pth', 'resnet56': 'cifar100-resnet56-2f147f26.pth',
+    }
+}
+versions = {
+    "resnet20": [3, 3, 3], "resnet32": [5, 5, 5],
+    "resnet44": [7, 7, 7], "resnet56": [9, 9, 9]
+}
 
 
 class BasicBlock(nn.Module):
@@ -42,21 +56,22 @@ class BasicBlock(nn.Module):
         return self.relu(out)
 
 
-class Net(nn.Module):
-    def __init__(self, block, layers, num_classes=10, output_logits=False):
-        super(Net, self).__init__()
+class CifarResnet(nn.Module):
+    def __init__(self, version, params_loc, num_classes=10, output_logits=False):
+        super(CifarResnet, self).__init__()
+        layers = versions[version]
         self.output_logits = output_logits
         self.inplanes = 16
         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(16)
         self.relu = nn.ReLU(inplace=True)
 
-        self.layer1 = self._make_layer(block, 16, layers[0])
-        self.layer2 = self._make_layer(block, 32, layers[1], stride=2)
-        self.layer3 = self._make_layer(block, 64, layers[2], stride=2)
+        self.layer1 = self._make_layer(BasicBlock, 16, layers[0])
+        self.layer2 = self._make_layer(BasicBlock, 32, layers[1], stride=2)
+        self.layer3 = self._make_layer(BasicBlock, 64, layers[2], stride=2)
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(64 * block.expansion, num_classes)
+        self.fc = nn.Linear(64 * BasicBlock.expansion, num_classes)
         self.softmax = nn.Softmax(dim=1)
 
         for m in self.modules():
@@ -65,6 +80,13 @@ class Net(nn.Module):
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
+
+        if not path.exists(params_loc):
+            url = base_url + dl_filenames[f"cifar{num_classes}"][version]
+            print(f"Downloading parameters from {url}...")
+            urllib.request.urlretrieve(url, params_loc)
+            print(f"Download finished.")
+        self.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
 
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
@@ -93,6 +115,8 @@ class Net(nn.Module):
         return self.fc(x)
 
     def forward(self, x):
+        if type(x) == np.ndarray():
+            x = torch.tensor(x)
         if x.dtype != torch.float32:
             x = x.float()
         logits = self.get_logits(x)
@@ -100,52 +124,6 @@ class Net(nn.Module):
             return logits
         return self.softmax(logits)
 
-
-base_url = 'https://github.com/chenyaofo/CIFAR-pretrained-models/releases/download/resnet/'
-pretrained_settings = {
-    "cifar10": {
-        'resnet20': 'cifar10-resnet20-30abc31d.pth', 'resnet32': 'cifar10-resnet32-e96f90cf.pth',
-        'resnet44': 'cifar10-resnet44-f2c66da5.pth', 'resnet56': 'cifar10-resnet56-f5939a66.pth',
-        'num_classes': 10
-    },
-    "cifar100": {
-        'resnet20': 'cifar100-resnet20-8412cc70.pth', 'resnet32': 'cifar100-resnet32-6568a0a0.pth',
-        'resnet44': 'cifar100-resnet44-20aaa8cf.pth', 'resnet56': 'cifar100-resnet56-2f147f26.pth',
-        'num_classes': 100
-    }
-}
-
-
-class CifarResNet(ConvolutionalNetworkModel):
-    def __init__(self, output_logits=False, dataset="cifar10", resnet="resnet20"):
-        super().__init__()
-        if dataset not in ["cifar10", "cifar100"]:
-            raise ValueError("dataset must be in {cifar10, cifar100}")
-        if resnet not in ["resnet20", "resnet32", "resnet44", "resnet56"]:
-            raise ValueError("resnet must be in {resnet20, resnet32, resnet44, resnet56}")
-        params_loc = path.join(path.dirname(__file__), "saved_models", pretrained_settings[dataset][resnet])
-        layers = {
-            "resnet20": [3, 3, 3], "resnet32": [5, 5, 5],
-            "resnet44": [7, 7, 7], "resnet56": [9, 9, 9]
-        }
-        self.net = Net(BasicBlock, layers[resnet], num_classes=10 if dataset is "cifar10" else 100, output_logits=output_logits)
-        if not path.exists(params_loc):
-            url = base_url + pretrained_settings[dataset][resnet]
-            print(f"Downloading parameters from {url}...")
-            urllib.request.urlretrieve(url, params_loc)
-            print(f"Download finished.")
-        self.net.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
-        self.output_logits = output_logits
-
-    def predict(self, x):
-        self.net.eval()
-        if type(x) == np.ndarray:
-            x = torch.tensor(x)
-        return self.net(x)
-
     def get_last_conv_layer(self) -> nn.Module:
-        last_block = self.net.layer3[-1]  # Last BasicBlock of layer 3
+        last_block = self.layer3[-1]  # Last BasicBlock of layer 3
         return last_block.conv2  # Second convolutional layer of last BasicBlock
-
-    def get_conv_net(self) -> nn.Module:
-        return self.net
