@@ -3,24 +3,12 @@ Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun.
 Deep Residual Learning for Image Recognition.
 In CVPR, 2016.
 Based on: https://github.com/chenyaofo/CIFAR-pretrained-models/blob/master/cifar_pretrainedmodels/resnet.py
+Pretrained models can be downloaded from: https://github.com/chenyaofo/CIFAR-pretrained-models/releases/
 """
 import torch
-import urllib
 import torch.nn as nn
-from os import path
 import numpy as np
 
-base_url = 'https://github.com/chenyaofo/CIFAR-pretrained-models/releases/download/resnet/'
-dl_filenames = {
-    "cifar10": {
-        'resnet20': 'cifar10-resnet20-30abc31d.pth', 'resnet32': 'cifar10-resnet32-e96f90cf.pth',
-        'resnet44': 'cifar10-resnet44-f2c66da5.pth', 'resnet56': 'cifar10-resnet56-f5939a66.pth',
-    },
-    "cifar100": {
-        'resnet20': 'cifar100-resnet20-8412cc70.pth', 'resnet32': 'cifar100-resnet32-6568a0a0.pth',
-        'resnet44': 'cifar100-resnet44-20aaa8cf.pth', 'resnet56': 'cifar100-resnet56-2f147f26.pth',
-    }
-}
 versions = {
     "resnet20": [3, 3, 3], "resnet32": [5, 5, 5],
     "resnet44": [7, 7, 7], "resnet56": [9, 9, 9]
@@ -57,7 +45,7 @@ class BasicBlock(nn.Module):
 
 
 class CifarResnet(nn.Module):
-    def __init__(self, version, params_loc, num_classes=10, output_logits=False):
+    def __init__(self, version, params_loc=None, num_classes=10, output_logits=False):
         super(CifarResnet, self).__init__()
         layers = versions[version]
         self.output_logits = output_logits
@@ -81,12 +69,8 @@ class CifarResnet(nn.Module):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
-        if not path.exists(params_loc):
-            url = base_url + dl_filenames[f"cifar{num_classes}"][version]
-            print(f"Downloading parameters from {url}...")
-            urllib.request.urlretrieve(url, params_loc)
-            print(f"Download finished.")
-        self.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
+        if params_loc:
+            self.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
 
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
@@ -115,7 +99,7 @@ class CifarResnet(nn.Module):
         return self.fc(x)
 
     def forward(self, x):
-        if type(x) == np.ndarray():
+        if type(x) == np.ndarray:
             x = torch.tensor(x)
         if x.dtype != torch.float32:
             x = x.float()
