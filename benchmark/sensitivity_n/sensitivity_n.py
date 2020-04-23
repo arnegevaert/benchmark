@@ -44,35 +44,3 @@ def sensitivity_n(data: Iterable, model: Callable[[np.ndarray], np.ndarray],
     for m_name in methods:
         result[m_name] = np.array(result[m_name])
     return result
-
-
-if __name__ == "__main__":
-    from util.vars import DATASET_MODELS
-    from util.methods import get_method_constructors
-    import itertools
-    DATASET = "MNIST"
-    DOWNLOAD_DATASET = False
-    MODEL = "CNN"
-    BATCH_SIZE = 64
-    N_BATCHES = 2
-    N_SUBSETS = 100
-    #MASK_RANGE = range(1, 1000, 100)
-    MASK_RANGE = range(1, 700, 50)
-    METHODS = ["GuidedGradCAM", "Gradient", "InputXGradient", "IntegratedGradients",
-               "GuidedBackprop", "Deconvolution", "Random"]
-
-    # TODO instead of having this global dictionary, expose getter methods that do the necessary validations
-    dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
-    model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
-    method_constructors = get_method_constructors(METHODS)
-
-    all_kwargs = {"Occlusion": {"sliding_window_shapes": (1, 1, 1)}}
-
-    model = model_constructor(output_logits=True)
-    dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOWNLOAD_DATASET,
-                                  data_location="../../../data")
-
-    x = np.array(MASK_RANGE)
-    methods = {m_name: method_constructors[m_name](model, normalize=True, **all_kwargs.get(m_name, {})) for m_name in METHODS}
-    sensitivity_n(itertools.islice(dataset.get_test_loader(), N_BATCHES), lambda x: model.predict(x).detach().numpy(),
-                  methods, list(MASK_RANGE), mask_value=-0.4242)
