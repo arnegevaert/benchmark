@@ -3,14 +3,15 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from random import randint
+
 DEVICE = "cuda"
 DATASET = "CIFAR10"
 DOWNLOAD_DATASET = False
 # patch values will be clipped between DATA_MIN and DATA_MAX so that patch will be valid image data.
-DATA_MIN=-1
-DATA_MAX =1
+DATA_MIN = -1
+DATA_MAX = 1
 MODEL = "resnet20"
-#targeted class
+# targeted class
 TARGET_LABEL = 0
 
 BATCH_SIZE = 64
@@ -18,7 +19,8 @@ EPOCHS = 20
 # size of patch wrt original images.
 PATCH_SIZE_PERCENT = 0.1
 # does it matter if we train the patch on the test set if we are only interested in attacking the test set?
-TRAIN_ON_TEST = False
+TRAIN_ON_TEST = True
+
 
 class PatchCheckpointCb():
 
@@ -55,18 +57,11 @@ def train_patch(model, patch, train_dl, loss_function, optimizer, device=None, s
         optimizer.zero_grad()
         y = torch.tensor(np.full(y.shape[0], TARGET_LABEL), dtype=torch.long).to(DEVICE)
         image_size = x.shape[-1]
-        mask = np.zeros((image_size, image_size))
         ind = randint(0, image_size - patch_size)
-        # ind=0
-        mask[ind:ind + patch_size, ind:ind + patch_size] = 1.
-        mask = torch.tensor(mask).to(DEVICE)
 
-        adv_image = torch.zeros((3, image_size, image_size)).to(DEVICE)
-        adv_image[:, ind:ind + patch_size, ind:ind + patch_size] = patch
         images = x.to(DEVICE)
-
-        input = torch.mul((1 - mask), images) + adv_image
-        adv_out = model.predict(input)
+        images[:, :, ind:ind + patch_size, ind:ind + patch_size] = patch
+        adv_out = model.predict(images)
 
         loss = loss_function(adv_out, y)
         loss.backward()
@@ -79,6 +74,8 @@ def train_patch(model, patch, train_dl, loss_function, optimizer, device=None, s
     nr_not_successfull = np.count_nonzero(np.array(nr_not_successfull) != TARGET_LABEL)
 
     return epoch_loss, nr_not_successfull
+
+
 def validate(model, patch, val_data, loss_function):
     patch_size = patch.shape[-1]
     val_loss = []
@@ -87,15 +84,10 @@ def validate(model, patch, val_data, loss_function):
         for x, y in val_data:
             y = torch.tensor(np.full(y.shape[0], TARGET_LABEL), dtype=torch.long).to(DEVICE)
             image_size = x.shape[-1]
-            mask = np.zeros((image_size, image_size))
             ind = randint(0, image_size - patch_size)
-            mask[ind:ind + patch_size, ind:ind + patch_size] = 1.
-            mask = torch.tensor(mask).to(DEVICE)
-            adv_image = torch.zeros((3, image_size, image_size)).to(DEVICE)
-            adv_image[:, ind:ind + patch_size, ind:ind + patch_size] = patch
             images = x.to(DEVICE)
-            input = torch.mul((1 - mask), images) + adv_image
-            adv_out = model.predict(input)
+            images[:, :, ind:ind + patch_size, ind:ind + patch_size] = patch
+            adv_out = model.predict(images)
             loss = loss_function(adv_out, y)
 
             val_loss.append(loss.item())
@@ -118,12 +110,12 @@ if __name__ == '__main__':
     dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=True, download=DOWNLOAD_DATASET)
     dl = iter(dataset.get_test_data())
     x, _ = dl.next()
-    image_size =x.shape[-1]
+    image_size = x.shape[-1]
 
     patch, shape = init_patch_square(image_size, PATCH_SIZE_PERCENT)
     patch = torch.tensor(patch, requires_grad=True, device=DEVICE)
     # optim = torch.optim.Adam([patch], lr=0.05, weight_decay=0.)
-    optim = torch.optim.SGD([patch], lr =0.05, momentum=0.9, weight_decay=0., nesterov=True)
+    optim = torch.optim.SGD([patch], lr=0.05, momentum=0.9, weight_decay=0., nesterov=True)
 
     schedule = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, mode='min', factor=0.5, patience=2, verbose=True)
     cb = PatchCheckpointCb()
@@ -139,11 +131,10 @@ if __name__ == '__main__':
         epoch_loss, nr_not_successfull = train_patch(model, patch, train_data, loss, optim, DEVICE, schedule, cb)
         # print(" epoch {} done. train_loss: {}".format(e, epoch_loss))
         # print("{} images not successfully attacked ".format(nr_not_successfull))
-        val_loss, nr_not_successfull = validate(model, patch, dataset.get_test_data(),loss)
+        val_loss, nr_not_successfull = validate(model, patch, dataset.get_test_data(), loss)
         print(" epoch {} done. val_loss: {}".format(e, val_loss))
         print("{} images not successfully attacked ".format(nr_not_successfull))
 
         if schedule is not None:
             schedule.step(val_loss)
         if cb is not None: cb.step(val_loss, patch)
-        
