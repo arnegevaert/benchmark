@@ -1,4 +1,4 @@
-from noise_invariance.noise_perturbed_dataset import NoisePerturbedDataset
+from benchmark.noise_invariance.noise_perturbed_dataset import NoisePerturbedDataset
 from typing import Callable, Dict
 import numpy as np
 
@@ -11,8 +11,7 @@ def noise_invariance(data: NoisePerturbedDataset, methods: Dict[str, Callable[[n
         diffs = [[] for _ in range(len(data.perturbation_levels))]
         cur_max_diff = 0
         cur_max_diff_examples = {}
-        for batch_idx, batch in enumerate(perturbed_dataset):
-            print(f"Batch {batch_idx+1}/{data.n_batches}")
+        for batch_idx, batch in enumerate(data):
             orig = batch["original"]
             labels = batch["labels"]
             orig_attr = method(orig, labels)  # [batch_size, *sample_shape]
@@ -20,6 +19,7 @@ def noise_invariance(data: NoisePerturbedDataset, methods: Dict[str, Callable[[n
                 perturbed_attr = method(noise_level_batch, labels)  # [batch_size, *sample_shape]
                 avg_diff_per_image = np.average(np.reshape(np.abs(orig_attr - perturbed_attr), (data.batch_size, -1)),
                                                 axis=1)  # [batch_size]
+                diffs[n_l].append(avg_diff_per_image)
                 max_diff_idx = np.argmax(avg_diff_per_image).item()
                 if avg_diff_per_image[max_diff_idx] > cur_max_diff:
                     cur_max_diff = avg_diff_per_image[max_diff_idx]
@@ -28,8 +28,10 @@ def noise_invariance(data: NoisePerturbedDataset, methods: Dict[str, Callable[[n
                         "orig_attr": orig_attr[max_diff_idx], "perturbed_attr": perturbed_attr[max_diff_idx],
                         "noise_level": data.perturbation_levels[n_l]
                     }
+        diffs = [np.concatenate(n_l_diffs) for n_l_diffs in diffs]
+        diffs = np.vstack(diffs).transpose()
         result[m_name] = {
-            "diffs": np.array(diffs),  # [noise_levels, n_batches]
+            "diffs": diffs,  # [noise_levels, n_batches]
             "max_diff": cur_max_diff_examples,
             "max_diff_exs": cur_max_diff_examples
         }
