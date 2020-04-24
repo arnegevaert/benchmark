@@ -7,6 +7,7 @@ def normalize_attributions(attrs):
     max_abs_attr_per_image = np.max(abs_attrs, axis=1)
     if np.any(max_abs_attr_per_image == 0):
         warnings.warn("Completely 0 attributions returned for sample.")
+        print("Completely 0 attributions returned for sample.")
         # If an image has 0 max abs attr, all attrs are 0 for that image
         # Divide by 1 to return the original constant 0 attributions
         max_abs_attr_per_image[np.where(max_abs_attr_per_image == 0)] = 1.0

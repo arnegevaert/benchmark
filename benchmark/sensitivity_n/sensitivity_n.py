@@ -6,7 +6,7 @@ import numpy as np
 # where the values of n are given by mask_range
 def sensitivity_n(data: Iterable, model: Callable[[np.ndarray], np.ndarray],
                   methods: Dict[str, Callable[[np.ndarray, np.ndarray], np.ndarray]], mask_range: List[int],
-                  n_subsets=100, mask_value=0.):
+                  n_subsets: int, mask_value: float):
     result = {m_name: [[] for _ in mask_range] for m_name in methods}
     for batch_index, (samples, labels) in enumerate(data):
         print(f"Batch {batch_index}...")
@@ -42,5 +42,5 @@ def sensitivity_n(data: Iterable, model: Callable[[np.ndarray], np.ndarray],
                 result[m_name][n_idx] += [np.corrcoef(output_diffs[i], sum_of_attrs[m_name][i])[0, 1]
                                           for i in range(samples.shape[0])]
     for m_name in methods:
-        result[m_name] = np.array(result[m_name])
+        result[m_name] = np.array(result[m_name]).transpose()
     return result
