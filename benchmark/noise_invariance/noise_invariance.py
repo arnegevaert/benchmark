@@ -31,7 +31,7 @@ def noise_invariance(data: NoisePerturbedDataset, methods: Dict[str, Callable[[n
         diffs = [np.concatenate(n_l_diffs) for n_l_diffs in diffs]
         diffs = np.vstack(diffs).transpose()
         result[m_name] = {
-            "diffs": diffs,  # [noise_levels, n_batches]
+            "diffs": diffs,  # [n_batches*batch_size, n_levels]
             "max_diff": cur_max_diff_examples,
             "max_diff_exs": cur_max_diff_examples
         }

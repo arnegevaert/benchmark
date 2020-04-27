@@ -22,7 +22,7 @@ def simple_sensitivity(data: Iterable, model: Callable[[np.ndarray], np.ndarray]
                 # batch_dim: [batch_size, i] (made to match unravel_index output)
                 batch_size = samples.shape[0]
                 batch_dim = np.array(list(range(batch_size))*i).reshape(-1, batch_size).transpose()
-                masked_samples = samples.clone()
+                masked_samples = np.copy(samples)
                 masked_samples[(batch_dim, *unraveled)] = mask_value
                 # Get predictions for result
                 predictions = model(masked_samples)
@@ -30,33 +30,4 @@ def simple_sensitivity(data: Iterable, model: Callable[[np.ndarray], np.ndarray]
                 batch_result.append(predictions)
             batch_result = np.concatenate(batch_result, axis=1)
             result[key].append(batch_result)
-    for key in methods:
-        result[key] = np.concatenate(result[key], axis=0).mean(axis=0)
-    return result
-
-
-if __name__ == '__main__':
-    from util.vars import DATASET_MODELS
-    from util.methods import get_method_constructors
-    import itertools
-
-    DATASET = "MNIST"
-    MODEL = "CNN"
-    BATCH_SIZE = 64
-    N_BATCHES = 16
-    MASK_RANGE = list(range(1, 128, 10))
-
-    METHODS = ["GuidedGradCAM", "Gradient", "InputXGradient", "IntegratedGradients",
-               "GuidedBackprop", "Deconvolution", "Random"]
-
-    dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
-    model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
-    # method_constructors = get_all_method_constructors()
-    method_constructors = get_method_constructors(METHODS)
-
-    model = model_constructor()
-    dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, data_location="../../data")
-    methods = {m_name: method_constructors[m_name](model) for m_name in METHODS}
-
-    result = simple_sensitivity(itertools.islice(iter(dataset.get_test_loader()), N_BATCHES),
-                                lambda x: model.predict(x).detach().numpy(), methods, MASK_RANGE, -.4242)
+    return {m_name: np.concatenate(result[m_name], axis=0) for m_name in methods}  # [n_batches*batch_size, len(mask_range)]
