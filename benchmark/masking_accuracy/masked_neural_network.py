@@ -2,6 +2,7 @@ from typing import Tuple
 import torch.nn as nn
 import torch
 import itertools
+import numpy as np
 
 
 class MaskedInputLayer(nn.Module):
@@ -19,6 +20,8 @@ class MaskedInputLayer(nn.Module):
         self.radius = radius
 
     def forward(self, x):
+        if type(x) == np.ndarray:
+            x = torch.tensor(x)
         if x.dtype != torch.float32:
             x = x.float()
         return x * self.mask + self.inverted_mask * self.mask_value

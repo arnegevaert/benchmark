@@ -1,9 +1,11 @@
 from benchmark.noise_invariance.noise_perturbed_dataset import NoisePerturbedDataset
 from typing import Callable, Dict
 import numpy as np
+import itertools
 
 
-def noise_invariance(data: NoisePerturbedDataset, methods: Dict[str, Callable[[np.ndarray, np.ndarray], np.ndarray]]):
+def noise_invariance(data: NoisePerturbedDataset, methods: Dict[str, Callable[[np.ndarray, np.ndarray], np.ndarray]],
+                     n_batches=None):
     result = {}
     for m_name in methods:
         method = methods[m_name]
@@ -11,7 +13,8 @@ def noise_invariance(data: NoisePerturbedDataset, methods: Dict[str, Callable[[n
         diffs = [[] for _ in range(len(data.perturbation_levels))]
         cur_max_diff = 0
         cur_max_diff_examples = {}
-        for batch_idx, batch in enumerate(data):
+        data_generator = enumerate(itertools.islice(data, n_batches)) if n_batches else enumerate(data)
+        for batch_idx, batch in data_generator:
             orig = batch["original"]
             labels = batch["labels"]
             orig_attr = method(orig, labels)  # [batch_size, *sample_shape]

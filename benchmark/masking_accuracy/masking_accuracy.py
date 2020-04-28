@@ -42,17 +42,18 @@ class Net(nn.Module):
         return F.softmax(logits, dim=1)
 
 
-def masking_accuracy(data: MaskedDataset, methods: Dict[str, Callable[[np.ndarray, np.ndarray], np.ndarray]]):
-    iterator = itertools.islice(iter(data.get_test_data()), 8)  # TODO remove this islice
+def masking_accuracy(data: MaskedDataset, methods: Dict[str, Callable[[np.ndarray, np.ndarray], np.ndarray]],
+                     n_batches=None):
+    iterator = itertools.islice(enumerate(data.get_test_data()), n_batches) if n_batches else enumerate(data.get_test_data())
     jaccards = {m_name: [] for m_name in methods}
     mask = data.get_mask()
-    for b, (samples, labels) in enumerate(iterator):
+    for b, (samples, labels) in iterator:
         print(f"Batch {b+1}...")
         for m_name in methods:
             # Get attributions [batch_size, *sample_shape]
             attrs = methods[m_name](samples, labels)
             # Ignoring negative attributions, any feature is "important" if its attributions is > 0.01
-            # TODO the way Jaccard indexes are being calculated should be configurable
+            # TODO the way Jaccard indexes are being calculated should be configurable, create ROC curve
             attrs = (attrs > 0.01).astype(int)
             # Compute jaccard index of attrs with mask
             card_intersect = np.sum((attrs * mask).reshape((samples.shape[0], -1)), axis=1)
