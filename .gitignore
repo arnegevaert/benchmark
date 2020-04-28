@@ -7,3 +7,4 @@ data
 *.pth
 *.pkl
 out/*
+*/.ipynb_checkpoints/*
