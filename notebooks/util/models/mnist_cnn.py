@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 
 
 class MNISTCNN(nn.Module):
@@ -33,7 +32,7 @@ class MNISTCNN(nn.Module):
         return self.fc2(x)
 
     def forward(self, x):
-        if type(x) == np.ndarray:
+        if type(x) != torch.Tensor:
             x = torch.tensor(x)
         if x.dtype != torch.float32:
             x = x.float()
