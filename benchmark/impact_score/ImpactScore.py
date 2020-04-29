@@ -1,54 +1,53 @@
-from methods import get_method_constructors
-from vars import DATASET_MODELS
-from lib import Report
 import numpy as np
-import time
+from util import datasets, models, methods
+from os import path
+import torch
 
 DEVICE = "cuda"
 DATASET = "CIFAR10"
 DOWNLOAD_DATASET = False
 MODEL = "resnet20"
-BATCH_SIZE = 64
+BATCH_SIZE = 16
 N_BATCHES = 16
 N_SUBSETS = 100
 MASK_RANGE = range(1, 500, 50)
 # MASK_RANGE = range(1, 700, 50)
-METHODS = ["GuidedGradCAM", "Gradient", "InputXGradient", "IntegratedGradients",
-           "GuidedBackprop", "Deconvolution", "Random"]
 TAU = 0.5
+data_root = "../../data"
+normalize_attrs = True
 
-# TODO instead of having this global dictionary, expose getter methods that do the necessary validations
-dataset_constructor = DATASET_MODELS[DATASET]["constructor"]
-model_constructor = DATASET_MODELS[DATASET]["models"][MODEL]
-method_constructors = get_method_constructors(METHODS)
-
-all_kwargs = {"Occlusion": {"sliding_window_shapes": (1, 1, 1)}}
-
-model = model_constructor(output_logits=True)
+dataset = datasets.Cifar(batch_size=BATCH_SIZE, data_location=path.join(data_root, DATASET))
+model = models.CifarResnet(version=MODEL, params_loc=path.join(data_root, f"models/cifar10_{MODEL}.pth"),
+                           output_logits=True)
 model.to(DEVICE)
-dataset = dataset_constructor(batch_size=BATCH_SIZE, shuffle=False, download=DOWNLOAD_DATASET)
+model.eval()
 
+attribution_methods = {
+    "GuidedGradCAM": methods.GuidedGradCAM(model, model.get_last_conv_layer(), normalize=normalize_attrs),
+    "Gradient": methods.Gradient(model, normalize=normalize_attrs),
+    "InputXGradient": methods.InputXGradient(model, normalize=normalize_attrs),
+    "IntegratedGradients": methods.IntegratedGradients(model, normalize=normalize_attrs),
+    "GuidedBackprop": methods.GuidedBackprop(model, normalize=normalize_attrs),
+    "Deconvolution": methods.Deconvolution(model, normalize=normalize_attrs),
+    "Random": methods.Random(normalize=normalize_attrs)
+}
 
-
-methods = {m_name: method_constructors[m_name](model, normalize=True, **all_kwargs.get(m_name, {})) for m_name in
-           METHODS}
 iterator = iter(dataset.get_test_data())
-
 original_predictions = []
-
-method_predictions = {m_name: {n: [] for n in MASK_RANGE} for m_name in METHODS}
+method_predictions = {m_name: {n: [] for n in MASK_RANGE} for m_name in attribution_methods}
 
 for b in range(N_BATCHES):
     samples, labels = next(iterator)
+    samples, labels = torch.tensor(samples), torch.tensor(labels)
     samples = samples.to(DEVICE, non_blocking=True)
     labels = labels.to(DEVICE, non_blocking=True)
-    original_predictions.append(model.predict(samples).detach().cpu().numpy())  # collect original predictions
+    original_predictions.append(model(samples).detach().cpu().numpy())  # collect original predictions
 
     for m_name in method_predictions:
         masked_samples = samples.clone()
-        method = methods[m_name]
+        method = attribution_methods[m_name]
         # TODO targets should be the actual predictions of the model, not the ground truth?
-        attrs = method.attribute(samples, target=labels)
+        attrs = method(samples, target=labels)
         attrs = attrs.reshape(attrs.shape[0], -1)
         sorted_indices = attrs.argsort().cpu()
         for n in MASK_RANGE:
@@ -61,7 +60,7 @@ for b in range(N_BATCHES):
 
             batch_dim = np.column_stack([range(BATCH_SIZE) for i in range(n)])  # more readable then previous code?
             masked_samples[(batch_dim, *unraveled)] = dataset.mask_value
-            pred = model.predict(masked_samples)
+            pred = model(masked_samples)
             method_predictions[m_name][n].append(pred.detach().cpu().numpy())
 
 original_predictions = np.vstack(original_predictions)  # to np array of shape (#images, #classes)
@@ -93,6 +92,7 @@ for m in method_predictions:
     I_score[m] = scores
 
 # strict impact score
+"""
 report = Report(list(method_constructors.keys()))
 x = np.array(MASK_RANGE)
 for m_name in METHODS:
@@ -109,3 +109,4 @@ for m_name in METHODS:
     report.add_summary_line(x, list(I_score[m_name].values()), label=m_name)
 report.render(x_label="Number of masked pixels", y_label="Impact Score",
               y_range=(0, 1))
+"""
