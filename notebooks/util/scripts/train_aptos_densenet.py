@@ -3,7 +3,7 @@ import torchvision
 from torch import nn
 from torch import optim
 
-from datasets import Aptos
+from util.datasets import Aptos
 import numpy as np
 from models.aptos_densenet import Net
 from barbar import Bar
