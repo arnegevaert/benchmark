@@ -1,7 +1,6 @@
 from captum import attr
 import torch.nn as nn
 import torch
-import numpy as np
 from .util import normalize_attributions
 
 
@@ -11,10 +10,10 @@ class CaptumMethod:
         self.method = method
         self.is_absolute = absolute
 
-    def _attribute(self, x: np.ndarray, target: np.ndarray):
-        return self.method.attribute(torch.tensor(x), target=torch.tensor(target, dtype=torch.long)).detach().numpy()
+    def _attribute(self, x, target):
+        return self.method.attribute(x, target=target)
 
-    def __call__(self, x: np.ndarray, target: np.ndarray):
+    def __call__(self, x, target):
         attrs = self._attribute(x, target)
         if self.normalize:
             return normalize_attributions(attrs)
@@ -53,10 +52,9 @@ class Ablation(CaptumMethod):
         self.feature_mask = feature_mask
         self.perturbations_per_eval = perturbations_per_eval
 
-    def _attribute(self, x: np.ndarray, target: np.ndarray):
-        return self.method.attribute(torch.tensor(x), target=torch.tensor(target, dtype=torch.long),
-                                     baselines=self.baselines, feature_mask=self.feature_mask,
-                                     perturbations_per_eval=self.perturbations_per_eval).detach().numpy()
+    def _attribute(self, x, target):
+        return self.method.attribute(x, target=target, baselines=self.baselines, feature_mask=self.feature_mask,
+                                     perturbations_per_eval=self.perturbations_per_eval)
 
 
 class Occlusion(CaptumMethod):
@@ -64,9 +62,8 @@ class Occlusion(CaptumMethod):
         super(Occlusion, self).__init__(attr.Occlusion(forward_func), normalize)
         self.sliding_window_shapes = sliding_window_shapes
 
-    def _attribute(self, x: np.ndarray, target: np.ndarray):
-        return self.method.attribute(torch.tensor(x), target=torch.tensor(target, dtype=torch.long),
-                                     sliding_window_shapes=self.sliding_window_shapes).detach().numpy()
+    def _attribute(self, x, target):
+        return self.method.attribute(x, target=target, sliding_window_shapes=self.sliding_window_shapes)
 
 
 class GuidedGradCAM(CaptumMethod):
@@ -95,8 +92,8 @@ class Random:
         self.normalize = normalize
         self.is_absolute = False
 
-    def __call__(self, x: np.ndarray, target: np.ndarray):
-        attrs = np.random.rand(*x.shape) * 2 - 1
+    def __call__(self, x, target):
+        attrs = torch.rand(*x.shape) * 2 - 1
         if self.normalize:
             return normalize_attributions(attrs)
         return attrs
