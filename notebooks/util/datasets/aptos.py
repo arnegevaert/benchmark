@@ -3,6 +3,7 @@ import numpy as np
 from imgaug import augmenters as iaa
 from sklearn.utils import class_weight
 import pandas as pd
+import math
 
 
 def _move_axis_lambda(x, *args):
@@ -37,6 +38,22 @@ def _get_aptos_dataset(data_loc, imsize=224):
 
 
 class Aptos:
+    class Dataset:
+        def __init__(self, x_array, y_array, batch_size, transforms):
+            self.x_array = x_array
+            self.y_array = y_array
+            self.batch_size = batch_size
+            self.transforms = transforms
+
+        def __iter__(self):
+            for i in range(0, self.x_array.shape[0], self.batch_size):
+                samples = self.transforms(images=self.x_array[i:i + self.batch_size])
+                labels = self.y_array[i:i + self.batch_size]
+                yield np.array(samples), np.array(labels)
+
+        def __len__(self):
+            return math.ceil(self.x_array.shape[0] / self.batch_size)
+
     def __init__(self, batch_size, data_location, img_size=224):
         self.batch_size = batch_size
         self.x_train, self.y_train, self.x_test, self.y_test, self.class_weights = \
@@ -53,16 +70,10 @@ class Aptos:
         self.test_transforms = iaa.Lambda(_move_axis_lambda)
 
     def get_train_data(self):
-        for i in range(0, self.x_train.shape[0], self.batch_size):
-            samples = self.train_transforms(images=self.x_train[i:i+self.batch_size])
-            labels = self.y_train[i:i+self.batch_size]
-            yield np.array(samples), np.array(labels)
+        return Aptos.Dataset(self.x_train, self.y_train, self.batch_size, self.train_transforms)
 
     def get_test_data(self):
-        for i in range(0, self.x_test.shape[0], self.batch_size):
-            samples = self.test_transforms(images=self.x_test[i:i+self.batch_size])
-            labels = self.y_test[i:i+self.batch_size]
-            yield np.array(samples), np.array(labels)
+        return Aptos.Dataset(self.x_test, self.y_test, self.batch_size, self.test_transforms)
 
     def get_sample_shape(self):
         return self.sample_shape

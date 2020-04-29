@@ -14,8 +14,8 @@ import torch.nn.functional as F
 class AptosDensenet(nn.Module):
     def __init__(self, output_logits, params_loc=None):
         super(AptosDensenet, self).__init__()
-        base_model = torchvision.models.densenet121(pretrained=True, progress=True)
-        self.features = base_model.features
+        self.base_model = torchvision.models.densenet121(pretrained=True, progress=True)
+        self.features = self.base_model.features
         self.classifier = nn.Sequential(
             nn.Linear(1024, 5))
         self.output_logits = output_logits
@@ -43,3 +43,7 @@ class AptosDensenet(nn.Module):
     def get_last_conv_layer(self) -> nn.Module:
         last_block = self.features.transition3  # Last BasicBlock of layer 3
         return last_block.conv  # Second convolutional layer of last BasicBlock
+
+    def to(self, *args, **kwargs):
+        super().to(*args, **kwargs)
+        self.base_model.to(*args, **kwargs)
