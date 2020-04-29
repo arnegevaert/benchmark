@@ -13,7 +13,7 @@ import torch.nn.functional as F
 
 class AptosDensenet(nn.Module):
     def __init__(self, output_logits, params_loc=None):
-        super(Net, self).__init__()
+        super(AptosDensenet, self).__init__()
         base_model = torchvision.models.densenet121(pretrained=True, progress=True)
         self.features = base_model.features
         self.classifier = nn.Sequential(
