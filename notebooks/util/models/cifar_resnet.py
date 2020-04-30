@@ -99,8 +99,6 @@ class CifarResnet(nn.Module):
         return self.fc(x)
 
     def forward(self, x):
-        if type(x) == np.ndarray:
-            x = torch.tensor(x)
         if x.dtype != torch.float32:
             x = x.float()
         logits = self.get_logits(x)
