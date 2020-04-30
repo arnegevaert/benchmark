@@ -41,4 +41,4 @@ class MaskedDataset:
         return samples, labels
 
     def get_mask(self):
-        return self.masking_layer.mask.detach().numpy()
+        return self.masking_layer.mask

@@ -4,8 +4,8 @@ import numpy as np
 
 # Returns a dictionary containing, for each given method, a list of Sensitivity-n values
 # where the values of n are given by mask_range
-def sensitivity_n(data: Iterable, model: Callable[[np.ndarray], np.ndarray],
-                  methods: Dict[str, Callable[[np.ndarray, np.ndarray], np.ndarray]], mask_range: List[int],
+def sensitivity_n(data: Iterable, model: Callable,
+                  methods: Dict[str, Callable], mask_range: List[int],
                   n_subsets: int, mask_value: float):
     result = {m_name: [[] for _ in mask_range] for m_name in methods}
     for batch_index, (samples, labels) in enumerate(data):
@@ -23,16 +23,18 @@ def sensitivity_n(data: Iterable, model: Callable[[np.ndarray], np.ndarray],
                 mask = np.random.choice(sample_size, n)
                 unraveled = np.unravel_index(mask, samples.shape[1:])
                 batch_dim = np.array(list(range(samples.shape[0])) * n).reshape(-1, samples.shape[0]).transpose()
-                masked_samples = np.copy(samples)
+                masked_samples = samples.clone()
                 masked_samples[(batch_dim, *unraveled)] = mask_value
 
                 output = model(masked_samples)
                 # Get difference in output confidence for desired class
-                output_diffs.append((orig_output - output)[np.arange(samples.shape[0]), labels].reshape(samples.shape[0], 1))
+                output_diffs.append((orig_output - output)[np.arange(samples.shape[0]), labels]
+                                    .reshape(samples.shape[0], 1)
+                                    .detach().numpy())
                 # Get sum of attributions of masked pixels
                 for m_name in methods:
                     sum_of_attrs[m_name].append(
-                        attrs[m_name][(batch_dim, *unraveled)]
+                        attrs[m_name][(batch_dim, *unraveled)].detach().numpy()
                         .reshape(samples.shape[0], -1)
                         .sum(axis=1)
                         .reshape(samples.shape[0], 1))

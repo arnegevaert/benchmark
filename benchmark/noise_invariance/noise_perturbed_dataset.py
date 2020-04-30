@@ -5,6 +5,7 @@ import os
 import h5py
 import warnings
 import json
+import torch
 
 
 class NoisePerturbedDataset:
@@ -22,10 +23,10 @@ class NoisePerturbedDataset:
         count = 0
         while count + self.batch_size <= self.file["original"].shape[0]:
             yield {
-                "perturbed": [self.file[f"level_{l}"][count:count+self.batch_size, :]
+                "perturbed": [torch.tensor(self.file[f"level_{l}"][count:count+self.batch_size, :])
                               for l in range(len(self.perturbation_levels))],
-                "original": self.file[f"original"][count:count+self.batch_size, :],
-                "labels": self.file[f"labels"][count:count+self.batch_size]
+                "original": torch.tensor(self.file[f"original"][count:count+self.batch_size, :]),
+                "labels": torch.tensor(self.file[f"labels"][count:count+self.batch_size], dtype=torch.long)
             }
             count += self.batch_size
 

@@ -2,8 +2,7 @@ from typing import Iterable, Callable, List, Dict
 import numpy as np
 
 
-def simple_sensitivity(data: Iterable, model: Callable[[np.ndarray], np.ndarray],
-                       methods: Dict[str, Callable[[np.ndarray, np.ndarray], np.ndarray]],
+def simple_sensitivity(data: Iterable, model: Callable, methods: Dict[str, Callable],
                        mask_range: List[int], mask_value: float):
     result = {m_name: [] for m_name in methods}
     for batch_index, (samples, labels) in enumerate(data):
@@ -22,12 +21,12 @@ def simple_sensitivity(data: Iterable, model: Callable[[np.ndarray], np.ndarray]
                 # batch_dim: [batch_size, i] (made to match unravel_index output)
                 batch_size = samples.shape[0]
                 batch_dim = np.array(list(range(batch_size))*i).reshape(-1, batch_size).transpose()
-                masked_samples = np.copy(samples)
+                masked_samples = samples.clone()
                 masked_samples[(batch_dim, *unraveled)] = mask_value
                 # Get predictions for result
                 predictions = model(masked_samples)
                 predictions = predictions[np.arange(predictions.shape[0]), labels].reshape(-1, 1)
-                batch_result.append(predictions)
+                batch_result.append(predictions.detach().numpy())
             batch_result = np.concatenate(batch_result, axis=1)
             result[key].append(batch_result)
     return {m_name: np.concatenate(result[m_name], axis=0) for m_name in methods}  # [n_batches*batch_size, len(mask_range)]

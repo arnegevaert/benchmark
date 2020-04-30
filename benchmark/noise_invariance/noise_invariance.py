@@ -2,6 +2,7 @@ from benchmark.noise_invariance.noise_perturbed_dataset import NoisePerturbedDat
 from typing import Callable, Dict
 import numpy as np
 import itertools
+import torch
 
 
 def noise_invariance(data: NoisePerturbedDataset, methods: Dict[str, Callable],
@@ -20,10 +21,10 @@ def noise_invariance(data: NoisePerturbedDataset, methods: Dict[str, Callable],
             orig_attr = method(orig, labels)  # [batch_size, *sample_shape]
             for n_l, noise_level_batch in enumerate(batch["perturbed"]):
                 perturbed_attr = method(noise_level_batch, labels)  # [batch_size, *sample_shape]
-                avg_diff_per_image = np.average(np.reshape(np.abs(orig_attr - perturbed_attr), (data.batch_size, -1)),
-                                                axis=1)  # [batch_size]
-                diffs[n_l].append(avg_diff_per_image)
-                max_diff_idx = np.argmax(avg_diff_per_image).item()
+                avg_diff_per_image = torch.mean(torch.reshape(torch.abs(orig_attr - perturbed_attr), (data.batch_size, -1)),
+                                                dim=1)  # [batch_size]
+                diffs[n_l].append(avg_diff_per_image.detach().numpy())
+                max_diff_idx = torch.argmax(avg_diff_per_image).item()
                 if avg_diff_per_image[max_diff_idx] > cur_max_diff:
                     cur_max_diff = avg_diff_per_image[max_diff_idx]
                     cur_max_diff_examples = {
