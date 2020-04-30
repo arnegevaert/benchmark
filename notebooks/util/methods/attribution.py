@@ -14,10 +14,6 @@ class CaptumMethod:
         return self.method.attribute(x, target=target)
 
     def __call__(self, x, target):
-        if type(x) != torch.Tensor:
-            x = torch.tensor(x)
-        if type(target) != torch.Tensor:
-            target = torch.tensor(target, dtype=torch.long)
         attrs = self._attribute(x, target)
         if self.normalize:
             return normalize_attributions(attrs)

@@ -20,9 +20,7 @@ class Cifar:
         self.mask_value = -0.4242
 
     def get_train_data(self):
-        for samples, labels in iter(self.train_loader):
-            yield samples.detach().numpy(), labels.detach().numpy()
+        return self.train_loader
 
     def get_test_data(self):
-        for samples, labels in iter(self.test_loader):
-            yield samples.detach().numpy(), labels.detach().numpy()
+        return self.test_loader

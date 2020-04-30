@@ -1,5 +1,6 @@
 from os import path
 import numpy as np
+import torch
 from imgaug import augmenters as iaa
 from sklearn.utils import class_weight
 import pandas as pd
@@ -38,7 +39,7 @@ def _get_aptos_dataset(data_loc, imsize=224):
 
 
 class Aptos:
-    class Dataset:
+    class DataLoader:
         def __init__(self, x_array, y_array, batch_size, transforms):
             self.x_array = x_array
             self.y_array = y_array
@@ -49,7 +50,7 @@ class Aptos:
             for i in range(0, self.x_array.shape[0], self.batch_size):
                 samples = self.transforms(images=self.x_array[i:i + self.batch_size])
                 labels = self.y_array[i:i + self.batch_size]
-                yield np.array(samples), np.array(labels)
+                yield torch.tensor(samples), torch.tensor(labels)
 
         def __len__(self):
             return math.ceil(self.x_array.shape[0] / self.batch_size)
@@ -70,10 +71,10 @@ class Aptos:
         self.test_transforms = iaa.Lambda(_move_axis_lambda)
 
     def get_train_data(self):
-        return Aptos.Dataset(self.x_train, self.y_train, self.batch_size, self.train_transforms)
+        return Aptos.DataLoader(self.x_train, self.y_train, self.batch_size, self.train_transforms)
 
     def get_test_data(self):
-        return Aptos.Dataset(self.x_test, self.y_test, self.batch_size, self.test_transforms)
+        return Aptos.DataLoader(self.x_test, self.y_test, self.batch_size, self.test_transforms)
 
     def get_sample_shape(self):
         return self.sample_shape
