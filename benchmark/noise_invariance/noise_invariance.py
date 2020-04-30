@@ -4,7 +4,7 @@ import numpy as np
 import itertools
 
 
-def noise_invariance(data: NoisePerturbedDataset, methods: Dict[str, Callable[[np.ndarray, np.ndarray], np.ndarray]],
+def noise_invariance(data: NoisePerturbedDataset, methods: Dict[str, Callable],
                      n_batches=None):
     result = {}
     for m_name in methods:

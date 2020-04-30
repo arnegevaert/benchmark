@@ -2,12 +2,11 @@ import torch
 import numpy as np
 from sklearn.metrics import jaccard_score
 import random
-from os import path
 from typing import Iterable, Callable, Dict, Tuple
 
 
-def impact_coverage(data: Iterable, sample_shape: Tuple, patch, patch_size_percent: float, model: Callable, methods: Dict[str, Callable],
-                    device: str, target_label: int):
+def impact_coverage(data: Iterable, sample_shape: Tuple, patch, target_label: int, patch_size_percent: float, model: Callable, methods: Dict[str, Callable],
+                    device: str = "cpu"):
     image_size = sample_shape[-1]
     patch_size = int(((image_size**2)*patch_size_percent)**0.5)
     keep_list = []  # boolean mask of images to keep (not predicted as target class and successfully attacked)
