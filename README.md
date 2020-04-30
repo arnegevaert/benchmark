@@ -52,10 +52,6 @@ We provide a list of metrics that can be used to assess the quality of explainab
 Applicable to FA techniques.
 Given (partial) ground truth about feature importances, FA method should match this ground truth as well as possible. Ways to measure this:
 
-- **Using adversarial examples :x:: (NOTE: this is very similar to impact coverage, see further)**
-    - Generate (localized https://arxiv.org/abs/1801.02608) adversarial noise to change the output of the model
-    - Calculate feature attribution on adversarial example
-    - Feature attribution (change in feature attribution?) should correlate with adversarial noise
 - **Using synthetic data :x::**
     - Generate dataset where parts of input cause the output label, other parts are noise
     - Feature attribution should match these parts
@@ -95,7 +91,7 @@ Applicable to all techniques.
 
 #### From sources
 - Sensitivity-n: Towards Better Understanding of Gradient-Based Attribution Methods for Deep Neural Networks. :heavy_check_mark:
-- Impact score: Do Explanation Reflect Decisions? A Machine-centric Strategy to Quantify the Performance of Explainability Algorithms :construction:
+- Impact score: Do Explanation Reflect Decisions? A Machine-centric Strategy to Quantify the Performance of Explainability Algorithms :heavy_check_mark:
 - Impact coverage: Do Explanation Reflect Decisions? A Machine-centric Strategy to Quantify the Performance of Explainability Algorithms :x:
 - AIC/SIC: XRAI: Better Attributions Through Regions :x:
 - (In)fidelity and sensitivity: On the (In)fidelity and Sensitivity for Explanations ([Arxiv](https://arxiv.org/abs/1901.09392))
