@@ -95,7 +95,7 @@ Applicable to all techniques.
 
 #### From sources
 - Sensitivity-n: Towards Better Understanding of Gradient-Based Attribution Methods for Deep Neural Networks. :heavy_check_mark:
-- Impact score: Do Explanation Reflect Decisions? A Machine-centric Strategy to Quantify the Performance of Explainability Algorithms :x:
+- Impact score: Do Explanation Reflect Decisions? A Machine-centric Strategy to Quantify the Performance of Explainability Algorithms :construction:
 - Impact coverage: Do Explanation Reflect Decisions? A Machine-centric Strategy to Quantify the Performance of Explainability Algorithms :x:
 - AIC/SIC: XRAI: Better Attributions Through Regions :x:
 - (In)fidelity and sensitivity: On the (In)fidelity and Sensitivity for Explanations ([Arxiv](https://arxiv.org/abs/1901.09392))
