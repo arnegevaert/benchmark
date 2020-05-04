@@ -1,4 +1,4 @@
-from benchmark.masking_accuracy import MaskedDataset
+from .masked_dataset import MaskedDataset
 from typing import Dict, Callable
 import numpy as np
 import itertools

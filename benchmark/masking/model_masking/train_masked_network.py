@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
-from benchmark.masking_accuracy import MaskedDataset
-from benchmark.masking_accuracy import MaskedNeuralNetwork
+from .masked_dataset import MaskedDataset
+from .masked_neural_network import MaskedNeuralNetwork
 
 
 def train_masked_network(model: MaskedNeuralNetwork, data: MaskedDataset, lr, gamma, epochs):
