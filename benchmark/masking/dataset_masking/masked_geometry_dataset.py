@@ -1,7 +1,6 @@
 import torch
 from torchvision import transforms
 from os import path
-import os
 
 
 class MaskedGeometryDataset:
@@ -27,8 +26,3 @@ class MaskedGeometryDataset:
         return torch.utils.data.DataLoader(
             MaskedGeometryDataset.Dataset(self.data_location, train, include_masks),
             batch_size=self.batch_size, shuffle=shuffle)
-
-
-def generate_masked_geometry_dataset(location: str, width: int, height: int, train_size: int, test_size: int):
-    os.makedirs(path.join(location, "train"))
-    os.makedirs(path.join(location, "test"))
