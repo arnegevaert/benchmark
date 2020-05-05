@@ -11,11 +11,11 @@ def generate_masked_geometry_dataset(location: str, height: int, width: int, tra
         os.makedirs(loc)
         os.makedirs(path.join(loc, "imgs"))
         os.makedirs(path.join(loc, "masks"))
-        for obj in objs:
+        for label, obj in enumerate(objs):
             for i in range(size // len(objs)):
                 img, img_mask = _draw_object(height, width, obj)
-                img.save(path.join(loc, "imgs", f"{obj}_{i}.png"))
-                img_mask.save(path.join(loc, "masks", f"{obj}_{i}.png"))
+                img.save(path.join(loc, "imgs", f"{label}_{i}.png"))
+                img_mask.save(path.join(loc, "masks", f"{label}_{i}.png"))
 
 
 def _draw_object(img_height, img_width, obj="circle"):
