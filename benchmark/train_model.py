@@ -3,7 +3,7 @@ import torch.nn.functional as F
 
 
 def train_model(model, dataset, lr, gamma, epochs):
-    optimizer = torch.optim.Adadelta(model.net.parameters(), lr=lr)
+    optimizer = torch.optim.Adadelta(model.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=gamma)
     loader = dataset.get_dataloader(train=True)
     for epoch in range(1, epochs+1):

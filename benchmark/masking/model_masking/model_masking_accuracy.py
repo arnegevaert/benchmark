@@ -6,7 +6,9 @@ import torch
 
 
 def masking_accuracy(data: MaskedDataset, methods: Dict[str, Callable], n_batches=None):
-    iterator = itertools.islice(enumerate(data.get_test_data()), n_batches) if n_batches else enumerate(data.get_test_data())
+    iterator = enumerate(data.get_dataloader(train=False))
+    if n_batches:
+        iterator = itertools.islice(iterator, n_batches)
     jaccards = {m_name: [] for m_name in methods}
     mask = data.get_mask()
     for b, (samples, labels) in iterator:

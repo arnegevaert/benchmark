@@ -42,4 +42,4 @@ def _open_image(height, width):
 
 if __name__ == "__main__":
     generate_masked_geometry_dataset("../../../data/geometry/basic",
-                                     height=250, width=250, train_size=5000, test_size=1000)
+                                     height=100, width=100, train_size=5000, test_size=1000)

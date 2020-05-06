@@ -1,1 +1,1 @@
-from train_model import train_model, test_model
+from .train_model import train_model, test_model
