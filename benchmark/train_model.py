@@ -1,34 +1,34 @@
 import torch
 import torch.nn.functional as F
-from benchmark.masking_accuracy import MaskedDataset
-from benchmark.masking_accuracy import MaskedNeuralNetwork
 
 
-def train_masked_network(model: MaskedNeuralNetwork, data: MaskedDataset, lr, gamma, epochs):
-    optimizer = torch.optim.Adadelta(model.net.parameters(), lr=lr)
+def train_model(model, dataset, lr, gamma, epochs):
+    optimizer = torch.optim.Adadelta(model.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=gamma)
+    loader = dataset.get_dataloader(train=True)
     for epoch in range(1, epochs+1):
         model.train()
-        for batch_idx, (samples, target) in enumerate(data.get_train_data()):
+        for batch_idx, (samples, target) in enumerate(loader):
             optimizer.zero_grad()
             output = model(samples)
             loss = F.cross_entropy(output, target)
             loss.backward()
             optimizer.step()
             if batch_idx % 100 == 0:
-                print(f"Train Epoch: {epoch} ({batch_idx * len(samples)})\tLoss: {loss.item():.6f}")
-        test_masked_network(model, masked_dataset=data)
+                print(f"Train Epoch: {epoch} ({batch_idx * len(samples)}/{len(loader) * len(samples)})"
+                      f"\tLoss: {loss.item():.6f}")
+        test_model(model, dataset)
         scheduler.step()
 
 
-def test_masked_network(model: MaskedNeuralNetwork, masked_dataset: MaskedDataset):
+def test_model(model, dataset):
     model.eval()
     test_loss = 0
     correct = 0
     total_samples = 0
     pos_samples = 0
     with torch.no_grad():
-        for samples, target in masked_dataset.get_test_data():
+        for samples, target in dataset.get_dataloader(train=False):
             # target = torch.all(model.mask(data).reshape(BATCH_SIZE, -1) > MEDIAN_VALUE, dim=1).long()
             output = model(samples)
             test_loss += F.cross_entropy(output, target, reduction='sum').item()  # sum up batch loss
