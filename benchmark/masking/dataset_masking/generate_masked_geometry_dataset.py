@@ -13,24 +13,37 @@ def generate_masked_geometry_dataset(location: str, height: int, width: int, tra
         os.makedirs(path.join(loc, "masks"))
         for label, obj in enumerate(objs):
             for i in range(size // len(objs)):
-                img, img_mask = _draw_object(height, width, obj)
+                img, img_mask = _draw_image(height, width, obj)
                 img.save(path.join(loc, "imgs", f"{label}_{i}.png"))
                 img_mask.save(path.join(loc, "masks", f"{label}_{i}.png"))
 
 
-def _draw_object(img_height, img_width, obj="circle"):
+def _draw_image(img_height, img_width, obj="circle"):
+    # Open image and mask image
     img, draw = _open_image(img_height, img_width)
     img_mask, draw_mask = _open_image(img_height, img_width)
-    size = random.randint(int(img_width * .05), int(img_width * .3))  # TODO make these parameters?
+
+    # Add random grey polygons for background noise
+    for _ in range(3):
+        color = random.randint(0, 255)
+        color_rgb = (color, color, color)
+        n_points = random.randint(3, 6)
+        xy = [(random.randint(0, img_width), random.randint(0, img_height)) for _ in range(n_points)]
+        draw.polygon(xy, fill=color_rgb)
+
+    # Decide object size and coordinates
+    size = random.randint(int(img_width * .05), int(img_width * .3))
     x, y = (random.randint(int(d * .1), int(d * .9)) for d in [img_width, img_height])
+
+    # Draw object
     if obj is "circle":
         radius = size // 2
-        draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill="white")
+        draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill="red")
         draw_mask.ellipse((x - radius, y - radius, x + radius, y + radius), fill="white")
     elif obj is "square":
-        draw.rectangle(((x, y), (x + size, y + size)), fill="white")
+        draw.rectangle(((x, y), (x + size, y + size)), fill="blue")
         draw_mask.rectangle(((x, y), (x + size, y + size)), fill="white")
-    # TODO add noise
+
     return img, img_mask
 
 

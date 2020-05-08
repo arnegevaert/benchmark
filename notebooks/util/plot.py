@@ -18,4 +18,4 @@ def plot_image_with_attributions(image, attributions):
     fig.add_subplot(1, 2, 1)
     plt.imshow(image)
     fig.add_subplot(1, 2, 2)
-    plt.imshow(attributions, cmap="coolwarm")
+    plt.imshow(attributions, cmap="gray")
