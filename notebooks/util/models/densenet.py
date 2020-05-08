@@ -11,22 +11,24 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class AptosDensenet(nn.Module):
-    def __init__(self, output_logits, params_loc=None):
-        super(AptosDensenet, self).__init__()
-        self.base_model = torchvision.models.densenet121(pretrained=True, progress=True)
-        self.features = self.base_model.features
+class Densenet(nn.Module):
+    def __init__(self, output_logits, num_classes ,params_loc=None):
+        super(Densenet, self).__init__()
+        base_model = torchvision.models.densenet121(pretrained=False, progress=True)
+        self.features = base_model.features
+        self.classifier = base_model.classifier
         self.classifier = nn.Sequential(
-            nn.Linear(1024, 5))
+            nn.Linear(1024, num_classes))
         self.output_logits = output_logits
         self.softmax = nn.Softmax(dim=1)
+
         if params_loc:
             self.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
 
     def get_logits(self, x):
         x = self.features(x)
         x = F.relu(x, inplace=True)
-        x = F.adaptive_avg_pool2d(x, (1, 1)) # Global avg pooling
+        x = F.adaptive_avg_pool2d(x, (1, 1))  # Global avg pooling
         x = torch.flatten(x, 1)
         return self.classifier(x)
 
@@ -45,3 +47,11 @@ class AptosDensenet(nn.Module):
     def to(self, *args, **kwargs):
         super().to(*args, **kwargs)
         self.base_model.to(*args, **kwargs)
+
+
+def AptosDensenet(output_logits, params_loc=None):
+    return Densenet(output_logits, 5, params_loc)
+
+
+def ImagenetteDensenet(output_logits, params_loc=None):
+    return Densenet(output_logits, 10, params_loc)
