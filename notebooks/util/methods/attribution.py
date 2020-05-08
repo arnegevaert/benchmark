@@ -2,6 +2,7 @@ from captum import attr
 import torch.nn as nn
 import torch
 from .util import normalize_attributions
+from skimage.filters import sobel
 
 
 class AttributionMethod:
@@ -29,17 +30,20 @@ class AttributionMethod:
 
 class Gradient(AttributionMethod):
     def __init__(self, forward_func, normalize=True, aggregation_fn=None):
-        super(Gradient, self).__init__(attr.Saliency(forward_func), normalize, absolute=True, aggregation_fn=aggregation_fn)
+        super(Gradient, self).__init__(attr.Saliency(forward_func), normalize, absolute=True,
+                                       aggregation_fn=aggregation_fn)
 
 
 class InputXGradient(AttributionMethod):
     def __init__(self, forward_func, normalize=True, aggregation_fn=None):
-        super(InputXGradient, self).__init__(attr.InputXGradient(forward_func), normalize, aggregation_fn=aggregation_fn)
+        super(InputXGradient, self).__init__(attr.InputXGradient(forward_func), normalize,
+                                             aggregation_fn=aggregation_fn)
 
 
 class IntegratedGradients(AttributionMethod):
     def __init__(self, forward_func, normalize=True, aggregation_fn=None):
-        super(IntegratedGradients, self).__init__(attr.IntegratedGradients(forward_func), normalize, aggregation_fn=aggregation_fn)
+        super(IntegratedGradients, self).__init__(attr.IntegratedGradients(forward_func), normalize,
+                                                  aggregation_fn=aggregation_fn)
 
 
 class GuidedBackprop(AttributionMethod):
@@ -53,7 +57,8 @@ class Deconvolution(AttributionMethod):
 
 
 class Ablation(AttributionMethod):
-    def __init__(self, forward_func, normalize=True, baselines=None, feature_mask=None, perturbations_per_eval=1, aggregation_fn=None):
+    def __init__(self, forward_func, normalize=True, baselines=None, feature_mask=None, perturbations_per_eval=1,
+                 aggregation_fn=None):
         super(Ablation, self).__init__(attr.FeatureAblation(forward_func), normalize, aggregation_fn=None)
         self.baselines = baselines
         self.feature_mask = feature_mask
@@ -106,6 +111,33 @@ class Random:
 
     def __call__(self, x, target):
         attrs = torch.rand(*x.shape) * 2 - 1
+        if self.aggregation_fn:
+            attrs = self.aggregation_fn(attrs)
+        if self.normalize:
+            return normalize_attributions(attrs)
+        return attrs
+
+
+class EdgeDetection:
+    def __init__(self, normalize=True, aggregation_fn=None):
+        super().__init__()
+        self.normalize = normalize
+        self.is_absolute = False
+        aggregation_fns = {
+            "max": lambda x: torch.max(x, dim=1),
+            "avg": lambda x: torch.mean(x, dim=1)
+        }
+        self.aggregation_fn = aggregation_fns.get(aggregation_fn, None)
+
+    def __call__(self, x, target):
+        device = x.device
+        x = x.detach().cpu().numpy()
+        x = (x - x.min()) / (x.max() - x.min())
+        for i in range(x.shape[0]):
+            for channel in range(x.shape[1]):
+                x[i, channel] = sobel(x[i, channel])
+        attrs = torch.tensor(x).to(device)
+
         if self.aggregation_fn:
             attrs = self.aggregation_fn(attrs)
         if self.normalize:
