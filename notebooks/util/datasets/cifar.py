@@ -15,7 +15,7 @@ class Cifar:
         self.version = version
         self.download = download
         self.shuffle = shuffle
-        self.mask_value = -0.4242
+        self.mask_value = -1
 
     def get_dataloader(self, train=True):
         return DataLoader(

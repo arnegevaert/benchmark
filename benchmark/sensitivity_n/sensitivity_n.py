@@ -6,11 +6,11 @@ import numpy as np
 # where the values of n are given by mask_range
 def sensitivity_n(data: Iterable, model: Callable,
                   methods: Dict[str, Callable], mask_range: List[int],
-                  n_subsets: int, mask_value: float):
+                  n_subsets: int, mask_value: float, pixel_level_mask: bool):
     result = {m_name: [[] for _ in mask_range] for m_name in methods}
     for batch_index, (samples, labels) in enumerate(data):
         print(f"Batch {batch_index}...")
-        sample_size = np.prod(samples.shape[1:])
+        sample_size = np.prod(samples.shape[2:]) if pixel_level_mask else np.prod(samples.shape[1:])
         # Get original output and attributions
         orig_output = model(samples)
         attrs = {m_name: methods[m_name](samples, labels) for m_name in methods}
@@ -19,12 +19,16 @@ def sensitivity_n(data: Iterable, model: Callable,
             sum_of_attrs = {m_name: [] for m_name in methods}
             for _ in range(n_subsets):
                 # Generate mask and masked samples
-                # batch_dim: [batch_size, n] (made to match unravel_index output)
-                mask = np.random.choice(sample_size, n)
-                unraveled = np.unravel_index(mask, samples.shape[1:])
-                batch_dim = np.array(list(range(samples.shape[0])) * n).reshape(-1, samples.shape[0]).transpose()
                 masked_samples = samples.clone()
-                masked_samples[(batch_dim, *unraveled)] = mask_value
+                mask = np.random.choice(sample_size, n)
+                if pixel_level_mask:
+                    # Mask on pixel level (aggregate across channels)
+                    unraveled = np.unravel_index(mask, samples.shape[2:])
+                    masked_samples[:, :, unraveled[0], unraveled[1]] = mask_value
+                else:
+                    # Mask on feature level (separate channels)
+                    unraveled = np.unravel_index(mask, samples.shape[1:])
+                    masked_samples[:, unraveled[0], unraveled[1], unraveled[2]] = mask_value
 
                 output = model(masked_samples)
                 # Get difference in output confidence for desired class
@@ -33,8 +37,12 @@ def sensitivity_n(data: Iterable, model: Callable,
                                     .detach().numpy())
                 # Get sum of attributions of masked pixels
                 for m_name in methods:
+                    if pixel_level_mask:
+                        mask_attrs = attrs[m_name][:, unraveled[0], unraveled[1]]
+                    else:
+                        mask_attrs = attrs[m_name][:, unraveled[0], unraveled[1], unraveled[2]]
                     sum_of_attrs[m_name].append(
-                        attrs[m_name][(batch_dim, *unraveled)].detach().numpy()
+                        mask_attrs.detach().numpy()
                         .reshape(samples.shape[0], -1)
                         .sum(axis=1)
                         .reshape(samples.shape[0], 1))
