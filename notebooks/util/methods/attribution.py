@@ -7,8 +7,9 @@ class AttributionMethod:
         self.normalize = normalize
         self.is_absolute = absolute
         aggregation_fns = {
-            "avg": lambda x: torch.mean(x, dim=1)
-        }  # TODO add max abs value
+            "avg": lambda x: torch.mean(x, dim=1),
+            "max_abs": lambda x: torch.gather(x, dim=1, index=torch.argmax(x.abs(), dim=1))
+        }
         self.aggregation_fn = aggregation_fns.get(aggregation_fn, None)
 
     def _attribute(self, x, target):
@@ -17,7 +18,7 @@ class AttributionMethod:
     def __call__(self, x, target):
         attrs = self._attribute(x, target)
         if self.aggregation_fn:
-            attrs = self.aggregation_fn(attrs)
+            attrs = self.aggregation_fn(x)
         if self.normalize:
             attrs = normalize_attributions(attrs)
         return attrs
