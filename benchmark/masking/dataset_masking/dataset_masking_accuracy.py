@@ -16,6 +16,8 @@ def dataset_masking_accuracy(data: MaskedGeometryDataset, methods: Dict[str, Cal
         for m_name in methods:
             # Get attributions [batch_size, *sample_shape]
             attrs = methods[m_name](samples, labels)
+            if len(attrs.shape) != 3:
+                raise ValueError("Attributions must have shape [batch_size, rows, cols]")
             # Ignoring negative attributions, any feature is "important" if its attributions is > 0.01
             # TODO the way Jaccard indexes are being calculated should be configurable, create ROC curve
             attrs = (attrs > 0.).int()

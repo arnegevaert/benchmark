@@ -10,7 +10,8 @@ def masking_accuracy(data: MaskedDataset, methods: Dict[str, Callable], n_batche
     if n_batches:
         iterator = itertools.islice(iterator, n_batches)
     jaccards = {m_name: [] for m_name in methods}
-    mask = data.get_mask()
+    # shape of mask is [channels, rows, cols], take [0] to get [rows, cols] for aggregated attrs
+    mask = data.get_mask()[0]
     for b, (samples, labels) in iterator:
         print(f"Batch {b+1}...")
         for m_name in methods:
