@@ -3,9 +3,10 @@ import numpy as np
 
 
 def simple_sensitivity(data: Iterable, model: Callable, methods: Dict[str, Callable],
-                       mask_range: List[int], mask_value: float):
+                       mask_range: List[int], mask_value: float, pixel_level_mask: bool):
     result = {m_name: [] for m_name in methods}
     for batch_index, (samples, labels) in enumerate(data):
+        print(f"Batch {batch_index}...")
         for key in methods:
             batch_result = []
             attrs = methods[key](samples, labels)  # [batch_size, *sample_shape]
@@ -16,13 +17,15 @@ def simple_sensitivity(data: Iterable, model: Callable, methods: Dict[str, Calla
             for i in mask_range:
                 # Get indices of i most important inputs
                 to_mask = sorted_indices[:, -i:]  # [batch-size, i]
-                unraveled = np.unravel_index(to_mask, samples.shape[1:])
-                # Mask i most important inputs
-                # batch_dim: [batch_size, i] (made to match unravel_index output)
-                batch_size = samples.shape[0]
-                batch_dim = np.array(list(range(batch_size))*i).reshape(-1, batch_size).transpose()
                 masked_samples = samples.clone()
-                masked_samples[(batch_dim, *unraveled)] = mask_value
+                if pixel_level_mask:
+                    unraveled = np.unravel_index(to_mask, samples.shape[2:])
+                    dim_0 = np.array(list(range(samples.shape[0]))*i).reshape(-1, samples.shape[0]).transpose()
+                    masked_samples[(dim_0, -1, *unraveled)] = mask_value
+                else:
+                    unraveled = np.unravel_index(to_mask, samples.shape[1:])
+                    dim_0 = np.array(list(range(samples.shape[0]))*i).reshape(-1, samples.shape[0]).transpose()
+                    masked_samples[(dim_0, *unraveled)] = mask_value
                 # Get predictions for result
                 predictions = model(masked_samples)
                 predictions = predictions[np.arange(predictions.shape[0]), labels].reshape(-1, 1)
