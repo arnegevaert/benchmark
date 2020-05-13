@@ -24,7 +24,7 @@ class AttributionMethod:
     def __call__(self, x, target):
         attrs = self._attribute(x, target)
         if self.aggregation_fn:
-            attrs = self.aggregation_fn(x)
+            attrs = self.aggregation_fn(attrs)
         if self.normalize:
             attrs = normalize_attributions(attrs)
         return attrs
