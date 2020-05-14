@@ -29,7 +29,7 @@ class MaskedGeometryDataset:
             label = int(filename[0])
             image = self.transform(io.imread(path.join(self.img_location, filename)))
             if self.include_masks:
-                mask = self.mask_transform(io.imread(path.join(self.mask_location, filename)))
+                mask = self.mask_transform(io.imread(path.join(self.mask_location, filename))).squeeze()
                 return image, torch.tensor(label), mask
             return image, torch.tensor(label)
 

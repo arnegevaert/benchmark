@@ -21,7 +21,7 @@ def generate_masked_geometry_dataset(location: str, height: int, width: int, tra
 def _draw_image(img_height, img_width, obj="circle"):
     # Open image and mask image
     img, draw = _open_image(img_height, img_width)
-    img_mask, draw_mask = _open_image(img_height, img_width)
+    img_mask, draw_mask = _open_image(img_height, img_width, mode="L")  # 8-bit pixels
 
     # Add random grey polygons for background noise
     for _ in range(3):
@@ -47,8 +47,8 @@ def _draw_image(img_height, img_width, obj="circle"):
     return img, img_mask
 
 
-def _open_image(height, width):
-    img = Image.new("RGB", (height, width))
+def _open_image(height, width, mode="RGB"):
+    img = Image.new(mode, (height, width))
     draw = ImageDraw.Draw(img)
     return img, draw
 

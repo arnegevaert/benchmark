@@ -8,28 +8,26 @@ def impact_score(data: Iterable, model: Callable, mask_range: List[int], methods
     method_predictions = {m_name: {n: [] for n in mask_range} for m_name in methods}
 
     for b, (samples, labels) in enumerate(data):
-        samples, labels = samples, labels
         samples = samples.to(device, non_blocking=True)
         labels = labels.to(device, non_blocking=True)
         original_predictions.append(model(samples).detach().cpu().numpy())  # collect original predictions
-
-        for m_name in method_predictions:
+        for m_name in methods:
             masked_samples = samples.clone()
-            method = methods[m_name]
+            # Get and sort original attributions
             # TODO targets should be the actual predictions of the model, not the ground truth?
-            attrs = method(samples, target=labels)
+            attrs = methods[m_name](samples, target=labels)
+            pixel_level_attrs = len(attrs.shape) == 3
             attrs = attrs.reshape(attrs.shape[0], -1)
             sorted_indices = attrs.argsort().cpu()
             for n in mask_range:
                 to_mask = sorted_indices[:, -n:]  # [batch_size, i]
-                unraveled = np.unravel_index(to_mask, samples.shape[1:])
-
-                assert ((np.array(list(range(samples.shape[0])) * n).reshape(-1, samples.shape[0]).transpose() ==
-                         np.column_stack([range(samples.shape[0]) for _ in range(n)])).all()
-                        )  # just making sure i'm not breaking things
-
-                batch_dim = np.column_stack([range(samples.shape[0]) for i in range(n)])  # more readable then previous code?
-                masked_samples[(batch_dim, *unraveled)] = mask_value
+                batch_dim = np.column_stack([range(samples.shape[0]) for _ in range(n)])
+                if pixel_level_attrs:
+                    unraveled = np.unravel_index(to_mask, samples.shape[2:])
+                    masked_samples[(batch_dim, -1, *unraveled)] = mask_value
+                else:
+                    unraveled = np.unravel_index(to_mask, samples.shape[1:])
+                    masked_samples[(batch_dim, *unraveled)] = mask_value
                 pred = model(masked_samples)
                 method_predictions[m_name][n].append(pred.detach().cpu().numpy())
 
