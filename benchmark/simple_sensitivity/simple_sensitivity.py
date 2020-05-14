@@ -18,14 +18,13 @@ def simple_sensitivity(data: Iterable, model: Callable, methods: Dict[str, Calla
                 # Get indices of i most important inputs
                 to_mask = sorted_indices[:, -i:]  # [batch-size, i]
                 masked_samples = samples.clone()
+                batch_dim = np.column_stack([range(samples.shape[0]) for _ in range(i)])
                 if pixel_level_mask:
                     unraveled = np.unravel_index(to_mask, samples.shape[2:])
-                    dim_0 = np.array(list(range(samples.shape[0]))*i).reshape(-1, samples.shape[0]).transpose()
-                    masked_samples[(dim_0, -1, *unraveled)] = mask_value
+                    masked_samples[(batch_dim, -1, *unraveled)] = mask_value
                 else:
                     unraveled = np.unravel_index(to_mask, samples.shape[1:])
-                    dim_0 = np.array(list(range(samples.shape[0]))*i).reshape(-1, samples.shape[0]).transpose()
-                    masked_samples[(dim_0, *unraveled)] = mask_value
+                    masked_samples[(batch_dim, *unraveled)] = mask_value
                 # Get predictions for result
                 predictions = model(masked_samples)
                 predictions = predictions[np.arange(predictions.shape[0]), labels].reshape(-1, 1)
