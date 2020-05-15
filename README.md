@@ -44,7 +44,7 @@ We provide a list of metrics that can be used to assess the quality of explainab
 | Sensitivity-n | [Arxiv](https://arxiv.org/abs/1711.06104) | :heavy_check_mark: |
 | Impact Score | [Arxiv](https://arxiv.org/abs/1910.07387) | :construction: |
 | Impact Coverage | [Arxiv](https://arxiv.org/abs/1910.07387) | :construction: |
-| Sanity Checks | [Sanity Checks for Saliency Maps](https://arxiv.org/abs/1810.03292) | :construction: |
+| Sanity Checks | [Arxiv](https://arxiv.org/abs/1810.03292) | :construction: |
 | AIC | [Arxiv](https://arxiv.org/abs/1906.02825) | :x: |
 | SIC | [Arxiv](https://arxiv.org/abs/1906.02825) | :x: |
 | Infidelity | [Arxiv](https://arxiv.org/abs/1901.09392) | :x: |
