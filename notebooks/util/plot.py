@@ -16,6 +16,6 @@ def plot_image_with_attributions(image, attributions):
 
     fig = plt.figure(figsize=(8, 8))
     fig.add_subplot(1, 2, 1)
-    plt.imshow(image)
+    plt.imshow(image, cmap="gray" if not is_color else None)
     fig.add_subplot(1, 2, 2)
     plt.imshow(attributions, cmap="gray")
