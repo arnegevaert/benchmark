@@ -16,6 +16,7 @@ Benchmark for ML interpretability techniques.
 | Guided Backprop | [link](https://arxiv.org/abs/1412.6806) | [Captum](https://captum.ai/api/guided_backprop.html) | DNN | Image | :heavy_check_mark: |
 | Guided Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Captum](https://captum.ai/api/guided_grad_cam.html) | CNN | Image | :heavy_check_mark: |
 | Deconvolution | [link](https://arxiv.org/abs/1311.2901) | [Captum](https://captum.ai/api/deconvolution.html) | CNN | Image | :heavy_check_mark: |
+| CAM | [link](https://arxiv.org/abs/1512.04150) | None | CNN with GAP layer | Image | :construction: |
 | Feature Ablation | None | [Captum](https://captum.ai/api/feature_ablation.html) | None | Any | :construction: |
 | DeepLIFT<sup>1</sup> | [link](https://arxiv.org/abs/1704.02685) | [Captum **(UNR)**](https://captum.ai/api/deep_lift.html) | DNN | Image | :construction: |
 | Occlusion | [link](https://arxiv.org/abs/1311.2901) | [Captum](https://captum.ai/api/occlusion.html) | none | Any | :construction: |
