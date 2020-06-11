@@ -42,13 +42,13 @@ We provide a list of metrics that can be used to assess the quality of explainab
 | Noise invariance | None | :heavy_check_mark: |
 | Simple Sensitivity | None | :heavy_check_mark: |
 | Sensitivity-n | [Arxiv](https://arxiv.org/abs/1711.06104) | :heavy_check_mark: |
+| Infidelity | [Arxiv](https://arxiv.org/abs/1901.09392) | :heavy_check_mark: |
+| Max-sensitivity | [Arxiv](https://arxiv.org/abs/1901.09392) | :heavy_check_mark: |
 | Impact Score | [Arxiv](https://arxiv.org/abs/1910.07387) | :construction: |
 | Impact Coverage | [Arxiv](https://arxiv.org/abs/1910.07387) | :construction: |
 | Sanity Checks | [Arxiv](https://arxiv.org/abs/1810.03292) | :construction: |
 | AIC | [Arxiv](https://arxiv.org/abs/1906.02825) | :x: |
 | SIC | [Arxiv](https://arxiv.org/abs/1906.02825) | :x: |
-| Infidelity | [Arxiv](https://arxiv.org/abs/1901.09392) | :x: |
-| Sensitivity | [Arxiv](https://arxiv.org/abs/1901.09392) | :x: |
 | BAM | [Arxiv](https://arxiv.org/abs/1907.09701) | :x: |
 
 
