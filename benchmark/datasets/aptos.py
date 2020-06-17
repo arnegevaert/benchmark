@@ -70,11 +70,7 @@ class Aptos:
         ])
         self.test_transforms = iaa.Lambda(_move_axis_lambda)
 
-    def get_train_data(self):
-        return Aptos.DataLoader(self.x_train, self.y_train, self.batch_size, self.train_transforms)
-
-    def get_test_data(self):
+    def get_dataloader(self, train=True):
+        if train:
+            return Aptos.DataLoader(self.x_train, self.y_train, self.batch_size, self.train_transforms)
         return Aptos.DataLoader(self.x_test, self.y_test, self.batch_size, self.test_transforms)
-
-    def get_sample_shape(self):
-        return self.sample_shape

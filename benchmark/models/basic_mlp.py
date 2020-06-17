@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class MNISTMLP(nn.Module):
+class BasicMLP(nn.Module):
     def __init__(self, output_logits, params_loc=None):
-        super(MNISTMLP, self).__init__()
+        super(BasicMLP, self).__init__()
         self.output_logits = output_logits
         self.dense1 = nn.Linear(28*28, 50)
         self.dense2 = nn.Linear(50, 50)

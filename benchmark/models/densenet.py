@@ -10,15 +10,18 @@ import torchvision
 import torch.nn as nn
 import torch.nn.functional as F
 
+_versions = ["densenet121", "densenet169", "densenet201", "densenet161"]
+
 
 class Densenet(nn.Module):
-    def __init__(self, output_logits, num_classes ,params_loc=None):
+    def __init__(self, version, output_logits, num_classes, params_loc=None):
         super(Densenet, self).__init__()
-        base_model = torchvision.models.densenet121(pretrained=False, progress=True)
+        if version not in _versions:
+            raise NotImplementedError("Version not supported")
+        fn = getattr(torchvision.models, version)
+        base_model = fn()
         self.features = base_model.features
-        self.classifier = base_model.classifier
-        self.classifier = nn.Sequential(
-            nn.Linear(1024, num_classes))
+        self.classifier = nn.Linear(1024, num_classes)
         self.output_logits = output_logits
         self.softmax = nn.Softmax(dim=1)
 
@@ -47,11 +50,3 @@ class Densenet(nn.Module):
     def to(self, *args, **kwargs):
         super().to(*args, **kwargs)
         self.base_model.to(*args, **kwargs)
-
-
-def AptosDensenet(output_logits, params_loc=None):
-    return Densenet(output_logits, 5, params_loc)
-
-
-def ImagenetteDensenet(output_logits, params_loc=None):
-    return Densenet(output_logits, 10, params_loc)

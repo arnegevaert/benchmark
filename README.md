@@ -31,7 +31,7 @@ Benchmark for ML interpretability techniques.
 
 <sup>1</sup>: DeepLIFT has 3 assignment rules (Linear, RC, RS), so should be split in DeepLIFT-{Linear,RC,RS}.
 
-## Metrics
+## Evaluation metrics
 We provide a list of metrics that can be used to assess the quality of explainability techniques.
 :heavy_check_mark: means the metric is already implemented, :x: means it is not.
 
@@ -51,7 +51,18 @@ We provide a list of metrics that can be used to assess the quality of explainab
 | SIC | [Arxiv](https://arxiv.org/abs/1906.02825) | :x: |
 | BAM | [Arxiv](https://arxiv.org/abs/1907.09701) | :x: |
 
+## Datasets
+- MNIST
+- CIFAR10
+- Aptos
+- ImageNette
 
+## Models
+### MNIST
+- Basic CNN
 
+### CIFAR10
 
+### Aptos
 
+### ImageNette
