@@ -26,21 +26,11 @@ all_models = {
         "vgg11_bn": Vgg(version="vgg11_bn", output_logits=True, num_classes=10,
                         params_loc=path.join(models_root, "ImageNette", "vgg11_bn.pt"))
     },
+    "CIFAR10": {
+        
+    },
     "MNIST": {"cnn": BasicCNN(output_logits=True, num_classes=10,
                               params_loc=path.join(models_root, "MNIST", "cnn.pt"))}
 }
 
-# TODO train models from torchvision on CIFAR10
-
-"""
-for rn in ["resnet18", "resnet34", "resnet50"]:
-    all_models["CIFAR10"][rn] = Resnet(rn, output_logits=True, num_classes=10,
-                                       params_loc=path.join(models_root, "CIFAR10", f"{rn}.pt"))
-    print(f"{rn} OK")
-"""
-
-"""
-for dn in ["densenet121", "densenet161", "densenet169"]:
-    all_models["CIFAR10"][dn] = Densenet(version=dn, output_logits=True, num_classes=10,
-                                         params_loc=path.join(models_root, "CIFAR10", f"{dn}.pt"))
-"""
+print("All models OK")
