@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch
 
 
+# TODO using implementation from https://github.com/interpretml/interpret might be faster (implemented in C++ instead of python)
 class LIME(AttributionMethod):
     def __init__(self, model: nn.Module, sample_shape, normalize=True, aggregation_fn=None):
         super(LIME, self).__init__(absolute=False, normalize=normalize, aggregation_fn=aggregation_fn)
