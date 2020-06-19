@@ -1,4 +1,4 @@
-from .attribution import AttributionMethod
+from .attribution import AttributionMethod, SmoothAttribution
 from captum import attr
 import torch.nn as nn
 
@@ -15,6 +15,13 @@ class CaptumMethod(AttributionMethod):
 class Gradient(CaptumMethod):
     def __init__(self, forward_func, **kwargs):
         super(Gradient, self).__init__(attr.Saliency(forward_func), True, **kwargs)
+
+
+class SmoothGrad(SmoothAttribution):
+    def __init__(self, forward_func, absolute, normalize=True, aggregation_fn=None, noise_level=.15,
+                 nr_steps=25):
+        method = CaptumMethod(attr.Saliency(forward_func), False, False, None)
+        super(SmoothGrad, self).__init__(method, absolute, normalize, aggregation_fn, noise_level, nr_steps)
 
 
 class InputXGradient(CaptumMethod):

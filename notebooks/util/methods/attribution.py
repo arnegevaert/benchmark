@@ -38,3 +38,27 @@ class Random(AttributionMethod):
     def _attribute(self, x, target):
         return torch.rand(*x.shape) * 2 - 1
 
+
+class SmoothAttribution(AttributionMethod):
+    def __init__(self, method: AttributionMethod, absolute, normalize=True, aggregation_fn=None, noise_level=.15,
+                 nr_steps=25):
+        super(SmoothAttribution, self).__init__(absolute, normalize, aggregation_fn)
+        self.method = method
+        self.noise = noise_level
+        self.nr_steps = nr_steps
+
+    def _attribute(self, x, target):
+        sigma = self.noise * (x.max() - x.min())
+        total = torch.zeros_like(x)
+
+        for step in range(self.nr_steps):
+            noise = torch.randn_like(x) * sigma
+            x_noise = x + noise
+            atrrs = self.method(x_noise, target)
+
+            total += atrrs
+        return total / self.nr_steps
+
+
+
+
