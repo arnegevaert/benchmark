@@ -27,7 +27,7 @@ def _ssim(a, b):  # adapt ssim metric to work with greyscale and channel-first c
 
 
 metrics = {'ssim': _ssim,
-           'hog' : _hog_spearman,
+           'hog': _hog_spearman,
            'spearman': lambda x, y: spearmanr(x, y, axis=None)[0],
            'abs_spearman': lambda x, y: spearmanr(np.abs(x), np.abs(y), axis=None)[0]}
 
@@ -56,12 +56,29 @@ def model_randomisation(data: Iterable, model: Callable, methods: Dict[str, Call
     for m_name in methods:
         metric_per_layer = OrderedDict()
         metric_per_layer["none"] = _get_metric_results(baseline_attributions[m_name],
-                                                           baseline_attributions[m_name], metric_fc=metric_function)
+                                                       baseline_attributions[m_name], metric_fc=metric_function)
         for l_name in layer_name_list:
             metric_per_layer[l_name] = _get_metric_results(baseline_attributions[m_name],
                                                            rand_attrs[l_name][m_name], metric_fc=metric_function)
         metrics_result[m_name] = metric_per_layer
 
+    return metrics_result
+
+
+def data_randomisation(data: Iterable, methods: Dict[str, Callable], randomised_methods: Dict[str, Callable],
+                       n_batches=None, layer_list=None, device: str = "cpu", metric='spearman'):
+    # randomised_methods: contains the attribution methods with the model trained on perturbed labels as forward
+    # function
+
+    metric_function = metrics[metric]
+    baseline_attributions = _attribution_loop(data, methods, n_batches, device)
+
+    ranom_data_attributions = _attribution_loop(data, randomised_methods, n_batches, device)
+
+    metrics_result = {}
+    for m_name in methods:
+        metrics_result[m_name] = _get_metric_results(baseline_attributions[m_name],
+                                                     ranom_data_attributions[m_name], metric_fc=metric_function)
     return metrics_result
 
 
