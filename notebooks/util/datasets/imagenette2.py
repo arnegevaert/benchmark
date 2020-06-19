@@ -29,3 +29,6 @@ class ImageNette:
 
     def get_test_data(self):
         return self.test_loader
+
+    def get_dataloader(self, train=True):
+        return self.get_train_data() if train else self.get_test_data()
