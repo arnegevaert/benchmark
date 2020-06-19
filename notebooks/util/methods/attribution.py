@@ -40,7 +40,9 @@ class Random(AttributionMethod):
 
 
 class SmoothAttribution(AttributionMethod):
-    def __init__(self, method: AttributionMethod, absolute, normalize=True, aggregation_fn=None, noise_level=.15,
+    # this turns any other attribution method into a smooth version.
+    # method: attribution method with no aggregation_fn. visually better results if normalize=False for input method
+    def __init__(self, method: AttributionMethod, absolute=False, normalize=True, aggregation_fn=None, noise_level=.15,
                  nr_steps=25):
         super(SmoothAttribution, self).__init__(absolute, normalize, aggregation_fn)
         self.method = method

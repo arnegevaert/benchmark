@@ -18,10 +18,10 @@ class Gradient(CaptumMethod):
 
 
 class SmoothGrad(SmoothAttribution):
-    def __init__(self, forward_func, absolute, normalize=True, aggregation_fn=None, noise_level=.15,
-                 nr_steps=25):
-        method = CaptumMethod(attr.Saliency(forward_func), False, False, None)
-        super(SmoothGrad, self).__init__(method, absolute, normalize, aggregation_fn, noise_level, nr_steps)
+    def __init__(self, forward_func, noise_level=.15,nr_steps=25, **kwargs):
+        # no normalize and aggregate here, will be done after averaging in smoothing part
+        method = CaptumMethod(attr.Saliency(forward_func), absolute=False, normalize=False, aggregation_fn=None)
+        super(SmoothGrad, self).__init__(method, False, noise_level=noise_level, nr_steps=nr_steps, **kwargs)
 
 
 class InputXGradient(CaptumMethod):
