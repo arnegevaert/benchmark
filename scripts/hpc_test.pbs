@@ -1,0 +1,16 @@
+#!/bin/bash -l
+#PBS -m abe  			## Send emails
+#PBS -N cuda_test		## Job name
+#PBS -l nodes=1:gpus=1
+#PBS -l mem=1gb
+#PBS -l walltime=0:01:00
+
+module load CUDA
+module load Python
+
+cd $VSC_DATA/benchmark
+source venv/bin/activate
+cd scripts
+
+which python
+python hpc_test.py
