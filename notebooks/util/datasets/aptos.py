@@ -76,5 +76,8 @@ class Aptos:
     def get_test_data(self):
         return Aptos.DataLoader(self.x_test, self.y_test, self.batch_size, self.test_transforms)
 
+    def get_dataloader(self, train=True):
+        return self.get_train_data() if train else self.get_test_data()
+
     def get_sample_shape(self):
         return self.sample_shape
