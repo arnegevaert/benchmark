@@ -18,11 +18,11 @@ class AttributionMethod:
         }
         self.aggregation_fn = aggregation_fns.get(aggregation_fn, None)
 
-    def _attribute(self, x, target):
+    def _attribute(self, x, target, **kwargs):
         raise NotImplementedError
 
-    def __call__(self, x, target):
-        attrs = self._attribute(x, target)
+    def __call__(self, x, target, **kwargs):
+        attrs = self._attribute(x, target,**kwargs)
         if self.aggregation_fn:
             attrs = self.aggregation_fn(attrs)
         if self.normalize:
@@ -39,27 +39,7 @@ class Random(AttributionMethod):
         return torch.rand(*x.shape) * 2 - 1
 
 
-class SmoothAttribution(AttributionMethod):
-    # this turns any other attribution method into a smooth version.
-    # method: attribution method with no aggregation_fn. visually better results if normalize=False for input method
-    def __init__(self, method: AttributionMethod, absolute=False, normalize=True, aggregation_fn=None, noise_level=.15,
-                 nr_steps=25):
-        super(SmoothAttribution, self).__init__(absolute, normalize, aggregation_fn)
-        self.method = method
-        self.noise = noise_level
-        self.nr_steps = nr_steps
 
-    def _attribute(self, x, target):
-        sigma = self.noise * (x.max() - x.min())
-        total = torch.zeros_like(x)
-
-        for step in range(self.nr_steps):
-            noise = torch.randn_like(x) * sigma
-            x_noise = x + noise
-            atrrs = self.method(x_noise, target)
-
-            total += atrrs
-        return total / self.nr_steps
 
 
 
