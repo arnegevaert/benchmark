@@ -24,6 +24,11 @@ class SmoothGrad(CaptumMethod):
         super(SmoothGrad, self).__init__(method, True, **kwargs)
 
 
+class SmoothGeneric(CaptumMethod):
+    def __init__(self, forward_func: CaptumMethod, **kwargs):
+        super(SmoothGrad, self).__init__(forward_func, True, **kwargs)
+
+
 class InputXGradient(CaptumMethod):
     def __init__(self, forward_func, **kwargs):
         super(InputXGradient, self).__init__(attr.InputXGradient(forward_func), False, **kwargs)
