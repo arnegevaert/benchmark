@@ -1,7 +1,7 @@
-from benchmark import models, datasets
+from attrbench import models, datasets
 import torch
 from torch import optim, nn
-from os import path, listdir
+from os import path
 import argparse
 from tqdm import tqdm
 import os
