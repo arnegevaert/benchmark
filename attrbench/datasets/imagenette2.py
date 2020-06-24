@@ -20,12 +20,9 @@ class ImageNette:
         ])
         self.train_dataset = datasets.ImageFolder(path.join(data_location, 'train'), self.train_transforms)
         self.val_dataset = datasets.ImageFolder(path.join(data_location, 'val'), self.val_transforms)
+        self.batch_size = batch_size
+        self.shuffle = shuffle
 
-        self.train_loader = DataLoader(self.train_dataset, batch_size=batch_size, shuffle=shuffle, num_workers=2)
-        self.test_loader = DataLoader(self.val_dataset, batch_size=batch_size, shuffle=shuffle, num_workers=2)
-
-    def get_train_data(self):
-        return self.train_loader
-
-    def get_test_data(self):
-        return self.test_loader
+    def get_dataloader(self, train=True):
+        return DataLoader(self.train_dataset if train else self.val_dataset,
+                          batch_size=self.batch_size, shuffle=self.shuffle, num_workers=2)
