@@ -26,8 +26,8 @@ Benchmark for ML interpretability techniques.
 | CAM | [link](http://cnnlocalization.csail.mit.edu/Zhou_Learning_Deep_Features_CVPR_2016_paper.pdf) | [Github](https://github.com/zhoubolei/CAM) | CNN (GAP layer) | Image | :x: |
 | Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Github](https://github.com/ramprs/grad-cam/) | CNN | Image | :x: |
 | Masking model | [link](https://arxiv.org/abs/1705.07857) | None | Differentiable | Image | :x: |
-| SmoothGrad | [link](https://arxiv.org/abs/1706.03825) | None | Differentiable | Any | :x: |
-| Expected Gradients | [link](https://arxiv.org/abs/1906.10670) | None | Differentiable | Any | :x: |
+| SmoothGrad | [link](https://arxiv.org/abs/1706.03825) | None | Differentiable | Any | :heavy_check_mark: |
+| Expected Gradients | [link](https://arxiv.org/abs/1906.10670) | None | Differentiable | Any | :heavy_check_mark: |
 
 <sup>1</sup>: DeepLIFT has 3 assignment rules (Linear, RC, RS), so should be split in DeepLIFT-{Linear,RC,RS}.
 

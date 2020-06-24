@@ -57,6 +57,7 @@ class EdgeDetection(AttributionMethod):
 
 
 class ExpectedGradients(AttributionMethod):
+    # https://github.com/suinleelab/attributionpriors
     def __init__(self, model, reference_dataset, n_steps=100, **kwargs):
         super().__init__(False, **kwargs)
         self.model = model
@@ -116,7 +117,7 @@ class ExpectedGradients(AttributionMethod):
         x = x.to('cpu') # generating samples on cpu so save vram (may be not ideal for hpc)
         batch_size = x.shape[0]
         reference = self._get_reference_batch(
-            self.n_steps)  # take batch_size*n_steps samples? does every image in batch really need different
+            self.n_steps)  # take batch_size*n_steps samples instead? does every image in batch really need different
         # background samples or is it ok to reuse the same n_steps backgrounds
         sample_input = self._get_sampled_input(x,reference)
         sample_deltas = self._get_deltas(x,reference)
