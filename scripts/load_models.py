@@ -1,6 +1,6 @@
 import torch
-from benchmark.models import Densenet, Resnet, Alexnet, Vgg, Mobilenet_v2, Squeezenet, BasicCNN
-from benchmark.datasets import *
+from attrbench.models import Densenet, Resnet, Alexnet, Vgg, Mobilenet_v2, Squeezenet, BasicCNN
+from attrbench.datasets import *
 from os import path
 
 
