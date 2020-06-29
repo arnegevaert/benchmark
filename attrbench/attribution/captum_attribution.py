@@ -63,6 +63,19 @@ class GuidedGradCAM(CaptumMethod):
         super(GuidedGradCAM, self).__init__(attr.GuidedGradCam(model, layer), False, **kwargs)
 
 
+class GradCAM(CaptumMethod):
+    def __init__(self, model: nn.Module, layer: nn.Module, upsample_shape, **kwargs):
+        self.upsample_shape = upsample_shape
+        super().__init__(attr.LayerGradCam(model, layer), False, **kwargs)
+
+    def _attribute(self, x, target):
+        # TODO relu_attributions removes all negative attributions (default behaviour in
+        # TODO GradCAM paper) but can be configurable.
+        attrs = self.method.attribute(x, target, relu_attributions=True)
+        # Upsample attributions
+        return attr.LayerAttribution.interpolate(attrs, self.upsample_shape, interpolate_mode="bilinear")
+
+
 # TODO by default, DeepLift is equivalent to InputXGradient. Read DeepLift paper for more details.
 """
 class DeepLift(Method):
