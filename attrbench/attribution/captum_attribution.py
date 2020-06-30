@@ -19,6 +19,7 @@ class Gradient(CaptumMethod):
 
 
 class SmoothGrad(CaptumMethod):
+    # useful kwargs: n_samples, abs=False
     def __init__(self, forward_func, **kwargs):
         method = attr.NoiseTunnel(attr.Saliency(forward_func))
         super(SmoothGrad, self).__init__(method, True, **kwargs)
@@ -35,6 +36,7 @@ class InputXGradient(CaptumMethod):
 
 
 class IntegratedGradients(CaptumMethod):
+    # useful kwargs: n_steps
     def __init__(self, forward_func, **kwargs):
         super(IntegratedGradients, self).__init__(attr.IntegratedGradients(forward_func), False, **kwargs)
 

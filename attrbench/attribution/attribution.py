@@ -58,9 +58,13 @@ class EdgeDetection(AttributionMethod):
 
 class ExpectedGradients(AttributionMethod):
     # https://github.com/suinleelab/attributionpriors
+
+    # reference_dataset: data to load background samples from, use training data.
     def __init__(self, model, reference_dataset, n_steps=100, **kwargs):
         super().__init__(False, **kwargs)
         self.model = model
+        if isinstance(reference_dataset, torch.utils.data.DataLoader):
+            reference_dataset = reference_dataset.dataset
         self.reference_dataset = reference_dataset
         self.n_steps = n_steps
         self.ref_sampler = torch.utils.data.DataLoader(
