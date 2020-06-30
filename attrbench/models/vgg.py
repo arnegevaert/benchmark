@@ -50,10 +50,3 @@ class Vgg(nn.Module):
             return self.features[-4]
         else:
             return self.features[-3]
-
-
-def ImagenetteVgg11(output_logits, params_loc=None):
-    return Vgg('vgg11_bn',output_logits, 10, params_loc)
-
-def ImagenetteVgg16(output_logits, params_loc=None):
-    return Vgg('vgg16_bn',output_logits, 10, params_loc)

@@ -8,3 +8,4 @@ data
 *.pkl
 out/*
 */.ipynb_checkpoints/*
+.ipynb_checkpoints

@@ -16,6 +16,7 @@ Benchmark for ML interpretability techniques.
 | Guided Backprop | [link](https://arxiv.org/abs/1412.6806) | [Captum](https://captum.ai/api/guided_backprop.html) | DNN | Image | :heavy_check_mark: |
 | Guided Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Captum](https://captum.ai/api/guided_grad_cam.html) | CNN | Image | :heavy_check_mark: |
 | Deconvolution | [link](https://arxiv.org/abs/1311.2901) | [Captum](https://captum.ai/api/deconvolution.html) | CNN | Image | :heavy_check_mark: |
+| CAM | [link](http://cnnlocalization.csail.mit.edu/Zhou_Learning_Deep_Features_CVPR_2016_paper.pdf) | [Github](https://github.com/zhoubolei/CAM) | CNN (GAP layer) | Image | :construction: |
 | Feature Ablation | None | [Captum](https://captum.ai/api/feature_ablation.html) | None | Any | :construction: |
 | DeepLIFT<sup>1</sup> | [link](https://arxiv.org/abs/1704.02685) | [Captum **(UNR)**](https://captum.ai/api/deep_lift.html) | DNN | Image | :construction: |
 | Occlusion | [link](https://arxiv.org/abs/1311.2901) | [Captum](https://captum.ai/api/occlusion.html) | none | Any | :construction: |
@@ -23,7 +24,6 @@ Benchmark for ML interpretability techniques.
 | SHAP | [link](https://arxiv.org/abs/1705.07874) | [PyPi](https://pypi.org/project/shap/) | None | Any | :construction: |
 | CGI | [link](https://arxiv.org/abs/1905.12152) | None | Differentiable | Any | :x: |
 | XRAI | [link](https://arxiv.org/abs/1906.02825) | [Github](https://github.com/PAIR-code/saliency) | Differentiable | Image | :x: |
-| CAM | [link](http://cnnlocalization.csail.mit.edu/Zhou_Learning_Deep_Features_CVPR_2016_paper.pdf) | [Github](https://github.com/zhoubolei/CAM) | CNN (GAP layer) | Image | :x: |
 | Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Github](https://github.com/ramprs/grad-cam/) | CNN | Image | :x: |
 | Masking model | [link](https://arxiv.org/abs/1705.07857) | None | Differentiable | Image | :x: |
 | SmoothGrad | [link](https://arxiv.org/abs/1706.03825) | None | Differentiable | Any | :heavy_check_mark: |
@@ -31,7 +31,7 @@ Benchmark for ML interpretability techniques.
 
 <sup>1</sup>: DeepLIFT has 3 assignment rules (Linear, RC, RS), so should be split in DeepLIFT-{Linear,RC,RS}.
 
-## Metrics
+## Evaluation metrics
 We provide a list of metrics that can be used to assess the quality of explainability techniques.
 :heavy_check_mark: means the metric is already implemented, :x: means it is not.
 
@@ -51,7 +51,18 @@ We provide a list of metrics that can be used to assess the quality of explainab
 | SIC | [Arxiv](https://arxiv.org/abs/1906.02825) | :x: |
 | BAM | [Arxiv](https://arxiv.org/abs/1907.09701) | :x: |
 
+## Datasets
+- MNIST
+- CIFAR10
+- Aptos
+- ImageNette
 
+## Models
+### MNIST
+- Basic CNN
 
+### CIFAR10
 
+### Aptos
 
+### ImageNette

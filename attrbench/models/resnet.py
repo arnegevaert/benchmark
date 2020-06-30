@@ -57,4 +57,4 @@ class Resnet(nn.Module):
 
     def get_last_conv_layer(self) -> nn.Module:
         last_block = self.layer4[-1]  # Last BasicBlock of layer 3
-        return last_block.conv3
+        return last_block.conv2
