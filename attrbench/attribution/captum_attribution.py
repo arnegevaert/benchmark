@@ -4,17 +4,29 @@ import torch.nn as nn
 
 
 class CaptumMethod(AttributionMethod):
-    def __init__(self, method: attr.Attribution, absolute, normalize=True, aggregation_fn=None):
+    def __init__(self, method: attr.Attribution, absolute, normalize=True, aggregation_fn=None, **kwargs):
         super(CaptumMethod, self).__init__(absolute, normalize, aggregation_fn)
         self.method = method
+        self.attribute_kwargs = kwargs
 
-    def _attribute(self, x, target):
-        return self.method.attribute(x, target=target)
+    def _attribute(self, x, target, **kwargs):
+        return self.method.attribute(x, target=target, **self.attribute_kwargs)
 
 
 class Gradient(CaptumMethod):
     def __init__(self, forward_func, **kwargs):
         super(Gradient, self).__init__(attr.Saliency(forward_func), True, **kwargs)
+
+
+class SmoothGrad(CaptumMethod):
+    def __init__(self, forward_func, **kwargs):
+        method = attr.NoiseTunnel(attr.Saliency(forward_func))
+        super(SmoothGrad, self).__init__(method, True, **kwargs)
+
+
+class SmoothGeneric(CaptumMethod):
+    def __init__(self, forward_func: CaptumMethod, **kwargs):
+        super(SmoothGrad, self).__init__(forward_func, True, **kwargs)
 
 
 class InputXGradient(CaptumMethod):
@@ -25,6 +37,12 @@ class InputXGradient(CaptumMethod):
 class IntegratedGradients(CaptumMethod):
     def __init__(self, forward_func, **kwargs):
         super(IntegratedGradients, self).__init__(attr.IntegratedGradients(forward_func), False, **kwargs)
+
+
+class SmoothIntegratedGradients(CaptumMethod):
+    def __init__(self, forward_func, **kwargs):
+        method = attr.NoiseTunnel(attr.IntegratedGradients(forward_func))
+        super(SmoothIntegratedGradients, self).__init__(method, False, **kwargs)
 
 
 class GuidedBackprop(CaptumMethod):
