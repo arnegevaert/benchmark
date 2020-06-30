@@ -1,7 +1,6 @@
 import torch
 import torchvision
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class Mobilenet_v2(nn.Module):
@@ -35,7 +34,3 @@ class Mobilenet_v2(nn.Module):
 
     def get_last_conv_layer(self):
         return self.features[18][0]
-
-
-def ImagenetteMobilenet_v2(output_logits, params_loc=None):
-    return Mobilenet_v2(output_logits, 10, params_loc)

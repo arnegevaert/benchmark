@@ -4,7 +4,7 @@ import torch.nn as nn
 
 
 class Alexnet(nn.Module):
-    def __init__(self,output_logits, num_classes, params_loc=None):
+    def __init__(self, output_logits, num_classes, params_loc=None):
         super().__init__()
         model = torchvision.models.alexnet()
         self.features = model.features
@@ -32,4 +32,4 @@ class Alexnet(nn.Module):
         return self.softmax(logits)
 
     def get_last_conv_layer(self):
-        self.features[-3]
+        return self.features[-3]

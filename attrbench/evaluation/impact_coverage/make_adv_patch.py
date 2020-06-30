@@ -99,8 +99,8 @@ if __name__ == '__main__':
     TRAIN_ON_TEST = True
 
     dataset = datasets.Cifar(batch_size=BATCH_SIZE, data_location=path.join(data_root, "CIFAR10"), download=False, shuffle=True)
-    model = models.CifarResnet(version="resnet20", params_loc=path.join(data_root, "models/cifar10_resnet20.pth"),
-                               num_classes=10, output_logits=True)
+    model = models.Resnet(version="resnet20", params_loc=path.join(data_root, "models/cifar10_resnet20.pth"),
+                          num_classes=10, output_logits=True)
     model.to(DEVICE)
     # TODO is this necessary?
     for param in model.parameters():
