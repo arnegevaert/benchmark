@@ -14,9 +14,12 @@ Benchmark for ML interpretability techniques.
 | InputXGradient | [link](https://arxiv.org/abs/1611.07270) | [Captum](https://captum.ai/api/input_x_gradient.html) | Differentiable | Any | :heavy_check_mark: |
 | IntegratedGradients | [link](http://arxiv.org/abs/1703.01365) | [Captum](https://captum.ai/api/integrated_gradients.html) | Differentiable | Any | :heavy_check_mark: |
 | Guided Backprop | [link](https://arxiv.org/abs/1412.6806) | [Captum](https://captum.ai/api/guided_backprop.html) | DNN | Image | :heavy_check_mark: |
-| Guided Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Captum](https://captum.ai/api/guided_grad_cam.html) | CNN | Image | :heavy_check_mark: |
 | Deconvolution | [link](https://arxiv.org/abs/1311.2901) | [Captum](https://captum.ai/api/deconvolution.html) | CNN | Image | :heavy_check_mark: |
 | CAM | [link](http://cnnlocalization.csail.mit.edu/Zhou_Learning_Deep_Features_CVPR_2016_paper.pdf) | [Github](https://github.com/zhoubolei/CAM) | CNN (GAP layer) | Image | :construction: |
+| Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Github](https://github.com/ramprs/grad-cam/) | CNN | Image | :heavy_check_mark: |
+| Guided Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Captum](https://captum.ai/api/guided_grad_cam.html) | CNN | Image | :heavy_check_mark: |
+| Grad-CAM++ | [link](https://arxiv.org/abs/1710.11063) | None | CNN | Image | :heavy_check_mark: |
+| Score-CAM | [link](https://arxiv.org/abs/1910.01279) | None | CNN | Image | :heavy_check_mark: |
 | Feature Ablation | None | [Captum](https://captum.ai/api/feature_ablation.html) | None | Any | :construction: |
 | DeepLIFT<sup>1</sup> | [link](https://arxiv.org/abs/1704.02685) | [Captum **(UNR)**](https://captum.ai/api/deep_lift.html) | DNN | Image | :construction: |
 | Occlusion | [link](https://arxiv.org/abs/1311.2901) | [Captum](https://captum.ai/api/occlusion.html) | none | Any | :construction: |
@@ -24,7 +27,6 @@ Benchmark for ML interpretability techniques.
 | SHAP | [link](https://arxiv.org/abs/1705.07874) | [PyPi](https://pypi.org/project/shap/) | None | Any | :construction: |
 | CGI | [link](https://arxiv.org/abs/1905.12152) | None | Differentiable | Any | :x: |
 | XRAI | [link](https://arxiv.org/abs/1906.02825) | [Github](https://github.com/PAIR-code/saliency) | Differentiable | Image | :x: |
-| Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Github](https://github.com/ramprs/grad-cam/) | CNN | Image | :x: |
 | Masking model | [link](https://arxiv.org/abs/1705.07857) | None | Differentiable | Image | :x: |
 | SmoothGrad | [link](https://arxiv.org/abs/1706.03825) | None | Differentiable | Any | :heavy_check_mark: |
 | Expected Gradients | [link](https://arxiv.org/abs/1906.10670) | None | Differentiable | Any | :heavy_check_mark: |
@@ -40,7 +42,8 @@ We provide a list of metrics that can be used to assess the quality of explainab
 | Dataset masking accuracy | None | :heavy_check_mark: |
 | Model masking accuracy | None | :heavy_check_mark: |
 | Noise invariance | None | :heavy_check_mark: |
-| Simple Sensitivity | None | :heavy_check_mark: |
+| Insertion curves | [Arxiv](https://arxiv.org/abs/1806.07421) | :x: |
+| Deletion curves | [Arxiv](https://arxiv.org/abs/1806.07421) | :heavy_check_mark: |
 | Sensitivity-n | [Arxiv](https://arxiv.org/abs/1711.06104) | :heavy_check_mark: |
 | Infidelity | [Arxiv](https://arxiv.org/abs/1901.09392) | :heavy_check_mark: |
 | Max-sensitivity | [Arxiv](https://arxiv.org/abs/1901.09392) | :heavy_check_mark: |

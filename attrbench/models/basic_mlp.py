@@ -4,12 +4,12 @@ import torch.nn.functional as F
 
 
 class BasicMLP(nn.Module):
-    def __init__(self, output_logits, params_loc=None):
+    def __init__(self, output_logits, num_classes, params_loc=None):
         super(BasicMLP, self).__init__()
         self.output_logits = output_logits
         self.dense1 = nn.Linear(28*28, 50)
         self.dense2 = nn.Linear(50, 50)
-        self.out = nn.Linear(50, 10)
+        self.out = nn.Linear(50, num_classes)
         if params_loc:
             self.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
 

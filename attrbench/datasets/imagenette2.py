@@ -22,6 +22,7 @@ class ImageNette:
         self.val_dataset = datasets.ImageFolder(path.join(data_location, 'val'), self.val_transforms)
         self.batch_size = batch_size
         self.shuffle = shuffle
+        self.num_classes = 10
 
     def get_dataloader(self, train=True):
         return DataLoader(self.train_dataset if train else self.val_dataset,
