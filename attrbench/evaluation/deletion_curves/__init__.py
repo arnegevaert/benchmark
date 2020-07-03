@@ -1,1 +1,1 @@
-from .simple_sensitivity import simple_sensitivity
+from .deletion_curves import deletion_curves

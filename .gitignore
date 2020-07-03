@@ -6,6 +6,6 @@ data
 *.pt
 *.pth
 *.pkl
-out/*
+out
 */.ipynb_checkpoints/*
 .ipynb_checkpoints

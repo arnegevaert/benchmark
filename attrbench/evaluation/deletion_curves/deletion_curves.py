@@ -1,13 +1,13 @@
 from typing import Iterable, Callable, List, Dict
 import numpy as np
+from tqdm import tqdm
 
 
 def deletion_curves(data: Iterable, model: Callable, methods: Dict[str, Callable],
                     mask_range: List[int], mask_value: float, pixel_level_mask: bool,
                     device: str):
     result = {m_name: [] for m_name in methods}
-    for batch_index, (samples, labels) in enumerate(data):
-        print(f"Batch {batch_index}...")
+    for batch_index, (samples, labels) in enumerate(tqdm(data)):
         samples = samples.to(device)
         labels = labels.to(device)
         for key in methods:
