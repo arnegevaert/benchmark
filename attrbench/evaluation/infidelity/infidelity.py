@@ -20,20 +20,20 @@ def infidelity(data: Iterable, model: Callable, methods: Dict[str, Callable],
         # TODO for some reason, results from paper can only be reproduced if perturbations are clamped like this
         perturbation = torch.clamp(torch.randn(tiled.shape, device=device) * 0.2, min=-1.)
         perturbed = tiled - perturbation  # [n_perturbations, batch_size, n_channels, width, height]
-        model_output = model(perturbed.flatten(0, 1)).reshape(perturbed.shape)
+        model_output = model(perturbed.flatten(0, 1)).reshape(n_perturbations, samples.size(0), -1)
         #perturbation = torch.randn(tiled.shape) * 0.2
         #perturbed = tiled + perturbation
-        for perturbation_idx in range(n_perturbations):
-            # current_perturbation: [batch_size, n_channels*width*height]
-            current_perturbation = perturbation[perturbation_idx].flatten(start_dim=1)
-            perturbed_output = model_output[perturbation_idx].gather(dim=1, index=labels.unsqueeze(-1)).squeeze()  # [batch_size]
-            for m_name in methods:
-                explanation = methods[m_name](samples, labels)
-                # If explanation is on pixel level, we need to replicate value for each pixel n_channels times,
-                # since current_perturbation is [batch_size, n_channels, width, height]
-                if pixel_level:
-                    explanation = explanation.unsqueeze(1).repeat(1, n_channels, 1, 1)
-                explanation_flattened = torch.flatten(explanation, start_dim=1)  # [batch_size, n_channels*width*height]
+        for m_name in methods:
+            explanation = methods[m_name](samples, labels)
+            # If explanation is on pixel level, we need to replicate value for each pixel n_channels times,
+            # since current_perturbation is [batch_size, n_channels, width, height]
+            if pixel_level:
+                explanation = explanation.unsqueeze(1).repeat(1, n_channels, 1, 1)
+            explanation_flattened = torch.flatten(explanation, start_dim=1)  # [batch_size, n_channels*width*height]
+            for perturbation_idx in range(n_perturbations):
+                # current_perturbation: [batch_size, n_channels*width*height]
+                current_perturbation = perturbation[perturbation_idx].flatten(start_dim=1)
+                perturbed_output = model_output[perturbation_idx].gather(dim=1, index=labels.unsqueeze(-1)).squeeze()  # [batch_size]
                 # calculate dot product between perturbation and explanation for each sample in batch
                 dot_product = (explanation_flattened * current_perturbation).sum(dim=1)  # [batch_size]
                 sample_infidelity = (dot_product - (orig_output - perturbed_output))**2
