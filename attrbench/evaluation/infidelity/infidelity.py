@@ -1,25 +1,23 @@
 import torch
-import collections
 import numpy as np
 from typing import Iterable, Callable, Dict
+from tqdm import tqdm
 
 
 # TODO support different perturbations (currently hardcoded Gaussian noise with sigma=0.2, same as in paper source)
 def infidelity(data: Iterable, model: Callable, methods: Dict[str, Callable],
-               n_perturbations: int, pixel_level: bool):
+               n_perturbations: int, pixel_level: bool, device: str):
     result = {m_name: [] for m_name in methods}
-    for batch_index, (samples, labels) in enumerate(data):
-        if isinstance(data, collections.Sized):
-            print(f"Batch {batch_index+1}/{len(data)}")
-        else:
-            print(f"Batch {batch_index+1}")
+    for batch_index, (samples, labels) in enumerate(tqdm(data)):
+        samples = samples.to(device)
+        labels = labels.to(device)
         n_channels = samples.shape[1]
         # Get original model output
         orig_output = model(samples).gather(dim=1, index=labels.unsqueeze(-1)).squeeze()  # [batch_size]
         tiled = samples.repeat(n_perturbations, 1, 1, 1)  # [batch_size*n_perturbations, n_channels, width, height]
         tiled = tiled.view(n_perturbations, *samples.shape)  # [n_perturbations, batch_size, n_channels, width, height]
         # TODO for some reason, results from paper can only be reproduced if perturbations are clamped like this
-        perturbation = torch.clamp(torch.randn(tiled.shape) * 0.2, min=-1.)
+        perturbation = torch.clamp(torch.randn(tiled.shape) * 0.2, min=-1.).to(device)
         perturbed = tiled - perturbation  # [n_perturbations, batch_size, n_channels, width, height]
         #perturbation = torch.randn(tiled.shape) * 0.2
         #perturbed = tiled + perturbation
@@ -28,7 +26,6 @@ def infidelity(data: Iterable, model: Callable, methods: Dict[str, Callable],
             current_perturbation = perturbation[perturbation_idx].flatten(start_dim=1)
             current_perturbed = perturbed[perturbation_idx]  # [batch_size, n_channels, width, height]
             perturbed_output = model(current_perturbed).gather(dim=1, index=labels.unsqueeze(-1)).squeeze()  # [batch_size]
-            output_diff = orig_output - perturbed_output  # [batch_size]
             for m_name in methods:
                 explanation = methods[m_name](samples, labels)
                 # If explanation is on pixel level, we need to replicate value for each pixel n_channels times,
@@ -39,5 +36,5 @@ def infidelity(data: Iterable, model: Callable, methods: Dict[str, Callable],
                 # calculate dot product between perturbation and explanation for each sample in batch
                 dot_product = (explanation_flattened * current_perturbation).sum(dim=1)  # [batch_size]
                 sample_infidelity = (dot_product - (orig_output - perturbed_output))**2
-                result[m_name].append(sample_infidelity.detach().numpy())
+                result[m_name].append(sample_infidelity.cpu().detach().numpy())
     return {m_name: np.concatenate(result[m_name]) for m_name in methods}

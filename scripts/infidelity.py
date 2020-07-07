@@ -14,15 +14,14 @@ if module_path not in sys.path:
     sys.path.append(module_path)
 
 from attrbench import datasets, attribution, models
-from attrbench.evaluation.deletion_curves import deletion_curves
+from attrbench.evaluation.infidelity import infidelity
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--mask-max", type=int)
-parser.add_argument("--mask-interval", type=int)
+parser.add_argument("--num-perturbations", type=int)
 parser.add_argument("--model-type", type=str)
 parser.add_argument("--model-params", type=str)
 parser.add_argument("--model-version", type=str, default=None)
-parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"], default="CIFAR10")
+parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"], default="MNIST")
 parser.add_argument("--batch-size", type=int, default=64)
 parser.add_argument("--use-logits", type=bool, default=True)
 parser.add_argument("--normalize-attrs", type=bool, default=True)
@@ -44,8 +43,6 @@ elif args.dataset == "ImageNette":
     dataset = datasets.ImageNette(batch_size=args.batch_size, data_location=path.join(args.data_root, "ImageNette"),
                                   shuffle=True)
 
-mask_range = list(range(1, args.mask_max, args.mask_interval))
-print(mask_range)
 model_constructor = getattr(models, args.model_type)
 model_kwargs = {
     "params_loc": args.model_params,
@@ -58,28 +55,27 @@ model = model_constructor(**model_kwargs)
 model.to(device)
 model.eval()
 
-
 kwargs = {
     "normalize": args.normalize_attrs,
     "aggregation_fn": args.aggregation_fn
 }
 
 attribution_methods = {
-    #"Gradient": attribution.Gradient(model, **kwargs),
-    #"SmoothGrad": attribution.SmoothGrad(model, **kwargs),
-    #"InputXGradient": attribution.InputXGradient(model, **kwargs),
-    #"IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
-    #"SmoothIntegratedGradients": attribution.SmoothIntegratedGradients(model, **kwargs),
-    "GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
-    "Deconvolution": attribution.Deconvolution(model, **kwargs),
-    "Ablation": attribution.Ablation(model, **kwargs),
-    "GuidedGradCAM": attribution.GuidedGradCAM(model, model.get_last_conv_layer(), **kwargs),
-    "GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
+    "Gradient": attribution.Gradient(model, **kwargs),
+    "SmoothGrad": attribution.SmoothGrad(model, **kwargs),
+    "InputXGradient": attribution.InputXGradient(model, **kwargs),
+    "IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
+    "SmoothIntegratedGradients": attribution.SmoothIntegratedGradients(model, **kwargs),
+    #"GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
+    #"Deconvolution": attribution.Deconvolution(model, **kwargs),
+    #"Ablation": attribution.Ablation(model, **kwargs),
+    #"GuidedGradCAM": attribution.GuidedGradCAM(model, model.get_last_conv_layer(), **kwargs),
+    #"GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
 }
 
-result = deletion_curves(dataset.get_dataloader(train=False), model,
-                         attribution_methods, mask_range, dataset.mask_value,
-                         pixel_level_mask=args.aggregation_fn is not None, device=device)
+result = infidelity(dataset.get_dataloader(train=False), model,
+                    attribution_methods, args.num_perturbations,
+                    pixel_level=args.aggregation_fn is not None, device=device)
 
 result_df = pd.DataFrame.from_dict(
     {m_name: pd.DataFrame(data=result[m_name]).stack() for m_name in attribution_methods}
