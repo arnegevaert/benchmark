@@ -14,11 +14,11 @@ if module_path not in sys.path:
     sys.path.append(module_path)
 
 from attrbench import datasets, attribution, models
-from attrbench.evaluation.deletion_curves import deletion_curves
+from attrbench.evaluation.insertion_curves import insertion_curves
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--mask-max", type=int)
-parser.add_argument("--mask-interval", type=int)
+parser.add_argument("--insert-max", type=int)
+parser.add_argument("--insert-interval", type=int)
 parser.add_argument("--model-type", type=str)
 parser.add_argument("--model-params", type=str)
 parser.add_argument("--model-version", type=str, default=None)
@@ -44,8 +44,8 @@ elif args.dataset == "ImageNette":
     dataset = datasets.ImageNette(batch_size=args.batch_size, data_location=path.join(args.data_root, "ImageNette"),
                                   shuffle=True)
 
-mask_range = list(range(1, args.mask_max, args.mask_interval))
-print(mask_range)
+insert_range = list(range(1, args.insert_max, args.insert_interval))
+print(insert_range)
 model_constructor = getattr(models, args.model_type)
 model_kwargs = {
     "params_loc": args.model_params,
@@ -77,15 +77,15 @@ attribution_methods = {
     "GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
 }
 
-result = deletion_curves(dataset.get_dataloader(train=False), model,
-                         attribution_methods, mask_range, dataset.mask_value,
-                         pixel_level_mask=args.aggregation_fn is not None, device=device)
+result = insertion_curves(dataset.get_dataloader(train=False), model,
+                          attribution_methods, insert_range, dataset.mask_value,
+                          pixel_level_mask=args.aggregation_fn is not None, device=device)
 
 result_df = pd.DataFrame.from_dict(
     {m_name: pd.DataFrame(data=result[m_name]).stack() for m_name in attribution_methods}
 ).stack().reset_index()
-result_df.columns = ["sample", "mask", "method", "difference"]
-result_df["mask"] = np.array(mask_range)[result_df["mask"]]
+result_df.columns = ["sample", "insertion", "method", "difference"]
+result_df["insertion"] = np.array(insert_range)[result_df["insertion"]]
 
 result_df.to_pickle(path.join(args.out_dir, f"{args.experiment_name}.pkl"))
 meta_filename = path.join(args.out_dir, f"{args.experiment_name}_args.json")
