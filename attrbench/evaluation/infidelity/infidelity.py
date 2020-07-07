@@ -38,8 +38,6 @@ def infidelity(data: Iterable, model: Callable, methods: Dict[str, Callable],
                 dot_product = (explanation_flattened * current_perturbation).sum(dim=1)  # [batch_size]
                 sample_infidelity = (dot_product - (orig_output - perturbed_output))**2
                 batch_result[m_name].append(sample_infidelity)
-                #result[m_name].append(sample_infidelity.cpu().detach().numpy())
         for m_name in batch_result:
-            for sample_infidelity in result[m_name]:
-                result[m_name].append(sample_infidelity.cpu().detach().numpy())
+            result[m_name].append(torch.cat(batch_result[m_name]).cpu().detach().numpy())
     return {m_name: np.concatenate(result[m_name]) for m_name in methods}
