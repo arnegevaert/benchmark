@@ -34,6 +34,9 @@ parser.add_argument("--out-dir", type=str, default="../out")
 args = parser.parse_args()
 device = "cuda" if args.cuda and torch.cuda.is_available() else "cpu"
 
+if path.isfile(path.join(args.out_dir, f"{args.experiment_name}.pkl")):
+    exit("Experiment output file already exists")
+
 if args.dataset == "CIFAR10":
     dataset = datasets.Cifar(batch_size=args.batch_size, data_location=path.join(args.data_root, "CIFAR10"),
                              download=False, shuffle=True, version="cifar10")

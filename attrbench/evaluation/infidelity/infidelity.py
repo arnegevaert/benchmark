@@ -9,6 +9,7 @@ def infidelity(data: Iterable, model: Callable, methods: Dict[str, Callable],
                n_perturbations: int, pixel_level: bool, device: str):
     result = {m_name: [] for m_name in methods}
     for batch_index, (samples, labels) in enumerate(tqdm(data)):
+        batch_result = {m_name: [] for m_name in methods}
         samples = samples.to(device)
         labels = labels.to(device)
         n_channels = samples.shape[1]
@@ -17,7 +18,7 @@ def infidelity(data: Iterable, model: Callable, methods: Dict[str, Callable],
         tiled = samples.repeat(n_perturbations, 1, 1, 1)  # [batch_size*n_perturbations, n_channels, width, height]
         tiled = tiled.view(n_perturbations, *samples.shape)  # [n_perturbations, batch_size, n_channels, width, height]
         # TODO for some reason, results from paper can only be reproduced if perturbations are clamped like this
-        perturbation = torch.clamp(torch.randn(tiled.shape) * 0.2, min=-1.).to(device)
+        perturbation = torch.clamp(torch.randn(tiled.shape, device=device) * 0.2, min=-1.)
         perturbed = tiled - perturbation  # [n_perturbations, batch_size, n_channels, width, height]
         #perturbation = torch.randn(tiled.shape) * 0.2
         #perturbed = tiled + perturbation
@@ -36,5 +37,9 @@ def infidelity(data: Iterable, model: Callable, methods: Dict[str, Callable],
                 # calculate dot product between perturbation and explanation for each sample in batch
                 dot_product = (explanation_flattened * current_perturbation).sum(dim=1)  # [batch_size]
                 sample_infidelity = (dot_product - (orig_output - perturbed_output))**2
+                batch_result[m_name].append(sample_infidelity)
+                #result[m_name].append(sample_infidelity.cpu().detach().numpy())
+        for m_name in batch_result:
+            for sample_infidelity in result[m_name]:
                 result[m_name].append(sample_infidelity.cpu().detach().numpy())
     return {m_name: np.concatenate(result[m_name]) for m_name in methods}

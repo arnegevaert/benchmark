@@ -34,6 +34,9 @@ parser.add_argument("--out-dir", type=str, default="../out")
 args = parser.parse_args()
 device = "cuda" if args.cuda and torch.cuda.is_available() else "cpu"
 
+if path.isfile(path.join(args.out_dir, f"{args.experiment_name}.pkl")):
+    exit("Experiment output file already exists")
+
 if args.dataset == "CIFAR10":
     dataset = datasets.Cifar(batch_size=args.batch_size, data_location=path.join(args.data_root, "CIFAR10"),
                              download=False, shuffle=True, version="cifar10")
@@ -65,16 +68,16 @@ kwargs = {
 }
 
 attribution_methods = {
-    #"Gradient": attribution.Gradient(model, **kwargs),
-    #"SmoothGrad": attribution.SmoothGrad(model, **kwargs),
-    #"InputXGradient": attribution.InputXGradient(model, **kwargs),
-    #"IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
-    #"SmoothIntegratedGradients": attribution.SmoothIntegratedGradients(model, **kwargs),
-    "GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
-    "Deconvolution": attribution.Deconvolution(model, **kwargs),
-    "Ablation": attribution.Ablation(model, **kwargs),
-    "GuidedGradCAM": attribution.GuidedGradCAM(model, model.get_last_conv_layer(), **kwargs),
-    "GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
+    "Gradient": attribution.Gradient(model, **kwargs),
+    "SmoothGrad": attribution.SmoothGrad(model, **kwargs),
+    "InputXGradient": attribution.InputXGradient(model, **kwargs),
+    "IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
+    "SmoothIntegratedGradients": attribution.SmoothIntegratedGradients(model, **kwargs),
+    #"GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
+    #"Deconvolution": attribution.Deconvolution(model, **kwargs),
+    #"Ablation": attribution.Ablation(model, **kwargs),
+    #"GuidedGradCAM": attribution.GuidedGradCAM(model, model.get_last_conv_layer(), **kwargs),
+    #"GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
 }
 
 result = insertion_curves(dataset.get_dataloader(train=False), model,
