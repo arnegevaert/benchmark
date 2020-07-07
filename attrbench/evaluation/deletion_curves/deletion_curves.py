@@ -14,7 +14,7 @@ def deletion_curves(data: Iterable, model: Callable, methods: Dict[str, Callable
             batch_result = []
             attrs = methods[key](samples, labels)  # [batch_size, *sample_shape]
             # Flatten each sample in order to sort indices per sample
-            attrs = attrs.reshape(attrs.shape[0], -1)  # [batch_size, -1]
+            attrs = attrs.flatten(1)  # [batch_size, -1]
             # Sort indices of attrs in ascending order
             sorted_indices = attrs.argsort().cpu().detach().numpy()
             for i in mask_range:
@@ -34,4 +34,5 @@ def deletion_curves(data: Iterable, model: Callable, methods: Dict[str, Callable
                 batch_result.append(predictions.cpu().detach().numpy())
             batch_result = np.concatenate(batch_result, axis=1)
             result[key].append(batch_result)
-    return {m_name: np.concatenate(result[m_name], axis=0) for m_name in methods}  # [n_batches*batch_size, len(mask_range)]
+    # [n_batches*batch_size, len(mask_range)]
+    return {m_name: np.concatenate(result[m_name], axis=0) for m_name in methods}
