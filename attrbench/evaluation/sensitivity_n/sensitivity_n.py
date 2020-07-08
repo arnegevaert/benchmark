@@ -1,15 +1,19 @@
 from typing import Iterable, Callable, List, Dict
 import numpy as np
+from tqdm import tqdm
+import torch
 
 
 # Returns a dictionary containing, for each given method, a list of Sensitivity-n values
 # where the values of n are given by mask_range
 def sensitivity_n(data: Iterable, model: Callable,
                   methods: Dict[str, Callable], mask_range: List[int],
-                  n_subsets: int, mask_value: float, pixel_level_mask: bool):
+                  n_subsets: int, mask_value: float, pixel_level_mask: bool,
+                  device: str):
     result = {m_name: [[] for _ in mask_range] for m_name in methods}
-    for batch_index, (samples, labels) in enumerate(data):
-        print(f"Batch {batch_index}...")
+    for batch_index, (samples, labels) in enumerate(tqdm(data)):
+        samples = samples.to(device)
+        labels = labels.to(device)
         sample_size = np.prod(samples.shape[2:]) if pixel_level_mask else np.prod(samples.shape[1:])
         # Get original output and attributions
         orig_output = model(samples)
@@ -34,7 +38,7 @@ def sensitivity_n(data: Iterable, model: Callable,
                 # Get difference in output confidence for desired class
                 output_diffs.append((orig_output - output)[np.arange(samples.shape[0]), labels]
                                     .reshape(samples.shape[0], 1)
-                                    .detach().numpy())
+                                    .cpu().detach().numpy())
                 # Get sum of attributions of masked pixels
                 for m_name in methods:
                     if pixel_level_mask:
@@ -42,7 +46,7 @@ def sensitivity_n(data: Iterable, model: Callable,
                     else:
                         mask_attrs = attrs[m_name][:, unraveled[0], unraveled[1], unraveled[2]]
                     sum_of_attrs[m_name].append(
-                        mask_attrs.detach().numpy()
+                        mask_attrs.cpu().detach().numpy()
                         .reshape(samples.shape[0], -1)
                         .sum(axis=1)
                         .reshape(samples.shape[0], 1))
