@@ -30,11 +30,12 @@ parser.add_argument("--cuda", type=bool, default=True)
 parser.add_argument("--data-root", type=str, default="../data")
 parser.add_argument("--experiment-name", type=str, default="experiment")
 parser.add_argument("--out-dir", type=str, default="../out")
+parser.add_argument("--allow-overwrite", action="store_true")
 args = parser.parse_args()
 device = "cuda" if args.cuda and torch.cuda.is_available() else "cpu"
 
-if path.isfile(path.join(args.out_dir, f"{args.experiment_name}.pkl")):
-    exit("Experiment output file already exists")
+if path.isfile(path.join(args.out_dir, f"{args.experiment_name}.pkl")) and not args.allow_overwrite:
+    exit("Experiment output file already exists. Allow overwriting experiment files or choose a different experiment name.")
 
 if args.dataset == "CIFAR10":
     dataset = datasets.Cifar(batch_size=args.batch_size, data_location=path.join(args.data_root, "CIFAR10"),
@@ -64,28 +65,26 @@ kwargs = {
 }
 
 attribution_methods = {
-    "Gradient": attribution.Gradient(model, **kwargs),
-    "SmoothGrad": attribution.SmoothGrad(model, **kwargs),
-    "InputXGradient": attribution.InputXGradient(model, **kwargs),
-    "IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
-    #"SmoothIntegratedGradients": attribution.SmoothIntegratedGradients(model, **kwargs),
-    "GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
-    "Deconvolution": attribution.Deconvolution(model, **kwargs),
-    "Ablation": attribution.Ablation(model, **kwargs),
-    "GuidedGradCAM": attribution.GuidedGradCAM(model, model.get_last_conv_layer(), **kwargs),
-    "GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
+    #"Gradient": attribution.Gradient(model, **kwargs),
+    #"SmoothGrad": attribution.SmoothGrad(model, **kwargs),
+    #"InputXGradient": attribution.InputXGradient(model, **kwargs),
+    #"IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
+    "SmoothIntegratedGradients": attribution.SmoothIntegratedGradients(model, **kwargs),
+    #"GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
+    #"Deconvolution": attribution.Deconvolution(model, **kwargs),
+    #"Ablation": attribution.Ablation(model, **kwargs),
+    #"GuidedGradCAM": attribution.GuidedGradCAM(model, model.get_last_conv_layer(), **kwargs),
+    #"GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
 }
 
 result = infidelity(dataset.get_dataloader(train=False), model,
                     attribution_methods, args.num_perturbations,
                     pixel_level=args.aggregation_fn is not None, device=device)
 
-# TODO this is invalid
 result_df = pd.DataFrame.from_dict(
-    {m_name: pd.DataFrame(data=result[m_name]).stack() for m_name in attribution_methods}
+    {m_name: pd.Series(data=result[m_name]) for m_name in attribution_methods}
 ).stack().reset_index()
-result_df.columns = ["sample", "mask", "method", "difference"]
-result_df["mask"] = np.array(mask_range)[result_df["mask"]]
+result_df.columns = ["sample", "method", "infidelity"]
 
 result_df.to_pickle(path.join(args.out_dir, f"{args.experiment_name}.pkl"))
 meta_filename = path.join(args.out_dir, f"{args.experiment_name}_args.json")
