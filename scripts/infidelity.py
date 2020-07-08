@@ -68,18 +68,19 @@ attribution_methods = {
     "SmoothGrad": attribution.SmoothGrad(model, **kwargs),
     "InputXGradient": attribution.InputXGradient(model, **kwargs),
     "IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
-    "SmoothIntegratedGradients": attribution.SmoothIntegratedGradients(model, **kwargs),
-    #"GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
-    #"Deconvolution": attribution.Deconvolution(model, **kwargs),
-    #"Ablation": attribution.Ablation(model, **kwargs),
-    #"GuidedGradCAM": attribution.GuidedGradCAM(model, model.get_last_conv_layer(), **kwargs),
-    #"GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
+    #"SmoothIntegratedGradients": attribution.SmoothIntegratedGradients(model, **kwargs),
+    "GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
+    "Deconvolution": attribution.Deconvolution(model, **kwargs),
+    "Ablation": attribution.Ablation(model, **kwargs),
+    "GuidedGradCAM": attribution.GuidedGradCAM(model, model.get_last_conv_layer(), **kwargs),
+    "GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
 }
 
 result = infidelity(dataset.get_dataloader(train=False), model,
                     attribution_methods, args.num_perturbations,
                     pixel_level=args.aggregation_fn is not None, device=device)
 
+# TODO this is invalid
 result_df = pd.DataFrame.from_dict(
     {m_name: pd.DataFrame(data=result[m_name]).stack() for m_name in attribution_methods}
 ).stack().reset_index()
