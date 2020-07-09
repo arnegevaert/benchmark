@@ -16,6 +16,7 @@ class Cifar:
         self.download = download
         self.shuffle = shuffle
         self.mask_value = -1
+        self.num_classes = 10 if version == "cifar10" else 100
 
     def get_dataloader(self, train=True):
         return DataLoader(

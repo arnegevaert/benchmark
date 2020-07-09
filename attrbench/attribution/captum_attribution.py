@@ -25,11 +25,6 @@ class SmoothGrad(CaptumMethod):
         super(SmoothGrad, self).__init__(method, True, **kwargs)
 
 
-class SmoothGeneric(CaptumMethod):
-    def __init__(self, forward_func: CaptumMethod, **kwargs):
-        super(SmoothGrad, self).__init__(forward_func, True, **kwargs)
-
-
 class InputXGradient(CaptumMethod):
     def __init__(self, forward_func, **kwargs):
         super(InputXGradient, self).__init__(attr.InputXGradient(forward_func), False, **kwargs)
@@ -64,7 +59,7 @@ class Ablation(CaptumMethod):
         self.feature_mask = feature_mask
         self.perturbations_per_eval = perturbations_per_eval
 
-    def _attribute(self, x, target):
+    def _attribute(self, x, target, **kwargs):
         return self.method.attribute(x, target=target, baselines=self.baselines, feature_mask=self.feature_mask,
                                      perturbations_per_eval=self.perturbations_per_eval)
 
@@ -74,7 +69,7 @@ class Occlusion(CaptumMethod):
         super(Occlusion, self).__init__(attr.Occlusion(forward_func), False, **kwargs)
         self.sliding_window_shapes = sliding_window_shapes
 
-    def _attribute(self, x, target):
+    def _attribute(self, x, target, **kwargs):
         return self.method.attribute(x, target=target, sliding_window_shapes=self.sliding_window_shapes)
 
 
@@ -88,7 +83,7 @@ class GradCAM(CaptumMethod):
         self.upsample_shape = upsample_shape
         super().__init__(attr.LayerGradCam(model, layer), False, **kwargs)
 
-    def _attribute(self, x, target):
+    def _attribute(self, x, target, **kwargs):
         # TODO relu_attributions removes all negative attributions (default behaviour in
         # TODO GradCAM paper) but can be configurable.
         attrs = self.method.attribute(x, target, relu_attributions=True)

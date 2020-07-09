@@ -14,6 +14,7 @@ class MNIST:
             transforms.ToTensor(),
             transforms.Normalize((0.1307,), (0.3081,))
         ])
+        self.num_classes = 10
 
     def get_dataloader(self, train=True):
         return DataLoader(
