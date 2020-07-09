@@ -72,12 +72,11 @@ attribution_methods = {
     "SmoothGrad": attribution.SmoothGrad(model, **kwargs),
     "InputXGradient": attribution.InputXGradient(model, **kwargs),
     "IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
-    "SmoothIntegratedGradients": attribution.SmoothIntegratedGradients(model, **kwargs),
-    #"GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
-    #"Deconvolution": attribution.Deconvolution(model, **kwargs),
-    #"Ablation": attribution.Ablation(model, **kwargs),
-    #"GuidedGradCAM": attribution.GuidedGradCAM(model, model.get_last_conv_layer(), **kwargs),
-    #"GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
+    "GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
+    "Deconvolution": attribution.Deconvolution(model, **kwargs),
+    "Ablation": attribution.Ablation(model, **kwargs),
+    "GuidedGradCAM": attribution.GuidedGradCAM(model, model.get_last_conv_layer(), **kwargs),
+    "GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
 }
 
 result = insertion_curves(dataset.get_dataloader(train=False), model,
