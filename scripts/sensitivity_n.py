@@ -17,12 +17,12 @@ from attrbench import datasets, attribution, models
 from attrbench.evaluation.sensitivity_n import sensitivity_n
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--num-subsets", type=int)
 parser.add_argument("--mask-max", type=int)
 parser.add_argument("--mask-interval", type=int)
 parser.add_argument("--model-type", type=str)
 parser.add_argument("--model-params", type=str)
 parser.add_argument("--model-version", type=str, default=None)
+parser.add_argument("--num-subsets", type=int, default=100)  # Default value from paper
 parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"], default="MNIST")
 parser.add_argument("--batch-size", type=int, default=64)
 parser.add_argument("--use-logits", type=bool, default=True)
