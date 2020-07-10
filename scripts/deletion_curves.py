@@ -34,6 +34,9 @@ parser.add_argument("--out-dir", type=str, default="../out")
 args = parser.parse_args()
 device = "cuda" if args.cuda and torch.cuda.is_available() else "cpu"
 
+if not path.isdir(args.out_dir):
+    exit(f"Directory {args.out_dir} does not exist")
+
 if path.isfile(path.join(args.out_dir, f"{args.experiment_name}.pkl")):
     exit("Experiment output file already exists")
 
@@ -68,14 +71,14 @@ kwargs = {
 }
 
 attribution_methods = {
-    "Gradient": attribution.Gradient(model, **kwargs),
-    "SmoothGrad": attribution.SmoothGrad(model, **kwargs),
-    "InputXGradient": attribution.InputXGradient(model, **kwargs),
-    "IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
-    "GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
-    "Deconvolution": attribution.Deconvolution(model, **kwargs),
-    "Ablation": attribution.Ablation(model, **kwargs),
-    "GuidedGradCAM": attribution.GuidedGradCAM(model, model.get_last_conv_layer(), **kwargs),
+    #"Gradient": attribution.Gradient(model, **kwargs),
+    #"SmoothGrad": attribution.SmoothGrad(model, **kwargs),
+    #"InputXGradient": attribution.InputXGradient(model, **kwargs),
+    #"IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
+    #"GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
+    #"Deconvolution": attribution.Deconvolution(model, **kwargs),
+    #"Ablation": attribution.Ablation(model, **kwargs),
+    #"GuidedGradCAM": attribution.GuidedGradCAM(model, model.get_last_conv_layer(), **kwargs),
     "GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
 }
 

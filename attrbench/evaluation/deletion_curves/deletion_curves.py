@@ -17,6 +17,7 @@ def deletion_curves(data: Iterable, model: Callable, methods: Dict[str, Callable
             attrs = attrs.flatten(1)  # [batch_size, -1]
             # Sort indices of attrs in ascending order
             sorted_indices = attrs.argsort().cpu().detach().numpy()
+            # TODO create all masked samples at once for more efficient GPU usage
             for i in mask_range:
                 # Get indices of i most important inputs
                 to_mask = sorted_indices[:, -i:]  # [batch-size, i]

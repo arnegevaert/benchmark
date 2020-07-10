@@ -5,6 +5,7 @@ from os import path
 
 class ImageNette:
     def __init__(self, batch_size, data_location, shuffle=True, image_size=224):
+        self.mask_value = 0
         self.sample_shape = (3, image_size, image_size)
         self.train_transforms = transforms.Compose([
             transforms.RandomResizedCrop(image_size),
