@@ -1,3 +1,5 @@
+import itertools
+
 import numpy as np
 import pandas as pd
 from os import path
@@ -10,7 +12,7 @@ import json
 import os
 import sys
 from attrbench import datasets, attribution, models
-from attrbench.evaluation.impact_score import impact_score
+from attrbench.evaluation.impact_coverage import impact_coverage, make_patch
 
 module_path = os.path.abspath(os.path.join('..'))
 if module_path not in sys.path:
@@ -19,14 +21,12 @@ if module_path not in sys.path:
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mask-max", type=int)
-    parser.add_argument("--mask-interval", type=int)
     parser.add_argument("--model-type", type=str)
     parser.add_argument("--model-params", type=str)
     parser.add_argument("--model-version", type=str, default=None)
     parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"], default="MNIST")
+    parser.add_argument("--target_label", type=int, default=0)
     parser.add_argument("--batch-size", type=int, default=64)
-    parser.add_argument("--tau", type=float, default=0.5)
     parser.add_argument("--use-logits", type=bool, default=True)
     parser.add_argument("--normalize-attrs", type=bool, default=True)
     parser.add_argument("--aggregation-fn", type=str, choices=["avg", "max-abs"], default="avg")
@@ -52,8 +52,7 @@ def main(args):
     elif args.dataset == "ImageNette":
         dataset = datasets.ImageNette(batch_size=args.batch_size, data_location=path.join(args.data_root, "ImageNette"),
                                       shuffle=True)
-    mask_range = list(range(1, args.mask_max, args.mask_interval))
-    print(mask_range)
+
     model_constructor = getattr(models, args.model_type)
     model_kwargs = {
         "params_loc": args.model_params,
@@ -78,28 +77,26 @@ def main(args):
         "IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
         "GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
         "Deconvolution": attribution.Deconvolution(model, **kwargs),
-        "Ablation": attribution.Ablation(model, **kwargs),
-        "GuidedGradCAM": attribution.GuidedGradCAM(model, model.get_last_conv_layer(), **kwargs),
-        "GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
+        "Ablation": attribution.Ablation(model, **kwargs)
+        # "GuidedGradCAM": attribution.GuidedGradCAM(model, model.get_last_conv_layer(), **kwargs),
+        # "GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
     }
+    if args.model_version:
+        patch_location = path.join(args.data_root, "patches",
+                                   f"{args.dataset}_{args.model_type}_{args.model_version}_{args.target_label}_patch.pt")
+    else:
+        patch_location = path.join(args.data_root, "patches",
+                                   f"{args.dataset}_{args.model_type}_{args.target_label}_patch.pt")
+    # if a adv. patch exists, load this, else train new patch
+    if os.path.isfile(patch_location):
+        patch = torch.load(patch_location)
+    else:
+        print('training patch')
+        make_patch(dataset.get_dataloader(train=False),model,args.target_label, patch_location, device, epochs=30)
+        patch = torch.load(patch_location)
 
-    i_score, i_strict_score = impact_score(dataset.get_dataloader(train=False), model,
-                                           list(mask_range), methods=attribution_methods, mask_value=dataset.mask_value,
-                                           tau=args.tau, device=device)
-
-    i_score_df = pd.DataFrame.from_dict(i_score).stack().reset_index()
-    i_score_df.columns = ["n", "method", "score"]
-    i_score_df["n"] = np.array(mask_range)[i_score_df["n"]]
-
-    i_strict_score_df = pd.DataFrame.from_dict(i_strict_score).stack().reset_index()
-    i_strict_score_df.columns = ["n", "method", "score"]
-    i_strict_score_df["n"] = np.array(mask_range)[i_strict_score_df["n"]]
-
-    i_score_df.to_pickle(path.join(args.out_dir, f"{args.experiment_name}.pkl"))
-    i_strict_score_df.to_pickle(path.join(args.out_dir, f"{args.experiment_name}_strict.pkl"))
-    meta_filename = path.join(args.out_dir, f"{args.experiment_name}_args.json")
-    with open(meta_filename, "w") as f:
-        json.dump(vars(args), f)
+    result = impact_coverage(itertools.islice(dataset.get_dataloader(train=False), 3), patch=patch, model=model, methods=attribution_methods,
+                             device=device, target_label=args.target_label)
 
 
 if __name__ == '__main__':  # windows machines do weird stuff when there is no main guard

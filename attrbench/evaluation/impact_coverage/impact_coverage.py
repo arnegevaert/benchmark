@@ -3,21 +3,23 @@ import numpy as np
 from sklearn.metrics import jaccard_score
 import random
 from typing import Iterable, Callable, Dict, Tuple
+from tqdm import tqdm
 
 
-def impact_coverage(data: Iterable, sample_shape: Tuple, patch, target_label: int,
+def impact_coverage(data: Iterable, patch, target_label: int,
                     model: Callable, methods: Dict[str, Callable], device: str = "cpu"):
-    image_size = sample_shape[-1]
+    # image_size = sample_shape[-1]
     patch_size = patch.shape[-1]
     keep_list = []  # boolean mask of images to keep (not predicted as target class and successfully attacked)
     patch_masks = []  # boolean mask of location of patch
     critical_factor_mask = {m_name: [] for m_name in methods}  # boolean mask of location top factors
 
-    for b, (samples, labels) in enumerate(data):
+    for b, (samples, labels) in enumerate(tqdm(data)):
+        image_size = samples.shape[-1]
         samples = samples.to(device, non_blocking=True)
         # Get model predictions on original samples
         predictions = model(samples).cpu()
-        # Apply patch to all images in batch (on the same location)
+        # Apply patch to all images in batch (random location, but same for each image in batch)
         ind = random.randint(0, image_size - patch_size)
         samples[:, :, ind:ind + patch_size, ind:ind + patch_size] = patch
         # Save mask with pixels covered by patch
