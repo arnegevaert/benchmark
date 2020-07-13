@@ -87,17 +87,16 @@ def main(args):
     else:
         patch_location = path.join(args.data_root, "patches",
                                    f"{args.dataset}_{args.model_type}_{args.target_label}_patch.pt")
-    # if a adv. patch exists, load this, else train new patch
-    if os.path.isfile(patch_location):
-        patch = torch.load(patch_location)
-    else:
-        print('training patch')
-        make_patch(dataset.get_dataloader(train=False),model,args.target_label, patch_location, device, epochs=30)
-        patch = torch.load(patch_location)
 
+
+    patch = torch.load(patch_location)
     result = impact_coverage(itertools.islice(dataset.get_dataloader(train=False), 3), patch=patch, model=model, methods=attribution_methods,
                              device=device, target_label=args.target_label)
-
+    result_df = pd.DataFrame.from_dict(result)
+    result_df.to_pickle(path.join(args.out_dir, f"{args.experiment_name}.pkl"))
+    meta_filename = path.join(args.out_dir, f"{args.experiment_name}_args.json")
+    with open(meta_filename, "w") as f:
+        json.dump(vars(args), f)
 
 if __name__ == '__main__':  # windows machines do weird stuff when there is no main guard
     args = parse_args()

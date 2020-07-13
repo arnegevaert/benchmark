@@ -84,7 +84,7 @@ def validate(model, patch, data_loader, loss_function, target_label, device):
 
 
 def make_patch(dataloader, model, target_label, patch_path, device, patch_percent=0.1, epochs=20,
-               data_min=None, data_max=None):
+               data_min=None, data_max=None, lr=0.005):
     # patch values will be clipped between data_min and data_max so that patch will be valid image data.
     if data_max is None or data_min is None:
         for x, _ in dataloader:
@@ -110,7 +110,7 @@ def make_patch(dataloader, model, target_label, patch_path, device, patch_percen
 
     patch, shape = init_patch_square(sample_shape[-1],sample_shape[1], patch_percent,data_min,data_max)
     patch = torch.tensor(patch, requires_grad=True, device=device)
-    optim = torch.optim.Adam([patch], lr=0.005, weight_decay=0.)
+    optim = torch.optim.Adam([patch], lr=lr, weight_decay=0.)
     # optim = torch.optim.SGD([patch], lr=0.05, momentum=0.9, weight_decay=0., nesterov=True)
 
     schedule = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, mode='min', factor=0.5, patience=1, verbose=True)
@@ -125,7 +125,7 @@ def make_patch(dataloader, model, target_label, patch_path, device, patch_percen
         #                                   model, patch, data_loader, loss_function,  target_label, device
         val_loss, percent_successfull = validate(model, patch, dataloader, loss, target_label, device)
         print("val_loss: {}".format(val_loss))
-        print("{} % of images successfully attacked ".format(percent_successfull))
+        print("{} % of images successfully attacked ".format(percent_successfull*100))
 
         if schedule is not None:
             schedule.step(val_loss)
@@ -135,4 +135,34 @@ def make_patch(dataloader, model, target_label, patch_path, device, patch_percen
 
 
 if __name__ == '__main__':
-    pass
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    dataset = 'MNIST'
+    data_root = 'D:\Project\Benchmark_branch_axel\data'
+
+    target_label = 0
+    batch_size = 1000
+    use_logits = True
+    model_type = 'BasicMLP'
+    model_params ='../../../data/models/mnist_mlp.pth'
+    model_version = None
+    if dataset == "CIFAR10":
+        dataset = datasets.Cifar(batch_size=batch_size, data_location=path.join(data_root, "CIFAR10"),
+                                 download=False, shuffle=True, version="cifar10")
+    elif dataset == "MNIST":
+        dataset = datasets.MNIST(batch_size=batch_size, data_location=path.join(data_root, "MNIST"),
+                                 download=False, shuffle=True)
+    elif dataset == "ImageNette":
+        dataset = datasets.ImageNette(batch_size=batch_size, data_location=path.join(data_root, "ImageNette"),
+                                      shuffle=True)
+    model_kwargs = {
+        "params_loc": model_params,
+        "output_logits": use_logits,
+        "num_classes": dataset.num_classes
+    }
+    model_constructor = getattr(models, model_type)
+    if model_version:
+        model_kwargs["version"] = model_version
+    model = model_constructor(**model_kwargs)
+    model.to(device)
+    model.eval()
+    make_patch(dataset.get_dataloader(train=False), model, target_label, 'test_patch.pth', device, epochs=30, lr=0.05)
