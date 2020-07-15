@@ -42,10 +42,15 @@ def train_patch(model, patch, train_dl, loss_function, optimizer, target_label, 
         optimizer.zero_grad()
         y = torch.tensor(np.full(y.shape[0], target_label), dtype=torch.long).to(device)
         image_size = x.shape[-1]
-        ind = randint(0, image_size - patch_size)
+
+        # indx = randint(0, image_size - patch_size)
+        # indy = randint(0, image_size - patch_size)
+        indx = image_size // 2 - patch_size // 2
+        # indx=0
+        indy = indx
 
         images = x.to(device)
-        images[:, :, ind:ind + patch_size, ind:ind + patch_size] = patch
+        images[:, :, indx:indx + patch_size, indy:indy + patch_size] = patch
         adv_out = model(images)
 
         loss = loss_function(adv_out, y)
@@ -69,9 +74,15 @@ def validate(model, patch, data_loader, loss_function, target_label, device):
             y = torch.tensor(np.full(y.shape[0], target_label), dtype=torch.long).to(device)
             # y = y.to(device)
             image_size = x.shape[-1]
-            ind = randint(0, image_size - patch_size)
+            indx = image_size//2 - patch_size//2
+            # indx=0
+            indy = indx
+
+            # indx = randint(0, image_size - patch_size)
+            # indy = randint(0, image_size - patch_size)
+
             images = x.to(device)
-            images[:, :, ind:ind + patch_size, ind:ind + patch_size] = patch
+            images[:, :, indx:indx + patch_size, indy:indy + patch_size] = patch
             adv_out = model(images)
             loss = loss_function(adv_out, y)
 
@@ -113,7 +124,7 @@ def make_patch(dataloader, model, target_label, patch_path, device, patch_percen
     optim = torch.optim.Adam([patch], lr=lr, weight_decay=0.)
     # optim = torch.optim.SGD([patch], lr=0.05, momentum=0.9, weight_decay=0., nesterov=True)
 
-    schedule = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, mode='min', factor=0.5, patience=1, verbose=True)
+    schedule = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, mode='min', factor=0.5, patience=2, verbose=True)
     cb = PatchCheckpointCb(patch_path)
     loss = torch.nn.CrossEntropyLoss()
 
@@ -135,16 +146,17 @@ def make_patch(dataloader, model, target_label, patch_path, device, patch_percen
 
 
 if __name__ == '__main__':
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    dataset = 'MNIST'
-    data_root = 'D:\Project\Benchmark_branch_axel\data'
 
-    target_label = 0
-    batch_size = 1000
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    dataset = 'CIFAR10' #'ImageNette'#'CIFAR10' #'MNIST'
+    data_root = '../../../data'
+
+    target_label = 3
+    batch_size = 8
     use_logits = True
-    model_type = 'BasicMLP'
-    model_params ='../../../data/models/mnist_mlp.pth'
-    model_version = None
+    model_type = 'Resnet' # BasicCNN
+    model_params = '../../../data/models/CIFAR10_resnet18_2.pth' # '../../../data/models/mnist_cnn.pth'
+    model_version = 'resnet18'#None #'resnet18' #None
     if dataset == "CIFAR10":
         dataset = datasets.Cifar(batch_size=batch_size, data_location=path.join(data_root, "CIFAR10"),
                                  download=False, shuffle=True, version="cifar10")
@@ -154,6 +166,8 @@ if __name__ == '__main__':
     elif dataset == "ImageNette":
         dataset = datasets.ImageNette(batch_size=batch_size, data_location=path.join(data_root, "ImageNette"),
                                       shuffle=True)
+    elif dataset == "Aptos":
+        dataset = datasets.Aptos(batch_size=batch_size, data_location=path.join(data_root, "APTOS"), img_size=320)
     model_kwargs = {
         "params_loc": model_params,
         "output_logits": use_logits,
@@ -165,4 +179,4 @@ if __name__ == '__main__':
     model = model_constructor(**model_kwargs)
     model.to(device)
     model.eval()
-    make_patch(dataset.get_dataloader(train=False), model, target_label, 'test_patch.pth', device, epochs=30, lr=0.05)
+    make_patch(dataset.get_dataloader(train=False), model, target_label, 'test_patch.pth', device, epochs=20, lr=0.05,patch_percent=0.05)

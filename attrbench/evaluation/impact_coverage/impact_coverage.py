@@ -20,8 +20,11 @@ def impact_coverage(data: Iterable, patch, target_label: int,
         # Get model predictions on original samples
         predictions = model(samples).cpu()
         # Apply patch to all images in batch (random location, but same for each image in batch)
-        ind = random.randint(0, image_size - patch_size)
-        samples[:, :, ind:ind + patch_size, ind:ind + patch_size] = patch
+        # indx = random.randint(0, image_size - patch_size)
+        # indy = random.randint(0, image_size - patch_size)
+        indx = image_size // 2 - patch_size // 2 # place patch in center
+        indy = indx
+        samples[:, :, indx:indx + patch_size, indy:indy + patch_size] = patch
         # Save mask with pixels covered by patch
         patch_location_mask = np.zeros(samples.shape)
         patch_location_mask[:, :, ind:ind + patch_size, ind: ind + patch_size] = 1.
