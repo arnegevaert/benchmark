@@ -29,7 +29,7 @@ def parse_args():
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--use-logits", type=bool, default=True)
     parser.add_argument("--normalize-attrs", type=bool, default=True)
-    parser.add_argument("--aggregation-fn", type=str, choices=["avg", "max-abs"], default="avg")
+    parser.add_argument("--aggregation-fn", type=str, choices=["avg", "max-abs", 'None'], default="avg")
     parser.add_argument("--cuda", type=bool, default=True)
     parser.add_argument("--data-root", type=str, default="../data")
     parser.add_argument("--experiment-name", type=str, default="experiment")
@@ -92,7 +92,7 @@ def main(args):
     patch = torch.load(patch_location)
     result = impact_coverage(itertools.islice(dataset.get_dataloader(train=False), 3), patch=patch, model=model, methods=attribution_methods,
                              device=device, target_label=args.target_label)
-    result_df = pd.DataFrame.from_dict(result)
+    result_df = pd.DataFrame(result, index=[0])
     result_df.to_pickle(path.join(args.out_dir, f"{args.experiment_name}.pkl"))
     meta_filename = path.join(args.out_dir, f"{args.experiment_name}_args.json")
     with open(meta_filename, "w") as f:
