@@ -90,7 +90,7 @@ def main(args):
 
 
     patch = torch.load(patch_location)
-    result = impact_coverage(itertools.islice(dataset.get_dataloader(train=False), 3), patch=patch, model=model, methods=attribution_methods,
+    result = impact_coverage(dataset.get_dataloader(train=False), patch=patch, model=model, methods=attribution_methods,
                              device=device, target_label=args.target_label)
     result_df = pd.DataFrame(result, index=[0])
     result_df.to_pickle(path.join(args.out_dir, f"{args.experiment_name}.pkl"))

@@ -36,20 +36,16 @@ def impact_coverage(data: Iterable, patch, target_label: int,
             if len(attrs.shape) == 4:
                 # Attributions are per color channel
                 nr_top_attributions = attrs.shape[1] * np.prod(patch.shape[2:]).item()
-                to_mask = sorted_indices[:, -nr_top_attributions:]  # [batch_size, i]
-                batch_dim = np.column_stack([range(samples.shape[0]) for _ in range(nr_top_attributions)])
-                unraveled = np.unravel_index(to_mask, samples.shape[1:])
-                masks[(batch_dim, *unraveled)] = 1.
             elif len(attrs.shape) == 3:
                 # Attributions are per pixel
                 nr_top_attributions = np.prod(patch.shape[2:]).item()
-                to_mask = sorted_indices[:, -nr_top_attributions:]  # [batch_size, i]
-                batch_dim = np.column_stack([range(samples.shape[0]) for _ in range(nr_top_attributions)])
-                unraveled = np.unravel_index(to_mask, samples.shape[2:])
-                masks[(batch_dim, *unraveled)] = 1.
             else:
                 raise ValueError("Attributions must have 3 (per-pixel) or 4 (per-channel) dimensions."
                                  f"Shape was f{attrs.shape}")
+            to_mask = sorted_indices[:, -nr_top_attributions:]  # [batch_size, i]
+            batch_dim = np.column_stack([range(samples.shape[0]) for _ in range(nr_top_attributions)])
+            unraveled = np.unravel_index(to_mask, attrs.shape[1:])
+            masks[(batch_dim, *unraveled)] = 1.
             critical_factor_mask[m_name].append(masks)
 
         patch_location_mask = np.zeros(attrs.shape)
@@ -59,11 +55,11 @@ def impact_coverage(data: Iterable, patch, target_label: int,
             patch_location_mask[:, :, indx:indx + patch_size, indy: indy + patch_size] = 1.
         patch_masks.append(patch_location_mask)
         adv_out = model(samples).cpu()
-        # use images that are not of the targeted class and are successfully attacked
+        # keep only images that are not of the targeted class and are successfully attacked
         keep_indices = (predictions.argmax(axis=1) != target_label) * (adv_out.argmax(axis=1) == target_label) * (labels != target_label)
         keep_list.extend(keep_indices)
     result = {}
-    patch_masks = np.vstack(patch_masks)[keep_list]
+    patch_masks = np.vstack(patch_masks)[keep_list] # locations of mask in the images,
     for m_name in critical_factor_mask:
         cr_f_m = np.vstack(critical_factor_mask[m_name])
         cr_f_m = cr_f_m[keep_list]
