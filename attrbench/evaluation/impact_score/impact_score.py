@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Iterable, List, Dict, Callable
+from tqdm import tqdm
 
 
 def impact_score(data: Iterable, model: Callable, mask_range: List[int], methods: Dict[str, Callable],
@@ -7,7 +8,7 @@ def impact_score(data: Iterable, model: Callable, mask_range: List[int], methods
     original_predictions = []
     method_predictions = {m_name: {n: [] for n in mask_range} for m_name in methods}
 
-    for b, (samples, labels) in enumerate(data):
+    for b, (samples, labels) in enumerate(tqdm(data)):
         samples = samples.to(device, non_blocking=True)
         labels = labels.to(device, non_blocking=True)
         original_predictions.append(model(samples).detach().cpu().numpy())  # collect original predictions
