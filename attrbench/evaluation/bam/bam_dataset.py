@@ -14,12 +14,13 @@ class BAMDataset:
                 for version in ["train", "val"]
             } for ds_name in ["obj", "scene", "scene_only"]}
 
+    """
+    ds_name: - "obj": object labels
+             - "scene": scene labels
+             - "scene_only": scene labels without object overlays
+    """
     def get_dataloader(self, ds_name, train=True):
         return DataLoader(
             self.datasets[ds_name]["train" if train else "val"],
             batch_size=self.batch_size, shuffle=self.shuffle, drop_last=True
         )
-
-
-if __name__ == "__main__":
-    bam_ds = BAMDataset(16, "../../../data/bam")
