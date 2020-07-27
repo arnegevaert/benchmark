@@ -6,10 +6,11 @@ from tqdm import tqdm
 
 def train_epoch(model: nn.Module, train_dl: DataLoader, test_dl: DataLoader,
                 optimizer, criterion, device: str):
+    # Train
     prog = tqdm(train_dl, desc=f"Training")
     total_samples, correct_samples = 0, 0
     losses = []
-    # Train
+    model.train()
     for batch, labels in prog:
         batch = batch.to(device)
         labels = labels.to(device)
@@ -29,6 +30,7 @@ def train_epoch(model: nn.Module, train_dl: DataLoader, test_dl: DataLoader,
     # Test
     prog = tqdm(test_dl, desc="Testing")
     total_samples, correct_samples = 0, 0
+    model.eval()
     for batch, labels in prog:
         with torch.no_grad():
             batch = batch.to(device)
