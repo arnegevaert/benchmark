@@ -3,13 +3,6 @@ from torch import nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-"""
-Trains a model on one of the BAM datasets.
-MCS: requires model trained on scene labels and model trained on object labels
-IDR: requires model trained on scene labels
-IIR: requires model trained on original scene images (without object overlays)
-"""
-
 
 def train_epoch(model: nn.Module, train_dl: DataLoader, test_dl: DataLoader,
                 optimizer, criterion, device: str):
@@ -31,7 +24,7 @@ def train_epoch(model: nn.Module, train_dl: DataLoader, test_dl: DataLoader,
         total_samples += batch.size(0)
         correct_samples += (torch.argmax(y_pred, dim=1) == labels).sum().item()
         prog.set_postfix({"loss": sum(losses)/len(losses),
-                          "acc": f"{correct_samples}/{total_samples} ({100*correct_samples/total_samples})"})
+                          "acc": f"{correct_samples}/{total_samples} ({100*correct_samples/total_samples:.2f})"})
 
     # Test
     prog = tqdm(test_dl, desc="Testing")
@@ -44,4 +37,4 @@ def train_epoch(model: nn.Module, train_dl: DataLoader, test_dl: DataLoader,
             total_samples += batch.size(0)
             correct_samples += (torch.argmax(y_pred, dim=1) == labels).sum().item()
             prog.set_postfix(
-                {"acc": f"{correct_samples}/{total_samples} ({100 * correct_samples / total_samples})"})
+                {"acc": f"{correct_samples}/{total_samples} ({100 * correct_samples / total_samples:.2f})"})
