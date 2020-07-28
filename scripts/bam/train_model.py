@@ -12,7 +12,7 @@ if module_path not in sys.path:
     sys.path.append(module_path)
 
 from attrbench import models, datasets
-from attrbench.evaluation.bam.train_model import train_epoch
+from attrbench.evaluation.bam import train_epoch
 
 """
 Trains a model on one of the BAM datasets.

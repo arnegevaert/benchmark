@@ -27,4 +27,4 @@ class ImageNette:
 
     def get_dataloader(self, train=True):
         return DataLoader(self.train_dataset if train else self.val_dataset,
-                          batch_size=self.batch_size, shuffle=self.shuffle, num_workers=2)
+                          batch_size=self.batch_size, shuffle=self.shuffle, num_workers=4)

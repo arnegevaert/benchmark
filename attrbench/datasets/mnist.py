@@ -19,4 +19,4 @@ class MNIST:
     def get_dataloader(self, train=True):
         return DataLoader(
             datasets.MNIST(self.data_location, train=train, transform=self.transform),
-            batch_size=self.batch_size, shuffle=self.shuffle)
+            batch_size=self.batch_size, shuffle=self.shuffle, num_workers=4)

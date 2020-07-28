@@ -22,4 +22,4 @@ class Cifar:
         return DataLoader(
             self.ds_constructors[self.version](self.data_location, train=train,
                                                download=self.download, transform=self.transform),
-            batch_size=self.batch_size, shuffle=self.shuffle, drop_last=True)
+            batch_size=self.batch_size, shuffle=self.shuffle, drop_last=True, num_workers=4)

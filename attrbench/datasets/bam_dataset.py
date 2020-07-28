@@ -24,5 +24,4 @@ class BAMDataset:
     def get_dataloader(self, ds_name, train=True):
         return DataLoader(
             self.datasets[ds_name]["train" if train else "val"],
-            batch_size=self.batch_size, shuffle=self.shuffle, drop_last=True, num_workers=4
-        )
+            batch_size=self.batch_size, shuffle=self.shuffle, drop_last=True, num_workers=4)
