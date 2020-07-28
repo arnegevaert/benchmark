@@ -98,7 +98,7 @@ class GradCAM(CaptumMethod):
         super().__init__(attr.LayerGradCam(model, layer), False, **kwargs)
 
     def _attribute(self, x, target, **kwargs):
-        attrs = self.method.attribute(x, target, relu_attributions=True)
+        attrs = self.method.attribute(x, target, relu_attributions=False)
         # Upsample attributions
         return attr.LayerAttribution.interpolate(attrs, self.upsample_shape, interpolate_mode="bilinear")
 
