@@ -1,20 +1,26 @@
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from os import path
 
 
-class BAMDataset:
-    def __init__(self, batch_size, data_location, shuffle=True):
+class BAMDataset(Dataset):
+    def __init__(self, batch_size, data_location, train, shuffle=True):
         self.batch_size = batch_size
         self.data_location = data_location
         self.shuffle = shuffle
         self.transforms = transforms.Compose([transforms.ToTensor()])  # TODO normalize
+        version = "train" if train else "val"
         self.datasets = {
-            ds_name: {
-                version: ImageFolder(path.join(self.data_location, ds_name, version), transform=self.transforms)
-                for version in ["train", "val"]
-            } for ds_name in ["obj", "scene", "scene_only"]}
+            ds_name: ImageFolder(path.join(self.data_location, ds_name, version), transform=self.transforms)
+            for ds_name in ["obj", "scene", "scene_only"]
+        }
+
+    def __getitem__(self, item):
+        pass
+
+    def __len__(self):
+        pass
 
     """
     ds_name: - "obj": object labels
