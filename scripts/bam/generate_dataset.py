@@ -6,9 +6,10 @@ import numpy as np
 from PIL import Image
 import shutil
 from tqdm import tqdm
+import argparse
 
 
-def extract_coco_objects(coco_dir, output_dir):
+def extract_coco_objects(coco_dir, output_dir, num_images_per_class):
     annotation_filename = path.join(coco_dir, "annotations", "instances_train2017.json")
     workspace_dir = path.join(output_dir, "workspace")
     segment_dir = path.join(workspace_dir, "segments")
@@ -54,7 +55,7 @@ def extract_coco_objects(coco_dir, output_dir):
                     cropped_image.save(fp, format="png")
                 # Break loop if enough images are created
                 num_imgs += 1
-                if num_imgs == NUM_IMAGES_PER_CLASS:
+                if num_imgs == num_images_per_class:
                     break
             except Exception as e:
                 continue  # Some images throw exceptions, just ignore these
@@ -68,31 +69,27 @@ def extract_scenes(miniplaces_dir, out_dir):
         shutil.copytree(src_dir, dst_dir)
 
 
-def overlay_objects_on_scenes(out_dir):
-    # Workspace directories
+def overlay_objects_on_scenes(out_dir, num_images_per_class, train_test_ratio):
+    # Create workspace directories
     workspace_dir = path.join(out_dir, "workspace")
     segment_workspace = path.join(workspace_dir, "segments")
     scene_workspace = path.join(workspace_dir, "scenes")
 
-    # Dataset directories
-    scene_dir = path.join(out_dir, "scene")
-    overlay_dir = path.join(out_dir, "overlay")
-    mask_dir = path.join(out_dir, "mask")
-
     objects = os.listdir(segment_workspace)
     scenes = os.listdir(scene_workspace)
 
-    for dir in [overlay_dir, scene_dir, mask_dir]:
-        for scene in scenes:
-            for obj in objects:
-                os.makedirs(path.join(dir, scene, obj), exist_ok=True)
+    for ds in ["train", "test"]:
+        for part in ["scene", "overlay", "mask"]:
+            for scene in scenes:
+                for obj in objects:
+                    os.makedirs(path.join(out_dir, ds, part, scene, obj), exist_ok=True)
 
     print("Overlaying objects on scenes...")
     for obj in objects:
-        obj_filenames = sorted(os.listdir(path.join(segment_workspace, obj)))[:NUM_IMAGES_PER_CLASS]
+        obj_filenames = sorted(os.listdir(path.join(segment_workspace, obj)))[:num_images_per_class]
         for scene in tqdm(scenes, desc=obj):
             scene_filenames = sorted(os.listdir(path.join(scene_workspace, scene)))
-            for i in range(NUM_IMAGES_PER_CLASS):
+            for i in range(num_images_per_class):
                 # Read object and scene images, get width and height
                 obj_filename, scene_filename = obj_filenames[i], scene_filenames[i]
                 with open(path.join(scene_workspace, scene, scene_filename), "rb") as fp:
@@ -116,16 +113,17 @@ def overlay_objects_on_scenes(out_dir):
                 row = np.random.randint(0, scene_h - new_obj_h)
                 col = np.random.randint(0, scene_w - new_obj_w)
 
-                filename = str(i).zfill(4) + ".jpg"
+                filename = str(i).zfill(4) + ".png"
+                ds_dir = "train" if i < int(train_test_ratio*num_images_per_class) else "test"
                 # Save scene to scene_only folder
-                with open(path.join(scene_dir, scene, obj, filename), "wb") as fp:
-                    scene_image.convert("RGB").save(fp, format="jpeg")
+                with open(path.join(out_dir, ds_dir, "scene", scene, obj, filename), "wb") as fp:
+                    scene_image.convert("RGB").save(fp, format="png")
 
                 # Paste object on scene and save in overlay folder
                 scene_image.paste(obj_image, (col, row), obj_image)
                 scene_image = scene_image.convert("RGB")
-                with open(path.join(overlay_dir, scene, obj, filename), "wb") as fp:
-                    scene_image.save(fp, format="jpeg")
+                with open(path.join(out_dir, ds_dir, "overlay", scene, obj, filename), "wb") as fp:
+                    scene_image.save(fp, format="png")
 
                 # Create black-and-white mask and save in mask folder
                 # Start from black RGBA image
@@ -134,14 +132,16 @@ def overlay_objects_on_scenes(out_dir):
                 mask_array = np.array(mask_image)  # [height, width, 4]
                 mask_array = mask_array[:, :, -1]  # Take only alpha channel: [width, height, 1]
                 mask_array = (mask_array > 0).astype(np.uint8) * 255
-                with open(path.join(mask_dir, scene, obj, filename), "wb") as fp:
+                with open(path.join(out_dir, ds_dir, "mask", scene, obj, filename), "wb") as fp:
                     Image.fromarray(mask_array, mode="L").save(fp, format="png")
 
 
-
 if __name__ == "__main__":
-    NUM_IMAGES_PER_CLASS = 1000
-    TRAIN_VAL_RATIO = 0.9
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--images-per-class", type=int, default=1000)
+    parser.add_argument("--train-test-ratio", type=float, default=0.9)
+    parser.add_argument("--data-dir", type=str, default="../../data")
+    args = parser.parse_args()
     OBJ_NAMES = [
         'backpack', 'bird', 'dog', 'elephant', 'kite', 'pizza', 'stop_sign',
         'toilet', 'truck', 'zebra'
@@ -150,14 +150,14 @@ if __name__ == "__main__":
         'bamboo_forest', 'bedroom', 'bowling_alley', 'bus_interior', 'cockpit',
         'corn_field', 'laundromat', 'runway', 'ski_slope', 'track/outdoor'
     ]
-    coco_dir = "../../data/coco"
-    miniplaces_dir = "../../data/miniplaces"
-    out_dir = "../../data/bam"
+    coco_dir = path.join(args.data_dir, "coco")
+    miniplaces_dir = path.join(args.data_dir, "miniplaces")
+    out_dir = path.join(args.data_dir, "bam")
 
     print("Cleaning directory...")
     shutil.rmtree(out_dir)
     os.makedirs(out_dir)
 
-    extract_coco_objects(coco_dir, out_dir)
+    extract_coco_objects(coco_dir, out_dir, args.num_images_per_class)
     extract_scenes(miniplaces_dir, out_dir)
-    overlay_objects_on_scenes(out_dir)
+    overlay_objects_on_scenes(out_dir, args.num_images_per_class, args.train_test_ratio)
