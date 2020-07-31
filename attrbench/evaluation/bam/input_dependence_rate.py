@@ -1,8 +1,8 @@
-from attrbench.datasets import BAMDataset
 from typing import Iterable, Callable, Dict
+from tqdm import tqdm
 
 
-def input_dependence_rate(dataset: BAMDataset, model: Callable, methods: Dict[str, Callable],
+def input_dependence_rate(dataloader: Iterable, model: Callable, methods: Dict[str, Callable],
                           device: str):
     """
     Input dependence rate:
@@ -11,8 +11,5 @@ def input_dependence_rate(dataset: BAMDataset, model: Callable, methods: Dict[st
     is removed. 1 - IDR can be interpreted as "false positive rate": rate of explanations
     that assign higher importance to less important features.
     """
-    pass
-
-
-if __name__ == "__main__":
-    ds = BAMDataset(4, "../../data/bam")
+    for images, scenes, masks, scene_labels, object_labels in tqdm(dataloader):
+        pass

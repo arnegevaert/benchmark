@@ -113,8 +113,8 @@ def overlay_objects_on_scenes(out_dir, num_images_per_class, train_test_ratio):
                 row = np.random.randint(0, scene_h - new_obj_h)
                 col = np.random.randint(0, scene_w - new_obj_w)
 
-                filename = str(i).zfill(4) + ".png"
                 ds_dir = "train" if i < int(train_test_ratio*num_images_per_class) else "test"
+                filename = str(i % int(train_test_ratio*num_images_per_class)).zfill(4) + ".png"
                 # Save scene to scene_only folder
                 with open(path.join(out_dir, ds_dir, "scene", scene, obj, filename), "wb") as fp:
                     scene_image.convert("RGB").save(fp, format="png")
@@ -154,10 +154,6 @@ if __name__ == "__main__":
     miniplaces_dir = path.join(args.data_dir, "miniplaces")
     out_dir = path.join(args.data_dir, "bam")
 
-    print("Cleaning directory...")
-    shutil.rmtree(out_dir)
-    os.makedirs(out_dir)
-
-    extract_coco_objects(coco_dir, out_dir, args.num_images_per_class)
+    extract_coco_objects(coco_dir, out_dir, args.images_per_class)
     extract_scenes(miniplaces_dir, out_dir)
-    overlay_objects_on_scenes(out_dir, args.num_images_per_class, args.train_test_ratio)
+    overlay_objects_on_scenes(out_dir, args.images_per_class, args.train_test_ratio)

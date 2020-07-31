@@ -39,4 +39,4 @@ def train_epoch(model: nn.Module, train_dl: DataLoader, test_dl: DataLoader,
             total_samples += batch.size(0)
             correct_samples += (torch.argmax(y_pred, dim=1) == labels).sum().item()
             prog.set_postfix(
-                {"acc": f"{correct_samples}/{total_samples} ({100 * correct_samples / total_samples:.2f})"})
+                {"acc": f"{correct_samples}/{total_samples} ({100 * correct_samples / total_samples:.2f}%)"})
