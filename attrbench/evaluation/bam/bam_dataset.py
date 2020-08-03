@@ -10,14 +10,15 @@ class BAMDataset(Dataset):
         self.data_location = data_location
         self.include_orig_scene = include_orig_scene
         self.include_mask = include_mask
+        self.sample_shape = (3, 128, 128)
         # TODO Overlay/Scene: normalize to distribution around 0
-        # Mask: Divide by 255 to get binary mask
         self.transforms = {
             "overlay": transforms.Compose([transforms.ToTensor()]),
             "scene": transforms.Compose([transforms.ToTensor()]),
-            "mask": transforms.Compose([transforms.ToTensor(), transforms.Normalize(0, 255)])
+            "mask": transforms.Compose([transforms.ToTensor()])
         }
         self.version = "train" if train else "test"
+        self.num_classes = 10
 
         overlay_dir = path.join(data_location, self.version, "overlay")
         self.scenes = sorted(os.listdir(overlay_dir))
@@ -40,7 +41,7 @@ class BAMDataset(Dataset):
                 result.append(self.transforms["scene"](Image.open(fp)))
         if self.include_mask:
             with open(path.join(self.data_location, self.version, "mask", subpath), "rb") as fp:
-                result.append(self.transforms["mask"](Image.open(fp)))
+                result.append(self.transforms["mask"](Image.open(fp)).int())
         result.append(scene_index)
         result.append(object_index)
         return tuple(result)
@@ -50,5 +51,7 @@ class BAMDataset(Dataset):
 
 
 if __name__ == "__main__":
-    ds = BAMDataset("../../../data/bam", True)
-    item = ds[905]
+    from torch.utils.data import DataLoader
+    ds = BAMDataset("../../../data/BAM", True, True, True)
+    dl = DataLoader(ds, batch_size=16)
+    batch = next(iter(dl))

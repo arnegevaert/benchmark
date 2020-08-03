@@ -57,7 +57,7 @@ def extract_coco_objects(coco_dir, output_dir, num_images_per_class):
                 num_imgs += 1
                 if num_imgs == num_images_per_class:
                     break
-            except Exception as e:
+            except:
                 continue  # Some images throw exceptions, just ignore these
 
 
