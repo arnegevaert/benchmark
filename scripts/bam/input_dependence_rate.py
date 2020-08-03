@@ -42,9 +42,6 @@ if path.isfile(path.join(args.out_dir, f"{args.experiment_name}.pkl")):
 dataset = BAMDataset(path.join(args.data_root, "BAM"), train=False, include_orig_scene=True, include_mask=True)
 dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
-import itertools
-dataloader = itertools.islice(iter(dataloader), 4)
-
 model_constructor = getattr(models, args.model_type)
 model_kwargs = {
     "params_loc": args.model_params,
@@ -64,10 +61,10 @@ kwargs = {
 }
 
 attribution_methods = {
-    "Gradient": attribution.Gradient(model, **kwargs),
+    #"Gradient": attribution.Gradient(model, **kwargs),
     "SmoothGrad": attribution.SmoothGrad(model, **kwargs),
     #"InputXGradient": attribution.InputXGradient(model, **kwargs),
-    #"IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
+    "IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
     #"GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
     #"Deconvolution": attribution.Deconvolution(model, **kwargs),
     #"Ablation": attribution.Ablation(model, **kwargs),
