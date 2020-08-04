@@ -29,7 +29,7 @@ parser.add_argument("--aggregation-fn", type=str, choices=["avg", "max-abs"], de
 parser.add_argument("--cuda", type=bool, default=True)
 parser.add_argument("--data-root", type=str, default="../../data")
 parser.add_argument("--experiment-name", type=str, default="experiment")
-parser.add_argument("--out-dir", type=str)
+parser.add_argument("--out-dir", type=str, default=".")
 args = parser.parse_args()
 device = "cuda" if args.cuda and torch.cuda.is_available() else "cpu"
 
@@ -42,42 +42,45 @@ if path.isfile(path.join(args.out_dir, f"{args.experiment_name}.pkl")):
 dataset = BAMDataset(path.join(args.data_root, "BAM"), train=False, include_orig_scene=False, include_mask=True)
 dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
-import itertools
-dataloader = itertools.islice(iter(dataloader), 4)
-
 model_constructor = getattr(models, args.model_type)
 model_kwargs = {
-    "params_loc": args.model_params,
     "output_logits": args.use_logits,
     "num_classes": dataset.num_classes
 }
 if args.model_version:
     model_kwargs["version"] = args.model_version
-model = model_constructor(**model_kwargs)
-model.to(device)
-model.eval()
 
+object_model = model_constructor(**{**model_kwargs, **{"params_loc": args.object_model_params}})
+object_model.to(device)
+object_model.eval()
+
+scene_model = model_constructor(**{**model_kwargs, **{"params_loc": args.scene_model_params}})
+scene_model.to(device)
+scene_model.eval()
 
 kwargs = {
     "normalize": args.normalize_attrs,
     "aggregation_fn": args.aggregation_fn
 }
 
+
 attribution_methods = {
-    "Gradient": attribution.Gradient(model, **kwargs),
-    "SmoothGrad": attribution.SmoothGrad(model, **kwargs),
-    #"InputXGradient": attribution.InputXGradient(model, **kwargs),
-    #"IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
-    #"GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
-    #"Deconvolution": attribution.Deconvolution(model, **kwargs),
-    #"Ablation": attribution.Ablation(model, **kwargs),
-    #"GuidedGradCAM": attribution.GuidedGradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs),
-    #"GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
+    "Gradient": lambda model: attribution.Gradient(model, **kwargs),
+    "SmoothGrad": lambda model: attribution.SmoothGrad(model, **kwargs),
+    #"InputXGradient": lambda model: attribution.InputXGradient(model, **kwargs),
+    #"IntegratedGradients": lambda model: attribution.IntegratedGradients(model, **kwargs),
+    #"GuidedBackprop": lambda model: attribution.GuidedBackprop(model, **kwargs),
+    #"Deconvolution": lambda model: attribution.Deconvolution(model, **kwargs),
+    #"Ablation": lambda model: attribution.Ablation(model, **kwargs),
+    #"GuidedGradCAM": lambda model: attribution.GuidedGradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs),
+    #"GradCAM": lambda model: attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
 }
+object_methods = {m_name: attribution_methods[m_name](object_model) for m_name in attribution_methods}
+scene_methods = {m_name: attribution_methods[m_name](scene_model) for m_name in attribution_methods}
 
-result = input_dependence_rate(dataloader, model, attribution_methods, device)
+result = model_contrast_score(dataloader, object_methods, scene_methods, device)
+
 result_df = pd.concat([pd.DataFrame(result[m_name]).assign(method=m_name) for m_name in attribution_methods])
-
 result_df.to_pickle(path.join(args.out_dir, f"{args.experiment_name}.pkl"))
 meta_filename = path.join(args.out_dir, f"{args.experiment_name}_args.json")
 with open(meta_filename, "w") as f:

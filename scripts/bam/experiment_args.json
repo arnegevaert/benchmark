@@ -1,0 +1,1 @@
+{"model_type": "Resnet", "model_params": "../../data/models/BAM/scene/resnet18.pt", "model_version": "resnet18", "batch_size": 64, "use_logits": true, "normalize_attrs": true, "aggregation_fn": "avg", "cuda": true, "data_root": "../../data", "experiment_name": "experiment", "out_dir": "."}

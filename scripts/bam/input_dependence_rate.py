@@ -28,7 +28,7 @@ parser.add_argument("--aggregation-fn", type=str, choices=["avg", "max-abs"], de
 parser.add_argument("--cuda", type=bool, default=True)
 parser.add_argument("--data-root", type=str, default="../../data")
 parser.add_argument("--experiment-name", type=str, default="experiment")
-parser.add_argument("--out-dir", type=str, default="../../out/BAM/IDR")
+parser.add_argument("--out-dir", type=str, default=".")
 args = parser.parse_args()
 device = "cuda" if args.cuda and torch.cuda.is_available() else "cpu"
 
@@ -60,10 +60,10 @@ kwargs = {
 }
 
 attribution_methods = {
-    #"Gradient": attribution.Gradient(model, **kwargs),
-    "SmoothGrad": attribution.SmoothGrad(model, **kwargs),
-    #"InputXGradient": attribution.InputXGradient(model, **kwargs),
-    "IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
+    "Gradient": attribution.Gradient(model, **kwargs),
+    #"SmoothGrad": attribution.SmoothGrad(model, **kwargs),
+    "InputXGradient": attribution.InputXGradient(model, **kwargs),
+    #"IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
     #"GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
     #"Deconvolution": attribution.Deconvolution(model, **kwargs),
     #"Ablation": attribution.Ablation(model, **kwargs),

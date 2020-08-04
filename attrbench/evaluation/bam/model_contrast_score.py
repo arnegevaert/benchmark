@@ -17,7 +17,7 @@ def model_contrast_score(dataloader: Iterable, object_methods: Dict[str, Callabl
     for images, masks, _, labels in tqdm(dataloader):
         images = images.to(device)
         labels = labels.to(device)
-        masks = masks.to(device)
+        masks = masks.squeeze().to(device)
         for m_name in object_methods:
             object_model_attrs = object_methods[m_name](images, labels)
             scene_model_attrs = scene_methods[m_name](images, labels)
@@ -29,5 +29,5 @@ def model_contrast_score(dataloader: Iterable, object_methods: Dict[str, Callabl
             result[m_name]["mask_size"].append(mask_size.cpu().detach().numpy())
     return {m_name: {"object_attrs": np.concatenate(result[m_name]["object_attrs"]),
                      "scene_attrs": np.concatenate(result[m_name]["scene_attrs"]),
-                     "mask_size": np.concatenate(result[m_name]["masks"])}
+                     "mask_size": np.concatenate(result[m_name]["mask_size"])}
             for m_name in object_methods}
