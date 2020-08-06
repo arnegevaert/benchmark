@@ -89,7 +89,7 @@ result = deletion_curves(dataset.get_dataloader(train=False), model,
 result_df = pd.DataFrame.from_dict(
     {m_name: pd.DataFrame(data=result[m_name]).stack() for m_name in attribution_methods}
 ).stack().reset_index()
-result_df.columns = ["sample", "mask", "method", "difference"]
+result_df.columns = ["sample", "mask", "method", "logit"]
 result_df["mask"] = np.array(mask_range)[result_df["mask"]]
 
 result_df.to_pickle(path.join(args.out_dir, f"{args.experiment_name}.pkl"))
