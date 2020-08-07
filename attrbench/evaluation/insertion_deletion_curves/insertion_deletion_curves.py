@@ -62,6 +62,7 @@ class Result(LinePlotResult):
         for method in self.processed:
             for key in ["mean", "lower", "upper"]:
                 arr = self.processed[method][key]
+                normalized[method] = {}
                 if mode == "deletion":
                     normalized[method][key] = (arr - arr[-1]) / (arr[0] - arr[-1])
                 else:
