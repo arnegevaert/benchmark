@@ -86,7 +86,11 @@ class DeletionCurvesResult:
 
     def auc(self):
         return {
-            method: np.mean(self.processed[method]["mean"]) for method in self.processed
+            method: {
+                "mean": np.mean(self.processed[method]["mean"]),
+                "lower": np.mean(self.processed[method]["lower"]),
+                "upper": np.mean(self.processed[method]["upper"])
+            } for method in self.processed
         }
 
     def save(self, filename):
