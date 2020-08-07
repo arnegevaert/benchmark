@@ -13,6 +13,11 @@ def insertion_deletion_curves(data: Iterable, model: Callable, methods: Dict[str
     for batch_index, (samples, labels) in enumerate(tqdm(data)):
         samples = samples.to(device)
         labels = labels.to(device)
+        # Check which samples are classified correctly
+        # Only want to calculate for correctly classified samples
+        with torch.no_grad():
+            y_pred = torch.argmax(model(samples), dim=1)
+        samples = samples[y_pred == labels]
         for key in methods:
             batch_result = []
             attrs = methods[key](samples, labels)  # [batch_size, *sample_shape]
@@ -23,18 +28,19 @@ def insertion_deletion_curves(data: Iterable, model: Callable, methods: Dict[str
             # TODO create all masked samples at once for more efficient GPU usage
             for i in mask_range:
                 # Get indices of i most important inputs
-                to_mask = sorted_indices[:, -i:]  # [batch-size, i]
                 masked_samples = samples.clone() if mode == "deletion" \
                     else torch.ones(samples.shape).to(device) * mask_value
-                batch_dim = np.column_stack([range(samples.shape[0]) for _ in range(i)])
-                if pixel_level_mask:
-                    unraveled = np.unravel_index(to_mask, samples.shape[2:])
-                    masked_samples[(batch_dim, -1, *unraveled)] = mask_value if mode == "deletion" \
-                        else samples[(batch_dim, -1, *unraveled)]
-                else:
-                    unraveled = np.unravel_index(to_mask, samples.shape[1:])
-                    masked_samples[(batch_dim, *unraveled)] = mask_value if mode == "deletion" \
-                        else samples[(batch_dim, *unraveled)]
+                if i > 0:
+                    to_mask = sorted_indices[:, -i:]  # [batch-size, i]
+                    batch_dim = np.column_stack([range(samples.shape[0]) for _ in range(i)])
+                    if pixel_level_mask:
+                        unraveled = np.unravel_index(to_mask, samples.shape[2:])
+                        masked_samples[(batch_dim, -1, *unraveled)] = mask_value if mode == "deletion" \
+                            else samples[(batch_dim, -1, *unraveled)]
+                    else:
+                        unraveled = np.unravel_index(to_mask, samples.shape[1:])
+                        masked_samples[(batch_dim, *unraveled)] = mask_value if mode == "deletion" \
+                            else samples[(batch_dim, *unraveled)]
                 # Get predictions for result
                 predictions = model(masked_samples)
                 predictions = predictions[np.arange(predictions.shape[0]), labels].reshape(-1, 1)
