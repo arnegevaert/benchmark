@@ -77,6 +77,6 @@ attribution_methods = {
 dataloader = DataLoader(dataset, batch_size=args.batch_size, num_workers=4)
 result = insertion_deletion_curves(dataloader, model,
                                    attribution_methods, mask_range, dataset.mask_value,
-                                   pixel_level_mask=args.aggregation_fn is not None, device=device,
+                                   pixel_level_mask=kwargs["aggregation_fn"] is not None, device=device,
                                    mode=args.mode)
 result.save_json(args.output_file)

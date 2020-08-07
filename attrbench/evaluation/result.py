@@ -3,6 +3,13 @@ import numpy as np
 import json
 
 
+class _NumpyJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
+
+
 # TODO normalization will have to happen via subclasses
 class LinePlotResult:
     def __init__(self, data, x_range):
@@ -47,4 +54,4 @@ class LinePlotResult:
             json.dump({
                 "data": self.data,
                 "x_range": self.x_range
-            }, outfile)
+            }, outfile, cls=_NumpyJSONEncoder)
