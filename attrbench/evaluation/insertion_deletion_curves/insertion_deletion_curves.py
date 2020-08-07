@@ -18,6 +18,7 @@ def insertion_deletion_curves(data: Iterable, model: Callable, methods: Dict[str
         with torch.no_grad():
             y_pred = torch.argmax(model(samples), dim=1)
         samples = samples[y_pred == labels]
+        labels = labels[y_pred == labels]
         for key in methods:
             batch_result = []
             attrs = methods[key](samples, labels)  # [batch_size, *sample_shape]
