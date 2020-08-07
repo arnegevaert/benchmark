@@ -2,6 +2,7 @@ from typing import Iterable, Callable, List, Dict
 import numpy as np
 import torch
 from tqdm import tqdm
+from attrbench.evaluation.result import LinePlotResult
 
 
 # TODO duplicated code in deletion curves
@@ -37,4 +38,11 @@ def insertion_curves(data: Iterable, model: Callable, methods: Dict[str, Callabl
             batch_result = np.concatenate(batch_result, axis=1)
             result[key].append(batch_result)
     # [n_batches*batch_size, len(mask_range)]
-    return {m_name: np.concatenate(result[m_name], axis=0) for m_name in methods}
+    raw_data = {
+        "x_range": insert_range,
+        "data": {
+            # [n_batches*batch_size, len(mask_range)]
+            m_name: np.concatenate(result[m_name], axis=0) for m_name in methods
+        }
+    }
+    return LinePlotResult(raw_data=raw_data), raw_data

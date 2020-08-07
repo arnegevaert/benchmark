@@ -1,1 +1,1 @@
-from .deletion_curves import deletion_curves, DeletionCurvesResult
+from .deletion_curves import deletion_curves

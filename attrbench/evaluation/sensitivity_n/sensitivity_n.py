@@ -1,7 +1,6 @@
 from typing import Iterable, Callable, List, Dict
 import numpy as np
 from tqdm import tqdm
-import torch
 
 
 # Returns a dictionary containing, for each given method, a list of Sensitivity-n values
