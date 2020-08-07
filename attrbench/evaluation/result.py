@@ -5,31 +5,19 @@ import json
 
 # TODO normalization will have to happen via subclasses
 class LinePlotResult:
-    def __init__(self, filename=None, raw_data=None):
-        if not (raw_data or filename):
-            raise ValueError("Must provide raw data dict or file name to load.")
-        if raw_data:
-            self.processed = {}
-            self.x_range = raw_data["x_range"]
-            for method in raw_data["data"]:
-                method_data = raw_data["data"][method]
-                sd = np.std(method_data, axis=0)
-                mean = np.mean(method_data, axis=0)
-                self.processed[method] = {
-                    "mean": mean,
-                    "lower": mean - (1.96 * sd / np.sqrt(method_data.shape[0])),
-                    "upper": mean + (1.96 * sd / np.sqrt(method_data.shape[0]))
-                }
-        elif filename:
-            with open(filename) as file:
-                contents = json.load(file)
-                data = contents["data"]
-                self.x_range = contents["x_range"]
-                self.processed = {
-                    method: {
-                        stat: np.array(data[method][stat]) for stat in data[method]
-                    } for method in data
-                }
+    def __init__(self, data, x_range):
+        self.data = data
+        self.x_range = x_range
+        self.processed = {}
+        for method in data:
+            method_data = data[method]
+            sd = np.std(method_data, axis=0)
+            mean = np.mean(method_data, axis=0)
+            self.processed[method] = {
+                "mean": mean,
+                "lower": mean - (1.96 * sd / np.sqrt(method_data.shape[0])),
+                "upper": mean + (1.96 * sd / np.sqrt(method_data.shape[0]))
+            }
 
     def plot(self, ci=False, xlog=False, ylog=False):
         fig, ax = plt.subplots(figsize=(7, 5))
@@ -54,13 +42,9 @@ class LinePlotResult:
             } for method in self.processed
         }
 
-    def save(self, filename):
+    def save_json(self, filename):
         with open(filename, "w") as outfile:
             json.dump({
-                "x_range": self.x_range,
-                "data": {
-                    method: {
-                        stat: self.processed[method][stat].tolist() for stat in self.processed[method]
-                    } for method in self.processed
-                }
+                "data": self.data,
+                "x_range": self.x_range
             }, outfile)

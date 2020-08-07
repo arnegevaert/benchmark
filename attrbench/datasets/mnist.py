@@ -1,22 +1,23 @@
 from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset
 
 
-class MNIST:
-    def __init__(self, batch_size, data_location, download=False, shuffle=True):
+class MNIST(Dataset):
+    def __init__(self, data_location, train, download=False):
         self.sample_shape = (1, 28, 28)
-        self.batch_size = batch_size
-        self.data_location = data_location
-        self.download = download
-        self.shuffle = shuffle
+        # Minimum value in normalized dataset represents black
+        # This is not the dataset average, but it is the background color,
+        # which is a better "neutral" value than the dataset mean (which is grey)
         self.mask_value = -0.4242
         self.transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.1307,), (0.3081,))
         ])
         self.num_classes = 10
+        self.dataset = datasets.MNIST(data_location, train=train, transform=self.transform, download=download)
 
-    def get_dataloader(self, train=True):
-        return DataLoader(
-            datasets.MNIST(self.data_location, train=train, transform=self.transform),
-            batch_size=self.batch_size, shuffle=self.shuffle, num_workers=4)
+    def __getitem__(self, item):
+        return self.dataset[item]
+
+    def __len__(self):
+        return len(self.dataset)
