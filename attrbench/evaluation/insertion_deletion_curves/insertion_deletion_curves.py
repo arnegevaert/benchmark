@@ -51,4 +51,18 @@ def insertion_deletion_curves(data: Iterable, model: Callable, methods: Dict[str
         # [n_batches*batch_size, len(mask_range)]
         m_name: np.concatenate(result[m_name], axis=0) for m_name in methods
     }
-    return LinePlotResult(data, mask_range)
+    return Result(data, mask_range, mode)
+
+
+class Result(LinePlotResult):
+    def __init__(self, data, x_range, mode):
+        super().__init__(data, x_range)
+        normalized = {}
+        for method in self.processed:
+            for key in ["mean", "lower", "upper"]:
+                arr = self.processed[method][key]
+                if mode == "deletion":
+                    normalized[method][key] = (arr - arr[-1]) / (arr[0] - arr[-1])
+                else:
+                    normalized[method][key] = (arr - arr[0]) / (arr[-1] - arr[0])
+        self.processed = normalized

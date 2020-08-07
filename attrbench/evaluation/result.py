@@ -10,7 +10,6 @@ class _NumpyJSONEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-# TODO normalization will have to happen via subclasses
 class LinePlotResult:
     def __init__(self, data, x_range):
         self.data = data
