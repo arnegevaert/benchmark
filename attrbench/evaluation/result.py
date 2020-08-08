@@ -16,7 +16,7 @@ class LinePlotResult:
         self.x_range = x_range
         self.processed = {}
         for method in data:
-            method_data = data[method]
+            method_data = np.array(data[method])
             sd = np.std(method_data, axis=0)
             mean = np.mean(method_data, axis=0)
             self.processed[method] = {
