@@ -37,13 +37,13 @@ with open(args.output_file, "w") as f:
 
 if args.dataset == "CIFAR10":
     dataset = datasets.Cifar(data_location=path.join(args.data_root, "CIFAR10"), train=False)
-    mask_range = list(range(30, 901, 30))
+    mask_range = list(range(30, 32*32, 30))
 elif args.dataset == "MNIST":
     dataset = datasets.MNIST(data_location=path.join(args.data_root, "MNIST"), train=False)
-    mask_range = list(range(25, 701, 25))
+    mask_range = list(range(25, 28*28, 25))
 elif args.dataset == "ImageNette":
     dataset = datasets.ImageNette(data_location=path.join(args.data_root, "imagenette2"), train=False)
-    mask_range = list(range(4000, 135000, 4000))
+    mask_range = list(range(4000, 224*224, 4000))
 
 model_constructor = getattr(models, args.model_type)
 model_kwargs = {
@@ -79,5 +79,5 @@ dataloader = DataLoader(dataset, batch_size=args.batch_size, num_workers=4)
 result = insertion_deletion_curves(dataloader, model,
                                    attribution_methods, mask_range, dataset.mask_value,
                                    pixel_level_mask=kwargs["aggregation_fn"] is not None, device=device,
-                                   mode=args.mode)
+                                   mode=args.mode, output_transform=args.output_transform)
 result.save_json(args.output_file)
