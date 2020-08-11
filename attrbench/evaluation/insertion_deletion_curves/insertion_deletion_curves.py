@@ -60,11 +60,11 @@ def insertion_deletion_curves(data: Iterable, model: Callable, methods: Dict[str
                         else torch.ones(samples.shape).to(device) * mask_value
                     to_mask = sorted_indices[:, -i:]  # [batch-size, i]
                     batch_dim = np.column_stack([range(batch_size) for _ in range(i)])
-                    color_dim = np.column_stack([range(color_channels) for _ in range(i)])
                     if pixel_level_mask:
                         unraveled = np.unravel_index(to_mask, samples.shape[2:])
-                        masked_samples[(batch_dim, color_dim, *unraveled)] = mask_value if mode == "deletion" \
-                            else samples[(batch_dim, color_dim, *unraveled)]
+                        for cd in range(color_channels):
+                            masked_samples[(batch_dim, cd, *unraveled)] = mask_value if mode == "deletion" \
+                                else samples[(batch_dim, cd, *unraveled)]
                     else:
                         unraveled = np.unravel_index(to_mask, samples.shape[1:])
                         masked_samples[(batch_dim, *unraveled)] = mask_value if mode == "deletion" \
