@@ -21,6 +21,7 @@ parser.add_argument("--model-version", type=str, default=None)
 parser.add_argument("--mode", type=str, choices=["insertion", "deletion"])
 parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"])
 parser.add_argument("--batch-size", type=int, default=64)
+parser.add_argument("--output-transform", type=str, choices=["identity", "softmax", "logit_softmax"])
 parser.add_argument("--cuda", type=bool, default=True)
 parser.add_argument("--data-root", type=str, default="../data")
 parser.add_argument("--output-file", type=str, default="result.json")
@@ -36,13 +37,13 @@ with open(args.output_file, "w") as f:
 
 if args.dataset == "CIFAR10":
     dataset = datasets.Cifar(data_location=path.join(args.data_root, "CIFAR10"), train=False)
-    mask_range = list(range(0, 901, 30))
+    mask_range = list(range(30, 901, 30))
 elif args.dataset == "MNIST":
     dataset = datasets.MNIST(data_location=path.join(args.data_root, "MNIST"), train=False)
-    mask_range = list(range(0, 701, 25))
+    mask_range = list(range(25, 701, 25))
 elif args.dataset == "ImageNette":
     dataset = datasets.ImageNette(data_location=path.join(args.data_root, "imagenette2"), train=False)
-    mask_range = list(range(0, 135000, 4000))
+    mask_range = list(range(4000, 135000, 4000))
 
 model_constructor = getattr(models, args.model_type)
 model_kwargs = {
