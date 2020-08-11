@@ -29,11 +29,11 @@ args = parser.parse_args()
 device = "cuda" if args.cuda and torch.cuda.is_available() else "cpu"
 
 if path.isfile(args.output_file) and path.getsize(args.output_file) > 0:
-    exit("Experiment output file is not empty")
+    sys.exit("Experiment output file is not empty")
 
 with open(args.output_file, "w") as f:
     if not f.writable():
-        exit("Output file is not writable")
+        sys.exit("Output file is not writable")
 
 if args.dataset == "CIFAR10":
     dataset = datasets.Cifar(data_location=path.join(args.data_root, "CIFAR10"), train=False)
