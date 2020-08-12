@@ -1,1 +1,1 @@
-from .insertion_deletion_curves import insertion_deletion_curves, Result
+from .insertion_deletion_curves import insertion_deletion_curves
