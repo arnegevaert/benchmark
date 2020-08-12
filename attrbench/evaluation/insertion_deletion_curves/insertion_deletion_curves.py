@@ -2,16 +2,38 @@ from typing import Iterable, Callable, List, Dict
 import numpy as np
 from tqdm import tqdm
 from attrbench.evaluation.result import LinePlotResult
-from attrbench.evaluation.util import logit_softmax, mask_top_pixels, insert_top_pixels
+from attrbench.evaluation.util import transform_fns
 import torch
-import torch.nn.functional as F
 
 
-_OUTPUT_TRANSFORMS = {
-    "identity": lambda l: l,
-    "softmax": lambda l: F.softmax(l, dim=1),
-    "logit_softmax": lambda l: logit_softmax(l)
-}
+def _mask_pixels(imgs, indices, mask_value, pixel_level_mask):
+    batch_size, color_channels = imgs.shape[:2]
+    num_pixels = indices.shape[1]
+    result = imgs.clone()
+    batch_dim = np.column_stack([range(batch_size) for _ in range(num_pixels)])
+    if pixel_level_mask:
+        unraveled = np.unravel_index(indices, imgs.shape[2:])
+        for color_dim in range(color_channels):
+            result[(batch_dim, color_dim, *unraveled)] = mask_value
+    else:
+        unraveled = np.unravel_index(indices, imgs.shape[1:])
+        result[(batch_dim, *unraveled)] = mask_value
+    return result
+
+
+def _insert_pixels(imgs, indices, mask_value, pixel_level_mask):
+    num_pixels = indices.shape[1]
+    batch_size, color_channels = imgs.shape[:2]
+    result = torch.ones(imgs.shape) * mask_value
+    batch_dim = np.column_stack([range(batch_size) for _ in range(num_pixels)])
+    if pixel_level_mask:
+        unraveled = np.unravel_index(indices, imgs.shape[2:])
+        for color_dim in range(color_channels):
+            result[(batch_dim, color_dim, *unraveled)] = imgs[(batch_dim, color_dim, *unraveled)]
+    else:
+        unraveled = np.unravel_index(indices, imgs.shape[1:])
+        result[(batch_dim, *unraveled)] = imgs[(batch_dim, *unraveled)]
+    return result
 
 
 def insertion_deletion_curves(data: Iterable, sample_shape, model: Callable, methods: Dict[str, Callable],
@@ -21,7 +43,7 @@ def insertion_deletion_curves(data: Iterable, sample_shape, model: Callable, met
     assert mode in ["deletion", "insertion"]
     result = {m_name: [] for m_name in methods}
     full_mask_output = model(torch.ones((1, *sample_shape)).to(device) * mask_value)
-    full_mask_output = _OUTPUT_TRANSFORMS[output_transform](full_mask_output)
+    full_mask_output = transform_fns[output_transform](full_mask_output)
     for batch_index, (samples, labels) in enumerate(tqdm(data)):
         samples = samples.to(device)
         labels = labels.to(device)
@@ -33,7 +55,7 @@ def insertion_deletion_curves(data: Iterable, sample_shape, model: Callable, met
         labels = labels[y_pred == labels]
         batch_size = samples.size(0)
         if batch_size > 0:
-            orig_predictions = _OUTPUT_TRANSFORMS[output_transform](model(samples))
+            orig_predictions = transform_fns[output_transform](model(samples))
             orig_predictions = orig_predictions[np.arange(batch_size), labels].reshape(-1, 1)
             full_mask_predictions = full_mask_output[[0]*batch_size, labels].reshape(-1, 1)
             for key in methods:
@@ -47,13 +69,13 @@ def insertion_deletion_curves(data: Iterable, sample_shape, model: Callable, met
                 for i in mask_range:
                     # Mask/insert pixels
                     if mode == "deletion":
-                        masked_samples = mask_top_pixels(samples, sorted_indices[:, -i:],
-                                                         mask_value, pixel_level_mask)
+                        masked_samples = _mask_pixels(samples, sorted_indices[:, -i:],
+                                                      mask_value, pixel_level_mask)
                     else:
-                        masked_samples = insert_top_pixels(samples, sorted_indices[:, -i:],
-                                                           mask_value, pixel_level_mask)
+                        masked_samples = _insert_pixels(samples, sorted_indices[:, -i:],
+                                                        mask_value, pixel_level_mask)
                     # Get predictions for result
-                    predictions = _OUTPUT_TRANSFORMS[output_transform](model(masked_samples))
+                    predictions = transform_fns[output_transform](model(masked_samples))
                     predictions = predictions[np.arange(batch_size), labels].reshape(-1, 1)
                     batch_result.append(predictions.cpu().detach().numpy())
 

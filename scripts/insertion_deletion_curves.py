@@ -2,6 +2,7 @@ from os import path
 import torch
 import argparse
 from torch.utils.data import DataLoader
+import itertools
 
 # This block allows us to import from the benchmark folder,
 # as if it was a package installed using pip
@@ -21,7 +22,8 @@ parser.add_argument("--model-version", type=str, default=None)
 parser.add_argument("--mode", type=str, choices=["insertion", "deletion"])
 parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"])
 parser.add_argument("--batch-size", type=int, default=64)
-parser.add_argument("--output-transform", type=str, choices=["identity", "softmax", "logit_softmax"])
+parser.add_argument("--num-batches", type=int, default=16)
+parser.add_argument("--output-transform", type=str, choices=["identity", "softmax"])
 parser.add_argument("--cuda", type=bool, default=True)
 parser.add_argument("--data-root", type=str, default="../data")
 parser.add_argument("--output-file", type=str, default="result.json")
@@ -57,7 +59,6 @@ model = model_constructor(**model_kwargs)
 model.to(device)
 model.eval()
 
-
 kwargs = {
     "normalize": False,  # Normalizing isn't necessary, only order of values counts
     "aggregation_fn": "avg"
@@ -75,8 +76,8 @@ attribution_methods = {
     "GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
 }
 
-dataloader = DataLoader(dataset, batch_size=args.batch_size, num_workers=4)
-result = insertion_deletion_curves(dataloader, model,
+dataloader = itertools.islice(DataLoader(dataset, batch_size=args.batch_size, num_workers=4), args.num_batches)
+result = insertion_deletion_curves(dataloader, dataset.sample_shape, model,
                                    attribution_methods, mask_range, dataset.mask_value,
                                    pixel_level_mask=kwargs["aggregation_fn"] is not None, device=device,
                                    mode=args.mode, output_transform=args.output_transform)
