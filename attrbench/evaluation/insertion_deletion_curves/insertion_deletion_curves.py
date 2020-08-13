@@ -55,8 +55,8 @@ def insertion_deletion_curves(data: Iterable, sample_shape, model: Callable, met
         labels = labels[y_pred == labels]
         batch_size = samples.size(0)
         if batch_size > 0:
-            orig_predictions = transform_fns[output_transform](model(samples))
-            orig_predictions = orig_predictions[np.arange(batch_size), labels].reshape(-1, 1)
+            orig_predictions = transform_fns[output_transform](model(samples))\
+                .gather(dim=1, index=labels.unsqueeze(-1))
             full_mask_predictions = full_mask_output[[0]*batch_size, labels].reshape(-1, 1)
             for key in methods:
                 batch_result = []
@@ -75,8 +75,8 @@ def insertion_deletion_curves(data: Iterable, sample_shape, model: Callable, met
                         masked_samples = _insert_pixels(samples, sorted_indices[:, -i:],
                                                         mask_value, pixel_level_mask)
                     # Get predictions for result
-                    predictions = transform_fns[output_transform](model(masked_samples))
-                    predictions = predictions[np.arange(batch_size), labels].reshape(-1, 1)
+                    predictions = transform_fns[output_transform](model(masked_samples))\
+                        .gather(dim=1, index=labels.unsqueeze(-1))
                     batch_result.append(predictions.cpu().detach().numpy())
 
                 if mode == "deletion":

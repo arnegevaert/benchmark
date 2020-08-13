@@ -50,8 +50,8 @@ def sensitivity_n(data: Iterable, model: Callable,
                 mask, masked_samples = _mask_samples(samples, sample_size, n, mask_value, pixel_level_mask)
                 output = transform_fns[output_transform](model(masked_samples))
                 # Get difference in output confidence for desired class
-                output_diffs.append((orig_output - output)[np.arange(samples.shape[0]), labels]
-                                    .reshape(samples.shape[0], 1)
+                output_diffs.append((orig_output - output)
+                                    .gather(dim=1, index=labels.unsqueeze(-1))
                                     .cpu().detach().numpy())
                 # Get sum of attributions of masked pixels
                 for m_name in methods:
