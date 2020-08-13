@@ -1,8 +1,6 @@
-import pandas as pd
 from os import path
 import torch
 import argparse
-import json
 import itertools
 import numpy as np
 from torch.utils.data import DataLoader
@@ -42,13 +40,10 @@ with open(args.output_file, "w") as f:
 
 if args.dataset == "CIFAR10":
     dataset = datasets.Cifar(data_location=path.join(args.data_root, "CIFAR10"), train=False)
-    mask_range = list(range(0, 32*32, 30))
 elif args.dataset == "MNIST":
     dataset = datasets.MNIST(data_location=path.join(args.data_root, "MNIST"), train=False)
-    mask_range = list(range(0, 28*28, 25))
 elif args.dataset == "ImageNette":
     dataset = datasets.ImageNette(data_location=path.join(args.data_root, "imagenette2"), train=False)
-    mask_range = list(range(0, 224*224, 4000))
 
 model_constructor = getattr(models, args.model_type)
 model_kwargs = {
