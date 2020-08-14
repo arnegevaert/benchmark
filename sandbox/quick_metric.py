@@ -6,10 +6,11 @@ from attrbench.evaluation.insertion_deletion_curves import insertion_deletion_cu
 from attrbench.evaluation.sensitivity_n import sensitivity_n
 
 device = "cuda"
-dataset = datasets.ImageNette("../data/imagenette2", False)
+#dataset = datasets.ImageNette("../data/imagenette2", False)
+dataset = datasets.Cifar("../data/CIFAR10", False)
 mask_range = list(range(4000, 224 * 224, 4000))
 
-model = models.Resnet("resnet18", True, 10, "../data/models/ImageNette/resnet18.pt")
+model = models.Resnet("resnet18", True, 10, "../data/models/CIFAR10/resnet18.pt")
 model.to(device)
 model.eval()
 

@@ -54,8 +54,8 @@ def insertion_deletion_curves(data: Iterable, sample_shape, model: Callable, met
             orig_out = model(samples)
             y_pred = torch.argmax(orig_out, dim=1)
         samples = samples[y_pred == labels]
-        labels = labels[y_pred == labels]
         orig_out = orig_out[y_pred == labels]
+        labels = labels[y_pred == labels]
         orig_predictions = transform_fns[output_transform](orig_out) \
             .gather(dim=1, index=labels.unsqueeze(-1))
         batch_size = samples.size(0)
