@@ -3,12 +3,13 @@ from torch.utils.data import DataLoader
 import itertools
 from attrbench import datasets, attribution, models
 from attrbench.evaluation.insertion_deletion_curves import insertion_deletion_curves
+from attrbench.evaluation.sensitivity_n import sensitivity_n
 
 device = "cuda"
-dataset = datasets.Cifar(data_location=path.join("../data", "CIFAR10"), train=False)
-mask_range = list(range(30, 32*32, 30))
+dataset = datasets.ImageNette("../data/imagenette2", False)
+mask_range = list(range(4000, 224 * 224, 4000))
 
-model = models.Resnet("resnet18", True, 10, "../data/models/CIFAR10/resnet18.pt")
+model = models.Resnet("resnet18", True, 10, "../data/models/ImageNette/resnet18.pt")
 model.to(device)
 model.eval()
 
@@ -21,7 +22,7 @@ attribution_methods = {
     "Gradient": attribution.Gradient(model, **kwargs),
     "SmoothGrad": attribution.SmoothGrad(model, **kwargs),
     "InputXGradient": attribution.InputXGradient(model, **kwargs),
-    "IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
+    #"IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
     "GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
     "Deconvolution": attribution.Deconvolution(model, **kwargs),
     #"Ablation": attribution.Ablation(model, **kwargs),

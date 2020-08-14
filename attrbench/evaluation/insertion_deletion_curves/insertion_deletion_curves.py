@@ -42,7 +42,8 @@ def insertion_deletion_curves(data: Iterable, sample_shape, model: Callable, met
     assert output_transform in ["identity", "softmax", "logit_softmax"]
     assert mode in ["deletion", "insertion"]
     result = {m_name: [] for m_name in methods}
-    full_mask_output = model(torch.ones((1, *sample_shape)).to(device) * mask_value)
+    with torch.no_grad():
+        full_mask_output = model(torch.ones((1, *sample_shape)).to(device) * mask_value)
     full_mask_output = transform_fns[output_transform](full_mask_output)
     for batch_index, (samples, labels) in enumerate(tqdm(data)):
         samples = samples.to(device)
@@ -50,13 +51,15 @@ def insertion_deletion_curves(data: Iterable, sample_shape, model: Callable, met
         # Check which samples are classified correctly
         # Only want to calculate for correctly classified samples
         with torch.no_grad():
-            y_pred = torch.argmax(model(samples), dim=1)
+            orig_out = model(samples)
+            y_pred = torch.argmax(orig_out, dim=1)
         samples = samples[y_pred == labels]
         labels = labels[y_pred == labels]
+        orig_out = orig_out[y_pred == labels]
+        orig_predictions = transform_fns[output_transform](orig_out) \
+            .gather(dim=1, index=labels.unsqueeze(-1))
         batch_size = samples.size(0)
         if batch_size > 0:
-            orig_predictions = transform_fns[output_transform](model(samples))\
-                .gather(dim=1, index=labels.unsqueeze(-1))
             full_mask_predictions = full_mask_output[[0]*batch_size, labels].reshape(-1, 1)
             for key in methods:
                 batch_result = []
@@ -75,8 +78,9 @@ def insertion_deletion_curves(data: Iterable, sample_shape, model: Callable, met
                         masked_samples = _insert_pixels(samples, sorted_indices[:, -i:],
                                                         mask_value, pixel_level_mask)
                     # Get predictions for result
-                    predictions = transform_fns[output_transform](model(masked_samples))\
-                        .gather(dim=1, index=labels.unsqueeze(-1))
+                    with torch.no_grad():
+                        predictions = transform_fns[output_transform](model(masked_samples))\
+                            .gather(dim=1, index=labels.unsqueeze(-1))
                     batch_result.append(predictions.cpu().detach().numpy())
 
                 if mode == "deletion":
