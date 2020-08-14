@@ -47,11 +47,11 @@ def infidelity(data: Iterable, model: Callable, methods: Dict[str, Callable],
                     dot_product = (explanation_flattened * current_perturbation).sum(dim=1)  # [batch_size]
                     m_result.append((dot_product - (orig_output - perturbed_output))**2)
                 batch_infidelity = torch.stack(m_result, dim=0).mean(dim=0)  # [batch_size]
-                result[m_name][pert_idx].append(batch_infidelity)
+                result[m_name][pert_idx].append(batch_infidelity.cpu().detach())
     for m_name in methods:
         for pert_idx in range(len(perturbation_range)):
             # [n_batches*batch_size]
             result[m_name][pert_idx] = torch.cat(result[m_name][pert_idx])
         # [n_batches*batch_size, len(pert_range)]
-        result[m_name] = torch.stack(result[m_name], dim=0).cpu().detach().numpy().transpose()
+        result[m_name] = torch.stack(result[m_name], dim=0).numpy().transpose()
     return LinePlotResult(data=result, x_range=perturbation_range)
