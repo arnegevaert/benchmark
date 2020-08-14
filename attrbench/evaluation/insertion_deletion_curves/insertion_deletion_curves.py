@@ -97,6 +97,6 @@ def insertion_deletion_curves(data: Iterable, sample_shape, model: Callable, met
         # [n_batches*batch_size, len(mask_range) + 2]
         m_name: np.concatenate(result[m_name], axis=0) for m_name in methods
     }
-    mask_range = [0] + mask_range + \
-                 [(np.product(sample_shape[-2:]) if pixel_level_mask else np.product(sample_shape[-3:]))]
+    max_x = np.product(sample_shape[-2:]) if pixel_level_mask else np.product(sample_shape[-3:])
+    mask_range = [0] + mask_range + [max_x.item()]
     return LinePlotResult(res_data, mask_range)
