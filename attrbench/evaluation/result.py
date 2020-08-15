@@ -25,7 +25,7 @@ class LinePlotResult:
                 "upper": mean + (1.96 * sd / np.sqrt(method_data.shape[0]))
             }
 
-    def plot(self, ci=False, xlog=False, ylog=False):
+    def plot(self, ci=False, xlog=False, ylog=False, title=None):
         fig, ax = plt.subplots(figsize=(7, 5))
         if xlog:
             ax.set_xscale("log")
@@ -36,7 +36,11 @@ class LinePlotResult:
             if ci:
                 ax.fill_between(x=self.x_range, y1=self.processed[method]["lower"],
                                 y2=self.processed[method]["upper"], alpha=.2)
-        ax.legend(loc=(0., 1.05), ncol=3)
+        legend_y = 1.05
+        if title:
+            legend_y = 1.1
+            ax.set_title(title)
+        ax.legend(loc=(0., legend_y), ncol=3)
         return fig, ax
 
     def auc(self):
