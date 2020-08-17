@@ -1,10 +1,11 @@
-from typing import Iterable, Callable, Dict
+from typing import Iterable, Callable, Dict, List
 from tqdm import tqdm
 import torch
-import numpy as np
+from attrbench.evaluation.result import BoxPlotResult
+import json
 
 
-def input_dependence_rate(dataloader: Iterable, model: Callable, methods: Dict[str, Callable],
+def input_dependence_rate(dataloader: Iterable, models: List[Callable], methods: List[Dict[str, Callable]],
                           device: str):
     """
     Input dependence rate:
@@ -13,26 +14,38 @@ def input_dependence_rate(dataloader: Iterable, model: Callable, methods: Dict[s
     is removed. 1 - IDR can be interpreted as "false positive rate": rate of explanations
     that assign higher importance to less important features.
     """
-    result = {m_name: {"object_attrs": [], "scene_attrs": [], "mask_size": []} for m_name in methods}
-    for images, scenes, masks, scene_labels, object_labels in tqdm(dataloader):
-        images = images.to(device)
-        scenes = scenes.to(device)
-        labels = scene_labels.to(device)
-        masks = masks.squeeze().to(device)  # [batch_size, 1, height, width]
-        with torch.no_grad():
-            y_pred = torch.argmax(model(images), dim=1)
-        # Boolean array indicating correctly classified images
-        correctly_classified = (y_pred == labels)
-        for m_name in methods:
-            object_attrs = methods[m_name](images, labels)  # [batch_size, *sample_shape]
-            scene_attrs = methods[m_name](scenes, labels)  # [batch_size, *sample_shape]
-            mask_size = torch.sum(masks.flatten(1), dim=1)  # [batch_size]
-            masked_object_attrs = (masks * object_attrs).flatten(1).sum(dim=1)
-            result[m_name]["object_attrs"].append(masked_object_attrs[correctly_classified].cpu().detach().numpy())
-            masked_scene_attrs = (masks * scene_attrs).flatten(1).sum(dim=1)
-            result[m_name]["scene_attrs"].append(masked_scene_attrs[correctly_classified].cpu().detach().numpy())
-            result[m_name]["mask_size"].append(mask_size[correctly_classified].cpu().detach().numpy())
-    return {m_name: {"object_attrs": np.concatenate(result[m_name]["object_attrs"]),
-                     "scene_attrs": np.concatenate(result[m_name]["scene_attrs"]),
-                     "mask_size": np.concatenate(result[m_name]["mask_size"])}
-            for m_name in methods}
+    m_names = methods[0].keys()
+    result = {m_name: [] for m_name in m_names}
+    for model_index, cur_model in enumerate(models):
+        cur_methods = methods[model_index]
+        cur_result = {m_name: {"correct": 0, "total": 0} for m_name in m_names}
+        for images, scenes, masks, scene_labels, object_labels in tqdm(dataloader):
+            images = images.to(device)
+            scenes = scenes.to(device)
+            labels = scene_labels.to(device)
+            masks = masks.squeeze().to(device)  # [batch_size, 1, height, width]
+            with torch.no_grad():
+                y_pred = torch.argmax(cur_model(images), dim=1)
+            # Boolean array indicating correctly classified images
+            correctly_classified = (y_pred == labels)
+            for m_name in cur_methods:
+                object_attrs = cur_methods[m_name](images, labels)  # [batch_size, *sample_shape]
+                scene_attrs = cur_methods[m_name](scenes, labels)  # [batch_size, *sample_shape]
+                masked_object_attrs = (masks * object_attrs).flatten(1).sum(dim=1)
+                masked_scene_attrs = (masks * scene_attrs).flatten(1).sum(dim=1)
+                cur_result[m_name]["correct"] += (correctly_classified & (masked_scene_attrs > masked_object_attrs))\
+                    .sum().item()
+                cur_result[m_name]["total"] += correctly_classified.sum().item()
+        for m_name in m_names:
+            result[m_name].append(cur_result[m_name]["correct"] / cur_result[m_name]["total"])
+
+
+class IDRResult(BoxPlotResult):
+    def __init__(self, data):
+        self.processed = data
+
+    def save_json(self, filename):
+        with open(filename, "w") as outfile:
+            json.dump({
+                "data": self.processed,
+            }, outfile)

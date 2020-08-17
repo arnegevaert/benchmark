@@ -2,7 +2,7 @@ from typing import Iterable, Callable, Dict
 from tqdm import tqdm
 import torch
 import numpy as np
-from attrbench.evaluation.result import Result, NumpyJSONEncoder
+from attrbench.evaluation.result import BoxPlotResult, NumpyJSONEncoder
 import json
 import matplotlib.pyplot as plt
 
@@ -40,7 +40,7 @@ def model_contrast_score(dataloader: Iterable, object_model: Callable,
                      np.concatenate(mask_sizes))
 
 
-class MCSResult(Result):
+class MCSResult(BoxPlotResult):
     def __init__(self, object_attrs, scene_attrs, mask_sizes):
         self.object_attrs = object_attrs
         self.scene_attrs = scene_attrs
@@ -49,18 +49,6 @@ class MCSResult(Result):
             method: (object_attrs[method] - scene_attrs[method]) / mask_sizes[method]
             for method in object_attrs
         }
-
-    def plot(self, title=None):
-        labels, data = [], []
-        for method in self.processed:
-            labels.append(method)
-            data.append(self.processed[method])
-        fig, ax = plt.subplots(figsize=(7, 5))
-        ax.boxplot(data)
-        ax.set_xticks(labels)
-        if title:
-            ax.set_title(title)
-        return fig, ax
 
     def save_json(self, filename):
         with open(filename, "w") as outfile:

@@ -18,6 +18,23 @@ class Result:
         raise NotImplementedError
 
 
+class BoxPlotResult(Result):
+    def plot(self, title=None):
+        labels, data = [], []
+        for method in self.processed:
+            labels.append(method)
+            data.append(self.processed[method])
+        fig, ax = plt.subplots(figsize=(7, 5))
+        ax.boxplot(data)
+        ax.set_xticks(labels)
+        if title:
+            ax.set_title(title)
+        return fig, ax
+
+    def save_json(self, filename):
+        raise NotImplementedError
+
+
 class LinePlotResult(Result):
     def __init__(self, data, x_range):
         self.data = data
