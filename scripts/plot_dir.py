@@ -23,6 +23,6 @@ for filename in tqdm(filenames):
     with open(path.join(in_dir, filename), "r") as fp:
         data = json.load(fp)
     res = LinePlotResult(**data)
-    fig, ax = res.plot(ci=True)
+    fig, ax = res.plot(ci=True, title=filename)
     fig.savefig(path.join(out_dir, out_filename), bbox_inches="tight")
     plt.close(fig)
