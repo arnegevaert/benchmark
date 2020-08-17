@@ -5,7 +5,7 @@ from attrbench.evaluation.result import BoxPlotResult
 import json
 
 
-def input_dependence_rate(dataloader: Iterable, models: List[Callable], methods: List[Dict[str, Callable]],
+def input_dependence_rate(dataloader: Iterable, models: List[torch.nn.Module], methods: List[Dict[str, Callable]],
                           device: str):
     """
     Input dependence rate:
@@ -17,6 +17,8 @@ def input_dependence_rate(dataloader: Iterable, models: List[Callable], methods:
     m_names = methods[0].keys()
     result = {m_name: [] for m_name in m_names}
     for model_index, cur_model in enumerate(models):
+        print(f"Model {model_index+1}/{len(models)}:")
+        models[model_index].to(device)
         cur_methods = methods[model_index]
         cur_result = {m_name: {"correct": 0, "total": 0} for m_name in m_names}
         for images, scenes, masks, scene_labels, object_labels in tqdm(dataloader):
@@ -36,6 +38,7 @@ def input_dependence_rate(dataloader: Iterable, models: List[Callable], methods:
                 cur_result[m_name]["correct"] += (correctly_classified & (masked_scene_attrs > masked_object_attrs))\
                     .sum().item()
                 cur_result[m_name]["total"] += correctly_classified.sum().item()
+        models[model_index].to("cpu")
         for m_name in m_names:
             result[m_name].append(cur_result[m_name]["correct"] / cur_result[m_name]["total"])
 
