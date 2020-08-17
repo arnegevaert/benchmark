@@ -3,14 +3,22 @@ import numpy as np
 import json
 
 
-class _NumpyJSONEncoder(json.JSONEncoder):
+class NumpyJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
 
-class LinePlotResult:
+class Result:
+    def plot(self):
+        raise NotImplementedError
+
+    def save_json(self, filename):
+        raise NotImplementedError
+
+
+class LinePlotResult(Result):
     def __init__(self, data, x_range):
         self.data = data
         self.x_range = x_range
@@ -57,4 +65,4 @@ class LinePlotResult:
             json.dump({
                 "data": self.data,
                 "x_range": self.x_range
-            }, outfile, cls=_NumpyJSONEncoder)
+            }, outfile, cls=NumpyJSONEncoder)

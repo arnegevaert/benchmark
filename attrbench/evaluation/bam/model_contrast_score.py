@@ -2,32 +2,70 @@ from typing import Iterable, Callable, Dict
 from tqdm import tqdm
 import torch
 import numpy as np
+from attrbench.evaluation.result import Result, NumpyJSONEncoder
+import json
+import matplotlib.pyplot as plt
 
 
-# TODO only save samples that object model classifies correctly?
-def model_contrast_score(dataloader: Iterable, object_methods: Dict[str, Callable],
+def model_contrast_score(dataloader: Iterable, object_model: Callable,
+                         object_methods: Dict[str, Callable],
                          scene_methods: Dict[str, Callable], device: str):
     """
     Model contrast score:
     Difference of importance of object pixels for model trained on object labels
     (should be important) and model trained on scene labels (should not be important)
     """
-    result = {m_name: {"object_attrs": [], "scene_attrs": [], "mask_size": []}
-              for m_name in object_methods}
+    object_attrs = {m_name: [] for m_name in object_methods}
+    scene_attrs = {m_name: [] for m_name in object_methods}
+    mask_sizes = {m_name: [] for m_name in object_methods}
     for images, masks, _, labels in tqdm(dataloader):
         images = images.to(device)
         labels = labels.to(device)
         masks = masks.squeeze().to(device)
+        with torch.no_grad():
+            y_pred = torch.argmax(object_model(images), dim=1)
+        # Boolean array indicating images correctly classified by object model
+        correctly_classified = (y_pred == labels)
         for m_name in object_methods:
             object_model_attrs = object_methods[m_name](images, labels)
             scene_model_attrs = scene_methods[m_name](images, labels)
             mask_size = torch.sum(masks.flatten(1), dim=1)
-            result[m_name]["object_attrs"].append((masks * object_model_attrs).flatten(1).sum(dim=1)
+            object_attrs[m_name].append((masks * object_model_attrs)[correctly_classified].flatten(1).sum(dim=1)
                                                   .cpu().detach().numpy())
-            result[m_name]["scene_attrs"].append((masks * scene_model_attrs).flatten(1).sum(dim=1)
+            scene_attrs[m_name].append((masks * scene_model_attrs)[correctly_classified].flatten(1).sum(dim=1)
                                                  .cpu().detach().numpy())
-            result[m_name]["mask_size"].append(mask_size.cpu().detach().numpy())
-    return {m_name: {"object_attrs": np.concatenate(result[m_name]["object_attrs"]),
-                     "scene_attrs": np.concatenate(result[m_name]["scene_attrs"]),
-                     "mask_size": np.concatenate(result[m_name]["mask_size"])}
-            for m_name in object_methods}
+            mask_sizes[m_name].append(mask_size[correctly_classified].cpu().detach().numpy())
+    return MCSResult(np.concatenate(object_attrs),
+                     np.concatenate(scene_attrs),
+                     np.concatenate(mask_sizes))
+
+
+class MCSResult(Result):
+    def __init__(self, object_attrs, scene_attrs, mask_sizes):
+        self.object_attrs = object_attrs
+        self.scene_attrs = scene_attrs
+        self.mask_sizes = mask_sizes
+        self.processed = {
+            method: (object_attrs[method] - scene_attrs[method]) / mask_sizes[method]
+            for method in object_attrs
+        }
+
+    def plot(self, title=None):
+        labels, data = [], []
+        for method in self.processed:
+            labels.append(method)
+            data.append(self.processed[method])
+        fig, ax = plt.subplots(figsize=(7, 5))
+        ax.boxplot(data)
+        ax.set_xticks(labels)
+        if title:
+            ax.set_title(title)
+        return fig, ax
+
+    def save_json(self, filename):
+        with open(filename, "w") as outfile:
+            json.dump({
+                "object_attrs": self.object_attrs,
+                "scene_attrs": self.scene_attrs,
+                "mask_sizes": self.mask_sizes
+            }, outfile, cls=NumpyJSONEncoder)
