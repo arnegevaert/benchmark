@@ -11,7 +11,24 @@ class BAMDataset(Dataset):
         self.include_orig_scene = include_orig_scene
         self.include_mask = include_mask
         self.sample_shape = (3, 128, 128)
-        self.transforms = {
+        self.train_transforms = {
+            "overlay": transforms.Compose([
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+                transforms.RandomCrop(128, padding=16),
+                transforms.ToTensor(),
+                transforms.Normalize((.4481, .4329, .4004), (.2315, .2264, .2330))
+            ]),
+            "scene": transforms.Compose([
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+                transforms.RandomCrop(128, padding=16),
+                transforms.ToTensor(),
+                transforms.Normalize((.4508, .4418, .4108), (.2230, .2195, .2255))
+            ]),
+            "mask": transforms.Compose([transforms.ToTensor()])
+        }
+        self.test_transforms = {
             "overlay": transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Normalize((.4481, .4329, .4004), (.2315, .2264, .2330))
@@ -39,14 +56,15 @@ class BAMDataset(Dataset):
         filename = str(item).zfill(4) + ".png"
         subpath = path.join(self.scenes[scene_index], self.objects[object_index], filename)
         result = []
+        transf = self.train_transforms if self.version == "train" else self.test_transforms
         with open(path.join(self.data_location, self.version, "overlay", subpath), "rb") as fp:
-            result.append(self.transforms["overlay"](Image.open(fp)))
+            result.append(transf["overlay"](Image.open(fp)))
         if self.include_orig_scene:
             with open(path.join(self.data_location, self.version, "scene", subpath), "rb") as fp:
-                result.append(self.transforms["scene"](Image.open(fp)))
+                result.append(transf["scene"](Image.open(fp)))
         if self.include_mask:
             with open(path.join(self.data_location, self.version, "mask", subpath), "rb") as fp:
-                result.append(self.transforms["mask"](Image.open(fp)).int())
+                result.append(transf["mask"](Image.open(fp)).int())
         result.append(scene_index)
         result.append(object_index)
         return tuple(result)
