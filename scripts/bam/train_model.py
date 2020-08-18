@@ -56,8 +56,8 @@ if __name__ == "__main__":
     # Construct dataset
     train_ds = BAMDataset(path.join(args.data_root, "BAM"), train=True)
     test_ds = BAMDataset(path.join(args.data_root, "BAM"), train=False)
-    train_dl = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True)
-    test_dl = DataLoader(test_ds, batch_size=args.batch_size, shuffle=True)
+    train_dl = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=4)
+    test_dl = DataLoader(test_ds, batch_size=args.batch_size, shuffle=True, num_workers=4)
 
     # Optimizer and loss
     optimizer = optim.Adam(model.parameters(), lr=args.lr)

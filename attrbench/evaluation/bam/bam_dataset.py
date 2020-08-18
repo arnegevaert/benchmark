@@ -11,10 +11,15 @@ class BAMDataset(Dataset):
         self.include_orig_scene = include_orig_scene
         self.include_mask = include_mask
         self.sample_shape = (3, 128, 128)
-        # TODO Overlay/Scene: normalize to distribution around 0
         self.transforms = {
-            "overlay": transforms.Compose([transforms.ToTensor()]),
-            "scene": transforms.Compose([transforms.ToTensor()]),
+            "overlay": transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((.4481, .4329, .4004), (.2315, .2264, .2330))
+            ]),
+            "scene": transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((.4508, .4418, .4108), (.2230, .2195, .2255))
+            ]),
             "mask": transforms.Compose([transforms.ToTensor()])
         }
         self.version = "train" if train else "test"
@@ -52,6 +57,13 @@ class BAMDataset(Dataset):
 
 if __name__ == "__main__":
     from torch.utils.data import DataLoader
-    ds = BAMDataset("../../../data/BAM", True, True, True)
-    dl = DataLoader(ds, batch_size=16)
-    batch = next(iter(dl))
+    from tqdm import tqdm
+    import torch
+    ds = BAMDataset("../../../data/BAM", True, True, False)
+    dl = DataLoader(ds, batch_size=512, shuffle=True)
+    all_scenes = []
+    for overlay, scene, scene_labels, obj_labels in tqdm(dl):
+        all_scenes.append(scene)
+    all_scenes = torch.cat(all_scenes, dim=0)
+    mean = all_scenes.flatten(2).mean(2).mean(0)
+    std = all_scenes.flatten(2).std(2).mean(0)
