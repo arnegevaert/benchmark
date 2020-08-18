@@ -7,6 +7,8 @@ from PIL import Image
 import shutil
 from tqdm import tqdm
 import argparse
+import random
+import math
 
 
 def extract_coco_objects(coco_dir, output_dir, num_images_per_class):
@@ -16,7 +18,8 @@ def extract_coco_objects(coco_dir, output_dir, num_images_per_class):
     coco = COCO(annotation_filename)
 
     print("Extracting COCO objects...")
-    for obj_name in tqdm(OBJ_NAMES):
+    for obj_idx, obj_name in enumerate(OBJ_NAMES):
+        print(f"{obj_name} ({obj_idx+1}/{len(OBJ_NAMES)})...")
         # Create directory to save segments
         dst_dir = path.join(segment_dir, obj_name)
         if not path.isdir(dst_dir):
@@ -28,6 +31,8 @@ def extract_coco_objects(coco_dir, output_dir, num_images_per_class):
         imgs = coco.loadImgs(img_ids)
         num_imgs = 0
         for imgdata in imgs:
+            if num_imgs % 100 == 0:
+                print(num_imgs)
             try:
                 # Read image file and annotations
                 image = io.imread(path.join(coco_dir, "images", "train2017", imgdata["file_name"]))
@@ -86,9 +91,15 @@ def overlay_objects_on_scenes(out_dir, num_images_per_class, train_test_ratio):
 
     print("Overlaying objects on scenes...")
     for obj in objects:
-        obj_filenames = sorted(os.listdir(path.join(segment_workspace, obj)))[:num_images_per_class]
+        obj_filenames = os.listdir(path.join(segment_workspace, obj))[:num_images_per_class]
+        obj_filenames *= math.ceil(num_images_per_class / len(obj_filenames))
+        random.shuffle(obj_filenames)
         for scene in tqdm(scenes, desc=obj):
-            scene_filenames = sorted(os.listdir(path.join(scene_workspace, scene)))
+            scene_filenames = os.listdir(path.join(scene_workspace, scene))
+            scene_filenames *= math.ceil(num_images_per_class / len(scene_filenames))
+            random.shuffle(scene_filenames)
+            while len(obj_filenames) < num_images_per_class:
+                obj_filenames += obj_filenames
             for i in range(num_images_per_class):
                 # Read object and scene images, get width and height
                 obj_filename, scene_filename = obj_filenames[i], scene_filenames[i]
@@ -138,9 +149,10 @@ def overlay_objects_on_scenes(out_dir, num_images_per_class, train_test_ratio):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--images-per-class", type=int, default=1000)
+    parser.add_argument("--images-per-class", type=int, default=10000)
     parser.add_argument("--train-test-ratio", type=float, default=0.9)
     parser.add_argument("--data-dir", type=str, default="../../data")
+    parser.add_argument("--out-dir", type=str, default="out")
     args = parser.parse_args()
     OBJ_NAMES = [
         'backpack', 'bird', 'dog', 'elephant', 'kite', 'pizza', 'stop_sign',
@@ -152,8 +164,7 @@ if __name__ == "__main__":
     ]
     coco_dir = path.join(args.data_dir, "coco")
     miniplaces_dir = path.join(args.data_dir, "miniplaces")
-    out_dir = path.join(args.data_dir, "bam")
 
-    extract_coco_objects(coco_dir, out_dir, args.images_per_class)
-    extract_scenes(miniplaces_dir, out_dir)
-    overlay_objects_on_scenes(out_dir, args.images_per_class, args.train_test_ratio)
+    #extract_coco_objects(coco_dir, args.out_dir, args.images_per_class)
+    #extract_scenes(miniplaces_dir, args.out_dir)
+    overlay_objects_on_scenes(args.out_dir, args.images_per_class, args.train_test_ratio)

@@ -15,14 +15,12 @@ class BAMDataset(Dataset):
             "overlay": transforms.Compose([
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomVerticalFlip(),
-                transforms.RandomCrop(128, padding=16),
                 transforms.ToTensor(),
                 transforms.Normalize((.4481, .4329, .4004), (.2315, .2264, .2330))
             ]),
             "scene": transforms.Compose([
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomVerticalFlip(),
-                transforms.RandomCrop(128, padding=16),
                 transforms.ToTensor(),
                 transforms.Normalize((.4508, .4418, .4108), (.2230, .2195, .2255))
             ]),
