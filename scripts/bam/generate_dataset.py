@@ -165,6 +165,6 @@ if __name__ == "__main__":
     coco_dir = path.join(args.data_dir, "coco")
     miniplaces_dir = path.join(args.data_dir, "miniplaces")
 
-    #extract_coco_objects(coco_dir, args.out_dir, args.images_per_class)
-    #extract_scenes(miniplaces_dir, args.out_dir)
+    extract_coco_objects(coco_dir, args.out_dir, args.images_per_class)
+    extract_scenes(miniplaces_dir, args.out_dir)
     overlay_objects_on_scenes(args.out_dir, args.images_per_class, args.train_test_ratio)
