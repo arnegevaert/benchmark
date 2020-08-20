@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Iterable, List, Dict, Callable
 from tqdm import tqdm
+from attrbench.evaluation.result import LinePlotResult
 
 
 def impact_score(data: Iterable, model: Callable, mask_range: List[int], methods: Dict[str, Callable],
@@ -56,6 +57,6 @@ def impact_score(data: Iterable, model: Callable, mask_range: List[int], methods
             bools = original_predictions[np.arange(len(original_pred_labels)), original_pred_labels] * tau >= \
                     predictions[np.arange(len(labels)), labels]
             scores.append(np.count_nonzero(strict_bools + bools) / len(bools))
-        i_strict_score[m] = np.array(strict_scores)
-        i_score[m] = np.array(scores)
-    return i_score, i_strict_score
+        i_strict_score[m] = np.array(strict_scores).reshape(1, -1)
+        i_score[m] = np.array(scores).reshape(1, -1)
+    return LinePlotResult(data=i_score, x_range=mask_range), LinePlotResult(data=i_strict_score, x_range=mask_range)
