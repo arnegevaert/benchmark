@@ -69,6 +69,7 @@ class Aptos:
             iaa.Lambda(_move_axis_lambda)
         ])
         self.test_transforms = iaa.Lambda(_move_axis_lambda)
+        self.num_classes = 5
 
     def get_dataloader(self, train=True):
         if train:

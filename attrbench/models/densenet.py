@@ -47,6 +47,4 @@ class Densenet(nn.Module):
         last_block = self.features.transition3  # Last BasicBlock of layer 3
         return last_block.conv  # Second convolutional layer of last BasicBlock
 
-    def to(self, *args, **kwargs):
-        super().to(*args, **kwargs)
-        self.base_model.to(*args, **kwargs)
+
