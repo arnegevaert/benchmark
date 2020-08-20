@@ -1,9 +1,7 @@
-import torch
 import numpy as np
-from sklearn.metrics import jaccard_score
-import random
-from typing import Iterable, Callable, Dict, Tuple
+from typing import Iterable, Callable, Dict
 from tqdm import tqdm
+from attrbench.evaluation.result import BoxPlotResult
 
 
 def impact_coverage(data: Iterable, patch, target_label: int,
@@ -50,18 +48,22 @@ def impact_coverage(data: Iterable, patch, target_label: int,
 
         patch_location_mask = np.zeros(attrs.shape)
         if len(attrs.shape)==3: # Attributions are per pixel location
-            patch_location_mask[:, indx:indx + patch_size, indy: indy + patch_size] = 1.
+            patch_location_mask[:, indx:indx + patch_size, indy: indy + patch_size] = 1
         else: # Attributions are per color channel
-            patch_location_mask[:, :, indx:indx + patch_size, indy: indy + patch_size] = 1.
+            patch_location_mask[:, :, indx:indx + patch_size, indy: indy + patch_size] = 1
         patch_masks.append(patch_location_mask)
         adv_out = model(samples).cpu()
         # keep only images that are not of the targeted class and are successfully attacked
         keep_indices = (predictions.argmax(axis=1) != target_label) * (adv_out.argmax(axis=1) == target_label) * (labels != target_label)
         keep_list.extend(keep_indices)
-    result = {}
+    res_data = {}
     patch_masks = np.vstack(patch_masks)[keep_list] # locations of mask in the images,
     for m_name in critical_factor_mask:
         cr_f_m = np.vstack(critical_factor_mask[m_name])
         cr_f_m = cr_f_m[keep_list]
-        result[m_name] = jaccard_score(patch_masks.flatten(),cr_f_m.flatten())
-    return result
+        patch_masks_flattened = patch_masks.reshape(patch_masks.shape[0], -1).astype(np.bool)
+        cr_f_m_flattened = cr_f_m.reshape(cr_f_m.shape[0], -1).astype(np.bool)
+        intersect = (patch_masks_flattened & cr_f_m_flattened).sum(axis=1)
+        union = (patch_masks_flattened | cr_f_m_flattened).sum(axis=1)
+        res_data[m_name] = intersect / union
+    return BoxPlotResult(res_data)

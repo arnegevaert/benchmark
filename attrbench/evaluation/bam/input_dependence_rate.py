@@ -41,14 +41,4 @@ def input_dependence_rate(dataloader: Iterable, models: List[torch.nn.Module], m
         models[model_index].to("cpu")
         for m_name in m_names:
             result[m_name].append(cur_result[m_name]["correct"] / cur_result[m_name]["total"])
-
-
-class IDRResult(BoxPlotResult):
-    def __init__(self, data):
-        self.processed = data
-
-    def save_json(self, filename):
-        with open(filename, "w") as outfile:
-            json.dump({
-                "data": self.processed,
-            }, outfile)
+        return BoxPlotResult(result)

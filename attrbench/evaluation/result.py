@@ -19,20 +19,27 @@ class Result:
 
 
 class BoxPlotResult(Result):
+    def __init__(self, data):
+        self.processed = data
+
     def plot(self, title=None):
         labels, data = [], []
         for method in self.processed:
             labels.append(method)
             data.append(self.processed[method])
         fig, ax = plt.subplots(figsize=(7, 5))
-        ax.boxplot(data)
-        ax.set_xticks(labels)
+        ax.boxplot(data, labels=labels)
+        for tick in ax.get_xticklabels():
+            tick.set_rotation(45)
         if title:
             ax.set_title(title)
         return fig, ax
 
     def save_json(self, filename):
-        raise NotImplementedError
+        with open(filename, "w") as outfile:
+            json.dump({
+                "data": self.processed,
+            }, outfile)
 
 
 class LinePlotResult(Result):

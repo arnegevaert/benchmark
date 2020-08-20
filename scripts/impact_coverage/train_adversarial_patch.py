@@ -17,12 +17,12 @@ from attrbench.evaluation.impact_coverage import make_patch
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-type", type=str)
-    parser.add_argument("--model-params", type=str)
-    parser.add_argument("--model-version", type=str, default=None)
-    parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette", "Aptos"])
+    parser.add_argument("--model-type", type=str, default="Resnet")
+    parser.add_argument("--model-params", type=str, default="../../data/models/ImageNette/resnet18.pt")
+    parser.add_argument("--model-version", type=str, default="resnet18")
+    parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette", "Aptos"], default="ImageNette")
     parser.add_argument("--target-label", type=int, default=0)
-    parser.add_argument("--batch-size", type=int, default=4)
+    parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--cuda", type=bool, default=True)
     parser.add_argument("--data-root", type=str, default="../../data")
     parser.add_argument("--out-dir", type=str, default="../../data/patches")
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     else:
         patch_file = f"{args.dataset}_{args.model_type}_{args.target_label}_patch.pt"
 
-    dataloader = DataLoader(dataset, batch_size=args.batch_size)
+    dataloader = DataLoader(dataset, batch_size=args.batch_size, num_workers=4)
     make_patch(dataloader, model, args.target_label,
                path.join(args.out_dir, patch_file), device,
                epochs=args.epochs,

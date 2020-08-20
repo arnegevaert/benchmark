@@ -1,8 +1,8 @@
 import numpy as np
 import torch
-from random import randint
 from attrbench import datasets, models
 from os import path
+from tqdm import tqdm
 
 
 class PatchCheckpointCb():
@@ -37,7 +37,7 @@ def train_patch(model, patch, train_dl, loss_function, optimizer, target_label, 
     patch_size = patch.shape[-1]
     train_loss = []
     nr_not_successfull = []
-    for x, y in train_dl:
+    for x, y in tqdm(train_dl):
         # x, y = torch.tensor(x), torch.tensor(y)
         optimizer.zero_grad()
         y = torch.tensor(np.full(y.shape[0], target_label), dtype=torch.long).to(device)

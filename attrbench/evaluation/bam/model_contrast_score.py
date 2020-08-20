@@ -45,10 +45,10 @@ class MCSResult(BoxPlotResult):
         self.object_attrs = object_attrs
         self.scene_attrs = scene_attrs
         self.mask_sizes = mask_sizes
-        self.processed = {
+        super().__init__({
             method: (object_attrs[method] - scene_attrs[method]) / mask_sizes[method]
             for method in object_attrs
-        }
+        })
 
     def save_json(self, filename):
         with open(filename, "w") as outfile:
