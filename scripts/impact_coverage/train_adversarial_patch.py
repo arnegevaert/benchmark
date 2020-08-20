@@ -1,7 +1,17 @@
 import argparse
 import torch
 from os import path
-from attrbench import datasets, attribution, models
+from torch.utils.data import DataLoader
+
+# This block allows us to import from the benchmark folder,
+# as if it was a package installed using pip
+import os
+import sys
+module_path = os.path.abspath(os.path.join('../..'))
+if module_path not in sys.path:
+    sys.path.append(module_path)
+
+from attrbench import datasets, models
 from attrbench.evaluation.impact_coverage import make_patch
 
 
@@ -10,13 +20,12 @@ def parse_args():
     parser.add_argument("--model-type", type=str)
     parser.add_argument("--model-params", type=str)
     parser.add_argument("--model-version", type=str, default=None)
-    parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"], default="MNIST")
-    parser.add_argument("--target_label", type=int, default=0)
-    parser.add_argument("--batch-size", type=int, default=64)
-    parser.add_argument("--use-logits", type=bool, default=True)
+    parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette", "Aptos"])
+    parser.add_argument("--target-label", type=int, default=0)
+    parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--cuda", type=bool, default=True)
-    parser.add_argument("--data-root", type=str, default="../data")
-    parser.add_argument("--out-dir", type=str, default="../data/patches")
+    parser.add_argument("--data-root", type=str, default="../../data")
+    parser.add_argument("--out-dir", type=str, default="../../data/patches")
     parser.add_argument("--patch-percent", type=float, default=0.05)
     parser.add_argument("--lr", type=float, default=0.05)
     parser.add_argument("--epochs", type=float, default=20)
@@ -25,25 +34,20 @@ def parse_args():
 
 
 if __name__ == '__main__':
-
     args = parse_args()
     device = "cuda" if args.cuda and torch.cuda.is_available() else "cpu"
-
     if args.dataset == "CIFAR10":
-        dataset = datasets.Cifar(batch_size=args.batch_size, data_location=path.join(args.data_root, "CIFAR10"),
-                                 download=False, shuffle=True, version="cifar10")
+        dataset = datasets.Cifar(data_location=path.join(args.data_root, "CIFAR10"), train=False)
     elif args.dataset == "MNIST":
-        dataset = datasets.MNIST(batch_size=args.batch_size, data_location=path.join(args.data_root, "MNIST"),
-                                 download=False, shuffle=True)
+        dataset = datasets.MNIST(data_location=path.join(args.data_root, "MNIST"), train=False)
     elif args.dataset == "ImageNette":
-        dataset = datasets.ImageNette(batch_size=args.batch_size, data_location=path.join(args.data_root, "ImageNette"),
-                                      shuffle=True)
+        dataset = datasets.ImageNette(data_location=path.join(args.data_root, "imagenette2"), train=False)
     elif args.dataset == "Aptos":
-        dataset = datasets.Aptos(batch_size=args.batch_size, data_location=path.join(args.data_root, "APTOS"),
-                                 img_size=320)
+        dataset = datasets.Aptos(data_location=path.join(args.data_root, "APTOS"), img_size=320, train=False)
+
     model_kwargs = {
         "params_loc": args.model_params,
-        "output_logits": args.use_logits,
+        "output_logits": True,
         "num_classes": dataset.num_classes
     }
     model_constructor = getattr(models, args.model_type)
@@ -58,7 +62,8 @@ if __name__ == '__main__':
     else:
         patch_file = f"{args.dataset}_{args.model_type}_{args.target_label}_patch.pt"
 
-    make_patch(dataset.get_dataloader(train=False), model, args.target_label,
+    dataloader = DataLoader(dataset, batch_size=args.batch_size)
+    make_patch(dataloader, model, args.target_label,
                path.join(args.out_dir, patch_file), device,
                epochs=args.epochs,
                lr=args.lr, patch_percent=args.patch_percent)

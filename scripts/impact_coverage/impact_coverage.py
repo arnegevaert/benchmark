@@ -1,6 +1,3 @@
-import itertools
-
-import numpy as np
 import pandas as pd
 from os import path
 import torch
@@ -11,12 +8,13 @@ import json
 # as if it was a package installed using pip
 import os
 import sys
-from attrbench import datasets, attribution, models
-from attrbench.evaluation.impact_coverage import impact_coverage, make_patch
-
-module_path = os.path.abspath(os.path.join('..'))
+module_path = os.path.abspath(os.path.join('../..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
+
+from attrbench import datasets, attribution, models
+from attrbench.evaluation.impact_coverage import impact_coverage
+
 
 
 def parse_args():
