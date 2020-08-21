@@ -9,6 +9,7 @@ transform_fns = {
 }
 
 
+# TODO these functions still form a GPU bottleneck
 def mask_pixels(imgs, indices, mask_value, pixel_level_mask):
     batch_size, color_channels = imgs.shape[:2]
     num_pixels = indices.shape[1]
