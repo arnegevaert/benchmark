@@ -21,12 +21,12 @@ if module_path not in sys.path:
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-type", type=str, default="Resnet")
-    parser.add_argument("--model-params", type=str, default="../data/models/ImageNette/resnet18.pt")
-    parser.add_argument("--model-version", type=str, default="resnet18")
-    parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"], default="ImageNette")
-    parser.add_argument("--batch-size", type=int, default=16)
-    parser.add_argument("--num-batches", type=int, default=4)
+    parser.add_argument("--model-type", type=str)
+    parser.add_argument("--model-params", type=str)
+    parser.add_argument("--model-version", type=str, default=None)
+    parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"])
+    parser.add_argument("--batch-size", type=int, default=64)
+    parser.add_argument("--num-batches", type=int, default=16)
     parser.add_argument("--tau", type=float, default=0.5)
     parser.add_argument("--cuda", type=bool, default=True)
     parser.add_argument("--data-root", type=str, default="../data")
