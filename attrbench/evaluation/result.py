@@ -39,7 +39,7 @@ class BoxPlotResult(Result):
         with open(filename, "w") as outfile:
             json.dump({
                 "data": self.processed,
-            }, outfile)
+            }, outfile, cls=NumpyJSONEncoder)
 
 
 class LinePlotResult(Result):
