@@ -38,8 +38,7 @@ if __name__ == "__main__":
     os.makedirs(args.output_dir, exist_ok=True)
 
     # Construct model
-    #model = models.Resnet("resnet18", output_logits=True, num_classes=10)
-    model = models.Alexnet(output_logits=True, num_classes=10)
+    model = models.Resnet("resnet18", output_logits=True, num_classes=10)
     start_epoch = 0
     if args.load_checkpoint:
         checkpoints = os.listdir(args.output_dir)
@@ -56,8 +55,8 @@ if __name__ == "__main__":
     # Construct dataset
     train_ds = BAMDataset(path.join(args.data_root, "BAM"), train=True)
     test_ds = BAMDataset(path.join(args.data_root, "BAM"), train=False)
-    train_dl = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=4)
-    test_dl = DataLoader(test_ds, batch_size=args.batch_size, shuffle=True, num_workers=4)
+    train_dl = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=16)
+    test_dl = DataLoader(test_ds, batch_size=args.batch_size, shuffle=True, num_workers=16)
 
     # Optimizer and loss
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
