@@ -47,12 +47,12 @@ kwargs = {
     "aggregation_fn": "avg"
 }
 
-models, methods = [], []
+scene_models, methods = [], []
 for param_file in os.listdir(args.model_params):
     model_constructor = getattr(models, args.model_type)
     model_kwargs = {
-        "params_loc": args.model_params,
-        "output_logits": args.use_logits,
+        "params_loc": path.join(args.model_params, param_file),
+        "output_logits": True,
         "num_classes": dataset.num_classes
     }
     if args.model_version:
@@ -64,7 +64,7 @@ for param_file in os.listdir(args.model_params):
         "Gradient": attribution.Gradient(model, **kwargs),
         "SmoothGrad": attribution.SmoothGrad(model, **kwargs),
         "InputXGradient": attribution.InputXGradient(model, **kwargs),
-        "IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
+        #"IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
         "GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
         "Deconvolution": attribution.Deconvolution(model, **kwargs),
         #"Ablation": attribution.Ablation(model, **kwargs),
@@ -72,8 +72,8 @@ for param_file in os.listdir(args.model_params):
         "GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
     }
 
-    models.append(model)
+    scene_models.append(model)
     methods.append(attribution_methods)
 
-result = input_dependence_rate(dataloader, models, methods, device)
+result = input_dependence_rate(dataloader, scene_models, methods, device)
 result.save_json(args.output_file)
