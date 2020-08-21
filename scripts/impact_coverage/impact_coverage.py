@@ -69,7 +69,7 @@ def main(args):
         "Gradient": attribution.Gradient(model, **kwargs),
         "SmoothGrad": attribution.SmoothGrad(model, **kwargs),
         "InputXGradient": attribution.InputXGradient(model, **kwargs),
-        "IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
+        #"IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
         "GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
         "Deconvolution": attribution.Deconvolution(model, **kwargs),
         # "Ablation": attribution.Ablation(model, **kwargs),

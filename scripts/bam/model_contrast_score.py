@@ -10,7 +10,7 @@ import itertools
 # as if it was a package installed using pip
 import os
 import sys
-module_path = os.path.abspath(os.path.join('..'))
+module_path = os.path.abspath(os.path.join('../..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
@@ -59,8 +59,8 @@ scene_model.to(device)
 scene_model.eval()
 
 kwargs = {
-    "normalize": args.normalize_attrs,
-    "aggregation_fn": args.aggregation_fn
+    "normalize": False,
+    "aggregation_fn": "avg"
 }
 
 
@@ -68,7 +68,7 @@ attribution_methods = {
     "Gradient": lambda model: attribution.Gradient(model, **kwargs),
     "SmoothGrad": lambda model: attribution.SmoothGrad(model, **kwargs),
     "InputXGradient": lambda model: attribution.InputXGradient(model, **kwargs),
-    "IntegratedGradients": lambda model: attribution.IntegratedGradients(model, **kwargs),
+    #"IntegratedGradients": lambda model: attribution.IntegratedGradients(model, **kwargs),
     "GuidedBackprop": lambda model: attribution.GuidedBackprop(model, **kwargs),
     "Deconvolution": lambda model: attribution.Deconvolution(model, **kwargs),
     #"Ablation": lambda model: attribution.Ablation(model, **kwargs),

@@ -62,7 +62,7 @@ if __name__ == '__main__':
     else:
         patch_file = f"{args.dataset}_{args.model_type}_{args.target_label}_patch.pt"
 
-    dataloader = DataLoader(dataset, batch_size=args.batch_size, num_workers=4)
+    dataloader = DataLoader(dataset, batch_size=args.batch_size, num_workers=16)
     make_patch(dataloader, model, args.target_label,
                path.join(args.out_dir, patch_file), device,
                epochs=args.epochs,
