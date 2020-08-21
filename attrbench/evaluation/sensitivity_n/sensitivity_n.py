@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 from attrbench.evaluation.result import LinePlotResult
 from attrbench.evaluation.util import transform_fns
+import torch
 
 
 def _mask_samples(samples, sample_size, n, mask_value, pixel_level_mask):
@@ -40,7 +41,8 @@ def sensitivity_n(data: Iterable, model: Callable,
         labels = labels.to(device)
         sample_size = np.prod(samples.shape[2:]) if pixel_level_mask else np.prod(samples.shape[1:])
         # Get original output and attributions
-        orig_output = transform_fns[output_transform](model(samples))
+        with torch.no_grad():
+            orig_output = transform_fns[output_transform](model(samples))
         attrs = {m_name: methods[m_name](samples, labels) for m_name in methods}
         for n_idx, n in enumerate(mask_range):
             output_diffs = []
@@ -48,7 +50,8 @@ def sensitivity_n(data: Iterable, model: Callable,
             for _ in range(n_subsets):
                 # Generate mask and masked samples
                 mask, masked_samples = _mask_samples(samples, sample_size, n, mask_value, pixel_level_mask)
-                output = transform_fns[output_transform](model(masked_samples))
+                with torch.no_grad():
+                    output = transform_fns[output_transform](model(masked_samples))
                 # Get difference in output confidence for desired class
                 output_diffs.append((orig_output - output)
                                     .gather(dim=1, index=labels.unsqueeze(-1))

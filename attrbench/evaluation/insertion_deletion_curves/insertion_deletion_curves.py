@@ -2,38 +2,8 @@ from typing import Iterable, Callable, List, Dict
 import numpy as np
 from tqdm import tqdm
 from attrbench.evaluation.result import LinePlotResult
-from attrbench.evaluation.util import transform_fns
+from attrbench.evaluation.util import transform_fns, mask_pixels, insert_pixels
 import torch
-
-
-def _mask_pixels(imgs, indices, mask_value, pixel_level_mask):
-    batch_size, color_channels = imgs.shape[:2]
-    num_pixels = indices.shape[1]
-    result = imgs.clone().to(imgs.device)
-    batch_dim = np.column_stack([range(batch_size) for _ in range(num_pixels)])
-    if pixel_level_mask:
-        unraveled = np.unravel_index(indices, imgs.shape[2:])
-        for color_dim in range(color_channels):
-            result[(batch_dim, color_dim, *unraveled)] = mask_value
-    else:
-        unraveled = np.unravel_index(indices, imgs.shape[1:])
-        result[(batch_dim, *unraveled)] = mask_value
-    return result
-
-
-def _insert_pixels(imgs, indices, mask_value, pixel_level_mask):
-    num_pixels = indices.shape[1]
-    batch_size, color_channels = imgs.shape[:2]
-    result = torch.ones(imgs.shape).to(imgs.device) * mask_value
-    batch_dim = np.column_stack([range(batch_size) for _ in range(num_pixels)])
-    if pixel_level_mask:
-        unraveled = np.unravel_index(indices, imgs.shape[2:])
-        for color_dim in range(color_channels):
-            result[(batch_dim, color_dim, *unraveled)] = imgs[(batch_dim, color_dim, *unraveled)]
-    else:
-        unraveled = np.unravel_index(indices, imgs.shape[1:])
-        result[(batch_dim, *unraveled)] = imgs[(batch_dim, *unraveled)]
-    return result
 
 
 def insertion_deletion_curves(data: Iterable, sample_shape, model: Callable, methods: Dict[str, Callable],
@@ -72,11 +42,11 @@ def insertion_deletion_curves(data: Iterable, sample_shape, model: Callable, met
                 for i in mask_range:
                     # Mask/insert pixels
                     if mode == "deletion":
-                        masked_samples = _mask_pixels(samples, sorted_indices[:, -i:],
-                                                      mask_value, pixel_level_mask)
+                        masked_samples = mask_pixels(samples, sorted_indices[:, -i:],
+                                                     mask_value, pixel_level_mask)
                     else:
-                        masked_samples = _insert_pixels(samples, sorted_indices[:, -i:],
-                                                        mask_value, pixel_level_mask)
+                        masked_samples = insert_pixels(samples, sorted_indices[:, -i:],
+                                                       mask_value, pixel_level_mask)
                     # Get predictions for result
                     with torch.no_grad():
                         predictions = transform_fns[output_transform](model(masked_samples))\

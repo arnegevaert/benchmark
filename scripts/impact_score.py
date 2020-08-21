@@ -21,11 +21,11 @@ if module_path not in sys.path:
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-type", type=str, default="BasicCNN")
-    parser.add_argument("--model-params", type=str, default="../data/models/MNIST/cnn.pt")
-    parser.add_argument("--model-version", type=str, default=None)
-    parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"], default="MNIST")
-    parser.add_argument("--batch-size", type=int, default=64)
+    parser.add_argument("--model-type", type=str, default="Resnet")
+    parser.add_argument("--model-params", type=str, default="../data/models/ImageNette/resnet18.pt")
+    parser.add_argument("--model-version", type=str, default="resnet18")
+    parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"], default="ImageNette")
+    parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--num-batches", type=int, default=4)
     parser.add_argument("--tau", type=float, default=0.5)
     parser.add_argument("--cuda", type=bool, default=True)
@@ -76,7 +76,7 @@ def main(args):
         "Gradient": attribution.Gradient(model, **kwargs),
         "SmoothGrad": attribution.SmoothGrad(model, **kwargs),
         "InputXGradient": attribution.InputXGradient(model, **kwargs),
-        "IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
+        #"IntegratedGradients": attribution.IntegratedGradients(model, **kwargs),
         "GuidedBackprop": attribution.GuidedBackprop(model, **kwargs),
         "Deconvolution": attribution.Deconvolution(model, **kwargs),
         # "Ablation": attribution.Ablation(model, **kwargs),
@@ -95,3 +95,10 @@ def main(args):
 if __name__ == '__main__':  # windows machines do weird stuff when there is no main guard
     args = parse_args()
     main(args)
+
+    import json
+    from attrbench.evaluation.result import LinePlotResult
+    d = json.load(open("i_score.json"))
+    r = LinePlotResult(**d)
+    fig, ax = r.plot(ci=True)
+    fig.show()
