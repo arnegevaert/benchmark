@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument("--model-params", type=str, default="../../data/models/CIFAR10/resnet18.pt")
     parser.add_argument("--model-version", type=str, default="resnet18")
     parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"], default="CIFAR10")
-    parser.add_argument("--target_label", type=int, default=0)
+    parser.add_argument("--target-label", type=int, default=0)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--num-batches", type=int, default=4)
     parser.add_argument("--cuda", type=bool, default=True)

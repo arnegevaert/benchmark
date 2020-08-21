@@ -20,7 +20,7 @@ def impact_coverage(data: Iterable, patch, target_label: int,
         # Apply patch to all images in batch (random location, but same for each image in batch)
         # indx = random.randint(0, image_size - patch_size)
         # indy = random.randint(0, image_size - patch_size)
-        indx = image_size // 2 - patch_size // 2 # place patch in center
+        indx = image_size // 2 - patch_size // 2  # place patch in center
         indy = indx
         samples[:, :, indx:indx + patch_size, indy:indy + patch_size] = patch
         # Save mask with pixels covered by patch
@@ -41,15 +41,15 @@ def impact_coverage(data: Iterable, patch, target_label: int,
                 raise ValueError("Attributions must have 3 (per-pixel) or 4 (per-channel) dimensions."
                                  f"Shape was f{attrs.shape}")
             to_mask = sorted_indices[:, -nr_top_attributions:]  # [batch_size, i]
-            batch_dim = np.column_stack([range(samples.shape[0]) for _ in range(nr_top_attributions)])
+            batch_dim = np.tile(range(samples.shape[0]), (nr_top_attributions, 1)).transpose()
             unraveled = np.unravel_index(to_mask, attrs.shape[1:])
             masks[(batch_dim, *unraveled)] = 1.
             critical_factor_mask[m_name].append(masks)
 
         patch_location_mask = np.zeros(attrs.shape)
-        if len(attrs.shape)==3: # Attributions are per pixel location
+        if len(attrs.shape) == 3:  # Attributions are per pixel location
             patch_location_mask[:, indx:indx + patch_size, indy: indy + patch_size] = 1
-        else: # Attributions are per color channel
+        else:  # Attributions are per color channel
             patch_location_mask[:, :, indx:indx + patch_size, indy: indy + patch_size] = 1
         patch_masks.append(patch_location_mask)
         adv_out = model(samples).cpu()
