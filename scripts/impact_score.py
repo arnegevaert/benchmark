@@ -95,10 +95,3 @@ def main(args):
 if __name__ == '__main__':  # windows machines do weird stuff when there is no main guard
     args = parse_args()
     main(args)
-
-    import json
-    from attrbench.evaluation.result import LinePlotResult
-    d = json.load(open("i_score.json"))
-    r = LinePlotResult(**d)
-    fig, ax = r.plot(ci=True)
-    fig.show()
