@@ -11,12 +11,13 @@ from torch.utils.data import DataLoader
 # as if it was a package installed using pip
 import os
 import sys
-from attrbench import datasets, attribution, models
-from attrbench.evaluation.impact_score import impact_score
-
 module_path = os.path.abspath(os.path.join('..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
+
+from attrbench import datasets, attribution, models
+from attrbench.evaluation.impact_score import impact_score
+
 
 
 def parse_args():
