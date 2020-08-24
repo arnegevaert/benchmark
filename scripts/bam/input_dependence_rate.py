@@ -8,7 +8,7 @@ import itertools
 # as if it was a package installed using pip
 import os
 import sys
-module_path = os.path.abspath(os.path.join('..'))
+module_path = os.path.abspath(os.path.join('../..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
@@ -20,7 +20,6 @@ parser.add_argument("--model-type", type=str, default="Resnet")
 parser.add_argument("--model-params", type=str, default="../../data/models/BAM/scene/resnet18/")
 parser.add_argument("--model-version", type=str, default="resnet18")
 parser.add_argument("--batch-size", type=int, default=64)
-parser.add_argument("--num-batches", type=int, default=-1)
 parser.add_argument("--cuda", type=bool, default=True)
 parser.add_argument("--data-root", type=str, default="../../data")
 parser.add_argument("--output-file", type=str, default="result.json")
@@ -38,9 +37,6 @@ with open(args.output_file, "w") as f:
         sys.exit("Output file is not writable")
 
 dataset = BAMDataset(path.join(args.data_root, "BAM"), train=False, include_orig_scene=True, include_mask=True)
-dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
-if args.num_batches > 0:
-    dataloader = itertools.islice(dataloader, args.num_batches)
 
 kwargs = {
     "normalize": False,  # Shouldn't normalized, we are comparing across "different" samples
@@ -75,5 +71,5 @@ for param_file in os.listdir(args.model_params):
     scene_models.append(model)
     methods.append(attribution_methods)
 
-result = input_dependence_rate(dataloader, scene_models, methods, device)
+result = input_dependence_rate(dataset, args.batch_size, scene_models, methods, device)
 result.save_json(args.output_file)

@@ -1,11 +1,14 @@
-from typing import Iterable, Callable, Dict, List
+from typing import Callable, Dict, List
 from tqdm import tqdm
 import torch
+from torch.utils.data import DataLoader
+from attrbench.evaluation.bam import BAMDataset
 from attrbench.evaluation.result import BoxPlotResult
 import json
+from itertools import tee
 
 
-def input_dependence_rate(dataloader: Iterable, models: List[torch.nn.Module], methods: List[Dict[str, Callable]],
+def input_dependence_rate(dataset: BAMDataset, batch_size: int, models: List[torch.nn.Module], methods: List[Dict[str, Callable]],
                           device: str):
     """
     Input dependence rate:
@@ -14,6 +17,8 @@ def input_dependence_rate(dataloader: Iterable, models: List[torch.nn.Module], m
     is removed. 1 - IDR can be interpreted as "false positive rate": rate of explanations
     that assign higher importance to less important features.
     """
+    dataset.include_orig_scene = True
+    dataset.include_mask = True
     m_names = methods[0].keys()
     result = {m_name: [] for m_name in m_names}
     for model_index, cur_model in enumerate(models):
@@ -21,6 +26,7 @@ def input_dependence_rate(dataloader: Iterable, models: List[torch.nn.Module], m
         models[model_index].to(device)
         cur_methods = methods[model_index]
         cur_result = {m_name: {"correct": 0, "total": 0} for m_name in m_names}
+        dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=4)
         for images, scenes, masks, scene_labels, object_labels in tqdm(dataloader):
             images = images.to(device)
             scenes = scenes.to(device)
@@ -41,4 +47,4 @@ def input_dependence_rate(dataloader: Iterable, models: List[torch.nn.Module], m
         models[model_index].to("cpu")
         for m_name in m_names:
             result[m_name].append(cur_result[m_name]["correct"] / cur_result[m_name]["total"])
-        return BoxPlotResult(result)
+    return BoxPlotResult(result)

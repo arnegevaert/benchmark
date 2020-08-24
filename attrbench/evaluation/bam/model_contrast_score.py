@@ -35,9 +35,9 @@ def model_contrast_score(dataloader: Iterable, object_model: Callable,
             scene_attrs[m_name].append((masks * scene_model_attrs)[correctly_classified].flatten(1).sum(dim=1)
                                                  .cpu().detach().numpy())
             mask_sizes[m_name].append(mask_size[correctly_classified].cpu().detach().numpy())
-    return MCSResult(np.concatenate(object_attrs),
-                     np.concatenate(scene_attrs),
-                     np.concatenate(mask_sizes))
+    return MCSResult({m_name: np.concatenate(object_attrs[m_name]) for m_name in object_methods},
+                     {m_name: np.concatenate(scene_attrs[m_name]) for m_name in object_methods},
+                     {m_name: np.concatenate(mask_sizes[m_name]) for m_name in object_methods})
 
 
 class MCSResult(BoxPlotResult):
