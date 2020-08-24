@@ -41,7 +41,6 @@ class Random(AttributionMethod):
 
 
 class EdgeDetection(AttributionMethod):
-
     def __init__(self, **kwargs):
         super().__init__(False, **kwargs)
 

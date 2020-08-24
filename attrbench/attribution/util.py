@@ -2,7 +2,7 @@ import torch
 
 
 def normalize_attributions(attrs):
-    abs_attrs = torch.abs(attrs.reshape(attrs.shape[0], -1))
+    abs_attrs = torch.abs(attrs.flatten(1))
     max_abs_attr_per_image = torch.max(abs_attrs, dim=1)[0]
     if torch.any(max_abs_attr_per_image == 0):
         print("Warning: completely 0 attributions returned for sample.")

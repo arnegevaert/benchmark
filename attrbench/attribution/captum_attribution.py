@@ -73,9 +73,23 @@ class Occlusion(CaptumMethod):
         return self.method.attribute(x, target=target, sliding_window_shapes=self.sliding_window_shapes)
 
 
-class GuidedGradCAM(CaptumMethod):
-    def __init__(self, model: nn.Module, layer: nn.Module, **kwargs):
-        super(GuidedGradCAM, self).__init__(attr.GuidedGradCam(model, layer), False, **kwargs)
+class GuidedGradCAM(AttributionMethod):
+    """
+    GuidedGradCAM is just element-wise product of guided backprop and gradCAM.
+    Captum implementation multiplies with only non-negative elements of gradCAM which can result in constant
+    zero saliency maps.
+    """
+    def __init__(self, model: nn.Module, layer: nn.Module, upsample_shape, **kwargs):
+        super().__init__(False, **kwargs)
+        self.model = model
+        self.layer = layer
+        self.gbp = attr.GuidedBackprop(model)
+        self.gcam = GradCAM(model, layer, upsample_shape)
+
+    def _attribute(self, x, target, **kwargs):
+        gcam_attrs = self.gcam(x, target)
+        gbp_attrs = self.gbp.attribute(x, target)
+        return gcam_attrs * gbp_attrs
 
 
 class GradCAM(CaptumMethod):
@@ -84,9 +98,7 @@ class GradCAM(CaptumMethod):
         super().__init__(attr.LayerGradCam(model, layer), False, **kwargs)
 
     def _attribute(self, x, target, **kwargs):
-        # TODO relu_attributions removes all negative attributions (default behaviour in
-        # TODO GradCAM paper) but can be configurable.
-        attrs = self.method.attribute(x, target, relu_attributions=True)
+        attrs = self.method.attribute(x, target, relu_attributions=False)
         # Upsample attributions
         return attr.LayerAttribution.interpolate(attrs, self.upsample_shape, interpolate_mode="bilinear")
 
