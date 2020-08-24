@@ -46,7 +46,7 @@ class MCSResult(BoxPlotResult):
         self.scene_attrs = scene_attrs
         self.mask_sizes = mask_sizes
         super().__init__({
-            method: (object_attrs[method] - scene_attrs[method]) / mask_sizes[method]
+            method: (np.array(object_attrs[method]) - np.array(scene_attrs[method])) / np.array(mask_sizes[method])
             for method in object_attrs
         })
 
