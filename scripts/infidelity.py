@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model-type", type=str)
 parser.add_argument("--model-params", type=str)
 parser.add_argument("--model-version", type=str, default=None)
-parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"])
+parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette", "Aptos"])
 parser.add_argument("--output-transform", type=str, choices=["identity", "softmax"])
 parser.add_argument("--num-perturbations", type=int, default=16)
 parser.add_argument("--batch-size", type=int, default=64)
@@ -44,6 +44,9 @@ elif args.dataset == "MNIST":
     dataset = datasets.MNIST(data_location=path.join(args.data_root, "MNIST"), train=False)
 elif args.dataset == "ImageNette":
     dataset = datasets.ImageNette(data_location=path.join(args.data_root, "imagenette2"), train=False)
+elif args.dataset == "Aptos":
+    dataset = datasets.Aptos(img_size=320, data_location=path.join(args.data_root, "APTOS"), train=False)
+
 
 model_constructor = getattr(models, args.model_type)
 model_kwargs = {
