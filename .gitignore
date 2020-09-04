@@ -10,3 +10,4 @@ out
 */.ipynb_checkpoints/*
 .ipynb_checkpoints
 *.json
+*.egg-info
