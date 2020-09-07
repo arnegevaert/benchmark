@@ -37,7 +37,7 @@ class Random(AttributionMethod):
         super(Random, self).__init__(False, **kwargs)
 
     def _attribute(self, x, target, **kwargs):
-        return torch.rand(*x.shape) * 2 - 1
+        return (torch.rand(*x.shape) * 2 - 1).to(x.device)
 
 
 class EdgeDetection(AttributionMethod):
