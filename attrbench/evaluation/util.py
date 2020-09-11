@@ -28,7 +28,7 @@ def mask_pixels(imgs, indices, mask_value, pixel_level_mask):
 def insert_pixels(imgs, indices, mask_value, pixel_level_mask):
     num_pixels = indices.shape[1]
     batch_size, color_channels = imgs.shape[:2]
-    result = torch.ones(imgs.shape).to(imgs.device) * mask_value
+    result = torch.ones(imgs.shape).to(imgs.device, non_blocking=True) * mask_value
     batch_dim = np.tile(range(batch_size), (num_pixels, 1)).transpose()
     if pixel_level_mask:
         unraveled = np.unravel_index(indices, imgs.shape[2:])
