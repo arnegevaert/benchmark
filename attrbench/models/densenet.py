@@ -19,7 +19,7 @@ class Densenet(nn.Module):
         if version not in _versions:
             raise NotImplementedError("Version not supported")
         fn = getattr(torchvision.models, version)
-        base_model = fn()
+        base_model = fn(pretrained=True)
         self.features = base_model.features
         self.classifier = nn.Linear(1024, num_classes)
         self.output_logits = output_logits
