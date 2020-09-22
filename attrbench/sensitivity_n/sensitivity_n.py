@@ -1,71 +1,86 @@
-from typing import Iterable, Callable, List, Dict
+from typing import Iterable, Callable, List, Dict, Union, Tuple
 import numpy as np
 from tqdm import tqdm
-from result import LinePlotResult
-from util import transform_fns
+from attrbench.util import mask_pixels, sum_of_attributions
 import torch
 
 
-def _mask_samples(samples, sample_size, n, mask_value, pixel_level_mask):
-    masked_samples = samples.clone()
-    mask = np.random.choice(sample_size, n)
-    if pixel_level_mask:
-        # Mask on pixel level (aggregate across channels)
-        unraveled = np.unravel_index(mask, samples.shape[2:])
-        masked_samples[:, :, unraveled[0], unraveled[1]] = mask_value
+# TODO we now look at actual labels. Add option to look at model output instead
+def sensitivity_n_batch(samples: torch.Tensor, labels: torch.Tensor, model: Callable,
+                        attribution: Union[Callable, Dict[str, Callable]],
+                        mask_range: Union[List[int], Tuple[int]], n_subsets: int, mask_value: float,
+                        pixel_level_mask: bool, device: str):
+    if isinstance(attribution, Dict):
+        attrs = {m_name: attribution[m_name](samples, labels) for m_name in attribution}
+        result = {m_name: {} for m_name in attribution}
+    elif isinstance(attribution, Callable):
+        attrs = attribution(samples, labels)
+        result = {}
     else:
-        # Mask on feature level (separate channels)
-        unraveled = np.unravel_index(mask, samples.shape[1:])
-        masked_samples[:, unraveled[0], unraveled[1], unraveled[2]] = mask_value
-    return mask, masked_samples
+        raise TypeError(f"Attribution must be of type Dict or Callable, not {type(attribution)}")
 
+    samples = samples.to(device)
+    batch_size = samples.size(0)
+    labels = labels.to(device)
+    with torch.no_grad():
+        orig_output = model(samples)
 
-def _get_attrs_sum(attrs, mask, pixel_level_mask):
-    unraveled = np.unravel_index(mask, attrs.shape[1:])
-    if pixel_level_mask:
-        mask_attrs = attrs[:, unraveled[0], unraveled[1]]
-    else:
-        mask_attrs = attrs[:, unraveled[0], unraveled[1], unraveled[2]]
-    return mask_attrs.flatten(1).sum(dim=1).unsqueeze(1)
-
-
-# Returns a dictionary containing, for each given method, a list of Sensitivity-n values
-# where the values of n are given by mask_range
-def sensitivity_n(data: Iterable, model: Callable,
-                  methods: Dict[str, Callable], mask_range: List[int],
-                  n_subsets: int, mask_value: float, pixel_level_mask: bool,
-                  device: str, output_transform: str):
-    result = {m_name: [[] for _ in mask_range] for m_name in methods}
-    for batch_index, (samples, labels) in enumerate(tqdm(data)):
-        samples = samples.to(device)
-        labels = labels.to(device)
-        sample_size = np.prod(samples.shape[2:]) if pixel_level_mask else np.prod(samples.shape[1:])
-        # Get original output and attributions
-        with torch.no_grad():
-            orig_output = transform_fns[output_transform](model(samples))
-        attrs = {m_name: methods[m_name](samples, labels) for m_name in methods}
-        for n_idx, n in enumerate(mask_range):
-            output_diffs = []
-            sum_of_attrs = {m_name: [] for m_name in methods}
-            for _ in range(n_subsets):
-                # Generate mask and masked samples
-                mask, masked_samples = _mask_samples(samples, sample_size, n, mask_value, pixel_level_mask)
-                with torch.no_grad():
-                    output = transform_fns[output_transform](model(masked_samples))
-                # Get difference in output confidence for desired class
-                output_diffs.append((orig_output - output)
-                                    .gather(dim=1, index=labels.unsqueeze(-1))
-                                    .cpu().detach().numpy())
-                # Get sum of attributions of masked pixels
-                for m_name in methods:
-                    mask_attrs = _get_attrs_sum(attrs[m_name], mask, pixel_level_mask)
-                    sum_of_attrs[m_name].append(mask_attrs.cpu().detach().numpy())
-            output_diffs = np.hstack(output_diffs)
-            for m_name in methods:
+    for n in mask_range:
+        output_diffs = []
+        sum_of_attrs = {m_name: [] for m_name in attribution} if isinstance(attribution, Dict) else []
+        for _ in range(n_subsets):
+            # Generate mask and masked samples
+            start_dim = 2 if pixel_level_mask else 1
+            indices = np.random.choice(np.prod(samples.shape[start_dim:]), n*batch_size).reshape((batch_size, n))
+            masked_samples = mask_pixels(samples, indices, mask_value, pixel_level_mask)
+            # Get output on masked samples
+            with torch.no_grad():
+                output = model(masked_samples)
+            # Get difference in output confidence for desired class
+            output_diffs.append((orig_output - output).gather(dim=1, index=labels.unsqueeze(-1))
+                                .cpu().detach().numpy())
+            # Get sum of attribution values for masked inputs
+            if isinstance(attribution, Dict):
+                for m_name in attribution:
+                    sum_of_attrs[m_name].append(sum_of_attributions(attrs[m_name], indices)
+                                                .cpu().detach().numpy())
+            else:
+                sum_of_attrs.append(sum_of_attributions(attrs, indices))
+        # Calculate correlation between output difference and sum of attribution values
+        if isinstance(attribution, Dict):
+            for m_name in attribution:
                 sum_of_attrs[m_name] = np.hstack(sum_of_attrs[m_name])
-                result[m_name][n_idx] += [np.corrcoef(output_diffs[i], sum_of_attrs[m_name][i])[0, 1]
-                                          for i in range(samples.shape[0])]
-    res_data = {
-        m_name: np.array(result[m_name]).transpose() for m_name in methods
-    }
-    return LinePlotResult(res_data, mask_range)
+                result[m_name][n] = [np.corrcoef(output_diffs[i], sum_of_attrs[m_name][i])[0, 1]
+                                     for i in range(samples.size(0))]
+        else:
+            sum_of_attrs = np.hstack(sum_of_attrs)
+            result[n] = [np.corrcoef(output_diffs[i], sum_of_attrs[i][0, 1]) for i in range(samples.size(0))]
+    return result
+
+
+def sensitivity_n(data: Iterable, model: Callable,
+                  attribution: Union[Callable, Dict[str, Callable]],
+                  mask_range: Union[List[int], Tuple[int]], n_subsets: int, mask_value: float,
+                  pixel_level_mask: bool, device: str):
+    if isinstance(attribution, Dict):
+        result = {m_name: {n: [] for n in mask_range} for m_name in attribution}
+    elif isinstance(attribution, Callable):
+        result = {n: [] for n in mask_range}
+    else:
+        raise TypeError(f"Attribution must be of type Dict or Callable, not {type(attribution)}")
+
+    for samples, labels in tqdm(data):
+        # Get batch sensitivity-n
+        batch_sens_n = sensitivity_n_batch(samples, labels, model, attribution, mask_range, n_subsets,
+                                           mask_value, pixel_level_mask, device)
+        # Merge in result
+        if isinstance(attribution, Dict):
+            for m_name in batch_sens_n:
+                for n in mask_range:
+                    result[m_name][n] += batch_sens_n[m_name][n]
+        else:
+            for n in mask_range:
+                result[n] += batch_sens_n[n]
+
+    # TODO result class that handles saving and loading data
+    return result
