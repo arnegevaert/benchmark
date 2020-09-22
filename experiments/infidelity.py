@@ -2,6 +2,7 @@ from os import path
 import torch
 import argparse
 import itertools
+import numpy as np
 from torch.utils.data import DataLoader
 
 # This block allows us to import from the benchmark folder,
@@ -12,18 +13,18 @@ module_path = os.path.abspath(os.path.join('..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from attrbench import datasets, attribution, models
-from attrbench.evaluation.sensitivity_n import sensitivity_n
+from experiments.lib import attribution, datasets, models
+from infidelity import infidelity
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model-type", type=str)
 parser.add_argument("--model-params", type=str)
 parser.add_argument("--model-version", type=str, default=None)
-parser.add_argument("--num-subsets", type=int, default=100)  # Default value from paper
 parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"])
+parser.add_argument("--output-transform", type=str, choices=["identity", "softmax"])
+parser.add_argument("--num-perturbations", type=int, default=16)
 parser.add_argument("--batch-size", type=int, default=64)
 parser.add_argument("--num-batches", type=int, default=16)
-parser.add_argument("--output-transform", type=str, choices=["identity", "softmax"])
 parser.add_argument("--cuda", type=bool, default=True)
 parser.add_argument("--data-root", type=str, default="../data")
 parser.add_argument("--output-file", type=str, default="result.json")
@@ -39,13 +40,10 @@ with open(args.output_file, "w") as f:
 
 if args.dataset == "CIFAR10":
     dataset = datasets.Cifar(data_location=path.join(args.data_root, "CIFAR10"), train=False)
-    mask_range = list(range(0, 32*32, 30))
 elif args.dataset == "MNIST":
     dataset = datasets.MNIST(data_location=path.join(args.data_root, "MNIST"), train=False)
-    mask_range = list(range(0, 28*28, 25))
 elif args.dataset == "ImageNette":
     dataset = datasets.ImageNette(data_location=path.join(args.data_root, "imagenette2"), train=False)
-    mask_range = list(range(0, 224*224, 4000))
 
 model_constructor = getattr(models, args.model_type)
 model_kwargs = {
@@ -76,9 +74,7 @@ attribution_methods = {
     "GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
 }
 
-dataloader = itertools.islice(DataLoader(dataset, batch_size=args.batch_size, num_workers=4), args.num_batches)
-result = sensitivity_n(dataloader, model,
-                       attribution_methods, mask_range=mask_range,
-                       n_subsets=args.num_subsets, mask_value=dataset.mask_value,
-                       pixel_level_mask=True, device=device, output_transform=args.output_transform)
+dataloader = itertools.islice(DataLoader(dataset, batch_size=args.batch_size), args.num_batches)
+result = infidelity(dataloader, model, attribution_methods, list(np.linspace(0.05, 0.3, 6)),
+                    args.num_perturbations, True, device, args.output_transform)
 result.save_json(args.output_file)

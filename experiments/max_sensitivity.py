@@ -1,8 +1,8 @@
+import numpy as np
 from os import path
 import torch
 import argparse
 import itertools
-import numpy as np
 from torch.utils.data import DataLoader
 
 # This block allows us to import from the benchmark folder,
@@ -13,16 +13,14 @@ module_path = os.path.abspath(os.path.join('..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from attrbench import datasets, attribution, models
-from attrbench.evaluation.infidelity import infidelity
+from experiments.lib import attribution, datasets, models
+from max_sensitivity import max_sensitivity
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model-type", type=str)
 parser.add_argument("--model-params", type=str)
 parser.add_argument("--model-version", type=str, default=None)
-parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"])
-parser.add_argument("--output-transform", type=str, choices=["identity", "softmax"])
-parser.add_argument("--num-perturbations", type=int, default=16)
+parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"], default="MNIST")
 parser.add_argument("--batch-size", type=int, default=64)
 parser.add_argument("--num-batches", type=int, default=16)
 parser.add_argument("--cuda", type=bool, default=True)
@@ -45,6 +43,7 @@ elif args.dataset == "MNIST":
 elif args.dataset == "ImageNette":
     dataset = datasets.ImageNette(data_location=path.join(args.data_root, "imagenette2"), train=False)
 
+perturbation_range = list(np.linspace(.01, .2, 10))
 model_constructor = getattr(models, args.model_type)
 model_kwargs = {
     "params_loc": args.model_params,
@@ -75,6 +74,5 @@ attribution_methods = {
 }
 
 dataloader = itertools.islice(DataLoader(dataset, batch_size=args.batch_size), args.num_batches)
-result = infidelity(dataloader, model, attribution_methods, list(np.linspace(0.05, 0.3, 6)),
-                    args.num_perturbations, True, device, args.output_transform)
+result = max_sensitivity(dataloader, attribution_methods, perturbation_range, device)
 result.save_json(args.output_file)

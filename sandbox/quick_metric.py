@@ -1,9 +1,7 @@
-from os import path
 from torch.utils.data import DataLoader
 import itertools
-from attrbench import datasets, attribution, models
-from attrbench.evaluation.insertion_deletion_curves import insertion_deletion_curves
-from attrbench.evaluation.sensitivity_n import sensitivity_n
+from experiments.lib import attribution, datasets, models
+from insertion_deletion_curves import insertion_deletion_curves
 
 device = "cuda"
 #dataset = datasets.ImageNette("../data/imagenette2", False)

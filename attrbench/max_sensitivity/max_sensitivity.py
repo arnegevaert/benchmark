@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import math
 from tqdm import tqdm
-from attrbench.evaluation.result import LinePlotResult
+from result import LinePlotResult
 
 
 def max_sensitivity(data: Iterable, methods: Dict[str, Callable],

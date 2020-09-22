@@ -2,10 +2,8 @@ from typing import Callable, Dict, List
 from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
-from attrbench.evaluation.bam import BAMDataset
-from attrbench.evaluation.result import BoxPlotResult
-import json
-from itertools import tee
+from bam import BAMDataset
+from result import BoxPlotResult
 
 
 def input_dependence_rate(dataset: BAMDataset, batch_size: int, models: List[torch.nn.Module], methods: List[Dict[str, Callable]],

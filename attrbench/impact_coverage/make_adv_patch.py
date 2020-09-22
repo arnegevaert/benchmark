@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from attrbench import datasets, models
+from experiments.lib import datasets, models
 from os import path
 from tqdm import tqdm
 

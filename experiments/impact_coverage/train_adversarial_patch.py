@@ -11,8 +11,8 @@ module_path = os.path.abspath(os.path.join('../..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from attrbench import datasets, models
-from attrbench.evaluation.impact_coverage import make_patch
+from experiments.lib import datasets, models
+from impact_coverage import make_patch
 
 
 def parse_args():

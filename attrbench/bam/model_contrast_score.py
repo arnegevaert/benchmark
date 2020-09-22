@@ -2,9 +2,8 @@ from typing import Iterable, Callable, Dict
 from tqdm import tqdm
 import torch
 import numpy as np
-from attrbench.evaluation.result import BoxPlotResult, NumpyJSONEncoder
+from result import BoxPlotResult, NumpyJSONEncoder
 import json
-import matplotlib.pyplot as plt
 
 
 def model_contrast_score(dataloader: Iterable, object_model: Callable,

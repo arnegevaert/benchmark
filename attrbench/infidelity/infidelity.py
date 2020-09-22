@@ -1,8 +1,8 @@
 import torch
 from typing import Iterable, Callable, Dict, List
 from tqdm import tqdm
-from attrbench.evaluation.result import LinePlotResult
-from attrbench.evaluation.util import transform_fns
+from result import LinePlotResult
+from util import transform_fns
 
 
 def infidelity(data: Iterable, model: Callable, methods: Dict[str, Callable],

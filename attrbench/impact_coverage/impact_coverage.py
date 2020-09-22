@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Iterable, Callable, Dict
 from tqdm import tqdm
-from attrbench.evaluation.result import BoxPlotResult
+from result import BoxPlotResult
 
 
 def impact_coverage(data: Iterable, patch, target_label: int,

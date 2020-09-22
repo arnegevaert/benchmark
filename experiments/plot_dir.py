@@ -10,8 +10,8 @@ module_path = os.path.abspath(os.path.join(".."))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from attrbench.evaluation.result import LinePlotResult, BoxPlotResult
-from attrbench.evaluation.bam.model_contrast_score import MCSResult
+from result import LinePlotResult, BoxPlotResult
+from bam.model_contrast_score import MCSResult
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

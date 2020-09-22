@@ -1,8 +1,8 @@
 from typing import Iterable, Callable, List, Dict
 import numpy as np
 from tqdm import tqdm
-from attrbench.evaluation.result import LinePlotResult
-from attrbench.evaluation.util import transform_fns, mask_pixels, insert_pixels
+from result import LinePlotResult
+from util import transform_fns, mask_pixels, insert_pixels
 import torch
 
 

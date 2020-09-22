@@ -1,9 +1,6 @@
-import numpy as np
-import pandas as pd
 from os import path
 import torch
 import argparse
-import json
 import itertools
 from torch.utils.data import DataLoader
 
@@ -11,51 +8,46 @@ from torch.utils.data import DataLoader
 # as if it was a package installed using pip
 import os
 import sys
-module_path = os.path.abspath(os.path.join('..'))
+module_path = os.path.abspath(os.path.join('../..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from attrbench import datasets, attribution, models
-from attrbench.evaluation.impact_score import impact_score
+from experiments.lib import attribution, datasets, models
+from impact_coverage import impact_coverage
 
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-type", type=str)
-    parser.add_argument("--model-params", type=str)
-    parser.add_argument("--model-version", type=str, default=None)
-    parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"])
+    parser.add_argument("--model-type", type=str, default="Resnet")
+    parser.add_argument("--model-params", type=str, default="../../data/models/CIFAR10/resnet18.pt")
+    parser.add_argument("--model-version", type=str, default="resnet18")
+    parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"], default="CIFAR10")
+    parser.add_argument("--target-label", type=int, default=0)
     parser.add_argument("--batch-size", type=int, default=64)
-    parser.add_argument("--num-batches", type=int, default=16)
-    parser.add_argument("--tau", type=float, default=0.5)
+    parser.add_argument("--num-batches", type=int, default=4)
     parser.add_argument("--cuda", type=bool, default=True)
-    parser.add_argument("--data-root", type=str, default="../data")
-    parser.add_argument("--i-score-output-file", type=str, default="i_score.json")
-    parser.add_argument("--strict-i-score-output-file", type=str, default="strict_i_score.json")
+    parser.add_argument("--data-root", type=str, default="../../data")
+    parser.add_argument("--output-file", type=str, default="result.json")
     args = parser.parse_args()
     return args
 
 
 def main(args):
     device = "cuda" if args.cuda and torch.cuda.is_available() else "cpu"
-    for outfile in [args.i_score_output_file, args.strict_i_score_output_file]:
-        if path.isfile(outfile) and path.getsize(outfile) > 0:
-            sys.exit("Experiment output file is not empty")
+    if path.isfile(args.output_file) and path.getsize(args.output_file) > 0:
+        sys.exit("Experiment output file is not empty")
 
-        with open(outfile, "w") as f:
-            if not f.writable():
-                sys.exit("Output file is not writable")
+    with open(args.output_file, "w") as f:
+        if not f.writable():
+            sys.exit("Output file is not writable")
 
     if args.dataset == "CIFAR10":
         dataset = datasets.Cifar(data_location=path.join(args.data_root, "CIFAR10"), train=False)
-        mask_range = list(range(30, 32 * 32, 30))
     elif args.dataset == "MNIST":
         dataset = datasets.MNIST(data_location=path.join(args.data_root, "MNIST"), train=False)
-        mask_range = list(range(25, 28 * 28, 25))
     elif args.dataset == "ImageNette":
         dataset = datasets.ImageNette(data_location=path.join(args.data_root, "imagenette2"), train=False)
-        mask_range = list(range(4000, 224 * 224, 4000))
 
     model_constructor = getattr(models, args.model_type)
     model_kwargs = {
@@ -70,7 +62,7 @@ def main(args):
     model.eval()
 
     kwargs = {
-        "normalize": False,  # Normalizing isn't necessary, only order of values counts
+        "normalize": False,
         "aggregation_fn": "avg"
     }
     attribution_methods = {
@@ -86,11 +78,18 @@ def main(args):
         "GradCAM": attribution.GradCAM(model, model.get_last_conv_layer(), dataset.sample_shape[1:], **kwargs)
     }
 
-    dataloader = itertools.islice(DataLoader(dataset, batch_size=args.batch_size, num_workers=4), args.num_batches)
-    i_score, i_strict_score = impact_score(dataloader, model, list(mask_range), methods=attribution_methods,
-                                           mask_value=dataset.mask_value, tau=args.tau, device=device)
-    i_score.save_json(args.i_score_output_file)
-    i_strict_score.save_json(args.strict_i_score_output_file)
+    if args.model_version:
+        patch_location = path.join(args.data_root, "patches",
+                                   f"{args.dataset}_{args.model_type}_{args.model_version}_{args.target_label}_patch.pt")
+    else:
+        patch_location = path.join(args.data_root, "patches",
+                                   f"{args.dataset}_{args.model_type}_{args.target_label}_patch.pt")
+
+    patch = torch.load(patch_location)
+    dl = itertools.islice(DataLoader(dataset, batch_size=args.batch_size), args.num_batches)
+    result = impact_coverage(dl, patch=patch, model=model, methods=attribution_methods,
+                             device=device, target_label=args.target_label)
+    result.save_json(args.output_file)
 
 
 if __name__ == '__main__':  # windows machines do weird stuff when there is no main guard

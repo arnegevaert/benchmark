@@ -1,8 +1,6 @@
 from os import path
 import torch
 import argparse
-from torch.utils.data import DataLoader
-import itertools
 
 # This block allows us to import from the benchmark folder,
 # as if it was a package installed using pip
@@ -12,8 +10,8 @@ module_path = os.path.abspath(os.path.join('../..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from attrbench import attribution, models
-from attrbench.evaluation.bam import input_dependence_rate, BAMDataset
+from experiments.lib import attribution, models
+from bam import input_dependence_rate, BAMDataset
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model-type", type=str, default="Resnet")

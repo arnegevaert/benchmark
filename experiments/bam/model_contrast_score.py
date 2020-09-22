@@ -1,8 +1,6 @@
-import pandas as pd
 from os import path
 import torch
 import argparse
-import json
 from torch.utils.data import DataLoader
 import itertools
 
@@ -14,8 +12,8 @@ module_path = os.path.abspath(os.path.join('../..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from attrbench import attribution, models
-from attrbench.evaluation.bam import model_contrast_score, BAMDataset
+from experiments.lib import attribution, models
+from bam import model_contrast_score, BAMDataset
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model-type", type=str)

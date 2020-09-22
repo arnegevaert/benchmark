@@ -12,8 +12,8 @@ module_path = os.path.abspath(os.path.join('../..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from attrbench import models
-from attrbench.evaluation.bam import train_epoch, BAMDataset
+from experiments.lib import models
+from bam import train_epoch, BAMDataset
 
 """
 Trains a model on one of the BAM datasets.

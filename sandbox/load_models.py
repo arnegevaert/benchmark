@@ -1,6 +1,4 @@
-import torch
-from attrbench.models import Densenet, Resnet, Alexnet, Vgg, Mobilenet_v2, Squeezenet, BasicCNN
-from attrbench.datasets import *
+from experiments.lib.models import Densenet, Resnet, Alexnet, Vgg, Mobilenet_v2, Squeezenet, BasicCNN
 from os import path
 
 
