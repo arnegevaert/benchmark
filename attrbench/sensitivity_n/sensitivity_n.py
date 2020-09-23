@@ -1,4 +1,4 @@
-from typing import Callable, List, Dict, Union, Tuple
+from typing import Callable, List, Union, Tuple
 import numpy as np
 from attrbench.util import mask_pixels, sum_of_attributions
 import torch
