@@ -78,7 +78,7 @@ attribution_methods = {
 
 dataloader = itertools.islice(DataLoader(dataset, batch_size=args.batch_size, num_workers=4), args.num_batches)
 result = sensitivity_n(dataloader, model,
-                       attribution_methods, mask_range=mask_range,
-                       n_subsets=args.num_subsets, mask_value=dataset.mask_value,
+                       attribution_methods, n_range=mask_range,
+                       num_subsets=args.num_subsets, mask_value=dataset.mask_value,
                        pixel_level_mask=True, device=device, output_transform=args.output_transform)
 result.save_json(args.output_file)

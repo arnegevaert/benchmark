@@ -1,12 +1,5 @@
-import torch.nn.functional as F
 import numpy as np
 import torch
-
-
-transform_fns = {
-    "identity": lambda l: l,
-    "softmax": lambda l: F.softmax(l, dim=1),
-}
 
 
 def sum_of_attributions(attrs, indices):
