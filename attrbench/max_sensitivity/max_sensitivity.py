@@ -22,8 +22,5 @@ def max_sensitivity(samples: torch.Tensor, labels: torch.Tensor, method: Callabl
             diffs = torch.norm(noisy_attrs.flatten(1) - attrs.flatten(1), dim=1) / norm
             max_diff = max(max_diff, diffs.max().cpu().detach().item())
         result.append(max_diff)
+    # [len(perturbation_range)]
     return torch.tensor(result)
-
-
-if __name__ == "__main__":
-    pass
