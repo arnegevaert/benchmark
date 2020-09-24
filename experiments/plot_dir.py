@@ -11,7 +11,7 @@ if module_path not in sys.path:
     sys.path.append(module_path)
 
 from result import LinePlotResult, BoxPlotResult
-from bam.model_contrast_score import MCSResult
+from evaluation.model_contrast_score import MCSResult
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

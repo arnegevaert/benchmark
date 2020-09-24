@@ -5,7 +5,7 @@ import os
 from PIL import Image
 
 
-class BAMDataset(Dataset):
+class SceneOverlayDataset(Dataset):
     def __init__(self, data_location, train, include_orig_scene=False, include_mask=False):
         self.data_location = data_location
         self.include_orig_scene = include_orig_scene
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader
     from tqdm import tqdm
     import torch
-    ds = BAMDataset("../../../data/BAM", True, True, False)
+    ds = SceneOverlayDataset("../../../data/BAM", True, True, False)
     dl = DataLoader(ds, batch_size=512, shuffle=True)
     all_scenes = []
     for overlay, scene, scene_labels, obj_labels in tqdm(dl):

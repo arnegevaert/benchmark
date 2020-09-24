@@ -1,5 +1,5 @@
 from typing import Callable, List
-from util import mask_pixels, insert_pixels
+from lib.util import mask_pixels, insert_pixels
 import torch
 
 
