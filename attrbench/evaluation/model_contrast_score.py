@@ -1,58 +1,28 @@
-from typing import Iterable, Callable, Dict
-from tqdm import tqdm
+from typing import Callable
 import torch
-import numpy as np
-from result import BoxPlotResult, NumpyJSONEncoder
-import json
 
 
-def model_contrast_score(dataloader: Iterable, object_model: Callable,
-                         object_methods: Dict[str, Callable],
-                         scene_methods: Dict[str, Callable], device: str):
+def model_contrast_score(overlays: torch.Tensor, masks: torch.Tensor, object_labels: torch.Tensor,
+                         scene_labels: torch.Tensor, object_model: Callable, scene_model: Callable,
+                         object_method: Callable, scene_method: Callable, device: str):
     """
     Model contrast score:
     Difference of importance of object pixels for model trained on object labels
     (should be important) and model trained on scene labels (should not be important)
     """
-    object_attrs = {m_name: [] for m_name in object_methods}
-    scene_attrs = {m_name: [] for m_name in object_methods}
-    mask_sizes = {m_name: [] for m_name in object_methods}
-    for images, masks, _, labels in tqdm(dataloader):
-        images = images.to(device)
-        labels = labels.to(device)
-        masks = masks.squeeze().to(device)
-        with torch.no_grad():
-            y_pred = torch.argmax(object_model(images), dim=1)
-        # Boolean array indicating images correctly classified by object model
-        correctly_classified = (y_pred == labels)
-        for m_name in object_methods:
-            object_model_attrs = object_methods[m_name](images, labels)
-            scene_model_attrs = scene_methods[m_name](images, labels)
-            mask_size = torch.sum(masks.flatten(1), dim=1)
-            object_attrs[m_name].append((masks * object_model_attrs)[correctly_classified].flatten(1).sum(dim=1)
-                                                  .cpu().detach().numpy())
-            scene_attrs[m_name].append((masks * scene_model_attrs)[correctly_classified].flatten(1).sum(dim=1)
-                                                 .cpu().detach().numpy())
-            mask_sizes[m_name].append(mask_size[correctly_classified].cpu().detach().numpy())
-    return MCSResult({m_name: np.concatenate(object_attrs[m_name]) for m_name in object_methods},
-                     {m_name: np.concatenate(scene_attrs[m_name]) for m_name in object_methods},
-                     {m_name: np.concatenate(mask_sizes[m_name]) for m_name in object_methods})
+    overlays = overlays.to(device)
+    object_labels = object_labels.to(device)
+    scene_labels = scene_labels.to(device)
+    masks = masks.squeeze().to(device)
+    # We check if both the object model and the scene model make the correct classification
+    # TODO do we also need to check the scene model?
+    with torch.no_grad():
+        y_pred_obj = torch.argmax(object_model(overlays), dim=1)
+        y_pred_scene = torch.argmax(scene_model(overlays), dim=1)
+    correctly_classified = ((y_pred_obj == object_labels) & (y_pred_scene == scene_labels))
 
-
-class MCSResult(BoxPlotResult):
-    def __init__(self, object_attrs, scene_attrs, mask_sizes):
-        self.object_attrs = object_attrs
-        self.scene_attrs = scene_attrs
-        self.mask_sizes = mask_sizes
-        super().__init__({
-            method: (np.array(object_attrs[method]) - np.array(scene_attrs[method])) / np.array(mask_sizes[method])
-            for method in object_attrs
-        })
-
-    def save_json(self, filename):
-        with open(filename, "w") as outfile:
-            json.dump({
-                "object_attrs": self.object_attrs,
-                "scene_attrs": self.scene_attrs,
-                "mask_sizes": self.mask_sizes
-            }, outfile, cls=NumpyJSONEncoder)
+    object_model_attrs = object_method(overlays, object_labels)
+    scene_model_attrs = scene_method(overlays, scene_labels)
+    mask_sizes = torch.sum(masks.flatten(1), dim=1)
+    diffs = (object_model_attrs - scene_model_attrs) / mask_sizes
+    return diffs.cpu(), correctly_classified.cpu()
