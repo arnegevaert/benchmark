@@ -3,10 +3,9 @@ import torch
 
 
 def max_sensitivity(samples: torch.Tensor, labels: torch.Tensor, method: Callable, perturbation_range: List[float],
-                    num_perturbations: int, device: str):
+                    num_perturbations: int):
     result = []
-    samples = samples.to(device)
-    labels = labels.to(device)
+    device = samples.device
 
     attrs = method(samples, labels)  # [batch_size, *sample_shape]
     norm = torch.norm(attrs.flatten(1), dim=1)

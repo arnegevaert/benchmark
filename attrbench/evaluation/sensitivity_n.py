@@ -6,15 +6,13 @@ import torch
 
 # TODO we now look at actual labels. Add option to look at model output instead
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                  n_range: Union[List[int], Tuple[int]], num_subsets: int, mask_value: float,
-                  pixel_level_mask: bool, device: str):
+                  n_range: Union[List[int], Tuple[int]], num_subsets: int, mask_value: float):
     attrs = method(samples, labels)
+    pixel_level = attrs.size(1) == 1
     result = []
-    samples = samples.to(device)
     batch_size = samples.size(0)
-    start_dim = 2 if pixel_level_mask else 1
+    start_dim = 2 if pixel_level else 1
     sample_size = np.prod(samples.shape[start_dim:])
-    labels = labels.to(device)
 
     with torch.no_grad():
         orig_output = model(samples)
@@ -25,7 +23,7 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
         for _ in range(num_subsets):
             # Generate mask and masked samples
             indices = torch.tensor(np.random.choice(sample_size, n*batch_size)).reshape((batch_size, n))
-            masked_samples = mask_pixels(samples, indices, mask_value, pixel_level_mask)
+            masked_samples = mask_pixels(samples, indices, mask_value, pixel_level)
             # Get output on masked samples
             with torch.no_grad():
                 output = model(masked_samples)

@@ -3,12 +3,10 @@ from typing import Callable, List
 
 
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-               perturbation_range: List[float], num_perturbations: int,
-               pixel_level: bool, device: str):
+               perturbation_range: List[float], num_perturbations: int):
     result = []
-    samples = samples.to(device)
-    labels = labels.to(device)
-    n_channels = samples.shape[1]
+    device = samples.device
+    n_channels = samples.size(1)
     # Get original model output
     with torch.no_grad():
         orig_output = (model(samples)).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
@@ -22,7 +20,7 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, met
         explanation = method(samples, labels)
         # If explanation is on pixel level, we need to replicate value for each pixel n_channels times,
         # since current_perturbation is [batch_size, n_channels, width, height]
-        if pixel_level:
+        if explanation.size(1) == 1:
             explanation = explanation.unsqueeze(1).repeat(1, n_channels, 1, 1)
         for _ in range(num_perturbations):
             # We calculate X * I (p3 in paper).

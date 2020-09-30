@@ -4,13 +4,11 @@ import torch
 
 
 def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, mask_range: List[int], method: Callable,
-                 mask_value: float, strict: bool, tau: float = None, device: str = "cpu"):
+                 mask_value: float, strict: bool, tau: float = None):
     if not (strict or tau):
         raise ValueError("Provide value for tau when calculating non-strict impact score")
     counts = []
 
-    samples = samples.to(device, non_blocking=True)
-    labels = labels.to(device, non_blocking=True)
     with torch.no_grad():
         orig_out = model(samples).gather(dim=1, index=labels.view(-1, 1))
     correctly_classified = torch.argmax(orig_out, dim=1) == labels
