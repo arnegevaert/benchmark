@@ -25,4 +25,4 @@ def input_dependence_rate(overlays: torch.Tensor, scenes: torch.Tensor, masks: t
     masked_scene_attrs = (masks * scene_attrs).flatten(1).sum(dim=1)
     correct = correctly_classified & (masked_scene_attrs > masked_object_attrs)
 
-    return correct.cpu(), correctly_classified.cpu()
+    return correct, correctly_classified

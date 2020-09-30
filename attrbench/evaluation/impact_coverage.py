@@ -52,4 +52,4 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, target_label: i
     critical_factor_mask_flattened = critical_factor_mask.flatten(1).bool()
     intersection = (patch_mask_flattened & critical_factor_mask_flattened).sum(dim=1)
     union = (patch_mask_flattened | critical_factor_mask_flattened).sum(dim=1)
-    return intersection / union
+    return intersection / union, keep
