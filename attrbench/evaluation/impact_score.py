@@ -33,5 +33,5 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, m
             if not strict:
                 flipped = flipped | confidence <= orig_out * tau
             counts.append(flipped.sum().item())
-        return torch.tensor(counts) / batch_size
-    return None
+        return torch.tensor(counts), batch_size
+    return 0, 0
