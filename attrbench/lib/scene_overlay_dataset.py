@@ -69,17 +69,3 @@ class SceneOverlayDataset(Dataset):
 
     def __len__(self):
         return len(self.scenes) * self.images_per_scene_folder
-
-
-if __name__ == "__main__":
-    from torch.utils.data import DataLoader
-    from tqdm import tqdm
-    import torch
-    ds = SceneOverlayDataset("../../../data/BAM", True, True, False)
-    dl = DataLoader(ds, batch_size=512, shuffle=True)
-    all_scenes = []
-    for overlay, scene, scene_labels, obj_labels in tqdm(dl):
-        all_scenes.append(scene)
-    all_scenes = torch.cat(all_scenes, dim=0)
-    mean = all_scenes.flatten(2).mean(2).mean(0)
-    std = all_scenes.flatten(2).std(2).mean(0)

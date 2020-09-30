@@ -9,11 +9,6 @@ setuptools.setup(
     url="https://github.com/zoeparman/benchmark",
     packages=setuptools.find_packages(),
     install_requires=[
-        "captum>=0.2.0",
         "torch>=1.5.0",
-        "torchvision>=0.6.0",
-        "tqdm>=4.46.0",
-        "imgaug>=0.4.0",
-        "sklearn"
     ]
 )

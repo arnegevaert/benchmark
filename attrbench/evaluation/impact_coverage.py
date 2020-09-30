@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Callable
-from lib.util import mask_pixels
+from attrbench.lib.util import mask_pixels
 import torch
 
 
