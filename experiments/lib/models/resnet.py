@@ -7,7 +7,7 @@ versions = ['resnet18', 'resnet34', 'resnet50', 'resnet101',
 
 
 class Resnet(nn.Module):
-    def __init__(self, version, output_logits, num_classes, params_loc=None):
+    def __init__(self, version, num_classes, params_loc=None):
         super().__init__()
         if version not in versions:
             raise NotImplementedError('version not supported')
@@ -24,13 +24,14 @@ class Resnet(nn.Module):
         self.layer4 = model.layer4
         self.avgpool = model.avgpool
         self.fc = nn.Linear(model.fc.in_features, num_classes)
-        self.output_logits = output_logits
         self.softmax = nn.Softmax(dim=1)
 
         if params_loc:
             self.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
 
-    def get_logits(self, x):
+    def forward(self, x):
+        if x.dtype != torch.float32:
+            x = x.float()
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -44,16 +45,7 @@ class Resnet(nn.Module):
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)
-
         return x
-
-    def forward(self, x):
-        if x.dtype != torch.float32:
-            x = x.float()
-        logits = self.get_logits(x)
-        if self.output_logits:
-            return logits
-        return self.softmax(logits)
 
     def get_last_conv_layer(self) -> nn.Module:
         last_block = self.layer4[-1]  # Last BasicBlock of layer 3
