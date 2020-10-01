@@ -31,4 +31,4 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, met
             dot_product = (explanation.flatten(1) * -perturbation.flatten(1)).sum(dim=1, keepdim=True)  # [batch_size, 1]
             eps_result.append((dot_product - (orig_output - perturbed_output))**2)  # [batch_size, 1]
         result.append(torch.stack(eps_result, dim=1).mean(dim=1))  # [batch_size]
-    return torch.cat(result, dim=1)  # [batch_size, len(perturbation_range)]
+    return torch.cat(result, dim=1).cpu()  # [batch_size, len(perturbation_range)]
