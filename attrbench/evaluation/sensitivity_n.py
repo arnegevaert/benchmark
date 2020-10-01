@@ -31,7 +31,7 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
             output_diffs.append((orig_output - output).gather(dim=1, index=labels.unsqueeze(-1))
                                 .cpu().detach().numpy())
             # Get sum of attribution values for masked inputs
-            sum_of_attrs.append(sum_of_attributions(attrs, indices.to(attrs.device)).cpu())
+            sum_of_attrs.append(sum_of_attributions(attrs, indices.to(attrs.device)).cpu().detach())
         # Calculate correlation between output difference and sum of attribution values
         sum_of_attrs = np.hstack(sum_of_attrs)
         output_diffs = np.hstack(output_diffs)

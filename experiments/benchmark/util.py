@@ -49,29 +49,31 @@ _METHODS = {
     "GuidedBackprop": lambda model: GuidedBackprop(model),
     "Deconvolution": lambda model: Deconvolution(model),
     "GuidedGradCAM": lambda model, shape: GuidedGradCAM(model, model.get_last_conv_layer(), upsample_shape=shape),
-    "GradCAM": lambda model, shape: GradCAM(model, model.get_last_conv_layer, shape)
+    "GradCAM": lambda model, shape: GradCAM(model, model.get_last_conv_layer(), shape)
 }
 
 
-def get_ds_model_method(dataset, model, method, batch_size):
+def get_ds_model(dataset, model):
     if dataset not in _DATASET_MODELS:
         raise ValueError(f"Dataset {dataset} not found.")
     ds_data = _DATASET_MODELS[dataset]
     if model not in ds_data["models"]:
         raise ValueError(f"Model {model} not found for {dataset}.")
-    if method not in _METHODS:
-        raise ValueError(f"Method {method} not found.")
-
     ds_obj = ds_data["ds"]()
     model_obj = ds_data["models"][model]()
+    return ds_obj, model_obj
 
-    if method == "IntegratedGradients":
-        method_obj = _METHODS[method](model_obj, batch_size)
-    elif method in ["GuidedGradCAM", "GradCAM"]:
-        method_obj = _METHODS[method](model_obj, ds_obj.sample_shape)
-    else:
-        method_obj = _METHODS[method](model_obj)
-    return ds_obj, model_obj, method_obj
+
+def get_methods(model, batch_size, sample_shape, methods=None):
+    def _instantiate(m_name):
+        if m_name == "IntegratedGradients":
+            return _METHODS[m_name](model, batch_size)
+        elif m_name in ["GuidedGradCAM", "GradCAM"]:
+            return _METHODS[m_name](model, sample_shape)
+        else:
+            return _METHODS[m_name](model)
+    keys = methods if methods else list(_METHODS.keys())
+    return {key: _instantiate(key) for key in keys}
 
 
 def get_mask_range(dataset):
