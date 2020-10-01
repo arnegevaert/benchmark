@@ -18,7 +18,7 @@ if __name__ == "__main__":
     parser.add_argument("--method", type=str, default="Gradient")
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--num-batches", type=int, default=2)
-    parser.add_argument("--cuda", action="store_false")
+    parser.add_argument("--cuda", action="store_true")
     parser.add_argument("--out-dir", type=str, default="out")
     # Parse arguments
     args = parser.parse_args()
