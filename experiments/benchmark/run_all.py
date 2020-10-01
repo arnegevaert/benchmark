@@ -108,6 +108,6 @@ if __name__ == "__main__":
     for name in ["impact", "s-impact"]:
         res[name]["counts"] = torch.sum(torch.stack(res[name]["counts"], dim=0), dim=0).numpy().tolist()
         with open(path.join(args.out_dir, f"{name}.json"), "w") as fp:
-            json.dumps(res[name])
+            json.dump(res[name], fp)
     res["max-sens"] = torch.max(torch.stack(res["max-sens"], dim=0), dim=0)[0]
     np.savetxt(path.join(args.out_dir, f"max-sens.csv"), res["max-sens"].numpy(), delimiter=",")
