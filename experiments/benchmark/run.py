@@ -17,7 +17,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
     dataset, model, method = get_ds_model_method(args.dataset, args.model, args.method, args.batch_size)
-    mask_range = get_mask_range(dataset)
+    model.to(device)
+    mask_range = get_mask_range(args.dataset)
 
     dataloader = itertools.islice(DataLoader(dataset, batch_size=args.batch_size), args.num_batches)
     for i, (batch, labels) in enumerate(dataloader):
@@ -55,12 +56,12 @@ if __name__ == "__main__":
         # Impact score (strict)
         print("Strict impact score...")
         batch_s_impact_score = impact_score(batch, labels, model, mask_range, method,
-                                            mask_value=0., strict=False)
+                                            mask_value=0., strict=True)
 
         # Impact score (non-strict)
         print("Non-strict impact score...")
         batch_impact_score = impact_score(batch, labels, model, mask_range, method,
-                                          mask_value=0., strict=True)
+                                          mask_value=0., tau=.5, strict=False)
 
         print(f"Batch {i + 1}/{args.num_batches} finished.")
         print()

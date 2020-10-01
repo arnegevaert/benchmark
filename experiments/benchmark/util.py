@@ -3,7 +3,8 @@ from experiments.lib.models import Alexnet, BasicCNN, BasicMLP, Densenet, Mobile
 from experiments.lib.attribution import *
 from os import path
 
-_DATA_LOC = path.join(__file__, "../../data")
+_DATA_LOC = path.join(path.dirname(__file__), "../../data")
+print(_DATA_LOC)
 
 _DATASET_MODELS = {
     "MNIST": {

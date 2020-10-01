@@ -21,7 +21,7 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, met
         # If explanation is on pixel level, we need to replicate value for each pixel n_channels times,
         # since current_perturbation is [batch_size, n_channels, width, height]
         if explanation.size(1) == 1:
-            explanation = explanation.unsqueeze(1).repeat(1, n_channels, 1, 1)
+            explanation = explanation.repeat(1, n_channels, 1, 1)
         for _ in range(num_perturbations):
             # We calculate X * I (p3 in paper).
             # perturbation is \eps.

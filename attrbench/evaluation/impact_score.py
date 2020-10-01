@@ -29,7 +29,7 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, m
             confidence = masked_out.gather(dim=1, index=labels.view(-1, 1))
             flipped = torch.argmax(masked_out, dim=1) != labels
             if not strict:
-                flipped = flipped | confidence <= orig_out * tau
+                flipped = flipped | (confidence <= orig_out * tau)
             counts.append(flipped.sum().item())
         return torch.tensor(counts), batch_size
     return 0, 0
