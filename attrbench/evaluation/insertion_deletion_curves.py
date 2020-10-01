@@ -31,6 +31,5 @@ def insertion_deletion_curves(samples: torch.Tensor, labels: torch.Tensor, model
         # Get predictions for result
         with torch.no_grad():
             predictions = model(masked_samples).gather(dim=1, index=labels.unsqueeze(-1))
-        result.append(predictions.cpu().detach())
-    # [batch_size, len(mask_range)]
-    return torch.cat(result, dim=1)
+        result.append(predictions)
+    return torch.cat(result, dim=1)  # [batch_size, len(mask_range)]

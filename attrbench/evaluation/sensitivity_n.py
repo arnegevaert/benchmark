@@ -35,6 +35,7 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
         # Calculate correlation between output difference and sum of attribution values
         sum_of_attrs = np.hstack(sum_of_attrs)
         output_diffs = np.hstack(output_diffs)
+        # TODO calculating corrcoef in torch will allow us to use GPU better and handle NaNs more easily
         result.append([np.corrcoef(output_diffs[i], sum_of_attrs[i])[0, 1] for i in range(samples.size(0))])
     # [batch_size, len(n_range)]
     return torch.tensor(result).t()
