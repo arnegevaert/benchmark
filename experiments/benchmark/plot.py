@@ -1,19 +1,10 @@
 import argparse
-import json
-import os
 import numpy as np
+from experiments.benchmark import load_results, get_metric
 from bokeh.plotting import figure, output_file, show
 from bokeh.layouts import column
 from bokeh.palettes import Category10_10 as palette
-from bokeh.models import Legend
-
-
-def get_metric(data, metric):
-    res = {}
-    for method in data:
-        if metric in data[method]:
-            res[method] = data[method][metric]
-    return res
+from bokeh.models import Legend, Div
 
 
 if __name__ == "__main__":
@@ -21,26 +12,11 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--dir", type=str)
     args = parser.parse_args()
 
-    all_metrics = ["insertion", "infidelity", "max-sens", "s-impact", "impact", "sens-n", "deletion"]
+    all_metrics = ["insertion", "deletion", "infidelity", "max-sens", "s-impact", "impact", "sens-n"]
 
-    result_data = {}
-    methods = os.listdir(args.dir)
-    for method in methods:
-        result_data[method] = {}
-        metric_files = os.listdir(os.path.join(args.dir, method))
-        for filename in metric_files:
-            metric, ext = filename.split('.')
-            full_filename = os.path.join(args.dir, method, filename)
-            if ext == "csv":
-                result_data[method][metric] = np.loadtxt(full_filename, delimiter=',')
-            elif ext == "json":
-                with open(full_filename) as fp:
-                    file_data = json.load(fp)
-                    result_data[method][metric] = (np.array(file_data["counts"]) / file_data["total"])
-            else:
-                raise ValueError(f"Unrecognized extension {ext} in {method}/{filename}")
+    result_data = load_results(args.dir)
 
-    for method in methods:
+    for method in result_data:
         print(method)
         for res in result_data[method]:
             print(f"    {res}: {result_data[method][res].shape}")
@@ -58,17 +34,17 @@ if __name__ == "__main__":
             if len(m_data.shape) > 1:
                 mean = np.mean(m_data, axis=0)
                 sd = np.std(m_data, axis=0)
-                l = p.line(x=np.arange(m_data.shape[1]), y=mean, color=col)
+                l = p.line(x=np.arange(m_data.shape[1]), y=mean, color=col, line_width=2)
                 a = p.varea(x=np.arange(m_data.shape[1]),
                             y1=(mean - (1.96 * sd / np.sqrt(m_data.shape[0]))),
                             y2=(mean + (1.96 * sd / np.sqrt(m_data.shape[0]))),
                             color=col, alpha=0.2)
                 legend_data.append((method, [l, a]))
             else:
-                l = p.line(x=np.arange(m_data.shape[0]), y=m_data, color=col)
+                l = p.line(x=np.arange(m_data.shape[0]), y=m_data, color=col, line_width=2)
                 legend_data.append((method, [l]))
         legend = Legend(items=legend_data)
         legend.click_policy = "hide"
         p.add_layout(legend, "right")
         figures.append(p)
-    show(column(figures))
+    show(column([Div(text=f"<h1>Directory: {args.dir}</h1>")] + figures))
