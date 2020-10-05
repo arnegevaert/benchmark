@@ -2,7 +2,7 @@ import argparse
 import itertools
 from torch.utils.data import DataLoader
 from attrbench.evaluation import *
-from experiments.benchmark.util import get_ds_model, get_methods, get_mask_range
+from experiments.lib.util import get_ds_model, get_methods, get_mask_range
 import numpy as np
 import torch
 from tqdm import tqdm

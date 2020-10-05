@@ -11,3 +11,4 @@ out
 .ipynb_checkpoints
 *.json
 *.egg-info
+*.html
