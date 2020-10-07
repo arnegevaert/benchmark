@@ -1,5 +1,5 @@
 import argparse
-from experiments.benchmark import load_results
+from experiments.benchmark import load_results, correlation_heatmap
 import numpy as np
 import matplotlib.pyplot as plt
 import warnings
@@ -17,9 +17,11 @@ if __name__ == "__main__":
     Internal consistency reliability: pairwise correlation between scores of a single method
     produced by different metrics on the images.
     """
+    fig, axs = plt.subplots(4, 2, figsize=(15, 25))
+    axs = axs.flatten()
+
     metrics = ["insertion", "deletion", "infidelity", "sens-n"]
-    all_corrs = {}
-    for method in all_data:
+    for i, method in enumerate(all_data):
         method_data = []
         # TODO max-sens could also be incorporated if we save per-sample results
         # TODO for insertion/deletion: should we normalize each sample to 0-1 or just take avg of logits?
@@ -34,32 +36,6 @@ if __name__ == "__main__":
             else:
                 method_data.append(np.mean(m_data, axis=1))
         corrs = np.corrcoef(np.vstack(method_data))
-        all_corrs[method] = corrs
-
-    fig, axs = plt.subplots(4, 2, figsize=(15, 25))
-    axs = axs.flatten()
-    for i, method in enumerate(all_corrs):
-        ax = axs[i]
-        ax.set_title(method)
-        im = ax.imshow(all_corrs[method])
-
-        # We want to show all ticks...
-        ax.set_xticks(np.arange(len(metrics)))
-        ax.set_yticks(np.arange(len(metrics)))
-        # ... and label them with the respective list entries
-        ax.set_xticklabels(metrics)
-        ax.set_yticklabels(metrics)
-
-        # Rotate the tick labels and set their alignment.
-        plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-                 rotation_mode="anchor")
-
-        # Loop over data dimensions and create text annotations.
-        for i in range(len(metrics)):
-            for j in range(len(metrics)):
-                text = ax.text(j, i, f"{all_corrs[method][i, j]:.3f}",
-                               ha="center", va="center", color="w")
-
+        correlation_heatmap(axs[i], corrs, metrics, method)
     fig.tight_layout()
     fig.savefig(args.output)
-    #plt.show()
