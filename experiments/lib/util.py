@@ -49,7 +49,9 @@ _METHODS = {
     "GuidedBackprop": lambda model: GuidedBackprop(model),
     "Deconvolution": lambda model: Deconvolution(model),
     "GuidedGradCAM": lambda model, shape: GuidedGradCAM(model, model.get_last_conv_layer(), upsample_shape=shape),
-    "GradCAM": lambda model, shape: GradCAM(model, model.get_last_conv_layer(), shape)
+    "GradCAM": lambda model, shape: GradCAM(model, model.get_last_conv_layer(), shape),
+    "Random": lambda: Random(),
+    "EdgeDetection": lambda: EdgeDetection()
 }
 
 
@@ -70,6 +72,8 @@ def get_methods(model, batch_size, sample_shape, methods=None):
             return _METHODS[m_name](model, batch_size)
         elif m_name in ["GuidedGradCAM", "GradCAM"]:
             return _METHODS[m_name](model, sample_shape)
+        elif m_name in ["Random", "EdgeDetection"]:
+            return _METHODS[m_name]()
         else:
             return _METHODS[m_name](model)
     keys = methods if methods else list(_METHODS.keys())
