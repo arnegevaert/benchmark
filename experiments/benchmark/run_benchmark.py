@@ -32,7 +32,22 @@ if __name__ == "__main__":
     model.to(device)
     model.eval()
     mask_range = get_mask_range(args.dataset)
+    pert_range = list(np.linspace(.01, .3, 10))
 
+    # Save metadata
+    meta = {
+        "infidelity": {"x": pert_range},
+        "insertion": {"x": mask_range},
+        "deletion": {"x": mask_range},
+        "max-sens": {"x": pert_range},
+        "sens-n": {"x": mask_range[1:]},
+        "impact": {"x": mask_range[1:]},
+        "s-impact": {"x": mask_range[1:]}
+    }
+    with open(path.join(args.out_dir, "meta.json"), "w") as fp:
+        json.dump(meta, fp)
+
+    # Run benchmark
     for i, m_name in enumerate(methods):
         method = methods[m_name]
         print(f"{m_name} ({i+1}/{len(methods)})")
@@ -57,7 +72,7 @@ if __name__ == "__main__":
             # Infidelity
             prog.set_postfix({"metric": "Infidelity"})
             batch_infidelity = infidelity(batch, labels, model, method,
-                                          perturbation_range=list(np.linspace(.01, .3, 10)),
+                                          perturbation_range=pert_range,
                                           num_perturbations=16)
             res["infidelity"].append(batch_infidelity)
             prog.update(1)
@@ -79,7 +94,7 @@ if __name__ == "__main__":
             # Max-sensitivity
             prog.set_postfix({"metric": "Max-sensitivity"})
             batch_max_sens = max_sensitivity(batch, labels, method,
-                                             perturbation_range=list(np.linspace(.01, .3, 10)),
+                                             perturbation_range=pert_range,
                                              num_perturbations=16)
             res["max-sens"].append(batch_max_sens)
             prog.update(1)
