@@ -49,7 +49,7 @@ class Aptos(Dataset):
     def __getitem__(self, item):
         sample = self.transform(images=np.expand_dims(self.x_array[item], axis=0))
         label = self.y_array[item]
-        return torch.tensor(sample).squeeze(), torch.tensor(label)
+        return torch.tensor(sample, dtype=torch.float).squeeze(), torch.tensor(label)
 
     def __len__(self):
         return self.x_array.shape[0]

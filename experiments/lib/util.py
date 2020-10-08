@@ -36,7 +36,7 @@ _DATASET_MODELS = {
         "ds": lambda: Aptos(path.join(_DATA_LOC, "APTOS"), train=False),
         "mask_range": list(range(0, 224*224//2, 1000)),
         "models": {
-            "densenet121": lambda: Densenet("densenet121", 10, path.join(_DATA_LOC, "models/Aptos/densenet121.pt"))
+            "densenet121": lambda: Densenet("densenet121", 5, path.join(_DATA_LOC, "models/Aptos/densenet121.pt"))
         }
     }
 }
