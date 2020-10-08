@@ -20,6 +20,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--cuda", action="store_true")
     parser.add_argument("-o", "--out-dir", type=str)
     parser.add_argument("--methods", type=str, nargs="+", default=None)
+    parser.add_argument("--metrics", type=str, nargs="+", default=None)
     # Parse arguments
     args = parser.parse_args()
     if not path.isdir(args.out_dir):
@@ -33,9 +34,7 @@ if __name__ == "__main__":
     model.eval()
     mask_range = get_mask_range(args.dataset)
     pert_range = list(np.linspace(.01, .3, 10))
-
-    # Save metadata
-    meta = {
+    metadata = {
         "infidelity": {"x": pert_range},
         "insertion": {"x": mask_range},
         "deletion": {"x": mask_range},
@@ -44,8 +43,17 @@ if __name__ == "__main__":
         "impact": {"x": mask_range[1:]},
         "s-impact": {"x": mask_range[1:]}
     }
+
+    # Validate metrics argument
+    if args.metrics:
+        for m in args.metrics:
+            if m not in list(metadata.keys()):
+                raise ValueError(f"Unrecognized metric: {m}")
+
+    # Save metadata
+    metrics = args.metrics if args.metrics else list(metadata.keys())
     with open(path.join(args.out_dir, "meta.json"), "w") as fp:
-        json.dump(meta, fp)
+        json.dump({key: metadata[key] for key in metrics}, fp)
 
     # Run benchmark
     for i, m_name in enumerate(methods):
@@ -57,80 +65,90 @@ if __name__ == "__main__":
             os.makedirs(subdir)
         # Prepare results
         res = {}
-        for name in ["infidelity", "insertion", "deletion", "max-sens", "sens-n"]:
-            res[name] = []
-        for name in ["impact", "s-impact"]:
-            res[name] = {"counts": [], "total": 0}
+        for name in metrics:
+            if name in ["infidelity", "insertion", "deletion", "max-sens", "sens-n"]:
+                res[name] = []
+            elif name in ["impact", "s-impact"]:
+                res[name] = {"counts": [], "total": 0}
 
         # Calculate metrics for each batch
         dataloader = itertools.islice(DataLoader(dataset, batch_size=args.batch_size), args.num_batches)
         for i, (batch, labels) in enumerate(dataloader):
-            prog = tqdm(total=7, desc=f"{i + 1}/{args.num_batches}")
+            prog = tqdm(total=len(metrics), desc=f"{i + 1}/{args.num_batches}")
             batch = batch.to(device)
             labels = labels.to(device)
 
             # Infidelity
-            prog.set_postfix({"metric": "Infidelity"})
-            batch_infidelity = infidelity(batch, labels, model, method,
-                                          perturbation_range=pert_range,
-                                          num_perturbations=16)
-            res["infidelity"].append(batch_infidelity)
-            prog.update(1)
+            if "infidelity" in metrics:
+                prog.set_postfix({"metric": "Infidelity"})
+                batch_infidelity = infidelity(batch, labels, model, method,
+                                              perturbation_range=pert_range,
+                                              num_perturbations=16)
+                res["infidelity"].append(batch_infidelity)
+                prog.update(1)
 
             # Insertion curves
-            prog.set_postfix({"metric": "Insertion curves"})
-            batch_ins_curves = insertion_deletion_curves(batch, labels, model, method, mask_range,
-                                                         mask_value=0., mode="insertion")
-            res["insertion"].append(batch_ins_curves)
-            prog.update(1)
+            if "insertion" in metrics:
+                prog.set_postfix({"metric": "Insertion curves"})
+                batch_ins_curves = insertion_deletion_curves(batch, labels, model, method, mask_range,
+                                                             mask_value=0., mode="insertion")
+                res["insertion"].append(batch_ins_curves)
+                prog.update(1)
 
             # Deletion curves
-            prog.set_postfix({"metric": "Deletion curves"})
-            batch_del_curves = insertion_deletion_curves(batch, labels, model, method, mask_range,
-                                                         mask_value=0., mode="deletion")
-            res["deletion"].append(batch_del_curves)
-            prog.update(1)
+            if "deletion" in metrics:
+                prog.set_postfix({"metric": "Deletion curves"})
+                batch_del_curves = insertion_deletion_curves(batch, labels, model, method, mask_range,
+                                                             mask_value=0., mode="deletion")
+                res["deletion"].append(batch_del_curves)
+                prog.update(1)
 
             # Max-sensitivity
-            prog.set_postfix({"metric": "Max-sensitivity"})
-            batch_max_sens = max_sensitivity(batch, labels, method,
-                                             perturbation_range=pert_range,
-                                             num_perturbations=16)
-            res["max-sens"].append(batch_max_sens)
-            prog.update(1)
+            if "max-sens" in metrics:
+                prog.set_postfix({"metric": "Max-sensitivity"})
+                batch_max_sens = max_sensitivity(batch, labels, method,
+                                                 perturbation_range=pert_range,
+                                                 num_perturbations=16)
+                res["max-sens"].append(batch_max_sens)
+                prog.update(1)
 
             # Sensitivity-n
-            prog.set_postfix({"metric": "Sensitivity-n"})
-            batch_sens_n = sensitivity_n(batch, labels, model, method, mask_range[1:],
-                                         num_subsets=100, mask_value=0.)
-            res["sens-n"].append(batch_sens_n)
-            prog.update(1)
+            if "sens-n" in metrics:
+                prog.set_postfix({"metric": "Sensitivity-n"})
+                batch_sens_n = sensitivity_n(batch, labels, model, method, mask_range[1:],
+                                             num_subsets=100, mask_value=0.)
+                res["sens-n"].append(batch_sens_n)
+                prog.update(1)
 
             # Impact score (non-strict)
-            prog.set_postfix({"metric": "Impact Score"})
-            batch_impact_score, b_i_count = impact_score(batch, labels, model, mask_range[1:], method,
-                                                         mask_value=0., tau=.5, strict=False)
-            res["impact"]["counts"].append(batch_impact_score)
-            res["impact"]["total"] += b_i_count
-            prog.update(1)
+            if "impact" in metrics:
+                prog.set_postfix({"metric": "Impact Score"})
+                batch_impact_score, b_i_count = impact_score(batch, labels, model, mask_range[1:], method,
+                                                             mask_value=0., tau=.5, strict=False)
+                res["impact"]["counts"].append(batch_impact_score)
+                res["impact"]["total"] += b_i_count
+                prog.update(1)
 
             # Impact score (strict)
-            prog.set_postfix({"metric": "Strict Impact Score"})
-            batch_s_impact_score, b_s_i_count = impact_score(batch, labels, model, mask_range[1:], method,
-                                                             mask_value=0., strict=True)
-            res["s-impact"]["counts"].append(batch_s_impact_score)
-            res["s-impact"]["total"] += b_s_i_count
-
-            prog.update(1)
+            if "s-impact" in metrics:
+                prog.set_postfix({"metric": "Strict Impact Score"})
+                batch_s_impact_score, b_s_i_count = impact_score(batch, labels, model, mask_range[1:], method,
+                                                                 mask_value=0., strict=True)
+                res["s-impact"]["counts"].append(batch_s_impact_score)
+                res["s-impact"]["total"] += b_s_i_count
+                prog.update(1)
             prog.close()
 
         # Aggregate and save
         for name in ["infidelity", "insertion", "deletion", "sens-n"]:
-            res[name] = torch.cat(res[name], dim=0)
-            np.savetxt(path.join(subdir, f"{name}.csv"), res[name].numpy(), delimiter=',')
+            if name in metrics:
+                res[name] = torch.cat(res[name], dim=0)
+                np.savetxt(path.join(subdir, f"{name}.csv"), res[name].numpy(), delimiter=',')
         for name in ["impact", "s-impact"]:
-            res[name]["counts"] = torch.sum(torch.stack(res[name]["counts"], dim=0), dim=0).numpy().tolist()
-            with open(path.join(subdir, f"{name}.json"), "w") as fp:
-                json.dump(res[name], fp)
-        res["max-sens"] = torch.max(torch.stack(res["max-sens"], dim=0), dim=0)[0]
-        np.savetxt(path.join(subdir, f"max-sens.csv"), res["max-sens"].numpy(), delimiter=",")
+            if name in metrics:
+                res[name]["counts"] = torch.sum(torch.stack(res[name]["counts"], dim=0), dim=0).numpy().tolist()
+                with open(path.join(subdir, f"{name}.json"), "w") as fp:
+                    json.dump(res[name], fp)
+        if "max-sens" in metrics:
+            res["max-sens"] = torch.cat(res["max-sens"], dim=0)
+            np.savetxt(path.join(subdir, f"max-sens.csv"), res["max-sens"].numpy(), delimiter=",")
