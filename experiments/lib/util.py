@@ -2,8 +2,9 @@ from experiments.lib.datasets import Cifar, MNIST, ImageNette, Aptos
 from experiments.lib.models import Alexnet, BasicCNN, BasicMLP, Densenet, Mobilenet_v2, Resnet, Squeezenet, Vgg
 from experiments.lib.attribution import *
 from os import path
+import os
 
-_DATA_LOC = path.join(path.dirname(__file__), "../../data")
+_DATA_LOC = os.environ["BM_DATA_LOC"] if "BM_DATA_LOC" in os.environ else path.join(path.dirname(__file__), "../../data")
 
 _DATASET_MODELS = {
     "MNIST": {
