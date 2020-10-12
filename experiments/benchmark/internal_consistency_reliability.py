@@ -11,7 +11,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output", type=str)
     args = parser.parse_args()
 
-    all_data = load_results(args.dir)
+    all_data, _ = load_results(args.dir)
 
     """
     Internal consistency reliability: pairwise correlation between scores of a single method
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     fig, axs = plt.subplots(4, 2, figsize=(15, 25))
     axs = axs.flatten()
 
-    metrics = ["insertion", "deletion", "infidelity", "sens-n"]
+    metrics = ["insertion", "deletion", "infidelity", "sens-n", "max-sens"]
     for i, method in enumerate(all_data):
         method_data = []
         # TODO max-sens could also be incorporated if we save per-sample results

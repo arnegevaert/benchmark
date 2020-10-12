@@ -11,16 +11,16 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output", type=str)
     args = parser.parse_args()
 
-    all_data = load_results(args.dir)
+    all_data, _ = load_results(args.dir)
 
     """
     Inter-method reliability: pairwise correlation between scores of different methods
     produced by a single metric on the images.
     """
-    fig, axs = plt.subplots(2, 2, figsize=(20, 20))
+    fig, axs = plt.subplots(3, 2, figsize=(20, 20))
     axs = axs.flatten()
 
-    metrics = ["insertion", "deletion", "infidelity", "sens-n"]
+    metrics = ["insertion", "deletion", "infidelity", "sens-n", "max-sens"]
     for i, metric in enumerate(metrics):
         raw_metric_data = get_metric(all_data, metric)
         metric_data = []

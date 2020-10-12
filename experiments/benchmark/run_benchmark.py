@@ -116,7 +116,7 @@ if __name__ == "__main__":
             if "sens-n" in metrics:
                 prog.set_postfix({"metric": "Sensitivity-n"})
                 batch_sens_n = sensitivity_n(batch, labels, model, method, mask_range[1:],
-                                             num_subsets=100, mask_value=0.)
+                                             num_subsets=16, mask_value=0.)
                 res["sens-n"].append(batch_sens_n)
                 prog.update(1)
 

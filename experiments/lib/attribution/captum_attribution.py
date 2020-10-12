@@ -4,7 +4,7 @@ import torch.nn as nn
 
 
 class CaptumMethod(AttributionMethod):
-    def __init__(self, method: attr.Attribution, normalize=True, aggregation_fn=None, **kwargs):
+    def __init__(self, method: attr.Attribution, normalize=False, aggregation_fn=None, **kwargs):
         super(CaptumMethod, self).__init__(normalize, aggregation_fn)
         self.method = method
         self.attribute_kwargs = kwargs
