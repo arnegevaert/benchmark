@@ -10,10 +10,8 @@ def max_sensitivity(samples: torch.Tensor, labels: torch.Tensor, method: Callabl
     attrs = method(samples, labels)  # [batch_size, *sample_shape]
     norm = torch.norm(attrs.flatten(1), dim=1)
     for eps in perturbation_range:
-        print(f"eps: {eps}")
         diffs = []
         for _ in range(num_perturbations):
-            print("perturb")
             # Add uniform noise in [-eps, eps]
             noise = torch.rand(samples.shape, device=device) * 2 * eps - eps
             noisy_samples = samples + noise
