@@ -13,3 +13,4 @@ out
 *.egg-info
 *.html
 *.png
+tmp
