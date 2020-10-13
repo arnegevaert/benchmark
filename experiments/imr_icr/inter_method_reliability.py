@@ -1,5 +1,5 @@
 import argparse
-from experiments.benchmark import load_results, get_metric, correlation_heatmap
+from experiments.imr_icr import load_results, get_metric, correlation_heatmap
 import numpy as np
 import warnings
 import matplotlib.pyplot as plt
