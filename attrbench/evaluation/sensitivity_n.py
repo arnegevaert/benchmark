@@ -11,7 +11,6 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
     attrs = method(samples, labels)
     result = []
     batch_size = samples.size(0)
-    sample_size = np.prod(samples.shape[1:])
 
     with torch.no_grad():
         orig_output = model(samples)
@@ -21,7 +20,7 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
         sum_of_attrs = []
         for _ in range(num_subsets):
             # Generate mask and masked samples
-            indices = torch.tensor(np.random.choice(sample_size, n*batch_size)).reshape((batch_size, n))
+            indices = torch.tensor(np.random.choice(np.prod(attrs.shape[1:]), n*batch_size)).reshape((batch_size, n))
             masked_samples = mask_pixels(samples, indices, mask_value, pixel_level_mask=attrs.size(1) == 1)
             # Get output on masked samples
             with torch.no_grad():
