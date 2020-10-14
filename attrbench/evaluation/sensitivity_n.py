@@ -1,6 +1,6 @@
 from typing import Callable, List, Union, Tuple
 import numpy as np
-from attrbench.lib.util import mask_pixels, sum_of_attributions
+from attrbench.util import mask_pixels, sum_of_attributions
 import torch
 import warnings
 

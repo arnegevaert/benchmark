@@ -1,5 +1,5 @@
 from typing import List, Callable
-from attrbench.lib.util import mask_pixels
+from attrbench.util import mask_pixels
 import torch
 from torch.nn.functional import softmax
 

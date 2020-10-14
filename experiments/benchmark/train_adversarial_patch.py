@@ -2,17 +2,8 @@ import argparse
 import torch
 from os import path
 from torch.utils.data import DataLoader
-
-# This block allows us to import from the benchmark folder,
-# as if it was a package installed using pip
-import os
-import sys
-module_path = os.path.abspath(os.path.join('../../..'))
-if module_path not in sys.path:
-    sys.path.append(module_path)
-
 from experiments.lib import datasets, models
-from impact_coverage import make_patch
+from attrbench.util import make_patch
 
 
 def parse_args():

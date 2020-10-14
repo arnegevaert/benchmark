@@ -24,6 +24,7 @@ if __name__ == "__main__":
     parser.add_argument("--metrics", type=str, nargs="+", default=None)
     parser.add_argument("--patch", type=str, default=None)
     parser.add_argument("--aggregation_fn", type=str, choices=["avg", "max_abs"], default=None)
+    parser.add_argument("--num-workers", type=int, default=4)
     # Parse arguments
     args = parser.parse_args()
     if not path.isdir(args.out_dir):
