@@ -154,6 +154,7 @@ if __name__ == "__main__":
                 patch = torch.load(args.patch)
                 iou, keep = impact_coverage(batch, labels, model, method, patch, target_label=0)
                 res["i-coverage"].append(iou[keep])
+                prog.update(1)
 
             prog.close()
 
