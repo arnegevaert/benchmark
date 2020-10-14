@@ -108,9 +108,6 @@ def make_patch(dataloader, model, target_label, patch_path, device, patch_percen
             if x.max() > data_max:
                 data_max = x.max().item()
 
-    model_output_logits = model.output_logits
-    model.output_logits = True
-
     model.to(device)
     for param in model.parameters():
         param.requires_grad = False
@@ -141,42 +138,3 @@ def make_patch(dataloader, model, target_label, patch_path, device, patch_percen
         if schedule is not None:
             schedule.step(val_loss)
         if cb is not None: cb.step(val_loss, patch)
-
-    model.output_logits = model_output_logits
-
-
-if __name__ == '__main__':
-
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    dataset = 'CIFAR10' #'ImageNette'#'CIFAR10' #'MNIST'
-    data_root = '../../../data'
-
-    target_label = 3
-    batch_size = 8
-    use_logits = True
-    model_type = 'Resnet' # BasicCNN
-    model_params = '../../../data/models/CIFAR10_resnet18_2.pth' # '../../../data/models/mnist_cnn.pth'
-    model_version = 'resnet18'#None #'resnet18' #None
-    if dataset == "CIFAR10":
-        dataset = datasets.Cifar(batch_size=batch_size, data_location=path.join(data_root, "CIFAR10"),
-                                 download=False, shuffle=True, version="cifar10")
-    elif dataset == "MNIST":
-        dataset = datasets.MNIST(batch_size=batch_size, data_location=path.join(data_root, "MNIST"),
-                                 download=False, shuffle=True)
-    elif dataset == "ImageNette":
-        dataset = datasets.ImageNette(batch_size=batch_size, data_location=path.join(data_root, "ImageNette"),
-                                      shuffle=True)
-    elif dataset == "Aptos":
-        dataset = datasets.Aptos(batch_size=batch_size, data_location=path.join(data_root, "APTOS"), img_size=320)
-    model_kwargs = {
-        "params_loc": model_params,
-        "output_logits": use_logits,
-        "num_classes": dataset.num_classes
-    }
-    model_constructor = getattr(models, model_type)
-    if model_version:
-        model_kwargs["version"] = model_version
-    model = model_constructor(**model_kwargs)
-    model.to(device)
-    model.eval()
-    make_patch(dataset.get_dataloader(train=False), model, target_label, 'test_patch.pth', device, epochs=20, lr=0.05,patch_percent=0.05)

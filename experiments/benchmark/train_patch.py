@@ -12,7 +12,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--batch-size", type=int)
     parser.add_argument("-c", "--cuda", action="store_true")
     parser.add_argument("-o", "--output", type=str)
-    parser.add_argument("-p", "--percent", type=float, default=0.05)
+    parser.add_argument("-s", "--patch_size", type=float, default=0.05)
     parser.add_argument("-t", "--target", type=int, default=0)
     parser.add_argument("--lr", type=float, default=0.05)
     parser.add_argument("--epochs", type=int, default=20)
@@ -29,4 +29,4 @@ if __name__ == "__main__":
 
     dl = DataLoader(dataset, batch_size=args.batch_size, num_workers=16)
     make_patch(dl, model, args.target, args.output, device, epochs=args.epochs,
-               lr=args.lr, patch_percent=args.percent)
+               lr=args.lr, patch_percent=args.patch_size)

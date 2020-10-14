@@ -36,6 +36,8 @@ if __name__ == "__main__":
     methods = get_methods(model, args.batch_size, dataset.sample_shape[-2:],
                           args.aggregation_fn, args.methods)
     model.to(device)
+    for param in model.parameters():
+        param.requires_grad = False
     model.eval()
     mask_range = get_mask_range(args.dataset)
     pert_range = list(np.linspace(.01, .3, 10))
