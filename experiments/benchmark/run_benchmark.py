@@ -83,7 +83,7 @@ if __name__ == "__main__":
                 res[name] = {"counts": [], "total": 0}
 
         # Calculate metrics for each batch
-        dataloader = itertools.islice(DataLoader(dataset, batch_size=args.batch_size), args.num_batches)
+        dataloader = itertools.islice(DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers), args.num_batches)
         for i, (batch, labels) in enumerate(dataloader):
             prog = tqdm(total=len(metrics), desc=f"{i + 1}/{args.num_batches}")
             batch = batch.to(device)
