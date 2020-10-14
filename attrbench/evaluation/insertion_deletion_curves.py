@@ -16,7 +16,6 @@ def insertion_deletion_curves(samples: torch.Tensor, labels: torch.Tensor, model
 
     result = []
     attrs = method(samples, labels)  # [batch_size, *sample_shape]
-    pixel_level = attrs.size(1) == 1
     # Flatten each sample in order to sort indices per sample
     attrs = attrs.flatten(1)  # [batch_size, -1]
     # Sort indices of attrs in ascending order
@@ -25,7 +24,7 @@ def insertion_deletion_curves(samples: torch.Tensor, labels: torch.Tensor, model
     for i in mask_range:
         # Mask/insert pixels
         if i > 0:
-            masked_samples = _MASK_METHODS[mode](samples, sorted_indices[:, -i:], mask_value, pixel_level)
+            masked_samples = _MASK_METHODS[mode](samples, sorted_indices[:, -i:], mask_value, attrs.size(1) == 1)
         else:
             masked_samples = samples if mode == "deletion" else torch.ones(samples.shape).to(device) * mask_value
         # Get predictions for result

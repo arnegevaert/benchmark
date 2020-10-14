@@ -10,11 +10,11 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, met
     # Get original model output
     with torch.no_grad():
         orig_output = (model(samples)).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
-    explanation = method(samples, labels)
+    attrs = method(samples, labels)
     # If explanation is on pixel level, we need to replicate value for each pixel n_channels times,
     # since perturbations are [batch_size, n_channels, width, height]
-    if explanation.size(1) == 1:
-        explanation = explanation.repeat(1, n_channels, 1, 1)
+    if attrs.size(1) == 1:
+        attrs = attrs.repeat(1, n_channels, 1, 1)
 
     for eps in perturbation_range:
         eps_result = []
@@ -29,7 +29,7 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, met
             # I = x - z_0 = x_0 - x_0 - \eps = -\eps.
             # I = -\eps = -perturbation
             # Note: element-wise product followed by sum(dim=1) == diagonal of matmul (without doing entire matmul)
-            dot_product = (explanation.flatten(1) * -perturbation.flatten(1)).sum(dim=1, keepdim=True)  # [batch_size, 1]
+            dot_product = (attrs.flatten(1) * -perturbation.flatten(1)).sum(dim=1, keepdim=True)  # [batch_size, 1]
             eps_result.append((dot_product - (orig_output - perturbed_output))**2)  # [batch_size, 1]
         result.append(torch.stack(eps_result, dim=1).mean(dim=1))  # [batch_size]
     return torch.cat(result, dim=1).cpu().detach()  # [batch_size, len(perturbation_range)]

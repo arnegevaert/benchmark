@@ -21,11 +21,10 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, m
     orig_confidence = softmax(orig_out, dim=1).gather(dim=1, index=labels.view(-1, 1))
     if batch_size > 0:
         attrs = method(samples, target=labels)
-        pixel_level_attrs = len(attrs.shape) == 3
         attrs = attrs.flatten(1)
         sorted_indices = attrs.argsort().cpu()
         for n_idx, n in enumerate(mask_range):
-            masked_samples = mask_pixels(samples, sorted_indices[:, -n:], mask_value, pixel_level_attrs)
+            masked_samples = mask_pixels(samples, sorted_indices[:, -n:], mask_value, pixel_level_mask=attrs.size(1) == 1)
             with torch.no_grad():
                 masked_out = model(masked_samples)
             confidence = softmax(masked_out, dim=1).gather(dim=1, index=labels.view(-1, 1))

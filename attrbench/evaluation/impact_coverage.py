@@ -1,4 +1,3 @@
-import numpy as np
 from typing import Callable
 from attrbench.lib.util import mask_pixels
 import torch
@@ -21,23 +20,14 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
     attrs = method(samples, target=target_label)
     flattened_attrs = attrs.flatten(1)
     sorted_indices = flattened_attrs.argsort().cpu()
-    if len(attrs.shape) not in (3, 4):
-        raise ValueError("Attributions must have 3 (per-pixel) or 4 (per-channel) dimensions."
-                         f"Shape was f{attrs.shape}")
-    pixel_level = (len(attrs.shape) == 3)
-    nr_top_attributions = np.prod(patch.shape[2:]).item()
-    if pixel_level:
-        nr_top_attributions *= attrs.shape[1]
+    nr_top_attributions = patch_size**2
 
     to_mask = sorted_indices[:, -nr_top_attributions:]
-    critical_factor_mask = mask_pixels(torch.zeros(attrs.shape), to_mask, 1., pixel_level)
+    critical_factor_mask = mask_pixels(torch.zeros(attrs.shape), to_mask, 1., pixel_level_mask=(attrs.size(1) == 1))
 
     # Create masks from patch itself
     patch_mask = torch.zeros(attrs.shape)
-    if pixel_level:
-        patch_mask[:, indx:indx + patch_size, indy:indy + patch_size] = 1
-    else:
-        patch_mask[:, :, indx:indx + patch_size, indy:indy + patch_size] = 1
+    patch_mask[:, :, indx:indx + patch_size, indy:indy + patch_size] = 1
 
     # Get model output on adversarial sample
     adv_out = model(samples)
