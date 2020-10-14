@@ -43,16 +43,16 @@ _DATASET_MODELS = {
 }
 
 _METHODS = {
-    "Gradient": lambda model: Gradient(model),
-    "SmoothGrad": lambda model: SmoothGrad(model),
-    "InputXGradient": lambda model: InputXGradient(model),
-    "IntegratedGradients": lambda model, bs: IntegratedGradients(model, internal_batch_size=bs),
-    "GuidedBackprop": lambda model: GuidedBackprop(model),
-    "Deconvolution": lambda model: Deconvolution(model),
-    "GuidedGradCAM": lambda model, shape: GuidedGradCAM(model, model.get_last_conv_layer(), upsample_shape=shape),
-    "GradCAM": lambda model, shape: GradCAM(model, model.get_last_conv_layer(), shape),
-    "Random": lambda: Random(),
-    "EdgeDetection": lambda: EdgeDetection()
+    "Gradient": lambda model, agg: Gradient(model, aggregation_fn=agg),
+    "SmoothGrad": lambda model, agg: SmoothGrad(model, aggregation_fn=agg),
+    "InputXGradient": lambda model, agg: InputXGradient(model, aggregation_fn=agg),
+    "IntegratedGradients": lambda model, bs, agg: IntegratedGradients(model, internal_batch_size=bs, aggregation_fn=agg),
+    "GuidedBackprop": lambda model, agg: GuidedBackprop(model, aggregation_fn=agg),
+    "Deconvolution": lambda model, agg: Deconvolution(model, aggregation_fn=agg),
+    "GuidedGradCAM": lambda model, shape, agg: GuidedGradCAM(model, model.get_last_conv_layer(), upsample_shape=shape, aggregation_fn=agg),
+    "GradCAM": lambda model, shape, agg: GradCAM(model, model.get_last_conv_layer(), shape, aggregation_fn=agg),
+    "Random": lambda agg: Random(aggregation_fn=agg),
+    "EdgeDetection": lambda agg: EdgeDetection(aggregation_fn=agg)
 }
 
 
@@ -67,16 +67,16 @@ def get_ds_model(dataset, model):
     return ds_obj, model_obj
 
 
-def get_methods(model, batch_size, sample_shape, methods=None):
+def get_methods(model, batch_size, sample_shape, aggregation_fn, methods=None):
     def _instantiate(m_name):
         if m_name == "IntegratedGradients":
-            return _METHODS[m_name](model, batch_size)
+            return _METHODS[m_name](model, batch_size, aggregation_fn)
         elif m_name in ["GuidedGradCAM", "GradCAM"]:
-            return _METHODS[m_name](model, sample_shape)
+            return _METHODS[m_name](model, sample_shape, aggregation_fn)
         elif m_name in ["Random", "EdgeDetection"]:
-            return _METHODS[m_name]()
+            return _METHODS[m_name](aggregation_fn)
         else:
-            return _METHODS[m_name](model)
+            return _METHODS[m_name](model, aggregation_fn)
     keys = methods if methods else list(_METHODS.keys())
     return {key: _instantiate(key) for key in keys}
 

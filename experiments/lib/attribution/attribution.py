@@ -19,18 +19,18 @@ def normalize_attributions(attrs):
 
 def _max_abs_aggregation(x):
     abs_value = x.abs()
-    index = torch.argmax(abs_value, dim=1).unsqueeze(1)
-    return torch.gather(x, dim=1, index=index).squeeze()
+    index = torch.argmax(abs_value, dim=1, keepdim=True)
+    return torch.gather(x, dim=1, index=index)
 
 
 class AttributionMethod:
     def __init__(self, normalize=False, aggregation_fn=None):
         self.normalize = normalize
         aggregation_fns = {
-            "avg": lambda x: torch.mean(x, dim=1),
+            "avg": lambda x: torch.mean(x, dim=1, keepdim=True),
             "max_abs": _max_abs_aggregation
         }
-        self.aggregation_fn = aggregation_fns.get(aggregation_fn, None)
+        self.aggregation_fn = aggregation_fns[aggregation_fn] if aggregation_fn else None
 
     def _attribute(self, x, target, **kwargs):
         raise NotImplementedError

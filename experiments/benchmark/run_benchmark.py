@@ -9,6 +9,7 @@ from tqdm import tqdm
 from os import path
 import os
 import json
+import warnings
 
 
 if __name__ == "__main__":
@@ -21,6 +22,8 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--out-dir", type=str)
     parser.add_argument("--methods", type=str, nargs="+", default=None)
     parser.add_argument("--metrics", type=str, nargs="+", default=None)
+    parser.add_argument("--patch", type=str, default=None)
+    parser.add_argument("--aggregation_fn", type=str, choices=["avg", "max_abs"], default=None)
     # Parse arguments
     args = parser.parse_args()
     if not path.isdir(args.out_dir):
@@ -29,7 +32,8 @@ if __name__ == "__main__":
 
     # Get model, dataset, methods, params
     dataset, model = get_ds_model(args.dataset, args.model)
-    methods = get_methods(model, args.batch_size, dataset.sample_shape[-2:], args.methods)
+    methods = get_methods(model, args.batch_size, dataset.sample_shape[-2:],
+                          args.aggregation_fn, args.methods)
     model.to(device)
     model.eval()
     mask_range = get_mask_range(args.dataset)
@@ -41,7 +45,8 @@ if __name__ == "__main__":
         "max-sens": {"x": pert_range},
         "sens-n": {"x": mask_range[1:]},
         "impact": {"x": mask_range[1:]},
-        "s-impact": {"x": mask_range[1:]}
+        "s-impact": {"x": mask_range[1:]},
+        "i-coverage": {}
     }
 
     # Validate metrics argument
@@ -49,9 +54,14 @@ if __name__ == "__main__":
         for m in args.metrics:
             if m not in list(metadata.keys()):
                 raise ValueError(f"Unrecognized metric: {m}")
+    metrics = args.metrics if args.metrics else list(metadata.keys())
+
+    # If no adversarial patch is given, we skip impact coverage
+    if "i-coverage" in metrics and not args.patch:
+        warnings.warn("No adversarial patch found. Skipping impact coverage.")
+        metrics.remove("i-coverage")
 
     # Save metadata
-    metrics = args.metrics if args.metrics else list(metadata.keys())
     with open(path.join(args.out_dir, "meta.json"), "w") as fp:
         json.dump({key: metadata[key] for key in metrics}, fp)
 
@@ -66,7 +76,7 @@ if __name__ == "__main__":
         # Prepare results
         res = {}
         for name in metrics:
-            if name in ["infidelity", "insertion", "deletion", "max-sens", "sens-n"]:
+            if name in ["infidelity", "insertion", "deletion", "max-sens", "sens-n", "i-coverage"]:
                 res[name] = []
             elif name in ["impact", "s-impact"]:
                 res[name] = {"counts": [], "total": 0}
@@ -137,10 +147,18 @@ if __name__ == "__main__":
                 res["s-impact"]["counts"].append(batch_s_impact_score)
                 res["s-impact"]["total"] += b_s_i_count
                 prog.update(1)
+
+            # Impact coverage
+            if "i-coverage" in metrics:
+                prog.set_postfix({"metric": "Impact Coverage"})
+                patch = torch.load(args.patch)
+                iou, keep = impact_coverage(batch, labels, model, method, patch, target_label=0)
+                res["i-coverage"].append(iou[keep])
+
             prog.close()
 
         # Aggregate and save
-        for name in ["infidelity", "insertion", "deletion", "sens-n"]:
+        for name in ["infidelity", "insertion", "deletion", "sens-n", "i-coverage", "max-sens"]:
             if name in metrics:
                 res[name] = torch.cat(res[name], dim=0)
                 np.savetxt(path.join(subdir, f"{name}.csv"), res[name].numpy(), delimiter=',')
@@ -149,6 +167,3 @@ if __name__ == "__main__":
                 res[name]["counts"] = torch.sum(torch.stack(res[name]["counts"], dim=0), dim=0).numpy().tolist()
                 with open(path.join(subdir, f"{name}.json"), "w") as fp:
                     json.dump(res[name], fp)
-        if "max-sens" in metrics:
-            res["max-sens"] = torch.cat(res["max-sens"], dim=0)
-            np.savetxt(path.join(subdir, f"max-sens.csv"), res["max-sens"].numpy(), delimiter=",")

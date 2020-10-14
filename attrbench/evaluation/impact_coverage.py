@@ -4,11 +4,10 @@ from attrbench.lib.util import mask_pixels
 import torch
 
 
-def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, target_label: int, patch: torch.Tensor,
-                    model: Callable, method: Callable, device: str):
+def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
+                    patch: torch.Tensor, target_label: int):
     image_size = samples.shape[-1]
     patch_size = patch.shape[-1]
-    samples = samples.to(device, non_blocking=True)
     orig_out = model(samples)
 
     # Apply patch to all images in batch (random location, but same for each image in batch)
@@ -21,11 +20,11 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, target_label: i
     # Create masks from top n attributions
     attrs = method(samples, target=target_label)
     flattened_attrs = attrs.flatten(1)
-    sorted_indices = flattened_attrs.argsort()
+    sorted_indices = flattened_attrs.argsort().cpu()
     if len(attrs.shape) not in (3, 4):
         raise ValueError("Attributions must have 3 (per-pixel) or 4 (per-channel) dimensions."
                          f"Shape was f{attrs.shape}")
-    pixel_level = (len(attrs.shape) == 4)
+    pixel_level = (len(attrs.shape) == 3)
     nr_top_attributions = np.prod(patch.shape[2:]).item()
     if pixel_level:
         nr_top_attributions *= attrs.shape[1]
@@ -52,4 +51,5 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, target_label: i
     critical_factor_mask_flattened = critical_factor_mask.flatten(1).bool()
     intersection = (patch_mask_flattened & critical_factor_mask_flattened).sum(dim=1)
     union = (patch_mask_flattened | critical_factor_mask_flattened).sum(dim=1)
-    return intersection / union, keep
+    # [batch_size], [batch_size]
+    return intersection.float() / union.float(), keep.cpu()
