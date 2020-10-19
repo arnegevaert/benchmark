@@ -5,6 +5,8 @@ import warnings
 import matplotlib.pyplot as plt
 import os
 from os import path
+import pandas as pd
+import ppscore
 
 
 def correlation_heatmap(ax, corrs, names, title):
@@ -42,9 +44,10 @@ def normalize(m_data):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", type=str)
-    parser.add_argument("--out-dir", type=str)
+    parser.add_argument("data_dir", type=str)
+    parser.add_argument("out_dir", type=str)
     args = parser.parse_args()
+    os.makedirs(args.out_dir, exist_ok=True)
 
     datasets = os.listdir(args.data_dir)
     metrics = ["insertion", "deletion", "infidelity", "sens-n", "max-sens"]
@@ -85,3 +88,20 @@ if __name__ == "__main__":
             correlation_heatmap(axs[i], corrs, metrics, method)
         fig.tight_layout()
         fig.savefig(path.join(args.out_dir, f"{ds.lower()}-icr.png"))
+
+        """
+        Predictive Power score between metrics for each method
+        """
+        print(f"\tPPS...")
+        fig, axs = plt.subplots(5, 2, figsize=(15, 25))
+        axs = axs.flatten()
+
+        for i, method in enumerate(all_data):
+            df = pd.DataFrame()
+            for metric in metrics:
+                df[metric] = normalize(all_data[method][metric])
+            matrix = ppscore.matrix(df)
+            corrs = matrix[["x", "y", "ppscore"]].pivot(columns="x", index="y", values="ppscore")
+            correlation_heatmap(axs[i], corrs.to_numpy(), list(corrs.columns), method)
+        fig.tight_layout()
+        fig.savefig(path.join(args.out_dir, f"{ds.lower()}-pps.png"))

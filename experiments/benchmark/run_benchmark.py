@@ -1,7 +1,7 @@
 import argparse
 import itertools
 from torch.utils.data import DataLoader
-from attrbench.evaluation import *
+from attrbench.evaluation.independent import *
 from experiments.lib.util import get_ds_model, get_methods, get_mask_range
 import numpy as np
 import torch
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     parser.add_argument("--methods", type=str, nargs="+", default=None)
     parser.add_argument("--metrics", type=str, nargs="+", default=None)
     parser.add_argument("--patch", type=str, default=None)
-    parser.add_argument("--aggregation_fn", type=str, choices=["avg", "max_abs"], default=None)
+    parser.add_argument("--aggregation_fn", type=str, choices=["avg", "max_abs"], default="avg")
     parser.add_argument("--num-workers", type=int, default=4)
     # Parse arguments
     args = parser.parse_args()
