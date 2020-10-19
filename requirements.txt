@@ -1,5 +1,4 @@
 astroid==2.4.2
--e git+git@github.com:zoeparman/benchmark.git@d576cb081d0cae91e2f822bb1192fc2bc190050a#egg=attrbench
 attrs==19.3.0
 backcall==0.1.0
 bleach==3.1.4
@@ -64,6 +63,7 @@ parso==0.7.0
 pexpect==4.8.0
 pickleshare==0.7.5
 Pillow==7.2.0
+ppscore==1.1.1
 prometheus-client==0.7.1
 prompt-toolkit==3.0.5
 ptyprocess==0.6.0
