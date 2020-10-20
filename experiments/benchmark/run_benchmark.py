@@ -14,12 +14,12 @@ import warnings
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--dataset", type=str)
-    parser.add_argument("-m", "--model", type=str)
-    parser.add_argument("-b", "--batch-size", type=int)
-    parser.add_argument("-n", "--num-batches", type=int)
+    parser.add_argument("-d", "--dataset", type=str, required=True)
+    parser.add_argument("-m", "--model", type=str, required=True)
+    parser.add_argument("-b", "--batch-size", type=int, required=True)
+    parser.add_argument("-n", "--num-batches", type=int, required=True)
     parser.add_argument("-c", "--cuda", action="store_true")
-    parser.add_argument("-o", "--out-dir", type=str)
+    parser.add_argument("-o", "--out-dir", type=str, required=True)
     parser.add_argument("--methods", type=str, nargs="+", default=None)
     parser.add_argument("--metrics", type=str, nargs="+", default=None)
     parser.add_argument("--patch", type=str, default=None)

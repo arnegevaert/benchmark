@@ -7,7 +7,8 @@ import warnings
 
 # TODO we now look at actual labels. Add option to look at model output instead
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                  n_range: Union[List[int], Tuple[int]], num_subsets: int, mask_value: float):
+                  n_range: Union[List[int], Tuple[int]], num_subsets: int, mask_value: float,
+                  debug_mode=False):
     attrs = method(samples, labels)
     result = []
     batch_size = samples.size(0)
@@ -15,13 +16,22 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
     with torch.no_grad():
         orig_output = model(samples)
 
+    debug_data = []
     for n in n_range:
         output_diffs = []
         sum_of_attrs = []
+        if debug_mode:
+            debug_data.append({
+                "indices": [],
+                "masked_samples": [],
+            })
         for _ in range(num_subsets):
             # Generate mask and masked samples
             indices = torch.tensor(np.random.choice(np.prod(attrs.shape[1:]), n*batch_size)).reshape((batch_size, n))
             masked_samples = mask_pixels(samples, indices, mask_value, pixel_level_mask=attrs.size(1) == 1)
+            if debug_mode:
+                debug_data[-1]["indices"].append(indices)
+                debug_data[-1]["masked_samples"].append(masked_samples)
             # Get output on masked samples
             with torch.no_grad():
                 output = model(masked_samples)
@@ -48,4 +58,11 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
         corrcoefs[denom_zero] = 0.
         result.append(corrcoefs)
     # [batch_size, len(n_range)]
-    return torch.stack(result, dim=1).cpu().detach()
+    result = torch.stack(result, dim=1).cpu().detach()
+    if debug_mode:
+        debug_result = {
+            "attrs": attrs,
+            "pert_data": debug_data
+        }
+        return result, debug_result
+    return result
