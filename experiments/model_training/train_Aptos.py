@@ -2,19 +2,13 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
-import os
-import sys
-
-import torchvision
-
-module_path = os.path.abspath(os.path.join('..'))
-if module_path not in sys.path:
-    sys.path.append(module_path)
-
-from attrbench import models, datasets
 from tqdm import tqdm
 from sklearn.metrics import cohen_kappa_score
 import matplotlib.pyplot as plt
+from experiments.lib import datasets, models
+from os import path
+
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -105,14 +99,15 @@ def val(model, dl, loss):
 
 if __name__ == '__main__':
     batch_size = 8
+    data_loc = path.join(path.dirname(__file__), "../../data")
 
-    ds = datasets.Aptos(img_size=320, data_location="../data/APTOS", train=True)
+    ds = datasets.Aptos(img_size=320, data_location=path.join(data_loc, "APTOS"), train=True)
     class_weights = ds.class_weights
-    ds_val = datasets.Aptos(img_size=320, data_location="../data/APTOS", train=False)
+    ds_val = datasets.Aptos(img_size=320, data_location=path.join(data_loc, "APTOS"), train=False)
     dl_train = torch.utils.data.DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
     dl_val = torch.utils.data.DataLoader(ds_val, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
-    model = models.Densenet("densenet121", num_classes=5, output_logits=True,params_loc="../data/models/aptos_densenet121_weights_new.pth") #params_loc="../data/models/aptos_densenet121_weights.pth"
+    model = models.Densenet("densenet121", num_classes=5, params_loc=path.join(data_loc, "models/aptos_densenet121_weights_new.pth")) #params_loc="../data/models/aptos_densenet121_weights.pth"
     # model = models.Mobilenet_v2(True, 5)
     model.to(device)
     print(class_weights)
@@ -145,4 +140,4 @@ if __name__ == '__main__':
             print("best kappa")
             best_kappa = kappa
             best_weights = model.state_dict()
-    torch.save(best_weights, "../data/models/aptos_densenet121_weights_new.pth")
+    torch.save(best_weights, path.join(data_loc, "models/aptos_densenet121_weights_new.pth"))
