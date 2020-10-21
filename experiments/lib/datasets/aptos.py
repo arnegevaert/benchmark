@@ -31,13 +31,13 @@ def _get_aptos_dataset(data_loc, imsize=224, train=True):
 
 class Aptos(Dataset):
     def __init__(self, data_location, img_size=224, train=True):
-        self.x_array, self.y_array, self.class_weights = _get_aptos_dataset(imsize=img_size, data_loc=data_location)
+        self.x_array, self.y_array, self.class_weights = _get_aptos_dataset(imsize=img_size, data_loc=data_location, train=train)
         self.sample_shape = (3, img_size, img_size)
         self.mask_value = 127/255
 
         if train:
             self.transform = iaa.Sequential([
-                iaa.Affine(rotate=(-30, 30), scale=(0.95, 1.25), translate_percent=(-0.1, 0.1), shear=(-5, 5), mode="constant",
+                iaa.Affine(rotate=(-60, 60), scale=(0.95, 1.25), translate_percent=(-0.1, 0.1), shear=(-5, 5), mode="constant",
                            cval=127),
                 iaa.Fliplr(0.5),
                 iaa.Lambda(_move_axis_lambda)
@@ -49,7 +49,7 @@ class Aptos(Dataset):
     def __getitem__(self, item):
         sample = self.transform(images=np.expand_dims(self.x_array[item], axis=0))
         label = self.y_array[item]
-        return torch.tensor(sample, dtype=torch.float).squeeze(), torch.tensor(label)
+        return torch.tensor(sample,dtype=torch.float).squeeze(), torch.tensor(label)
 
     def __len__(self):
         return self.x_array.shape[0]
