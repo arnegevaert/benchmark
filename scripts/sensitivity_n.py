@@ -20,7 +20,7 @@ parser.add_argument("--model-type", type=str)
 parser.add_argument("--model-params", type=str)
 parser.add_argument("--model-version", type=str, default=None)
 parser.add_argument("--num-subsets", type=int, default=100)  # Default value from paper
-parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"])
+parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette", "Aptos"])
 parser.add_argument("--batch-size", type=int, default=64)
 parser.add_argument("--num-batches", type=int, default=16)
 parser.add_argument("--output-transform", type=str, choices=["identity", "softmax"])
@@ -46,6 +46,9 @@ elif args.dataset == "MNIST":
 elif args.dataset == "ImageNette":
     dataset = datasets.ImageNette(data_location=path.join(args.data_root, "imagenette2"), train=False)
     mask_range = list(range(0, 224*224, 4000))
+elif args.dataset == "Aptos":
+    dataset = datasets.Aptos(img_size=320, data_location=path.join(args.data_root, "APTOS"), train=False)
+    mask_range = list(range(6800, 320*320, 6800))
 
 model_constructor = getattr(models, args.model_type)
 model_kwargs = {

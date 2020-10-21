@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model-type", type=str)
 parser.add_argument("--model-params", type=str)
 parser.add_argument("--model-version", type=str, default=None)
-parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette"], default="MNIST")
+parser.add_argument("--dataset", type=str, choices=["MNIST", "CIFAR10", "ImageNette", "Aptos"], default="MNIST")
 parser.add_argument("--batch-size", type=int, default=64)
 parser.add_argument("--num-batches", type=int, default=16)
 parser.add_argument("--cuda", type=bool, default=True)
@@ -42,6 +42,8 @@ elif args.dataset == "MNIST":
     dataset = datasets.MNIST(data_location=path.join(args.data_root, "MNIST"), train=False)
 elif args.dataset == "ImageNette":
     dataset = datasets.ImageNette(data_location=path.join(args.data_root, "imagenette2"), train=False)
+elif args.dataset == "Aptos":
+    dataset = datasets.Aptos(img_size=320, data_location=path.join(args.data_root, "APTOS"), train=False)
 
 perturbation_range = list(np.linspace(.01, .2, 10))
 model_constructor = getattr(models, args.model_type)
