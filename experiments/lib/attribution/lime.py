@@ -1,4 +1,3 @@
-from .attribution import AttributionMethod
 from lime import lime_image
 from lime.wrappers.scikit_image import SegmentationAlgorithm
 import torch.nn as nn
@@ -6,7 +5,7 @@ import torch
 
 
 # TODO using implementation from https://github.com/interpretml/interpret might be faster (implemented in C++ instead of python)
-class LIME(AttributionMethod):
+class LIME:
     def __init__(self, model: nn.Module, sample_shape, normalize=True, aggregation_fn=None):
         super(LIME, self).__init__(absolute=False, normalize=normalize, aggregation_fn=aggregation_fn)
         # TODO make this segmentation algorithm/parameters configurable
@@ -27,7 +26,7 @@ class LIME(AttributionMethod):
         x = torch.tensor(x)
         return x.transpose(3, 1)
 
-    def _attribute(self, x, target):
+    def __call__(self, x, target):
         if self.sample_shape[0] == 1:
             # Images are grayscale
             x = x.squeeze(dim=1)

@@ -1,79 +1,11 @@
 import torch
-from skimage.filters import sobel
 
-
-def normalize_attributions(attrs):
-    abs_attrs = torch.abs(attrs.flatten(1))
-    max_abs_attr_per_image = torch.max(abs_attrs, dim=1)[0]
-    if torch.any(max_abs_attr_per_image == 0):
-        print("Warning: completely 0 attributions returned for sample.")
-        # If an image has 0 max abs attr, all attrs are 0 for that image
-        # Divide by 1 to return the original constant 0 attributions
-        max_abs_attr_per_image[torch.where(max_abs_attr_per_image == 0)] = 1.0
-    # Add as many singleton dimensions to max_abs_attr_per_image as necessary to divide
-    while len(max_abs_attr_per_image.shape) < len(attrs.shape):
-        max_abs_attr_per_image = torch.unsqueeze(max_abs_attr_per_image, dim=-1)
-    normalized = attrs / max_abs_attr_per_image
-    return normalized.reshape(attrs.shape)
-
-
-def _max_abs_aggregation(x):
-    abs_value = x.abs()
-    index = torch.argmax(abs_value, dim=1, keepdim=True)
-    return torch.gather(x, dim=1, index=index)
-
-
-class AttributionMethod:
-    def __init__(self, normalize=False, aggregation_fn=None):
-        self.normalize = normalize
-        aggregation_fns = {
-            "avg": lambda x: torch.mean(x, dim=1, keepdim=True),
-            "max_abs": _max_abs_aggregation
-        }
-        self.aggregation_fn = aggregation_fns[aggregation_fn] if aggregation_fn else None
-
-    def _attribute(self, x, target, **kwargs):
-        raise NotImplementedError
-
-    def __call__(self, x, target, **kwargs):
-        attrs = self._attribute(x, target, **kwargs)
-        if self.aggregation_fn:
-            attrs = self.aggregation_fn(attrs)
-        if self.normalize:
-            attrs = normalize_attributions(attrs)
-        return attrs
-
-
-# This is not really an attribution technique, just to establish a baseline
-class Random(AttributionMethod):
-    def __init__(self, **kwargs):
-        super(Random, self).__init__(**kwargs)
-
-    def _attribute(self, x, target, **kwargs):
-        return (torch.rand(*x.shape) * 2 - 1).to(x.device)
-
-
-class EdgeDetection(AttributionMethod):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def _attribute(self, x, target, **kwargs):
-        device = x.device
-        x = x.detach().cpu().numpy()
-        x = (x - x.min()) / (x.max() - x.min())
-        for i in range(x.shape[0]):
-            for channel in range(x.shape[1]):
-                x[i, channel] = sobel(x[i, channel])
-        attrs = torch.tensor(x).to(device)
-        return attrs
-
-
-class ExpectedGradients(AttributionMethod):
+class ExpectedGradients:
     # https://github.com/suinleelab/attributionpriors
 
     # reference_dataset: data to load background samples from, use training data.
-    def __init__(self, model, reference_dataset, n_steps=100, **kwargs):
-        super().__init__(False, **kwargs)
+    def __init__(self, model, reference_dataset, n_steps=100):
+        super().__init__(False)
         self.model = model
         if isinstance(reference_dataset, torch.utils.data.DataLoader):
             reference_dataset = reference_dataset.dataset
@@ -128,7 +60,7 @@ class ExpectedGradients(AttributionMethod):
         sd = input_expand_mult - references
         return sd
 
-    def _attribute(self, x, target, **kwargs):
+    def __call__(self, x, target):
         device = x.device
         x = x.to('cpu') # generating samples on cpu so save vram (may be not ideal for hpc)
         batch_size = x.shape[0]
