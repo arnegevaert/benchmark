@@ -1,6 +1,7 @@
 from experiments.lib.attribution import GradCAM
 from torch import nn
 from captum import attr
+from typing import Tuple
 
 
 class GuidedGradCAM:
@@ -9,8 +10,7 @@ class GuidedGradCAM:
     Captum implementation multiplies with only non-negative elements of gradCAM which can result in constant
     zero saliency maps.
     """
-    def __init__(self, model: nn.Module, layer: nn.Module, upsample_shape):
-        super().__init__()
+    def __init__(self, model: nn.Module, layer: nn.Module, upsample_shape: Tuple):
         self.model = model
         self.layer = layer
         self.gbp = attr.GuidedBackprop(model)

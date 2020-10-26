@@ -33,8 +33,8 @@ if __name__ == "__main__":
 
     # Get model, dataset, methods, params
     dataset, model = get_ds_model(args.dataset, args.model)
-    methods = get_methods(model, args.batch_size, dataset.sample_shape[-2:],
-                          args.aggregation_fn, args.methods)
+    methods = get_methods(model, args.aggregation_fn, normalize=False, methods=args.methods,
+                          batch_size=args.batch_size, sample_shape=dataset.sample_shape[-2:])
     model.to(device)
     for param in model.parameters():
         param.requires_grad = False
