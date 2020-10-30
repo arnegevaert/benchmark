@@ -1,4 +1,4 @@
-from experiments.lib.datasets import Cifar, MNIST, ImageNette, Aptos
+from experiments.lib.datasets import Cifar, MNIST, ImageNette, Aptos, Cxr8
 from experiments.lib.models import Alexnet, BasicCNN, BasicMLP, Densenet, Mobilenet_v2, Resnet, Squeezenet, Vgg
 from experiments.lib.attribution import *
 from os import path
@@ -38,6 +38,13 @@ _DATASET_MODELS = {
         "mask_range": list(range(0, 224*224//2, 1000)),
         "models": {
             "densenet121": lambda: Densenet("densenet121", 5, path.join(_DATA_LOC, "models/Aptos/densenet121.pt"))
+        }
+    },
+    "CXR8": {
+        "ds": lambda: Cxr8(path.join(_DATA_LOC, "CXR8"), train=False),
+        "mask_range": list(range(0, 512*512//2, 1000)),
+        "models": {
+            "densenet121": lambda: Densenet("densenet121", 14, path.join(_DATA_LOC, "models/CXR8/densenet121.pt"))
         }
     }
 }
