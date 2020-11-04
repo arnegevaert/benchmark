@@ -14,4 +14,4 @@ class PixelAggregation:
             index = torch.argmax(abs_value, dim=1, keepdim=True)
             return torch.gather(attrs, dim=1, index=index)
         elif self.aggregation_fn == "avg":
-            return torch.mean(x, dim=1, keepdim=True)
+            return torch.mean(attrs, dim=1, keepdim=True)
