@@ -11,12 +11,14 @@ _MASK_METHODS = {
 
 def insertion_deletion_curves(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
                               mask_range: List[int], mask_value: float, mode: str, debug_mode=False):
-    assert mode in ["deletion", "insertion"]
+    if mode not in ["deletion", "insertion"]:
+        raise ValueError("Mode must be either deletion or insertion")
     device = samples.device
 
     debug_data = {}
     result = []
     attrs = method(samples, labels)  # [batch_size, *sample_shape]
+    pixel_level = attrs.size(1) == 1
     if debug_mode:
         debug_data["attrs"] = attrs
         debug_data["masked_samples"] = []
@@ -28,7 +30,7 @@ def insertion_deletion_curves(samples: torch.Tensor, labels: torch.Tensor, model
     for i in mask_range:
         # Mask/insert pixels
         if i > 0:
-            masked_samples = _MASK_METHODS[mode](samples, sorted_indices[:, -i:], mask_value, attrs.size(1) == 1)
+            masked_samples = _MASK_METHODS[mode](samples, sorted_indices[:, -i:], mask_value, pixel_level)
         else:
             masked_samples = samples if mode == "deletion" else torch.ones(samples.shape).to(device) * mask_value
         if debug_mode:
