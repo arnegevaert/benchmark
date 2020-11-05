@@ -5,7 +5,6 @@ import torch
 import warnings
 
 
-# TODO we now look at actual labels. Add option to look at model output instead
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
                   n_range: Union[List[int], Tuple[int]], num_subsets: int, mask_value: float,
                   debug_mode=False):
