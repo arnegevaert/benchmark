@@ -10,13 +10,9 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, met
     # Get original model output
     with torch.no_grad():
         orig_output = (model(samples)).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
-    orig_attrs = method(samples, labels)
-    # If explanation is on pixel level, we need to replicate value for each pixel n_channels times,
-    # since perturbations are [batch_size, n_channels, width, height]
-    if orig_attrs.size(1) == 1:
-        attrs = orig_attrs.repeat(1, n_channels, 1, 1)
-    else:
-        attrs = orig_attrs
+    attrs = method(samples, labels)
+    if attrs.shape != samples.shape:
+        raise ValueError("Attributions must have same shape as samples for infidelity")
 
     debug_data = []
     for eps in perturbation_range:
@@ -46,7 +42,7 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, met
     result = torch.cat(result, dim=1).cpu().detach()  # [batch_size, len(perturbation_range)]
     if debug_mode:
         debug_result = {
-            "attrs": orig_attrs,
+            "attrs": attrs,
             "pert_data": debug_data
         }
         return result, debug_result

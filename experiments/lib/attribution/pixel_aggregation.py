@@ -4,7 +4,8 @@ from typing import Callable
 class PixelAggregation:
     def __init__(self, base_method: Callable, aggregation_fn: str) -> None:
         self.base_method = base_method
-        assert(aggregation_fn in ["max_abs", "avg"])
+        if aggregation_fn not in ["max_abs", "avg"]:
+            raise ValueError("aggregation_fn must be max_abs or avg")
         self.aggregation_fn = aggregation_fn
     
     def __call__(self, x, target):

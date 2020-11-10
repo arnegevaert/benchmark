@@ -1,11 +1,11 @@
+from attrbench.lib import MaskingPolicy
 from typing import List, Callable
-from attrbench.lib import mask_pixels
 import torch
 from torch.nn.functional import softmax
 
 
 def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, mask_range: List[int], method: Callable,
-                 mask_value: float, strict: bool, tau: float = None):
+                 masking_policy: MaskingPolicy, strict: bool, tau: float = None):
     if not (strict or tau):
         raise ValueError("Provide value for tau when calculating non-strict impact score")
     counts = []
@@ -23,8 +23,8 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, m
         attrs = method(samples, target=labels)
         attrs = attrs.flatten(1)
         sorted_indices = attrs.argsort().cpu()
-        for n_idx, n in enumerate(mask_range):
-            masked_samples = mask_pixels(samples, sorted_indices[:, -n:], mask_value, pixel_level_mask=attrs.size(1) == 1)
+        for n in mask_range:
+            masked_samples = masking_policy(samples, sorted_indices[:, -n:])
             with torch.no_grad():
                 masked_out = model(masked_samples)
             confidence = softmax(masked_out, dim=1).gather(dim=1, index=labels.view(-1, 1))
