@@ -1,6 +1,6 @@
 from typing import Callable, List, Union, Tuple
 import numpy as np
-from attrbench.util import mask_pixels, sum_of_attributions
+from attrbench.lib import mask_pixels, sum_of_attributions
 import torch
 import warnings
 
@@ -26,6 +26,7 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
             })
         for _ in range(num_subsets):
             # Generate mask and masked samples
+            # Mask is generated using replace=False, same mask is used for all samples in batch
             num_features = np.prod(attrs.shape[1:])
             indices = torch.tensor(np.random.choice(num_features, size=n, replace=False)).repeat(batch_size, 1)
             masked_samples = mask_pixels(samples, indices, mask_value, pixel_level_mask=attrs.size(1) == 1)
