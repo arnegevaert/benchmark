@@ -10,21 +10,21 @@ _DATA_LOC = os.environ["BM_DATA_LOC"] if "BM_DATA_LOC" in os.environ else path.j
 _DATASET_MODELS = {
     "MNIST": {
         "ds": lambda: MNIST(path.join(_DATA_LOC, "MNIST"), train=False),
-        "mask_range": list(range(0, 28*28//2, 25)),
+        "n_pixels": 28*28,
         "models": {
             "CNN": lambda: BasicCNN(10, path.join(_DATA_LOC, "models/MNIST/cnn.pt"))
         }
     },
     "CIFAR10": {
         "ds": lambda: Cifar(path.join(_DATA_LOC, "CIFAR10"), train=False),
-        "mask_range": list(range(0, 32*32//2, 30)),
+        "n_pixels": 32*32,
         "models": {
             "resnet18": lambda: Resnet("resnet18", 10, path.join(_DATA_LOC, "models/CIFAR10/resnet18.pt"))
         }
     },
     "ImageNette": {
         "ds": lambda: ImageNette(path.join(_DATA_LOC, "imagenette2"), train=False),
-        "mask_range": list(range(0, 224*224//2, 1000)),
+        "n_pixels": 224*224,
         "models": {
             "alexnet": lambda: Alexnet(10, path.join(_DATA_LOC, "models/ImageNette/alexnet.pt")),
             "densenet": lambda: Densenet("densenet121", 10, path.join(_DATA_LOC, "models/ImageNette/densenet121.pt")),
@@ -36,7 +36,7 @@ _DATASET_MODELS = {
     },
     "Aptos": {
         "ds": lambda: Aptos(path.join(_DATA_LOC, "APTOS"), train=False),
-        "mask_range": list(range(0, 224*224//2, 1000)),
+        "n_pixels": 224*224,
         "models": {
             "densenet121": lambda: Densenet("densenet121", 5, path.join(_DATA_LOC, "models/Aptos/densenet121.pt"))
         }
@@ -107,5 +107,5 @@ def get_methods(model, aggregation_fn, normalize, methods=None, batch_size=None,
     return method_objs
 
 
-def get_mask_range(dataset):
-    return _DATASET_MODELS[dataset]["mask_range"]
+def get_n_pixels(dataset):
+    return _DATASET_MODELS[dataset]["n_pixels"]

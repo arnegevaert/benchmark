@@ -1,10 +1,12 @@
 from typing import Callable
-from attrbench.util import mask_pixels
+from attrbench.lib import PixelMaskingPolicy
 import torch
 
 
 def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
                     patch: torch.Tensor, target_label: int):
+    if len(samples.shape) != 4:
+           raise ValueError("Impact Coverage can only be computed for image data and expects 4 input dimensions")
     image_size = samples.shape[-1]
     patch_size = patch.shape[-1]
     orig_out = model(samples)
@@ -18,12 +20,15 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
 
     # Create masks from top n attributions
     attrs = method(samples, target=target_label)
+    if attrs.shape[1] != 1:
+        raise ValueError(f"Impact Coverage expects per-pixel attributions (shape of attrs must have 1 color channel). Actual shape was {attrs.shape}.")
     flattened_attrs = attrs.flatten(1)
     sorted_indices = flattened_attrs.argsort().cpu()
     nr_top_attributions = patch_size**2
 
     to_mask = sorted_indices[:, -nr_top_attributions:]
-    critical_factor_mask = mask_pixels(torch.zeros(attrs.shape), to_mask, 1., pixel_level_mask=(attrs.size(1) == 1))
+    pmp = PixelMaskingPolicy(mask_value=1.)
+    critical_factor_mask = pmp(torch.zeros(attrs.shape), to_mask)
 
     # Create masks from patch itself
     patch_mask = torch.zeros(attrs.shape)

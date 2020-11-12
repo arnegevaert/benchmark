@@ -1,19 +1,12 @@
 from typing import Callable, List
-from attrbench.util import mask_pixels, insert_pixels
+from attrbench.lib import MaskingPolicy
 import torch
 
 
-_MASK_METHODS = {
-    "deletion": mask_pixels,
-    "insertion": insert_pixels
-}
-
-
-def insertion_deletion_curves(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                              mask_range: List[int], mask_value: float, mode: str, debug_mode=False):
-    assert mode in ["deletion", "insertion"]
-    device = samples.device
-
+def insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
+                       mask_range: List[int], masking_policy: MaskingPolicy, mode: str, debug_mode=False):
+    if mode not in ["deletion", "insertion"]:
+        raise ValueError("Mode must be either deletion or insertion")
     debug_data = {}
     result = []
     attrs = method(samples, labels)  # [batch_size, *sample_shape]
@@ -27,10 +20,15 @@ def insertion_deletion_curves(samples: torch.Tensor, labels: torch.Tensor, model
 
     for i in mask_range:
         # Mask/insert pixels
-        if i > 0:
-            masked_samples = _MASK_METHODS[mode](samples, sorted_indices[:, -i:], mask_value, attrs.size(1) == 1)
+        if i == 0:
+            if mode == "deletion":
+                masked_samples = samples
+            else:
+                masked_samples = masking_policy(samples, sorted_indices)  # If i == 0, we insert no pixels, ie mask all pixels
         else:
-            masked_samples = samples if mode == "deletion" else torch.ones(samples.shape).to(device) * mask_value
+            to_mask = sorted_indices[:, -i:] if mode == "deletion" else sorted_indices[:, :-i]
+            masked_samples = masking_policy(samples, to_mask)
+
         if debug_mode:
             debug_data["masked_samples"].append(masked_samples)
         # Get predictions for result
