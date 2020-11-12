@@ -1,7 +1,6 @@
 import unittest
 import torch
 import numpy as np
-from attrbench.lib import mask_pixels
 from attrbench.lib import FeatureMaskingPolicy, PixelMaskingPolicy
 
 def _get_index(shape, index):
@@ -23,6 +22,7 @@ class TestMaskingRandomized(unittest.TestCase):
         mask_size = 500
         shape = (16, 1, 100, 100)
         images = torch.randn(shape)
+        original = images.clone()
         indices = torch.stack([
             torch.tensor(
                 np.random.choice(shape[-1]*shape[-2]*shape[-3], size=mask_size, replace=False)
@@ -41,6 +41,8 @@ class TestMaskingRandomized(unittest.TestCase):
         diff2 = (res2 - manual).abs().sum().item()
         self.assertAlmostEqual(diff1, 0., places=5)
         self.assertAlmostEqual(diff2, 0., places=5)
+        diff_orig = (original - images).abs().sum().item()
+        self.assertAlmostEqual(diff_orig, 0.)
 
     def test_mask_pixels_rgb_pixel_level(self):
         mask_value = 0.
@@ -48,6 +50,7 @@ class TestMaskingRandomized(unittest.TestCase):
         mask_size = 500
         shape = (16, 3, 100, 100)
         images = torch.randn(shape)
+        original = images.clone()
         indices = torch.stack([
             torch.tensor(
                 np.random.choice(shape[-1]*shape[-2], size=mask_size, replace=False)
@@ -63,6 +66,8 @@ class TestMaskingRandomized(unittest.TestCase):
                     manual[i, j, index[0], index[1]] = mask_value
         diff = (res - manual).abs().sum().item()
         self.assertAlmostEqual(diff, 0., places=5)
+        diff_orig = (original - images).abs().sum().item()
+        self.assertAlmostEqual(diff_orig, 0.)
     
     def test_mask_pixels_channel_level(self):
         mask_value = 0.
@@ -70,6 +75,7 @@ class TestMaskingRandomized(unittest.TestCase):
         mask_size = 500
         shape = (16, 3, 100, 100)
         images = torch.randn(shape)
+        original = images.clone()
         indices = torch.stack([
             torch.tensor(
                 np.random.choice(shape[-1]*shape[-2]*shape[-3], size=mask_size, replace=False)
@@ -84,3 +90,5 @@ class TestMaskingRandomized(unittest.TestCase):
                 manual[i, index[0], index[1], index[2]] = mask_value
         diff = (res - manual).abs().sum().item()
         self.assertAlmostEqual(diff, 0., places=5)
+        diff_orig = (original - images).abs().sum().item()
+        self.assertAlmostEqual(diff_orig, 0.)

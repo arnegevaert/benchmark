@@ -2,7 +2,9 @@ import argparse
 import itertools
 from torch.utils.data import DataLoader
 from attrbench.evaluation.independent import *
+from attrbench.lib import PixelMaskingPolicy
 from experiments.lib.util import get_ds_model, get_methods, get_mask_range
+from experiments.lib.attribution import DimReplication
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -23,7 +25,7 @@ if __name__ == "__main__":
     parser.add_argument("--methods", type=str, nargs="+", default=None)
     parser.add_argument("--metrics", type=str, nargs="+", default=None)
     parser.add_argument("--patch", type=str, default=None)
-    parser.add_argument("--aggregation_fn", type=str, choices=["avg", "max_abs"], default="avg")
+    parser.add_argument("--pixel-aggregation", type=str, choices=["avg", "max_abs"], default="avg")
     parser.add_argument("--num-workers", type=int, default=4)
     # Parse arguments
     args = parser.parse_args()
@@ -33,18 +35,20 @@ if __name__ == "__main__":
 
     # Get model, dataset, methods, params
     dataset, model = get_ds_model(args.dataset, args.model)
-    methods = get_methods(model, args.aggregation_fn, normalize=False, methods=args.methods,
+    methods = get_methods(model, args.pixel_aggregation, normalize=False, methods=args.methods,
                           batch_size=args.batch_size, sample_shape=dataset.sample_shape[-2:])
+    masking_policy = PixelMaskingPolicy(mask_value=0.)
     model.to(device)
     for param in model.parameters():
         param.requires_grad = False
     model.eval()
     mask_range = get_mask_range(args.dataset)
-    pert_range = list(np.linspace(.01, .3, 10))
+    pert_range = list(np.linspace(.01, 2., 20))
     metadata = {
         "infidelity": {"x": pert_range},
         "insertion": {"x": mask_range},
         "deletion": {"x": mask_range},
+        "del-until-flip": {},
         "max-sens": {"x": pert_range},
         "sens-n": {"x": mask_range[1:]},
         "impact": {"x": mask_range[1:]},
@@ -79,10 +83,10 @@ if __name__ == "__main__":
         # Prepare results
         res = {}
         for name in metrics:
-            if name in ["infidelity", "insertion", "deletion", "max-sens", "sens-n", "i-coverage"]:
-                res[name] = []
-            elif name in ["impact", "s-impact"]:
+            if name in ["impact", "s-impact"]:
                 res[name] = {"counts": [], "total": 0}
+            else:
+                res[name] = []
 
         # Calculate metrics for each batch
         dataloader = itertools.islice(DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers), args.num_batches)
@@ -94,7 +98,8 @@ if __name__ == "__main__":
             # Infidelity
             if "infidelity" in metrics:
                 prog.set_postfix({"metric": "Infidelity"})
-                batch_infidelity = infidelity(batch, labels, model, method,
+                infid_method = DimReplication(method, 1, 3) if args.pixel_aggregation and batch.size(1) == 3 else method
+                batch_infidelity = infidelity(batch, labels, model, infid_method,
                                               perturbation_range=pert_range,
                                               num_perturbations=16)
                 res["infidelity"].append(batch_infidelity)
@@ -102,18 +107,26 @@ if __name__ == "__main__":
 
             # Insertion curves
             if "insertion" in metrics:
-                prog.set_postfix({"metric": "Insertion curves"})
-                batch_ins_curves = insertion_deletion_curves(batch, labels, model, method, mask_range,
-                                                             mask_value=0., mode="insertion")
-                res["insertion"].append(batch_ins_curves)
+                prog.set_postfix({"metric": "Insertion"})
+                batch_insertion = insertion_deletion(batch, labels, model, method, mask_range,
+                                                     masking_policy, mode="insertion")
+                res["insertion"].append(batch_insertion)
                 prog.update(1)
 
             # Deletion curves
             if "deletion" in metrics:
-                prog.set_postfix({"metric": "Deletion curves"})
-                batch_del_curves = insertion_deletion_curves(batch, labels, model, method, mask_range,
-                                                             mask_value=0., mode="deletion")
-                res["deletion"].append(batch_del_curves)
+                prog.set_postfix({"metric": "Deletion"})
+                batch_deletion = insertion_deletion(batch, labels, model, method, mask_range,
+                                                    masking_policy, mode="deletion")
+                res["deletion"].append(batch_deletion)
+                prog.update(1)
+
+            # Deletion until flip
+            if "del-until-flip" in metrics:
+                prog.set_postfix({"metric": "Deletion until flip"})
+                batch_del_flip = deletion_until_flip(batch, labels, model, method, masking_policy,
+                                                     step_size=.01)
+                res["del-until-flip"].append(batch_del_flip)
                 prog.update(1)
 
             # Max-sensitivity
@@ -129,7 +142,7 @@ if __name__ == "__main__":
             if "sens-n" in metrics:
                 prog.set_postfix({"metric": "Sensitivity-n"})
                 batch_sens_n = sensitivity_n(batch, labels, model, method, mask_range[1:],
-                                             num_subsets=16, mask_value=0.)
+                                             num_subsets=16, masking_policy=masking_policy)
                 res["sens-n"].append(batch_sens_n)
                 prog.update(1)
 
@@ -137,7 +150,7 @@ if __name__ == "__main__":
             if "impact" in metrics:
                 prog.set_postfix({"metric": "Impact Score"})
                 batch_impact_score, b_i_count = impact_score(batch, labels, model, mask_range[1:], method,
-                                                             mask_value=0., tau=.5, strict=False)
+                                                             masking_policy, tau=.5, strict=False)
                 res["impact"]["counts"].append(batch_impact_score)
                 res["impact"]["total"] += b_i_count
                 prog.update(1)
@@ -146,7 +159,7 @@ if __name__ == "__main__":
             if "s-impact" in metrics:
                 prog.set_postfix({"metric": "Strict Impact Score"})
                 batch_s_impact_score, b_s_i_count = impact_score(batch, labels, model, mask_range[1:], method,
-                                                                 mask_value=0., strict=True)
+                                                                 masking_policy, strict=True)
                 res["s-impact"]["counts"].append(batch_s_impact_score)
                 res["s-impact"]["total"] += b_s_i_count
                 prog.update(1)
@@ -162,7 +175,7 @@ if __name__ == "__main__":
             prog.close()
 
         # Aggregate and save
-        for name in ["infidelity", "insertion", "deletion", "sens-n", "i-coverage", "max-sens"]:
+        for name in ["infidelity", "insertion", "deletion", "del-until-flip", "sens-n", "i-coverage", "max-sens"]:
             if name in metrics:
                 res[name] = torch.cat(res[name], dim=0)
                 np.savetxt(path.join(subdir, f"{name}.csv"), res[name].numpy(), delimiter=',')

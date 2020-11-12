@@ -34,4 +34,4 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, m
             counts.append(flipped.sum().item())
         # [len(mask_range)], int
         return torch.tensor(counts), batch_size
-    return 0, 0
+    return torch.tensor([]), 0

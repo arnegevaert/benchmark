@@ -1,24 +1,16 @@
 from typing import Callable, List
-from attrbench.lib import mask_pixels, insert_pixels
+from attrbench.lib import MaskingPolicy
 import torch
 
 
-_MASK_METHODS = {
-    "deletion": mask_pixels,
-    "insertion": insert_pixels
-}
 
 # TODO do this more intelligently (using rough linear search + individual binary search)
 # We assume none of the samples has the same label as the output of the network when given
 # a fully masked image (in which case we might not see a flip)
-# NOTE: insertion until flip might be too noisy, small amounts of inserted pixels cause fluctuations in model output
-def insertion_deletion_until_flip(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                                  mask_value: float, step_size: float, mode: str, debug_mode=False):
-    if mode not in ["deletion", "insertion"]:
-        raise ValueError("Mode must be either deletion or insertion")
+def deletion_until_flip(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
+                        masking_policy: MaskingPolicy, step_size: float, debug_mode=False):
     if step_size < 0 or step_size > 0.5:
         raise ValueError("Step size must be between 0 and 0.5 (percentage of pixels)")
-    device = samples.device
     debug_data = {}
     attrs = method(samples, labels)
     if debug_mode:
@@ -41,13 +33,14 @@ def insertion_deletion_until_flip(samples: torch.Tensor, labels: torch.Tensor, m
     while not torch.all(flipped) and mask_size < num_inputs:
         mask_size += abs_step_size
         # Mask/insert pixels
-        if mask_size > 0:
-            masked_samples = _MASK_METHODS[mode](samples, sorted_indices[:, -mask_size:], mask_value, pixel_level)
+        if mask_size == 0:
+            masked_samples = samples
         else:
-            masked_samples = samples if mode == "deletion" else torch.ones(samples.shape).to(device) * mask_value
+            masked_samples = masking_policy(samples, sorted_indices[:, -mask_size:])
+
         with torch.no_grad():
             predictions = torch.argmax(model(masked_samples), dim=1)
-        criterion = (predictions != orig_predictions) if mode == "deletion" else (predictions == orig_predictions)
+        criterion = (predictions != orig_predictions)
         new_flipped = torch.logical_or(flipped, criterion.cpu())
         flipped_this_iteration = (new_flipped != flipped)
         if debug_mode:

@@ -6,6 +6,7 @@ import numpy as np
 
 def load_results(dir):
     result_data = {}
+    meta = None
     for filename in os.listdir(dir):
         if path.isdir(path.join(dir, filename)):
             method = filename

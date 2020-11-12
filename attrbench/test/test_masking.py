@@ -1,7 +1,7 @@
 import unittest
 import torch
 import numpy as np
-from attrbench.lib import mask_pixels, PixelMaskingPolicy, FeatureMaskingPolicy
+from attrbench.lib import PixelMaskingPolicy, FeatureMaskingPolicy
 from os import path
 
 
@@ -15,6 +15,7 @@ class TestMasking(unittest.TestCase):
     
     def test_mask_pixels_grayscale(self):
         mask_value = 3.
+        original = self.data["grayscale_image"].clone()
         fmp = FeatureMaskingPolicy(mask_value)
         pmp = PixelMaskingPolicy(mask_value)
         # Test masking for grayscale image
@@ -37,12 +38,15 @@ class TestMasking(unittest.TestCase):
         diff2 = (masked_manual - masked2).abs().sum().item()
         self.assertAlmostEqual(diff1, 0.)
         self.assertAlmostEqual(diff2, 0.)
+        # Masking should not be in-place, original should be unchanged
+        diff_orig = (original - self.data["grayscale_image"]).abs().sum().item()
+        self.assertAlmostEqual(diff_orig, 0.)
 
     def test_mask_pixels_rgb_pixel_level(self):
         mask_value = 3.
         pmp = PixelMaskingPolicy(mask_value)
         indices = torch.tensor([[0, 5, 7], [2, 6, 1]])
-        #masked = mask_pixels(self.data["rgb_image"], indices, mask_value, pixel_level_mask=True)
+        original = self.data["rgb_image"].clone()
         masked = pmp(self.data["rgb_image"], indices)
         # Manual masking
         masked_manual = self.data["rgb_image"].clone()
@@ -55,11 +59,15 @@ class TestMasking(unittest.TestCase):
             masked_manual[1, i, 0, 1] = mask_value  # 1
         diff = (masked_manual - masked).abs().sum().item()
         self.assertAlmostEqual(diff, 0.)
+        # Masking should not be in-place, original should be unchanged
+        diff_orig = (original - self.data["rgb_image"]).abs().sum().item()
+        self.assertAlmostEqual(diff_orig, 0.)
     
     def test_mask_pixels_channel_level(self):
         mask_value = 3.
         fmp = FeatureMaskingPolicy(mask_value)
         indices = torch.tensor([[12, 21, 3], [5, 19, 25]])
+        original = self.data["rgb_image"].clone()
         # masked = mask_pixels(self.data["rgb_image"], indices, mask_value, pixel_level_mask=False)
         masked = fmp(self.data["rgb_image"], indices)
         # Manual masking
@@ -72,3 +80,6 @@ class TestMasking(unittest.TestCase):
         masked_manual[1, 2, 2, 1] = mask_value  # 25
         diff = (masked_manual - masked).abs().sum().item()
         self.assertAlmostEqual(diff, 0.)
+        # Masking should not be in-place, original should be unchanged
+        diff_orig = (original - self.data["rgb_image"]).abs().sum().item()
+        self.assertAlmostEqual(diff_orig, 0.)

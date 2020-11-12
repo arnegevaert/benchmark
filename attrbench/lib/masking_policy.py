@@ -12,7 +12,7 @@ class FeatureMaskingPolicy(MaskingPolicy):
         self.mask_value = mask_value
 
     def __call__(self, samples, indices):
-        flattened = samples.flatten(1)
+        flattened = samples.clone().flatten(1)
         batch_dim = np.tile(range(samples.shape[0]), (indices.shape[1], 1)).transpose()
         flattened[batch_dim, indices] = self.mask_value
         return flattened.reshape(samples.shape)
@@ -24,7 +24,7 @@ class PixelMaskingPolicy(MaskingPolicy):
         self.mask_value = mask_value
 
     def __call__(self, samples, indices):
-        flattened = samples.flatten(2)
+        flattened = samples.clone().flatten(2)
         batch_dim = np.tile(range(samples.shape[0]), (indices.shape[1], 1)).transpose()
         flattened[batch_dim, :, indices] = self.mask_value
         return flattened.reshape(samples.shape)
