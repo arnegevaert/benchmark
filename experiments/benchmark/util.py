@@ -34,7 +34,11 @@ def load_results(dir):
 
 def get_metric(data, metric):
     res = {}
+    data_present = False
     for method in data:
         if metric in data[method]:
+            data_present = True
             res[method] = data[method][metric]
-    return res
+    if data_present:
+        return res
+    return None
