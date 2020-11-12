@@ -4,9 +4,9 @@ import torch.nn as nn
 
 
 class Alexnet(nn.Module):
-    def __init__(self, num_classes, params_loc=None):
+    def __init__(self, num_classes, params_loc=None, pretrained=False):
         super().__init__()
-        model = torchvision.models.alexnet()
+        model = torchvision.models.alexnet(pretrained=pretrained)
         self.features = model.features
         self.avgpool = model.avgpool
         self.classifier = model.classifier
