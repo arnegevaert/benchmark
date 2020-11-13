@@ -92,7 +92,7 @@ if __name__ == "__main__":
                 res[name] = []
 
         # Calculate metrics for each batch
-        dataloader = iter(DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers))
+        dataloader = iter(DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=True))
         samples_done = 0
         while samples_done < args.num_samples:
             full_batch, full_labels = next(dataloader)

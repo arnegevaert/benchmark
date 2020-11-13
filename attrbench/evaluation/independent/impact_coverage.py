@@ -4,7 +4,7 @@ import torch
 
 
 def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                    patch: torch.Tensor, target_label: int):
+                    patch: torch.Tensor, target_label: int, debug_mode=False):
     if len(samples.shape) != 4:
            raise ValueError("Impact Coverage can only be computed for image data and expects 4 input dimensions")
     image_size = samples.shape[-1]
@@ -46,5 +46,8 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
     critical_factor_mask_flattened = critical_factor_mask.flatten(1).bool()
     intersection = (patch_mask_flattened & critical_factor_mask_flattened).sum(dim=1)
     union = (patch_mask_flattened | critical_factor_mask_flattened).sum(dim=1)
+    iou = intersection.float() / union.float()
     # [batch_size], [batch_size]
-    return intersection.float() / union.float(), keep.cpu()
+    if debug_mode:
+           return iou, keep.cpu(), {"attrs": attrs, "samples": samples}
+    return iou, keep.cpu()
