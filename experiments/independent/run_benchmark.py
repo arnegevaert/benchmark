@@ -1,5 +1,4 @@
 import argparse
-import itertools
 from torch.utils.data import DataLoader
 from attrbench.evaluation.independent import *
 from attrbench.lib import PixelMaskingPolicy
@@ -14,6 +13,33 @@ import json
 import warnings
 
 
+def logitsoftmax(logits):
+    b_size, n_classes = logits.size()
+    repeated = logits.unsqueeze(1).repeat(1, n_classes, 1)
+    idx = ~torch.eye(n_classes).unsqueeze(0).repeat(b_size, 1, 1).bool()
+    others = repeated[idx].view(b_size, n_classes, n_classes-1)
+    lse_others = torch.logsumexp(others, dim=-1)
+    return logits - lse_others
+
+
+class OutputTransformWrapper(torch.nn.Module):
+    def __init__(self, base_model, output_transform) -> None:
+        super().__init__()
+        self.base_model = base_model
+        transforms = {
+            "logitsoftmax": logitsoftmax,
+            "softmax": torch.softmax
+        }
+        self.output_transform = transforms[output_transform]
+
+    def forward(self, x):
+        out = self.base_model(x)
+        return self.output_transform(out)
+    
+    def get_last_conv_layer(self):
+        return self.base_model.get_last_conv_layer()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dataset", type=str, required=True)
@@ -26,6 +52,7 @@ if __name__ == "__main__":
     parser.add_argument("--metrics", type=str, nargs="+", default=None)
     parser.add_argument("--patch", type=str, default=None)
     parser.add_argument("--pixel-aggregation", type=str, choices=["avg", "max_abs"], default="avg")
+    parser.add_argument("--output-transform", type=str, choices=["softmax", "logitsoftmax"])
     parser.add_argument("--num-workers", type=int, default=4)
     # Parse arguments
     args = parser.parse_args()
@@ -35,6 +62,9 @@ if __name__ == "__main__":
 
     # Get model, dataset, methods, params
     dataset, model = get_ds_model(args.dataset, args.model)
+    if args.output_transform:
+        print(f"Using {args.output_transform}")
+        model = OutputTransformWrapper(model, args.output_transform)
     methods = get_methods(model, args.pixel_aggregation, normalize=False, methods=args.methods,
                           batch_size=args.batch_size, sample_shape=dataset.sample_shape[-2:])
     masking_policy = PixelMaskingPolicy(mask_value=0.)

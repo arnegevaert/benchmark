@@ -1,5 +1,5 @@
 import argparse
-from experiments.benchmark import load_results, get_metric
+from experiments.independent import load_results, get_metric
 import numpy as np
 import warnings
 import matplotlib.pyplot as plt
