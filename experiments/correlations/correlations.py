@@ -11,7 +11,7 @@ import ppscore
 
 def correlation_heatmap(ax, corrs, names, title):
     ax.set_title(title)
-    ax.imshow(corrs)
+    ax.imshow(corrs, vmin=-1, vmax=1)
 
     # We want to show all ticks...
     ax.set_xticks(np.arange(len(names)))

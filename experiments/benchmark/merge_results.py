@@ -16,15 +16,12 @@ if __name__ == "__main__":
     parser.add_argument("--dry", action="store_true", help="Dry-run: just list changes without executing")
     args = parser.parse_args()
 
-    datasets = os.listdir(args.src)
-    for ds in datasets:
-        ds_dir = path.join(args.src, ds)
-        methods = [m for m in os.listdir(ds_dir) if path.isdir(path.join(ds_dir, m))]
-        for m in methods:
-            filenames = os.listdir(path.join(ds_dir, m))
-            for f in filenames:
-                if not args.dry:
-                    os.rename(path.join(ds_dir, m, f), path.join(args.dst, ds, m, f))
-                    print(f"Moved {path.join(ds_dir, m, f)} to {path.join(args.dst, ds, m, f)}")
-                else:
-                    print(f"{path.join(ds_dir, m, f)} -> {path.join(args.dst, ds, m, f)}")
+    methods = [m for m in os.listdir(args.src) if path.isdir(path.join(args.src, m))]
+    for m in methods:
+        filenames = os.listdir(path.join(args.src, m))
+        for f in filenames:
+            if not args.dry:
+                os.rename(path.join(args.src, m, f), path.join(args.dst, m, f))
+                print(f"Moved {path.join(args.src, m, f)} to {path.join(args.dst, m, f)}")
+            else:
+                print(f"{path.join(args.src, m, f)} -> {path.join(args.dst, m, f)}")

@@ -29,7 +29,8 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, m
         sorted_indices = attrs.argsort().cpu()
         for n in mask_range:
             masked_samples = masking_policy(samples, sorted_indices[:, -n:])
-            debug_data["masked_samples"].append(masked_samples)
+            if debug_mode:
+                debug_data["masked_samples"].append(masked_samples)
             with torch.no_grad():
                 masked_out = model(masked_samples)
             confidence = softmax(masked_out, dim=1).gather(dim=1, index=labels.view(-1, 1))
