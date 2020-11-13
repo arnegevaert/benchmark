@@ -1,5 +1,5 @@
 from experiments.lib.attribution.guided_gradcam import GuidedGradCAM
-from experiments.lib.datasets import Cifar, MNIST, ImageNette, Aptos
+from experiments.lib.datasets import Cifar, MNIST, ImageNette, Aptos, Cxr8, CBIS_DDSM_patches
 from experiments.lib.models import Alexnet, BasicCNN, BasicMLP, Densenet, Mobilenet_v2, Resnet, Squeezenet, Vgg
 from experiments.lib.attribution import *
 from os import path
@@ -39,6 +39,20 @@ _DATASET_MODELS = {
         "n_pixels": 224*224,
         "models": {
             "densenet121": lambda: Densenet("densenet121", 5, path.join(_DATA_LOC, "models/Aptos/densenet121.pt"))
+        }
+    },
+    "CXR8": {
+        "ds": lambda: Cxr8(path.join(_DATA_LOC, "CXR8"), train=False),
+        "mask_range": list(range(0, 512*512//2, 1000)),
+        "models": {
+            "densenet121": lambda: Densenet("densenet121", 14, path.join(_DATA_LOC, "models/CXR8/densenet121.pt"))
+        }
+    },
+    "CBIS-DDSM": {
+        "ds": lambda :CBIS_DDSM_patches(path.join(_DATA_LOC,"CBIS-DDSM"), train=False,imsize=224),
+        "mask_range": list(range(0, 224*224//2, 1000)),
+        "models":{
+            "resnet50": lambda: Resnet("resnet50", 2, path.join(_DATA_LOC,"models/CBIS-DDSM/resnet50.pt"))
         }
     }
 }

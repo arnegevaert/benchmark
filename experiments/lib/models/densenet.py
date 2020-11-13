@@ -21,7 +21,8 @@ class Densenet(nn.Module):
         fn = getattr(torchvision.models, version)
         base_model = fn(pretrained=True)
         self.features = base_model.features
-        self.classifier = nn.Linear(1024, num_classes)
+        num_ftrs = base_model.classifier.in_features
+        self.classifier = nn.Linear(num_ftrs, num_classes)
 
         if params_loc:
             self.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))

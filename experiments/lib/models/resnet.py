@@ -7,13 +7,13 @@ versions = ['resnet18', 'resnet34', 'resnet50', 'resnet101',
 
 
 class Resnet(nn.Module):
-    def __init__(self, version, num_classes, params_loc=None):
+    def __init__(self, version, num_classes, params_loc=None,pretrained=False):
         super().__init__()
         if version not in versions:
             raise NotImplementedError('version not supported')
         self.version = version
         fn = getattr(torchvision.models, version)
-        model = fn()
+        model = fn(pretrained=pretrained)
         self.conv1 = model.conv1
         self.bn1 = model.bn1
         self.relu = nn.ReLU(inplace=True)
