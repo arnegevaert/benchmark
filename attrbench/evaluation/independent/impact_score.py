@@ -1,14 +1,15 @@
+from attrbench.lib import MaskingPolicy
 from typing import List, Callable
-from attrbench.util import mask_pixels
 import torch
 from torch.nn.functional import softmax
 
 
 def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, mask_range: List[int], method: Callable,
-                 mask_value: float, strict: bool, tau: float = None):
+                 masking_policy: MaskingPolicy, strict: bool, tau: float=None, debug_mode=False):
     if not (strict or tau):
         raise ValueError("Provide value for tau when calculating non-strict impact score")
     counts = []
+    debug_data = {}
 
     with torch.no_grad():
         orig_out = model(samples)
@@ -21,10 +22,14 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, m
     orig_confidence = softmax(orig_out, dim=1).gather(dim=1, index=labels.view(-1, 1))
     if batch_size > 0:
         attrs = method(samples, target=labels)
+        if debug_mode:
+            debug_data["attrs"] = attrs
+            debug_data["masked_samples"] = []
         attrs = attrs.flatten(1)
         sorted_indices = attrs.argsort().cpu()
-        for n_idx, n in enumerate(mask_range):
-            masked_samples = mask_pixels(samples, sorted_indices[:, -n:], mask_value, pixel_level_mask=attrs.size(1) == 1)
+        for n in mask_range:
+            masked_samples = masking_policy(samples, sorted_indices[:, -n:])
+            debug_data["masked_samples"].append(masked_samples)
             with torch.no_grad():
                 masked_out = model(masked_samples)
             confidence = softmax(masked_out, dim=1).gather(dim=1, index=labels.view(-1, 1))
@@ -32,6 +37,11 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, m
             if not strict:
                 flipped = flipped | (confidence <= orig_confidence * tau).squeeze()
             counts.append(flipped.sum().item())
-        # [len(mask_range)], int
-        return torch.tensor(counts), batch_size
-    return 0, 0
+        # [len(mask_range)]
+        result = torch.tensor(counts)
+        if debug_mode:
+            return result, batch_size, debug_data
+        return result, batch_size
+    if debug_mode:
+        return torch.tensor([]), 0, {}
+    return torch.tensor([]), 0

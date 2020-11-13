@@ -3,7 +3,7 @@ from typing import Callable, List
 
 
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-               perturbation_range: List[float], num_perturbations: int):
+               perturbation_range: List[float], num_perturbations: int, debug_mode=False):
     result = []
     device = samples.device
     n_channels = samples.size(1)
@@ -11,16 +11,23 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, met
     with torch.no_grad():
         orig_output = (model(samples)).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
     attrs = method(samples, labels)
-    # If explanation is on pixel level, we need to replicate value for each pixel n_channels times,
-    # since perturbations are [batch_size, n_channels, width, height]
-    if attrs.size(1) == 1:
-        attrs = attrs.repeat(1, n_channels, 1, 1)
+    if attrs.shape != samples.shape:
+        raise ValueError("Attributions must have same shape as samples for infidelity")
 
+    debug_data = []
     for eps in perturbation_range:
         eps_result = []
+        if debug_mode:
+            debug_data.append({
+                "perturbations": [],
+                "perturbed_samples": []
+            })
         for _ in range(num_perturbations):
             perturbation = torch.randn(samples.shape, device=device) * eps
             perturbed = samples + perturbation  # [batch_size, n_channels, width, height]
+            if debug_mode:
+                debug_data[-1]["perturbations"].append(perturbation)
+                debug_data[-1]["perturbed_samples"].append(perturbed)
             with torch.no_grad():
                 perturbed_output = model(perturbed).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
             # We calculate X * I (p3 in paper).
@@ -32,4 +39,11 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, met
             dot_product = (attrs.flatten(1) * -perturbation.flatten(1)).sum(dim=1, keepdim=True)  # [batch_size, 1]
             eps_result.append((dot_product - (orig_output - perturbed_output))**2)  # [batch_size, 1]
         result.append(torch.stack(eps_result, dim=1).mean(dim=1))  # [batch_size]
-    return torch.cat(result, dim=1).cpu().detach()  # [batch_size, len(perturbation_range)]
+    result = torch.cat(result, dim=1).cpu().detach()  # [batch_size, len(perturbation_range)]
+    if debug_mode:
+        debug_result = {
+            "attrs": attrs,
+            "pert_data": debug_data
+        }
+        return result, debug_result
+    return result
