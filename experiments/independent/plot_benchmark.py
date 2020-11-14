@@ -1,6 +1,6 @@
 import argparse
 import numpy as np
-from experiments.benchmark import load_results, get_metric
+from experiments.independent import load_results, get_metric
 from bokeh.plotting import figure, output_file, show
 from bokeh.layouts import column
 from bokeh.palettes import Category10_10 as palette
