@@ -21,14 +21,22 @@ def logitsoftmax(logits):
     lse_others = torch.logsumexp(others, dim=-1)
     return logits - lse_others
 
+def hard_lsm(logits):
+    b_size, n_classes = logits.size()
+    repeated = logits.unsqueeze(1).repeat(1, n_classes, 1)
+    idx = ~torch.eye(n_classes).unsqueeze(0).repeat(b_size, 1, 1).bool()
+    others = repeated[idx].view(b_size, n_classes, n_classes-1)
+    max_others = torch.max(others, dim=-1)
+    return logits - max_others
 
 class OutputTransformWrapper(torch.nn.Module):
     def __init__(self, base_model, output_transform) -> None:
         super().__init__()
         self.base_model = base_model
         transforms = {
-            "logitsoftmax": logitsoftmax,
-            "softmax": torch.softmax
+            "lsm": logitsoftmax,
+            "softmax": torch.softmax,
+            "hard_lsm": hard_lsm
         }
         self.output_transform = transforms[output_transform]
 
@@ -52,7 +60,7 @@ if __name__ == "__main__":
     parser.add_argument("--metrics", type=str, nargs="+", default=None)
     parser.add_argument("--patch", type=str, default=None)
     parser.add_argument("--pixel-aggregation", type=str, choices=["avg", "max_abs"], default="avg")
-    parser.add_argument("--output-transform", type=str, choices=["softmax", "logitsoftmax"])
+    parser.add_argument("--output-transform", type=str, choices=["softmax", "lsm", "hard_lsm"])
     parser.add_argument("--num-workers", type=int, default=4)
     # Parse arguments
     args = parser.parse_args()
