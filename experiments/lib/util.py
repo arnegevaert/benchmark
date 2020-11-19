@@ -43,14 +43,14 @@ _DATASET_MODELS = {
     },
     "CXR8": {
         "ds": lambda: Cxr8(path.join(_DATA_LOC, "CXR8"), train=False),
-        "mask_range": list(range(0, 512*512//2, 1000)),
+        "n_pixels": 512*512,
         "models": {
             "densenet121": lambda: Densenet("densenet121", 14, path.join(_DATA_LOC, "models/CXR8/densenet121.pt"))
         }
     },
     "CBIS-DDSM": {
         "ds": lambda :CBIS_DDSM_patches(path.join(_DATA_LOC,"CBIS-DDSM"), train=False,imsize=224),
-        "mask_range": list(range(0, 224*224//2, 1000)),
+        "n_pixels": 224*224,
         "models":{
             "resnet50": lambda: Resnet("resnet50", 2, path.join(_DATA_LOC,"models/CBIS-DDSM/resnet50.pt"))
         }
