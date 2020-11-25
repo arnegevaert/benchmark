@@ -1,5 +1,4 @@
 import argparse
-from experiments.independent import load_results, get_metric
 import numpy as np
 import warnings
 import matplotlib.pyplot as plt
@@ -9,26 +8,28 @@ import pandas as pd
 import ppscore
 
 
-def correlation_heatmap(ax, corrs, names, title):
-    ax.set_title(title)
+def correlation_heatmap(ax, corrs, names=None, title=None):
+    if title:
+        ax.set_title(title)
     ax.imshow(corrs, vmin=-1, vmax=1)
 
-    # We want to show all ticks...
-    ax.set_xticks(np.arange(len(names)))
-    ax.set_yticks(np.arange(len(names)))
-    # ... and label them with the respective list entries
-    ax.set_xticklabels(names)
-    ax.set_yticklabels(names)
+    if names:
+        # We want to show all ticks...
+        ax.set_xticks(np.arange(len(names)))
+        ax.set_yticks(np.arange(len(names)))
+        # ... and label them with the respective list entries
+        ax.set_xticklabels(names)
+        ax.set_yticklabels(names)
 
-    # Rotate the tick labels and set their alignment.
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-             rotation_mode="anchor")
+        # Rotate the tick labels and set their alignment.
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+                 rotation_mode="anchor")
 
-    # Loop over data dimensions and create text annotations.
-    for i in range(len(names)):
-        for j in range(len(names)):
-            ax.text(j, i, f"{corrs[i, j]:.3f}",
-                    ha="center", va="center", color="w")
+        # Loop over data dimensions and create text annotations.
+        for i in range(len(names)):
+            for j in range(len(names)):
+                ax.text(j, i, f"{corrs[i, j]:.3f}",
+                        ha="center", va="center", color="w")
 
 
 def normalize(m_data):

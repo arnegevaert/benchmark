@@ -35,7 +35,7 @@ class OutputTransformWrapper(torch.nn.Module):
         self.base_model = base_model
         transforms = {
             "lsm": logitsoftmax,
-            "softmax": torch.softmax,
+            "softmax": lambda x: torch.softmax(x, dim=-1),
             "hard_lsm": hard_lsm
         }
         self.output_transform = transforms[output_transform]
