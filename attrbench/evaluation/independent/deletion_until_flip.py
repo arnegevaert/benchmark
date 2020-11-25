@@ -12,7 +12,7 @@ def deletion_until_flip(samples: torch.Tensor, labels: torch.Tensor, model: Call
     if step_size < 0 or step_size > 0.5:
         raise ValueError("Step size must be between 0 and 0.5 (percentage of pixels)")
     debug_data = {}
-    attrs = method(samples, labels)
+    attrs = method(samples, labels).detach()
     if debug_mode:
         debug_data["attrs"] = attrs
         debug_data["orig_samples"] = samples

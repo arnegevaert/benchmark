@@ -9,7 +9,7 @@ def insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Calla
         raise ValueError("Mode must be either deletion or insertion")
     debug_data = {}
     result = []
-    attrs = method(samples, labels)  # [batch_size, *sample_shape]
+    attrs = method(samples, labels).detach()  # [batch_size, *sample_shape]
     if debug_mode:
         debug_data["attrs"] = attrs
         debug_data["masked_samples"] = []
