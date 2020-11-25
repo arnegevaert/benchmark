@@ -7,6 +7,7 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
                     patch: torch.Tensor, target_label: int, debug_mode=False):
     if len(samples.shape) != 4:
            raise ValueError("Impact Coverage can only be computed for image data and expects 4 input dimensions")
+    samples = samples.clone()
     image_size = samples.shape[-1]
     patch_size = patch.shape[-1]
     orig_out = model(samples)

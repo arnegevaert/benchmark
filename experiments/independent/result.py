@@ -1,7 +1,6 @@
 import os
 from os import path
 import numpy as np
-import json
 
 
 class Result:
@@ -31,7 +30,7 @@ class Result:
                     with open(full_filename) as fp:
                         header = fp.readline()
                         if header[0] == '#':
-                            meta[metric] = header[2:].split(',')
+                            meta[metric] = [float(x) for x in header[2:].split(',')]
         # Check if any methods have missing data
         for method in self.method_names:
             for metric in self.metric_names:

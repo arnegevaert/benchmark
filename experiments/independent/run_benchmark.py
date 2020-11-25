@@ -56,39 +56,35 @@ if __name__ == "__main__":
         warnings.warn("No adversarial patch found. Skipping impact coverage.")
         args.metrics.remove("i-coverage")
 
-    # Run benchmark
-    for i, m_name in enumerate(methods):
-        method = methods[m_name]
-        print(f"{m_name} ({i+1}/{len(methods)})")
-        # Create subdir for method
-        subdir = path.join(args.out_dir, m_name)
-        if not path.isdir(subdir):
-            os.makedirs(subdir)
-        # Prepare results
-        res = {name: [] for name in args.metrics}
+    dataloader = iter(DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=True))
+    samples_done = 0
+    res = {
+        method: {
+            metric: [] for metric in args.metrics
+        } for method in methods
+    }
+    prog = tqdm(total=args.num_samples)
+    while samples_done < args.num_samples:
+        full_batch, full_labels = next(dataloader)
+        full_batch = full_batch.to(device)
+        full_labels = full_labels.to(device)
 
-        # Calculate metrics for each batch
-        dataloader = iter(DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers))
-        samples_done = 0
-        while samples_done < args.num_samples:
-            full_batch, full_labels = next(dataloader)
-            full_batch = full_batch.to(device)
-            full_labels = full_labels.to(device)
+        # Only use correctly classified samples
+        pred = torch.argmax(model(full_batch), dim=1)
+        batch = full_batch[pred == full_labels]
+        labels = full_labels[pred == full_labels]
+        if batch.size(0) > 0:
+            if samples_done + batch.size(0) > args.num_samples:
+                diff = args.num_samples - samples_done
+                batch = batch[:diff]
+                labels = labels[:diff]
 
-            # Only use correctly classified samples
-            pred = torch.argmax(model(full_batch), dim=1)
-            batch = full_batch[pred == full_labels]
-            labels = full_labels[pred == full_labels]
-            if batch.size(0) > 0:
-                if samples_done + batch.size(0) > args.num_samples:
-                    diff = args.num_samples - samples_done
-                    batch = batch[:diff]
-                    labels = labels[:diff]
-                prog = tqdm(total=len(args.metrics), desc=f"{samples_done + 1}-{samples_done + batch.size(0)}/{args.num_samples}")
+            batch_orig = batch.clone()
 
+            for i, m_name in enumerate(methods):
+                method = methods[m_name]
                 # Infidelity
                 if "infidelity" in args.metrics:
-                    prog.set_postfix({"metric": "Infidelity"})
                     # Infidelity needs the attributions to have the same shape as the sample
                     infid_method = method
                     if args.pixel_aggregation and batch.size(1) == 3:
@@ -96,102 +92,91 @@ if __name__ == "__main__":
                     batch_infidelity = infidelity(batch, labels, model, infid_method,
                                                   perturbation_range=pert_range,
                                                   num_perturbations=16)
-                    res["infidelity"].append(batch_infidelity)
-                    prog.update(1)
+                    res[m_name]["infidelity"].append(batch_infidelity)
 
                 # Insertion curves
                 if "insertion" in args.metrics:
-                    prog.set_postfix({"metric": "Insertion"})
                     batch_insertion = insertion_deletion(batch, labels, model, method, mask_range,
                                                          masking_policy, mode="insertion")
-                    res["insertion"].append(batch_insertion)
-                    prog.update(1)
+                    res[m_name]["insertion"].append(batch_insertion)
 
                 # Deletion curves
                 if "deletion" in args.metrics:
-                    prog.set_postfix({"metric": "Deletion"})
                     batch_deletion = insertion_deletion(batch, labels, model, method, mask_range,
                                                         masking_policy, mode="deletion")
-                    res["deletion"].append(batch_deletion)
-                    prog.update(1)
+                    res[m_name]["deletion"].append(batch_deletion)
 
                 # Deletion until flip
                 if "del-until-flip" in args.metrics:
-                    prog.set_postfix({"metric": "Deletion until flip"})
                     batch_del_flip = deletion_until_flip(batch, labels, model, method, masking_policy,
                                                          step_size=.01)
-                    res["del-until-flip"].append(batch_del_flip)
-                    prog.update(1)
+                    res[m_name]["del-until-flip"].append(batch_del_flip)
 
                 # Max-sensitivity
                 if "max-sens" in args.metrics:
-                    prog.set_postfix({"metric": "Max-sensitivity"})
                     batch_max_sens = max_sensitivity(batch, labels, method,
                                                      perturbation_range=pert_range,
                                                      num_perturbations=16)
-                    res["max-sens"].append(batch_max_sens)
-                    prog.update(1)
+                    res[m_name]["max-sens"].append(batch_max_sens)
 
                 # Sensitivity-n
                 if "sens-n" in args.metrics:
-                    prog.set_postfix({"metric": "Sensitivity-n"})
-                    batch_sens_n = sensitivity_n(batch, labels, model, method, mask_range[1:],
+                    batch_sens_n = sensitivity_n(batch, labels, model, method, mask_range[1:-1],
                                                  num_subsets=16, masking_policy=masking_policy)
-                    res["sens-n"].append(batch_sens_n)
-                    prog.update(1)
+                    res[m_name]["sens-n"].append(batch_sens_n)
 
                 # Impact score (non-strict)
                 # Note: we can ignore the counts returned by (strict) impact score, since we already only use
                 # correctly classified samples (i.e. the count is always equal to batch size)
                 if "impact" in args.metrics:
-                    prog.set_postfix({"metric": "Impact Score"})
                     batch_impact_score, _ = impact_score(batch, labels, model, mask_range[1:], method,
                                                          masking_policy, tau=.5, strict=False)
-                    res["impact"].append(batch_impact_score)
-                    prog.update(1)
+                    res[m_name]["impact"].append(batch_impact_score)
 
                 # Impact score (strict)
                 # Note: we can ignore the counts returned by (strict) impact score, since we already only use
                 # correctly classified samples (i.e. the count is always equal to batch size)
                 if "s-impact" in args.metrics:
-                    prog.set_postfix({"metric": "Strict Impact Score"})
                     batch_s_impact_score, _ = impact_score(batch, labels, model, mask_range[1:], method,
                                                            masking_policy, strict=True)
-                    res["s-impact"].append(batch_s_impact_score)
-                    prog.update(1)
+                    res[m_name]["s-impact"].append(batch_s_impact_score)
 
                 # Impact coverage
                 if "i-coverage" in args.metrics:
-                    prog.set_postfix({"metric": "Impact Coverage"})
                     patch = torch.load(args.patch)
                     iou, keep = impact_coverage(batch, labels, model, method, patch, target_label=0)
-                    res["i-coverage"].append(iou[keep])
-                    prog.update(1)
+                    res[m_name]["i-coverage"].append(iou[keep])
+            samples_done += batch.size(0)
+            prog.update(batch.size(0))
+            print(torch.sum(batch_orig - batch))
 
-                prog.close()
-                samples_done += batch.size(0)
+    # Aggregate and save
+    headers = {
+        "infidelity": ','.join(map(str, pert_range)),
+        "max-sens": ','.join(map(str, pert_range)),
+        "insertion": ','.join(map(str, mask_range)),
+        "deletion": ','.join(map(str, mask_range)),
+        "sens-n": ','.join(map(str, mask_range[1:-1])),
+        "impact": ','.join(map(str, mask_range[1:])),
+        "s-impact": ','.join(map(str, mask_range[1:])),
+        "del-until-flip": '',
+        "i-coverage": ''
+    }
 
-        # Aggregate and save
-        headers = {
-            "infidelity": ','.join(map(str, pert_range)),
-            "max-sens": ','.join(map(str, pert_range)),
-            "insertion": ','.join(map(str, mask_range)),
-            "deletion": ','.join(map(str, mask_range)),
-            "sens-n": ','.join(map(str, mask_range[1:])),
-            "impact": ','.join(map(str, mask_range[1:])),
-            "s-impact": ','.join(map(str, mask_range[1:])),
-            "del-until-flip": '',
-            "i-coverage": ''
-        }
-        for metric in args.metrics:
+    for m_name in res:
+        # Create subdir for method
+        subdir = path.join(args.out_dir, m_name)
+        if not path.isdir(subdir):
+            os.makedirs(subdir)
+        for metric in res[m_name]:
             if metric in ["impact", "s-impact"]:
                 # Sum the counts and divide by total number of samples
                 np.savetxt(path.join(subdir, f"{metric}.csv"),
-                           (torch.sum(torch.stack(res[metric], dim=0), dim=0) / args.num_samples).numpy(),
+                           (torch.sum(torch.stack(res[m_name][metric], dim=0), dim=0).float() / args.num_samples).numpy(),
                            header=headers[metric],
                            delimiter=',')
             else:
                 np.savetxt(path.join(subdir, f"{metric}.csv"),
-                           torch.cat(res[metric], dim=0).numpy(),
+                           torch.cat(res[m_name][metric], dim=0).numpy(),
                            header=headers[metric],
                            delimiter=',')
