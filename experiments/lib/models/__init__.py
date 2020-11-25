@@ -7,3 +7,4 @@ from .resnet import Resnet
 from .squeezenet import Squeezenet
 from .vgg import Vgg
 from .efficientnet import EfficientNet
+from .senet import senet154

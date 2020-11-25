@@ -6,7 +6,7 @@ from os import path
 import random
 import pandas as pd
 import numpy as np
-from pydicom import dcmread
+
 import torch
 import matplotlib.pyplot as plt
 from PIL import Image, ImageOps

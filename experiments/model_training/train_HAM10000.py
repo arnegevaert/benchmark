@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import torchvision.models
-from experiments.lib.models import EfficientNet
+from experiments.lib.models import EfficientNet, senet154
 from experiments.lib.datasets import HAM10000
 import os
 import numpy as np
@@ -24,6 +24,8 @@ def toc():
         return t
     except:
         return None
+
+#### settings used for efficientnet-b0: batchsize 40, lr 5e-5
 
 def get_parser():
     parser = argparse.ArgumentParser()
@@ -125,9 +127,9 @@ def calculate_metrics(model,crit,dl):
 def run(args):
 
 
-    if args.model == 'SENet':
+    if args.model == 'senet154':
         pass
-        # model = Alexnet(2, params_loc=args.param_loc, pretrained=True)
+        model = senet154(7, params_loc=args.param_loc)
     elif "efficientnet" in args.model:
         model = EfficientNet(args.model,7,params_loc=args.param_loc)
     else:
