@@ -136,7 +136,7 @@ if __name__ == "__main__":
                 if "sens-n" in args.metrics:
                     prog.set_postfix({"metric": "Sensitivity-n"})
                     batch_sens_n = sensitivity_n(batch, labels, model, method, mask_range[1:],
-                                                 num_subsets=100, masking_policy=masking_policy)
+                                                 num_subsets=16, masking_policy=masking_policy)
                     res["sens-n"].append(batch_sens_n)
                     prog.update(1)
 
@@ -173,15 +173,15 @@ if __name__ == "__main__":
 
         # Aggregate and save
         headers = {
-            "infidelity": ','.join(pert_range),
-            "max-sens": ','.join(pert_range),
-            "insertion": ','.join(mask_range),
-            "deletion": ','.join(mask_range),
-            "sens-n": ','.join(mask_range[1:]),
-            "impact": ','.join(mask_range[1:]),
-            "s-impact": ','.join(mask_range[1:]),
-            "del-until-flip": None,
-            "i-coverage": None
+            "infidelity": ','.join(map(str, pert_range)),
+            "max-sens": ','.join(map(str, pert_range)),
+            "insertion": ','.join(map(str, mask_range)),
+            "deletion": ','.join(map(str, mask_range)),
+            "sens-n": ','.join(map(str, mask_range[1:])),
+            "impact": ','.join(map(str, mask_range[1:])),
+            "s-impact": ','.join(map(str, mask_range[1:])),
+            "del-until-flip": '',
+            "i-coverage": ''
         }
         for metric in args.metrics:
             if metric in ["impact", "s-impact"]:

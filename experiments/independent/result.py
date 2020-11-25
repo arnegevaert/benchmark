@@ -12,7 +12,7 @@ class Result:
 
     def load_results(self):
         result_data = {}
-        meta = None
+        meta = {}
         # Files are stored as method > metric
         for method in os.listdir(self.data_dir):
             # If directory, this is method data. If file, it is metadata.
@@ -26,21 +26,12 @@ class Result:
                     if metric not in self.metric_names:
                         self.metric_names.append(metric)
                     full_filename = os.path.join(self.data_dir, method, metric_filename)
-                    if ext == "csv":
-                        result_data[method][metric] = np.loadtxt(full_filename, delimiter=',')
-                    elif ext == "json":
-                        with open(full_filename) as fp:
-                            file_data = json.load(fp)
-                            result_data[method][metric] = (np.array(file_data["counts"]) / file_data["total"])
-                    else:
-                        raise ValueError(f"Unrecognized extension {ext} in {method}/{metric_filename}")
-            elif os.path.isfile(path.join(self.data_dir, method)):
-                # If file is meta.json, save as metadata. Otherwise, file is invalid.
-                if method == "meta.json":
-                    with open(os.path.join(self.data_dir, method)) as fp:
-                        meta = json.load(fp)
-                else:
-                    raise ValueError(f"Unrecognized file {method} in {dir}")
+                    result_data[method][metric] = np.loadtxt(full_filename, delimiter=',')
+                    # Get header if present
+                    with open(full_filename) as fp:
+                        header = fp.readline()
+                        if header[0] == '#':
+                            meta[metric] = header[2:].split(',')
         # Check if any methods have missing data
         for method in self.method_names:
             for metric in self.metric_names:
