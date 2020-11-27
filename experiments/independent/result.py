@@ -8,6 +8,7 @@ class Result:
         self.data_dir = data_dir
         self.metric_names, self.method_names = [], []
         self.data, self.metadata = self.load_results()
+        self.bootstrap_idx = None
 
     def load_results(self):
         result_data = {}
@@ -49,16 +50,21 @@ class Result:
         # Can be used to look at influence of perturbation size.
         data = self.data[method][metric]
         if metric == "deletion":
-            return data[:, 0] - np.mean(data[:, columns] if columns is not None else data, axis=1)
+            return (data[:, 0] - np.mean(data[:, :columns] if columns is not None else data, axis=1)) / \
+                   (data[:, 0] - data[:, -1])
         if metric == "insertion":
-            return np.mean(data[:, columns] if columns is not None else data, axis=1) - data[:, 0]
+            return (np.mean(data[:, :columns] if columns is not None else data, axis=1) - data[:, 0]) / \
+                   (data[:, -1] - data[:, 0])
         if metric in ["infidelity", "max-sens", "sens-n"]:
-            return np.mean(data[:, columns] if columns is not None else data, axis=1)
+            return np.mean(data[:, :columns] if columns is not None else data, axis=1)
         if metric in ["impact", "i-coverage", "del-until-flip", "s-impact"]:
             return data
 
-    def bootstrap(self, method, metric, sample_size, num_samples, columns=None):
+    def bootstrap(self, method, metric, columns=None):
+        if self.bootstrap_idx is None:
+            raise ValueError("Set bootstrap parameters using set_bootstrap first")
         data = self.aggregate(method, metric, columns)
-        return np.array(
-            [np.mean(data[np.random.choice(len(data), sample_size, replace=False)])
-             for _ in range(num_samples)])
+        return np.array([np.mean(data[idx]) for idx in self.bootstrap_idx])
+
+    def set_bootstrap(self, sample_size, num_bs_samples, num_orig_samples):
+        self.bootstrap_idx = [np.random.choice(num_orig_samples, sample_size, replace=False) for _ in range(num_bs_samples)]
