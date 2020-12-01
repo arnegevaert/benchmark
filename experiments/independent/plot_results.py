@@ -12,6 +12,8 @@ from bokeh.layouts import column
 from bokeh.palettes import Category10_10 as palette
 from bokeh.models import Legend, Div
 import holoviews as hv
+from scipy.cluster import hierarchy
+from sklearn import preprocessing
 hv.extension("bokeh")
 
 
@@ -56,7 +58,8 @@ if __name__ == "__main__":
     parser.add_argument("--bs-size", type=int, default=0)
     parser.add_argument("--bs-amt", type=int, default=0)
     parser.add_argument("--cols", type=int, default=None)
-    parser.add_argument("--part", type=str, default="all", choices=["all", "report", "consistency", "cluster"])
+    parser.add_argument("--part", type=str, default="all", choices=["all", "report", "consistency", "cluster",
+                                                                    "global_cluster", "boxplots"])
     args = parser.parse_args()
     result_obj = Result(args.dir)
 
@@ -183,5 +186,53 @@ if __name__ == "__main__":
             fp.close()
         webbrowser.open(f"file://{os.path.realpath('consistency.html')}", new=2)
 
-    if args.part in ("all", "clustering"):
-        pass
+    if args.part in ("all", "cluster"):
+        metrics = [m for m in result_obj.metric_names if m not in ("impact", "s-impact")]
+        html_str = ""
+        for metric in metrics:
+            data = np.stack([result_obj.aggregate(method, metric) for method in result_obj.method_names], axis=0)
+            data = preprocessing.scale(data)
+            Z = hierarchy.linkage(data, "single")
+            fig, ax = plt.subplots()
+            dn = hierarchy.dendrogram(Z, labels=result_obj.method_names, orientation="left", ax=ax)
+            html_str += f"<h1>{metric}</h1>" + convert_to_html(fig)
+        with open("cluster.html", "w") as fp:
+            fp.write(html_str)
+            fp.close()
+        webbrowser.open(f"file://{os.path.realpath('cluster.html')}", new=2)
+
+    if args.part in ("all", "global_cluster"):
+        metrics = [m for m in result_obj.metric_names if m not in ("impact", "s-impact")]
+        methods = [m for m in result_obj.method_names if m not in ("Random", "EdgeDetection")]
+        html_str = ""
+        data = []
+        for metric in metrics:
+            data.append(np.array([np.mean(result_obj.aggregate(method, metric)) for method in methods]))
+        data = np.stack(data, axis=0).transpose()
+        data = preprocessing.scale(data)
+        Z = hierarchy.linkage(data, "single")
+        fig, ax = plt.subplots()
+        dn = hierarchy.dendrogram(Z, labels=np.array(methods), orientation="left", ax=ax)
+        html_str += f"<h1>Cross-metric clustering</h1>" + convert_to_html(fig)
+        with open("cluster_global.html", "w") as fp:
+            fp.write(html_str)
+            fp.close()
+        webbrowser.open(f"file://{os.path.realpath('cluster_global.html')}", new=2)
+
+    if args.part in ("all", "boxplots"):
+        metrics = [m for m in result_obj.metric_names if m not in ("impact", "s-impact")]
+        methods = result_obj.method_names
+        html_str = ""
+        for metric in metrics:
+            data = [result_obj.aggregate(method, metric) for method in methods]
+            order = np.argsort([np.median(d) for d in data])
+            data = [data[o] for o in order]
+            fig, ax = plt.subplots()
+            ax.boxplot(data, showfliers=False)
+            ax.set_title(metric)
+            ax.set_xticklabels([methods[o] for o in order], rotation=45)
+            html_str += convert_to_html(fig)
+        with open("boxplots.html", "w") as fp:
+            fp.write(html_str)
+            fp.close()
+        webbrowser.open(f"file://{os.path.realpath('boxplots.html')}", new=2)
