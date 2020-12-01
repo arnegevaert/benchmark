@@ -56,6 +56,7 @@ if __name__ == "__main__":
     parser.add_argument("--bs-size", type=int, default=0)
     parser.add_argument("--bs-amt", type=int, default=0)
     parser.add_argument("--cols", type=int, default=None)
+    parser.add_argument("--part", type=str, default="all", choices=["all", "report", "consistency", "cluster"])
     args = parser.parse_args()
     result_obj = Result(args.dir)
 
@@ -63,118 +64,124 @@ if __name__ == "__main__":
     PART 1: GENERAL REPORT
     """
 
-    lineplots = ["insertion", "deletion", "infidelity", "max-sens", "s-impact", "impact", "sens-n"]
-    boxplots = ["i-coverage", "del-until-flip"]
+    if args.part in ("all", "report"):
+        lineplots = ["insertion", "deletion", "infidelity", "max-sens", "s-impact", "impact", "sens-n"]
+        boxplots = ["i-coverage", "del-until-flip"]
 
-    # Create line plots
-    output_file("report.html")
-    figures = []
-    for metric in lineplots:
-        legend_data = []
-        data = result_obj.get_metric(metric)
-        if data:
-            metadata = result_obj.metadata[metric]
-            p = figure(title=metric, x_axis_label="x", y_axis_label="y", plot_width=1000, plot_height=500)
-            col_iter = iter(palette)
-            for method in data:
-                col = next(col_iter)
-                m_data = data[method]
-                if len(m_data.shape) > 1:
-                    mean = np.mean(m_data, axis=0)
-                    sd = np.std(m_data, axis=0)
-                    l = p.line(x=result_obj.metadata[metric], y=mean, color=col, line_width=2)
-                    a = p.varea(x=result_obj.metadata[metric],
-                                y1=(mean - (1.96 * sd / np.sqrt(m_data.shape[0]))),
-                                y2=(mean + (1.96 * sd / np.sqrt(m_data.shape[0]))),
-                                color=col, alpha=0.2)
-                    legend_data.append((method, [l, a]))
-                else:
-                    l = p.line(x=result_obj.metadata[metric], y=m_data, color=col, line_width=2)
-                    legend_data.append((method, [l]))
-            legend = Legend(items=legend_data)
-            legend.click_policy = "hide"
-            p.add_layout(legend, "right")
-            figures.append(p)
+        # Create line plots
+        output_file("report.html")
+        figures = []
+        for metric in lineplots:
+            legend_data = []
+            data = result_obj.get_metric(metric)
+            if data:
+                metadata = result_obj.metadata[metric]
+                p = figure(title=metric, x_axis_label="x", y_axis_label="y", plot_width=1000, plot_height=500)
+                col_iter = iter(palette)
+                for method in data:
+                    col = next(col_iter)
+                    m_data = data[method]
+                    if len(m_data.shape) > 1:
+                        mean = np.mean(m_data, axis=0)
+                        sd = np.std(m_data, axis=0)
+                        l = p.line(x=result_obj.metadata[metric], y=mean, color=col, line_width=2)
+                        a = p.varea(x=result_obj.metadata[metric],
+                                    y1=(mean - (1.96 * sd / np.sqrt(m_data.shape[0]))),
+                                    y2=(mean + (1.96 * sd / np.sqrt(m_data.shape[0]))),
+                                    color=col, alpha=0.2)
+                        legend_data.append((method, [l, a]))
+                    else:
+                        l = p.line(x=result_obj.metadata[metric], y=m_data, color=col, line_width=2)
+                        legend_data.append((method, [l]))
+                legend = Legend(items=legend_data)
+                legend.click_policy = "hide"
+                p.add_layout(legend, "right")
+                figures.append(p)
 
-    # Create box plots (impact coverage)
-    # TODO check if this plotting code is correct (compare to matplotlib)
-    renderer = hv.renderer("bokeh")
-    for metric in boxplots:
-        legend_data = []
-        data = result_obj.get_metric(metric)
-        if data:
-            names = [method for method in data for _ in range(data[method].shape[0])]
-            plot_data = np.concatenate([data[method] for method in data])
-            boxwhisker = hv.BoxWhisker((names, plot_data), "Method", metric, label=metric)
-            boxwhisker.opts(width=1000, height=500, xrotation=45)
-            figures.append(renderer.get_plot(boxwhisker).state)
+        # Create box plots (impact coverage)
+        # TODO check if this plotting code is correct (compare to matplotlib)
+        renderer = hv.renderer("bokeh")
+        for metric in boxplots:
+            legend_data = []
+            data = result_obj.get_metric(metric)
+            if data:
+                names = [method for method in data for _ in range(data[method].shape[0])]
+                plot_data = np.concatenate([data[method] for method in data])
+                boxwhisker = hv.BoxWhisker((names, plot_data), "Method", metric, label=metric)
+                boxwhisker.opts(width=1000, height=500, xrotation=45)
+                figures.append(renderer.get_plot(boxwhisker).state)
 
-    show(column([Div(text=f"<h1>Directory: {args.dir}</h1>")] + figures))
+        show(column([Div(text=f"<h1>Directory: {args.dir}</h1>")] + figures))
 
     """
     PART 2: CONSISTENCY AND CORRELATIONS
     """
-    metrics = [m for m in result_obj.metric_names if m not in ("impact", "s-impact")]
-    html_str = ""
+    if args.part in ("all", "consistency"):
+        metrics = [m for m in result_obj.metric_names if m not in ("impact", "s-impact")]
+        html_str = ""
 
-    if args.bs_size > 0:
-        result_obj.set_bootstrap(args.bs_size, args.bs_amt, 1024)
-        if "i-coverage" in metrics:
-            print("i-coverage not compatible with bootstrap, removing i-coverage")
-            metrics.remove("i-coverage")
-
-    # Calculate Krippendorff alpha for each metric (where applicable)
-    k_a = {}
-    for metric in metrics:
         if args.bs_size > 0:
-            data = np.stack(
-                [result_obj.bootstrap(method, metric, columns=args.cols) for method in result_obj.method_names],
-                axis=1)
-        else:
-            data = np.stack(
-                [result_obj.aggregate(method, metric, columns=args.cols) for method in result_obj.method_names],
-                axis=1)
-        k_a[metric] = krippendorff_alpha(np.argsort(data))
-    table_str = "<table><tr><th>Method</th><th>Krippendorff Alpha</th></tr>"
-    for key in k_a:
-        table_str += f"<tr><td>{key}</td><td>{k_a[key]:.4f}</td></tr>"
-    table_str += "</table>"
-    html_str += table_str
+            result_obj.set_bootstrap(args.bs_size, args.bs_amt, 1024)
+            if "i-coverage" in metrics:
+                print("i-coverage not compatible with bootstrap, removing i-coverage")
+                metrics.remove("i-coverage")
+
+        # Calculate Krippendorff alpha for each metric (where applicable)
+        k_a = {}
+        for metric in metrics:
+            if args.bs_size > 0:
+                data = np.stack(
+                    [result_obj.bootstrap(method, metric, columns=args.cols) for method in result_obj.method_names],
+                    axis=1)
+            else:
+                data = np.stack(
+                    [result_obj.aggregate(method, metric, columns=args.cols) for method in result_obj.method_names],
+                    axis=1)
+            k_a[metric] = krippendorff_alpha(np.argsort(data))
+        table_str = "<table><tr><th>Method</th><th>Krippendorff Alpha</th></tr>"
+        for key in k_a:
+            table_str += f"<tr><td>{key}</td><td>{k_a[key]:.4f}</td></tr>"
+        table_str += "</table>"
+        html_str += table_str
 
 
-    # Calculate inter-method reliability
-    fig, axs = plt.subplots(len(metrics), 1, figsize=(10, 10*len(metrics)))
-    for i, metric in enumerate(metrics):
-        if args.bs_size > 0:
-            data = np.stack(
-                [result_obj.bootstrap(method, metric, columns=args.cols) for method in result_obj.method_names],
-                axis=0)
-        else:
-            data = np.stack(
-                [result_obj.aggregate(method, metric, columns=args.cols) for method in result_obj.method_names],
-                axis=0)
-        corrs = spearmanr(data, axis=1)[0]
-        correlation_heatmap(axs[i], corrs, result_obj.method_names, metric)
-    html_str += convert_to_html(fig)
+        # Calculate inter-method reliability
+        fig, axs = plt.subplots(len(metrics), 1, figsize=(10, 10*len(metrics)))
+        for i, metric in enumerate(metrics):
+            if args.bs_size > 0:
+                data = np.stack(
+                    [result_obj.bootstrap(method, metric, columns=args.cols) for method in result_obj.method_names],
+                    axis=0)
+            else:
+                data = np.stack(
+                    [result_obj.aggregate(method, metric, columns=args.cols) for method in result_obj.method_names],
+                    axis=0)
+            print(metric, data.shape)
+            corrs = spearmanr(data, axis=1)[0]
+            correlation_heatmap(axs[i], corrs, result_obj.method_names, metric)
+        html_str += convert_to_html(fig)
 
-    # Calculate internal consistency
-    # i-coverage doesn't necessarily have the same shape as the other metrics, so can't be compared properly
-    icr_metrics = [m for m in metrics if m != "i-coverage"]
-    fig, axs = plt.subplots(len(result_obj.method_names), 1, figsize=(10, 10*len(metrics)))
-    for i, method in enumerate(result_obj.method_names):
-        if args.bs_size > 0:
-            data = np.stack(
-                [result_obj.bootstrap(method, metric, columns=args.cols) for metric in icr_metrics],
-                axis=0)
-        else:
-            data = np.stack(
-                [result_obj.aggregate(method, metric, columns=args.cols) for metric in icr_metrics],
-                axis=0)
-        corrs = spearmanr(data, axis=1)[0]
-        correlation_heatmap(axs[i], corrs, icr_metrics, method)
-    html_str += convert_to_html(fig)
+        # Calculate internal consistency
+        # i-coverage doesn't necessarily have the same shape as the other metrics, so can't be compared properly
+        icr_metrics = [m for m in metrics if m != "i-coverage"]
+        fig, axs = plt.subplots(len(result_obj.method_names), 1, figsize=(10, 10*len(metrics)))
+        for i, method in enumerate(result_obj.method_names):
+            if args.bs_size > 0:
+                data = np.stack(
+                    [result_obj.bootstrap(method, metric, columns=args.cols) for metric in icr_metrics],
+                    axis=0)
+            else:
+                data = np.stack(
+                    [result_obj.aggregate(method, metric, columns=args.cols) for metric in icr_metrics],
+                    axis=0)
+            corrs = spearmanr(data, axis=1)[0]
+            correlation_heatmap(axs[i], corrs, icr_metrics, method)
+        html_str += convert_to_html(fig)
 
-    with open("consistency.html", "w") as fp:
-        fp.write(html_str)
-        fp.close()
-    webbrowser.open(f"file://{os.path.realpath('consistency.html')}", new=2)
+        with open("consistency.html", "w") as fp:
+            fp.write(html_str)
+            fp.close()
+        webbrowser.open(f"file://{os.path.realpath('consistency.html')}", new=2)
+
+    if args.part in ("all", "clustering"):
+        pass

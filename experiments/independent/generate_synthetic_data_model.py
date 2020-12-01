@@ -1,4 +1,4 @@
-from sklearn import datasets, model_selection
+from sklearn import datasets, model_selection, preprocessing
 from torch import nn, optim
 from torch.utils.data import TensorDataset, DataLoader
 import torch
@@ -7,6 +7,7 @@ import argparse
 import os
 from os import path
 import numpy as np
+import json
 
 
 # https://scikit-learn.org/stable/auto_examples/datasets/plot_random_dataset.html#sphx-glr-auto-examples-datasets-plot-random-dataset-py
@@ -31,7 +32,7 @@ if __name__ == "__main__":
     criterion = nn.CrossEntropyLoss()
 
     X, y = datasets.make_classification(
-        n_samples=5000,
+        n_samples=10000,
         n_features=args.num_features,
         n_informative=args.num_informative,
         n_redundant=args.num_features - args.num_informative,
@@ -40,6 +41,9 @@ if __name__ == "__main__":
     )
 
     X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, shuffle=True)
+    scaler = preprocessing.StandardScaler().fit(X_train)
+    X_train = scaler.transform(X_train)
+    X_test = scaler.transform(X_test)
     ds_train = TensorDataset(torch.tensor(X_train, dtype=torch.float32), torch.tensor(y_train))
     dl_train = DataLoader(ds_train, batch_size=64)
 
@@ -77,3 +81,5 @@ if __name__ == "__main__":
     np.save(path.join(args.out_dir, "y_train.npy"), y_train)
     np.save(path.join(args.out_dir, "x_test.npy"), X_test)
     np.save(path.join(args.out_dir, "y_test.npy"), y_test)
+    with open(path.join(args.out_dir, "args.json"), "w") as fp:
+        json.dump(vars(args), fp)

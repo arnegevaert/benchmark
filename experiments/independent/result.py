@@ -56,6 +56,8 @@ class Result:
             return (np.mean(data[:, :columns] if columns is not None else data, axis=1) - data[:, 0]) / \
                    (data[:, -1] - data[:, 0])
         if metric in ["infidelity", "max-sens", "sens-n"]:
+            if len(data.shape) == 1:
+                data = data.reshape(-1, 1)
             return np.mean(data[:, :columns] if columns is not None else data, axis=1)
         if metric in ["impact", "i-coverage", "del-until-flip", "s-impact"]:
             return data

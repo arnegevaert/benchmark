@@ -1,6 +1,7 @@
 import torch
 from typing import Callable
 
+
 class PixelAggregation:
     def __init__(self, base_method: Callable, aggregation_fn: str) -> None:
         self.base_method = base_method

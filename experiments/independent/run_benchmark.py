@@ -79,8 +79,6 @@ if __name__ == "__main__":
                 batch = batch[:diff]
                 labels = labels[:diff]
 
-            batch_orig = batch.clone()
-
             for i, m_name in enumerate(methods):
                 method = methods[m_name]
                 # Infidelity
@@ -148,7 +146,6 @@ if __name__ == "__main__":
                     res[m_name]["i-coverage"].append(iou[keep])
             samples_done += batch.size(0)
             prog.update(batch.size(0))
-            print(torch.sum(batch_orig - batch))
 
     # Aggregate and save
     headers = {

@@ -3,7 +3,6 @@ from attrbench.lib import MaskingPolicy
 import torch
 
 
-
 # TODO do this more intelligently (using rough linear search + individual binary search)
 # We assume none of the samples has the same label as the output of the network when given
 # a fully masked image (in which case we might not see a flip)
@@ -17,12 +16,9 @@ def deletion_until_flip(samples: torch.Tensor, labels: torch.Tensor, model: Call
         debug_data["attrs"] = attrs
         debug_data["orig_samples"] = samples
         debug_data["flipped_samples"] = [None for _ in range(samples.shape[0])]
-    pixel_level = (attrs.size(1) == 1)
-    num_inputs = attrs.size(-1) * attrs.size(-2)
+    num_inputs = torch.prod(torch.tensor(attrs.shape[1:])).item()
     attrs = attrs.flatten(1)
     sorted_indices = attrs.argsort().cpu().detach().numpy()
-    if not pixel_level:
-        num_inputs *= attrs.size(-3)
     abs_step_size = max(1, int(step_size * num_inputs))
 
     result = torch.tensor([-1 for _ in range(samples.shape[0])]).int()

@@ -83,7 +83,7 @@ def get_methods(model, aggregation_fn, normalize, methods=None, batch_size=None,
         if m_name in _CAPTUM_METHODS:
             # Methods from captum use .attribute() instead of .__call__()
             method_obj = _CAPTUM_METHODS[m_name](model)
-            return lambda x, t: method_obj.attribute(x, target=t)
+            return lambda x, target: method_obj.attribute(x, target=target)
         if m_name in _UPSAMPLE_METHODS:
             # Upsampling methods need an extra argument for original shape of sample
             return _UPSAMPLE_METHODS[m_name](model, sample_shape)
