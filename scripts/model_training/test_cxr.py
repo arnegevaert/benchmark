@@ -1,16 +1,12 @@
 import argparse
-import itertools
 from torch.utils.data import DataLoader
-from attrbench.evaluation.independent import *
 import sklearn.metrics
-from experiments.lib.util import get_ds_model, get_methods, get_mask_range
+from experiments.lib.util import get_ds_model
 import numpy as np
 import torch
-from tqdm import tqdm
 from os import path
 import os
-import json
-import warnings
+
 
 def evaluate(gts, probabilities, pathologies, use_only_index = None):
     assert(np.all(probabilities >= 0) == True)

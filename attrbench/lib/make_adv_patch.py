@@ -1,12 +1,10 @@
 import numpy as np
 import torch
-from experiments.lib import datasets, models
-from os import path
 from tqdm import tqdm
 
 
-class PatchCheckpointCb():
-    def __init__(self,path) -> None:
+class PatchCheckpointCb:
+    def __init__(self, path) -> None:
         super().__init__()
         self.save_path = path
         self.best_loss = float('Inf')
@@ -22,11 +20,11 @@ def norm(x, x_min, x_max):
     return x * (x_max - x_min) + x_min
 
 
-def init_patch_square(image_size,image_channels, patch_size_precent, data_min, data_max):
+def init_patch_square(image_size, image_channels, patch_size_percent, data_min, data_max):
     # get mask
     image_size = image_size ** 2
-    noise_size = image_size * patch_size_precent
-    noise_dim = int(noise_size ** (0.5))
+    noise_size = image_size * patch_size_percent
+    noise_dim = int(noise_size ** 0.5)
     patch = np.random.rand(1, image_channels, noise_dim, noise_dim)
     patch = norm(patch, data_min, data_max)
     return patch, patch.shape
@@ -74,7 +72,7 @@ def validate(model, patch, data_loader, loss_function, target_label, device):
             y = torch.tensor(np.full(y.shape[0], target_label), dtype=torch.long).to(device)
             # y = y.to(device)
             image_size = x.shape[-1]
-            indx = image_size//2 - patch_size//2
+            indx = image_size // 2 - patch_size // 2
             # indx=0
             indy = indx
 
@@ -116,24 +114,23 @@ def make_patch(dataloader, model, target_label, patch_path, device, patch_percen
     x, _ = next(iter(dataloader))
     sample_shape = x.shape
 
-    patch, shape = init_patch_square(sample_shape[-1],sample_shape[1], patch_percent,data_min,data_max)
+    patch, shape = init_patch_square(sample_shape[-1], sample_shape[1], patch_percent, data_min, data_max)
     patch = torch.tensor(patch, requires_grad=True, device=device)
     optim = torch.optim.Adam([patch], lr=lr, weight_decay=0.)
-    # optim = torch.optim.SGD([patch], lr=0.05, momentum=0.9, weight_decay=0., nesterov=True)
 
     schedule = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, mode='min', factor=0.5, patience=2, verbose=True)
     cb = PatchCheckpointCb(patch_path)
     loss = torch.nn.CrossEntropyLoss()
 
     for e in range(epochs):
-        # model, patch, train_dl, loss_function, optimizer, target_label, data_min,data_max, device, schedule=None, cb=None
-        epoch_loss = train_patch(model, patch, dataloader, loss, optim, target_label=target_label, data_min=data_min,data_max=data_max,device=device,
+        epoch_loss = train_patch(model, patch, dataloader, loss, optim, target_label=target_label, data_min=data_min,
+                                 data_max=data_max, device=device,
                                  schedule=schedule, cb=cb)
         print(" epoch {} done. train_loss: {}".format(e, epoch_loss))
         #                                   model, patch, data_loader, loss_function,  target_label, device
         val_loss, percent_successfull = validate(model, patch, dataloader, loss, target_label, device)
         print("val_loss: {}".format(val_loss))
-        print("{} % of images successfully attacked ".format(percent_successfull*100))
+        print("{} % of images successfully attacked ".format(percent_successfull * 100))
 
         if schedule is not None:
             schedule.step(val_loss)
