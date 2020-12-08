@@ -11,6 +11,7 @@ cycler==0.10.0
 Cython==0.29.21
 decorator==4.4.2
 defusedxml==0.6.0
+efficientnet-pytorch==0.7.0
 entrypoints==0.3
 fpdf==1.7.2
 future==0.18.2
