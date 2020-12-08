@@ -7,6 +7,7 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
                     patch: torch.Tensor, target_label: int, debug_mode=False):
     if len(samples.shape) != 4:
            raise ValueError("Impact Coverage can only be computed for image data and expects 4 input dimensions")
+    samples = samples.clone()
     image_size = samples.shape[-1]
     patch_size = patch.shape[-1]
     orig_out = model(samples)
@@ -19,7 +20,7 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
     samples[:, :, indx:indx + patch_size, indy:indy + patch_size] = patch
 
     # Create masks from top n attributions
-    attrs = method(samples, target=target_label)
+    attrs = method(samples, target=target_label).detach()
     if attrs.shape[1] != 1:
         raise ValueError(f"Impact Coverage expects per-pixel attributions (shape of attrs must have 1 color channel). Actual shape was {attrs.shape}.")
     flattened_attrs = attrs.flatten(1)

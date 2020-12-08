@@ -7,7 +7,7 @@ def max_sensitivity(samples: torch.Tensor, labels: torch.Tensor, method: Callabl
     result = []
     device = samples.device
 
-    attrs = method(samples, labels)  # [batch_size, *sample_shape]
+    attrs = method(samples, labels).detach()  # [batch_size, *sample_shape]
     norm = torch.norm(attrs.flatten(1), dim=1)
     debug_data = []
     for eps in perturbation_range:
@@ -25,7 +25,7 @@ def max_sensitivity(samples: torch.Tensor, labels: torch.Tensor, method: Callabl
                 debug_data[-1]["perturbations"].append(noise)
                 debug_data[-1]["perturbed_samples"].append(noisy_samples)
             # Get new attributions from noisy samples
-            noisy_attrs = method(noisy_samples, labels)
+            noisy_attrs = method(noisy_samples, labels).detach()
             # Get relative norm of attribution difference
             # [batch_size]
             diffs.append((torch.norm(noisy_attrs.flatten(1) - attrs.flatten(1), dim=1) / norm).detach())

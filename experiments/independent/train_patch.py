@@ -1,7 +1,7 @@
 import argparse
 import torch
 from experiments.lib.util import get_ds_model
-from attrbench.util import make_patch
+from attrbench.lib import make_patch
 from torch.utils.data import DataLoader
 
 

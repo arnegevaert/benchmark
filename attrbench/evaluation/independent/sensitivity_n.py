@@ -8,7 +8,7 @@ import warnings
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
                   n_range: Union[List[int], Tuple[int]], num_subsets: int, masking_policy: MaskingPolicy,
                   debug_mode=False):
-    attrs = method(samples, labels)
+    attrs = method(samples, labels).detach()
     result = []
     batch_size = samples.size(0)
 

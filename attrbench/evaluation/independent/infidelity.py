@@ -6,11 +6,10 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, met
                perturbation_range: List[float], num_perturbations: int, debug_mode=False):
     result = []
     device = samples.device
-    n_channels = samples.size(1)
     # Get original model output
     with torch.no_grad():
         orig_output = (model(samples)).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
-    attrs = method(samples, labels)
+    attrs = method(samples, labels).detach()
     if attrs.shape != samples.shape:
         raise ValueError("Attributions must have same shape as samples for infidelity")
 
