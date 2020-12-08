@@ -4,9 +4,10 @@ import webbrowser
 import base64
 from io import BytesIO
 import os
+from os import path
 import matplotlib.pyplot as plt
 from experiments.independent import Result, correlation_heatmap
-from scipy.stats import spearmanr
+from scipy.stats import spearmanr, ttest_rel
 from bokeh.plotting import figure, output_file, show
 from bokeh.layouts import column
 from bokeh.palettes import Category10_10 as palette
@@ -54,14 +55,17 @@ def convert_to_html(fig):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("dir", type=str)
+    parser.add_argument("data_dir", type=str)
+    parser.add_argument("out_dir", type=str)
     parser.add_argument("--bs-size", type=int, default=0)
     parser.add_argument("--bs-amt", type=int, default=0)
     parser.add_argument("--cols", type=int, default=None)
     parser.add_argument("--part", type=str, default="all", choices=["all", "report", "consistency", "cluster",
                                                                     "global_cluster", "boxplots"])
     args = parser.parse_args()
-    result_obj = Result(args.dir)
+    result_obj = Result(args.data_dir)
+    if not path.isdir(args.out_dir):
+        os.makedirs(args.out_dir)
 
     """
     PART 1: GENERAL REPORT
@@ -72,7 +76,7 @@ if __name__ == "__main__":
         boxplots = ["i-coverage", "del-until-flip"]
 
         # Create line plots
-        output_file("report.html")
+        output_file(path.join(args.out_dir, "report.html"))
         figures = []
         for metric in lineplots:
             legend_data = []
@@ -114,7 +118,7 @@ if __name__ == "__main__":
                 boxwhisker.opts(width=1000, height=500, xrotation=45)
                 figures.append(renderer.get_plot(boxwhisker).state)
 
-        show(column([Div(text=f"<h1>Directory: {args.dir}</h1>")] + figures))
+        show(column([Div(text=f"<h1>Directory: {args.data_dir}</h1>")] + figures))
 
     """
     PART 2: CONSISTENCY AND CORRELATIONS
@@ -149,7 +153,7 @@ if __name__ == "__main__":
 
 
         # Calculate inter-method reliability
-        fig, axs = plt.subplots(len(metrics), 1, figsize=(10, 10*len(metrics)))
+        fig, axs = plt.subplots(len(metrics), 1, figsize=(10, 12*len(metrics)))
         for i, metric in enumerate(metrics):
             if args.bs_size > 0:
                 data = np.stack(
@@ -167,7 +171,7 @@ if __name__ == "__main__":
         # Calculate internal consistency
         # i-coverage doesn't necessarily have the same shape as the other metrics, so can't be compared properly
         icr_metrics = [m for m in metrics if m != "i-coverage"]
-        fig, axs = plt.subplots(len(result_obj.method_names), 1, figsize=(10, 10*len(metrics)))
+        fig, axs = plt.subplots(len(result_obj.method_names), 1, figsize=(10, 12*len(metrics)))
         for i, method in enumerate(result_obj.method_names):
             if args.bs_size > 0:
                 data = np.stack(
@@ -181,10 +185,10 @@ if __name__ == "__main__":
             correlation_heatmap(axs[i], corrs, icr_metrics, method)
         html_str += convert_to_html(fig)
 
-        with open("consistency.html", "w") as fp:
+        with open(path.join(args.out_dir, "consistency.html"), "w") as fp:
             fp.write(html_str)
             fp.close()
-        webbrowser.open(f"file://{os.path.realpath('consistency.html')}", new=2)
+        webbrowser.open(f"file://{os.path.realpath(path.join(args.out_dir, 'consistency.html'))}", new=2)
 
     if args.part in ("all", "cluster"):
         metrics = [m for m in result_obj.metric_names if m not in ("impact", "s-impact")]
@@ -196,10 +200,10 @@ if __name__ == "__main__":
             fig, ax = plt.subplots()
             dn = hierarchy.dendrogram(Z, labels=result_obj.method_names, orientation="left", ax=ax)
             html_str += f"<h1>{metric}</h1>" + convert_to_html(fig)
-        with open("cluster.html", "w") as fp:
+        with open(path.join(args.out_dir, "cluster.html"), "w") as fp:
             fp.write(html_str)
             fp.close()
-        webbrowser.open(f"file://{os.path.realpath('cluster.html')}", new=2)
+        webbrowser.open(f"file://{os.path.realpath(path.join(args.out_dir, 'cluster.html'))}", new=2)
 
     if args.part in ("all", "global_cluster"):
         metrics = [m for m in result_obj.metric_names if m not in ("impact", "s-impact")]
@@ -214,10 +218,10 @@ if __name__ == "__main__":
         fig, ax = plt.subplots()
         dn = hierarchy.dendrogram(Z, labels=np.array(methods), orientation="left", ax=ax)
         html_str += f"<h1>Cross-metric clustering</h1>" + convert_to_html(fig)
-        with open("cluster_global.html", "w") as fp:
+        with open(path.join(args.out_dir, "cluster_global.html"), "w") as fp:
             fp.write(html_str)
             fp.close()
-        webbrowser.open(f"file://{os.path.realpath('cluster_global.html')}", new=2)
+        webbrowser.open(f"file://{os.path.realpath(path.join(args.out_dir, 'cluster_global.html'))}", new=2)
 
     if args.part in ("all", "boxplots"):
         metrics = [m for m in result_obj.metric_names if m not in ("impact", "s-impact")]
@@ -232,7 +236,22 @@ if __name__ == "__main__":
             ax.set_title(metric)
             ax.set_xticklabels([methods[o] for o in order], rotation=45)
             html_str += convert_to_html(fig)
-        with open("boxplots.html", "w") as fp:
+        with open(path.join(args.out_dir, "boxplots.html"), "w") as fp:
             fp.write(html_str)
             fp.close()
-        webbrowser.open(f"file://{os.path.realpath('boxplots.html')}", new=2)
+        webbrowser.open(f"file://{os.path.realpath(path.join(args.out_dir, 'boxplots.html'))}", new=2)
+
+        html_str = ""
+        for metric in metrics:
+            data = [result_obj.aggregate(method, metric) for method in methods]
+            order = np.argsort([np.median(d) for d in data])
+            data = [data[o] for o in order]
+            fig, ax = plt.subplots()
+            ax.boxplot(data)
+            ax.set_title(metric)
+            ax.set_xticklabels([methods[o] for o in order], rotation=45)
+            html_str += convert_to_html(fig)
+        with open(path.join(args.out_dir, "boxplots2.html"), "w") as fp:
+            fp.write(html_str)
+            fp.close()
+        webbrowser.open(f"file://{os.path.realpath(path.join(args.out_dir, 'boxplots2.html'))}", new=2)
