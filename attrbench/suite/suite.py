@@ -1,10 +1,11 @@
-import json
 from attrbench.suite import metrics
 from attrbench.lib import FeatureMaskingPolicy, PixelMaskingPolicy
 from tqdm import tqdm
 import torch
 import inspect
 from inspect import Parameter
+import yaml
+import h5py
 
 
 def _parse_masking_policy(d):
@@ -44,28 +45,30 @@ class Suite:
     a given model and dataset.
     """
     def __init__(self, model, methods, dataloader, device="cpu"):
-        self.metrics = []
+        self.metrics = {}
         self.model = model
         self.methods = methods
         self.dataloader = dataloader
         self.device = device
         self.default_args = {}
 
-    def load_json(self, loc):
+    def load_config(self, loc):
         with open(loc) as fp:
-            data = json.load(fp)
+            data = yaml.full_load(fp)
             # Parse default arguments if present
             if "default" in data:
                 self.default_args = _parse_default_args(data["default"])
             # Build metric objects
             for metric_name in data["metrics"]:
-                # Parse JSON args
-                args_dict = _parse_metric_args(data["metrics"][metric_name])
+                metric_dict = data["metrics"][metric_name]
+                # Parse args from config file
+                args_dict = _parse_metric_args(metric_dict["args"])
+                # Get constructor
+                constructor = getattr(metrics, metric_dict["type"])
                 # Add model and methods args
                 args_dict["model"] = self.model
                 args_dict["methods"] = self.methods
                 # Compare to required args, add missing ones from default args
-                constructor = getattr(metrics, metric_name)
                 signature = inspect.signature(constructor).parameters
                 expected_arg_names = [arg for arg in signature if signature[arg].default == Parameter.empty]
                 for e_arg in expected_arg_names:
@@ -75,7 +78,7 @@ class Suite:
                         else:
                             raise ValueError(f"Invalid JSON: required argument {e_arg} not found for metric {metric_name}")
                 # Create metric object using args_dict
-                self.metrics.append(constructor(**args_dict))
+                self.metrics[metric_name] = constructor(**args_dict)
 
     def run(self, num_samples, verbose=True):
         samples_done = 0
@@ -96,4 +99,16 @@ class Suite:
                     prog.update(samples.size(0))
 
     def save_result(self, loc):
-        pass  # TODO save to HDF5 file
+        fp = h5py.File(loc, "w")
+        # HDF5 file is laid out as {metric}/{method}
+        # Each metric group has the according metadata as attributes
+        for metric_name in self.metrics:
+            metric = self.metrics[metric_name]
+            group = fp.create_group(metric_name)
+            meta = metric.get_metadata()
+            for key in meta:
+                group.attrs[key] = meta[key]
+            results = metric.get_results()
+            for method_name in results:
+                method_results = results[method_name]
+                group.create_dataset(method_name, data=method_results)
