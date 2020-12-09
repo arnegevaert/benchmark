@@ -74,4 +74,4 @@ class Suite:
                     prog.update(samples.size(0))
 
     def save_result(self, loc):
-        pass  # TODO
+        pass  # TODO save to HDF5 file

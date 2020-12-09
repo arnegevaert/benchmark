@@ -20,7 +20,10 @@ class Metric:
         """
         Returns the complete results for all batches and all methods in a dictionary
         """
-        raise NotImplementedError
+        result = {}
+        for method_name in self.methods:
+            result[method_name] = torch.cat(self.results[method_name], dim=0).numpy()
+        return result
 
     def _run_single_method(self, samples, labels, method):
         raise NotImplementedError
@@ -35,9 +38,6 @@ class DeletionUntilFlip(Metric):
     def _run_single_method(self, samples, labels, method):
         return functional.deletion_until_flip(samples, labels, self.model, method, self.step_size, self.masking_policy)
 
-    def get_results(self):
-        raise NotImplementedError
-
 
 class ImpactCoverage(Metric):
     def __init__(self, model, methods, patch, target_label):
@@ -46,10 +46,8 @@ class ImpactCoverage(Metric):
         self.target_label = target_label
 
     def _run_single_method(self, samples, labels, method):
-        return functional.impact_coverage(samples, labels, self.model, method, self.patch, self.target_label)
-
-    def get_results(self):
-        raise NotImplementedError
+        iou, keep = functional.impact_coverage(samples, labels, self.model, method, self.patch, self.target_label)
+        return iou[keep]
 
 
 class ImpactScore(Metric):
@@ -62,10 +60,14 @@ class ImpactScore(Metric):
 
     def _run_single_method(self, samples, labels, method):
         return functional.impact_score(samples, labels, self.model, method, self.mask_range,
-                                       self.strict, self.masking_policy, self.tau)
+                                       self.strict, self.masking_policy, self.tau)[0]
 
     def get_results(self):
-        raise NotImplementedError
+        result = {}
+        for method_name in self.methods:
+            stacked = torch.stack(self.results[method_name], dim=0)
+            result[method_name] = (torch.sum(stacked, dim=0).float() / stacked.size(0)).numpy()
+        return result
 
 
 class Insertion(Metric):
@@ -77,9 +79,6 @@ class Insertion(Metric):
     def _run_single_method(self, samples, labels, method):
         return functional.insertion(samples, labels, self.model, method, self.mask_range, self.masking_policy)
 
-    def get_results(self):
-        raise NotImplementedError
-
 
 class Deletion(Metric):
     def __init__(self, model, methods, mask_range, masking_policy):
@@ -89,9 +88,6 @@ class Deletion(Metric):
 
     def _run_single_method(self, samples, labels, method):
         return functional.deletion(samples, labels, self.model, method, self.mask_range, self.masking_policy)
-
-    def get_results(self):
-        raise NotImplementedError
 
 
 class Infidelity(Metric):
@@ -104,9 +100,6 @@ class Infidelity(Metric):
         return functional.infidelity(samples, labels, self.model, method,
                                      self.perturbation_range, self.num_perturbations)
 
-    def get_results(self):
-        raise NotImplementedError
-
 
 class MaxSensitivity(Metric):
     def __init__(self, model, methods, perturbation_range, num_perturbations):
@@ -116,9 +109,6 @@ class MaxSensitivity(Metric):
 
     def _run_single_method(self, samples, labels, method):
         return functional.max_sensitivity(samples, labels, method, self.perturbation_range, self.num_perturbations)
-
-    def get_results(self):
-        raise NotImplementedError
 
 
 class SensitivityN(Metric):
@@ -131,6 +121,3 @@ class SensitivityN(Metric):
     def _run_single_method(self, samples, labels, method):
         return functional.sensitivity_n(samples, labels, self.model, method,
                                         self.n_range, self.num_subsets, self.masking_policy)
-
-    def get_results(self):
-        raise NotImplementedError
