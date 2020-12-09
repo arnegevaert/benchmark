@@ -10,8 +10,11 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, met
     with torch.no_grad():
         orig_output = (model(samples)).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
     attrs = method(samples, labels).detach()
-    if attrs.shape != samples.shape:
-        raise ValueError("Attributions must have same shape as samples for infidelity")
+    # Replicate attributions along channel dimension if necessary
+    if attrs.shape[1] != samples.shape[1]:
+        shape = [1 for _ in range(len(attrs.shape))]
+        shape[1] = samples.shape[1]
+        attrs = attrs.repeat(*tuple(shape))
 
     debug_data = []
     for eps in perturbation_range:

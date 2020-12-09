@@ -49,11 +49,11 @@ class Resnet18(nn.Module):
     """
     def __init__(self, params_loc=None):
         super().__init__()
-        model = torchvision.models.resnet18()
-        model.fc = nn.Linear(model.fc.in_features, 10)
+        self.model = torchvision.models.resnet18()
+        self.model.fc = nn.Linear(self.model.fc.in_features, 10)
 
         if params_loc:
-            self.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
+            self.model.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
 
     def forward(self, x):
         return self.model(x)
