@@ -5,7 +5,7 @@ from torch.nn.functional import softmax
 
 
 def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable, mask_range: List[int],
-                 masking_policy: MaskingPolicy, strict: bool, tau: float = None, debug_mode=False):
+                 strict: bool, masking_policy: MaskingPolicy, tau: float = None, debug_mode=False):
     if not (strict or tau):
         raise ValueError("Provide value for tau when calculating non-strict impact score")
     counts = []

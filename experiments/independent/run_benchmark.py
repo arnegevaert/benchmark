@@ -106,8 +106,8 @@ if __name__ == "__main__":
 
                 # Deletion until flip
                 if "del-until-flip" in args.metrics:
-                    batch_del_flip = deletion_until_flip(batch, labels, model, method, masking_policy,
-                                                         step_size=.01)
+                    batch_del_flip = deletion_until_flip(batch, labels, model, method, step_size=.01,
+                                                         masking_policy=masking_policy)
                     res[m_name]["del-until-flip"].append(batch_del_flip)
 
                 # Max-sensitivity
@@ -127,16 +127,16 @@ if __name__ == "__main__":
                 # Note: we can ignore the counts returned by (strict) impact score, since we already only use
                 # correctly classified samples (i.e. the count is always equal to batch size)
                 if "impact" in args.metrics:
-                    batch_impact_score, _ = impact_score(batch, labels, model, method, mask_range[1:], masking_policy,
-                                                         strict=False, tau=.5)
+                    batch_impact_score, _ = impact_score(batch, labels, model, method, mask_range[1:], strict=False,
+                                                         masking_policy=masking_policy, tau=.5)
                     res[m_name]["impact"].append(batch_impact_score)
 
                 # Impact score (strict)
                 # Note: we can ignore the counts returned by (strict) impact score, since we already only use
                 # correctly classified samples (i.e. the count is always equal to batch size)
                 if "s-impact" in args.metrics:
-                    batch_s_impact_score, _ = impact_score(batch, labels, model, method, mask_range[1:], masking_policy,
-                                                           strict=True)
+                    batch_s_impact_score, _ = impact_score(batch, labels, model, method, mask_range[1:], strict=True,
+                                                           masking_policy=masking_policy)
                     res[m_name]["s-impact"].append(batch_s_impact_score)
 
                 # Impact coverage
