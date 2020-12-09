@@ -30,12 +30,8 @@ def _parse_metric_args(metric_args):
 
 
 def _parse_default_args(default_args):
-    result = {}
-    mp_params = default_args.get("masking_policy", None)
-    result["masking_policy"] = _parse_masking_policy(mp_params) if mp_params else None
-    result["perturbation_range"] = default_args.get("perturbation_range", None)
-    result["mask_range"] = default_args.get("mask_range", None)
-    return result
+    return {key: (default_args[key] if key != "masking_policy" else _parse_masking_policy(default_args[key]))
+            for key in default_args}
 
 
 class Suite:
@@ -46,7 +42,8 @@ class Suite:
     """
     def __init__(self, model, methods, dataloader, device="cpu"):
         self.metrics = {}
-        self.model = model
+        self.model = model.to(device)
+        self.model.eval()
         self.methods = methods
         self.dataloader = dataloader
         self.device = device
@@ -56,13 +53,12 @@ class Suite:
         with open(loc) as fp:
             data = yaml.full_load(fp)
             # Parse default arguments if present
-            if "default" in data:
-                self.default_args = _parse_default_args(data["default"])
+            self.default_args = _parse_default_args(data.get("default", {}))
             # Build metric objects
             for metric_name in data["metrics"]:
                 metric_dict = data["metrics"][metric_name]
                 # Parse args from config file
-                args_dict = _parse_metric_args(metric_dict["args"])
+                args_dict = _parse_metric_args(metric_dict.get("args", {}))
                 # Get constructor
                 constructor = getattr(metrics, metric_dict["type"])
                 # Add model and methods args
@@ -83,8 +79,9 @@ class Suite:
     def run(self, num_samples, verbose=True):
         samples_done = 0
         prog = tqdm(total=num_samples) if verbose else None
+        it = iter(self.dataloader)
         while samples_done < num_samples:
-            full_batch, full_labels = next(self.dataloader)
+            full_batch, full_labels = next(it)
             full_batch = full_batch.to(self.device)
             full_labels = full_labels.to(self.device)
 
@@ -94,21 +91,22 @@ class Suite:
             labels = full_labels[pred == full_labels]
             if samples.size(0) > 0:
                 for metric in self.metrics:
-                    metric.run_batch(samples, labels)
+                    self.metrics[metric].run_batch(samples, labels)
                 if verbose:
                     prog.update(samples.size(0))
+                samples_done += samples.size(0)
 
     def save_result(self, loc):
-        fp = h5py.File(loc, "w")
-        # HDF5 file is laid out as {metric}/{method}
-        # Each metric group has the according metadata as attributes
-        for metric_name in self.metrics:
-            metric = self.metrics[metric_name]
-            group = fp.create_group(metric_name)
-            meta = metric.get_metadata()
-            for key in meta:
-                group.attrs[key] = meta[key]
-            results = metric.get_results()
-            for method_name in results:
-                method_results = results[method_name]
-                group.create_dataset(method_name, data=method_results)
+        with h5py.File(loc, "w") as fp:
+            # HDF5 file is laid out as {metric}/{method}
+            # Each metric group has the according metadata as attributes
+            for metric_name in self.metrics:
+                metric = self.metrics[metric_name]
+                group = fp.create_group(metric_name)
+                meta = metric.get_metadata()
+                for key in meta:
+                    group.attrs[key] = meta[key]
+                results = metric.get_results()
+                for method_name in results:
+                    method_results = results[method_name]
+                    group.create_dataset(method_name, data=method_results)
