@@ -3,6 +3,8 @@ from attrbench.suite import metrics
 from attrbench.lib import FeatureMaskingPolicy, PixelMaskingPolicy
 from tqdm import tqdm
 import torch
+import inspect
+from inspect import Parameter
 
 
 def _parse_masking_policy(d):
@@ -13,6 +15,26 @@ def _parse_masking_policy(d):
     else:
         raise ValueError("policy attribute of masking_policy must be either \"pixel\" or \"feature\"")
     return masking_policy
+
+
+def _parse_metric_args(metric_args):
+    result = {}
+    # Fill dictionary with metric-specific arguments from JSON data
+    for arg in metric_args:
+        if arg == "masking_policy":
+            result["masking_policy"] = _parse_masking_policy(metric_args[arg])
+        else:
+            result[arg] = metric_args[arg]
+    return result
+
+
+def _parse_default_args(default_args):
+    result = {}
+    mp_params = default_args.get("masking_policy", None)
+    result["masking_policy"] = _parse_masking_policy(mp_params) if mp_params else None
+    result["perturbation_range"] = default_args.get("perturbation_range", None)
+    result["mask_range"] = default_args.get("mask_range", None)
+    return result
 
 
 class Suite:
@@ -27,33 +49,33 @@ class Suite:
         self.methods = methods
         self.dataloader = dataloader
         self.device = device
-        self.masking_policy = None
-        self.perturbation_range = None
-        self.mask_range = None
-
-    def add_metric(self, metric: metrics.Metric):
-        self.metrics.append(metric)
+        self.default_args = {}
 
     def load_json(self, loc):
         with open(loc) as fp:
             data = json.load(fp)
-            metric_params = data["metrics"]
-            # Configure default parameters
-            mp_params = data.get("masking_policy", None)
-            self.masking_policy = _parse_masking_policy(mp_params) if mp_params else None
-            self.perturbation_range = data.get("perturbation_range", None)
-            self.mask_range = data.get("mask_range", None)
-            # Configure metric-specific parameters
-            for key in metric_params:
-                constructor = getattr(metrics, key)
-                need_mp = ["Insertion", "Deletion", "ImpactScore", "DeletionUntilFlip", "SensitivityN"]
-                # TODO
-                if "masking_policy" in metric_params[key]:
-                    metric_params[key]["masking_policy"] = _parse_masking_policy(metric_params[key]["masking_policy"])
-                if constructor in need_mp:
-                    self.add_metric(constructor(self.model, self.methods, self.masking_policy, **metric_params[key]))
-                else:
-                    self.add_metric(constructor(self.model, self.methods, **metric_params[key]))
+            # Parse default arguments if present
+            if "default" in data:
+                self.default_args = _parse_default_args(data["default"])
+            # Build metric objects
+            for metric_name in data["metrics"]:
+                # Parse JSON args
+                args_dict = _parse_metric_args(data["metrics"][metric_name])
+                # Add model and methods args
+                args_dict["model"] = self.model
+                args_dict["methods"] = self.methods
+                # Compare to required args, add missing ones from default args
+                constructor = getattr(metrics, metric_name)
+                signature = inspect.signature(constructor).parameters
+                expected_arg_names = [arg for arg in signature if signature[arg].default == Parameter.empty]
+                for e_arg in expected_arg_names:
+                    if e_arg not in args_dict:
+                        if e_arg in self.default_args:
+                            args_dict[e_arg] = self.default_args[e_arg]
+                        else:
+                            raise ValueError(f"Invalid JSON: required argument {e_arg} not found for metric {metric_name}")
+                # Create metric object using args_dict
+                self.metrics.append(constructor(**args_dict))
 
     def run(self, num_samples, verbose=True):
         samples_done = 0
