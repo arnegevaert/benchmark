@@ -1,4 +1,5 @@
 import argparse
+import webbrowser
 from attrbench.suite import Result
 import dash
 import dash_core_components as dcc
@@ -12,20 +13,19 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     hdf_obj = Result.load_hdf(args.file)
-
     app = dash.Dash(__name__, external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css'])
 
     df = hdf_obj.data["deletion"]["Gradient"]
     fig = px.line(df.transpose())
 
     app.layout = html.Div(children=[
-        html.H1("Hello dash"),
-        html.Div(children="""
-            Dash example
-        """),
+        html.H1(args.file),
         dcc.Graph(
             id="example-graph",
             figure=fig
         )
     ])
-    app.run_server()
+
+    port = 9000
+    app.run_server(port=port)
+    webbrowser.open_new(f"localhost:{port}")

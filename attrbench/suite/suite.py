@@ -104,7 +104,7 @@ class Suite:
                 metric = self.metrics[metric_name]
                 group = fp.create_group(metric_name)
                 # TODO save metadata as attributes for metric
-                # x_ticks, normalization method (string)
+                # col_index, type
                 """
                 for key in meta:
                     group.attrs[key] = meta[key]
