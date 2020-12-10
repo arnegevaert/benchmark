@@ -15,3 +15,4 @@ out
 *.png
 tmp
 .vscode
+*.h5

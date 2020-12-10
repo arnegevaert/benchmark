@@ -7,7 +7,7 @@ import json
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 from experiments.lib.util import get_methods
-from attrbench.evaluation.independent import *
+from attrbench.functional import *
 from attrbench.lib import FeatureMaskingPolicy
 import os
 
@@ -81,7 +81,7 @@ if __name__ == "__main__":
                     insertion_deletion(samples, labels, model, method, mask_range, fmp, mode="deletion")
                 )
                 res[m_name]["del-until-flip"].append(
-                    deletion_until_flip(samples, labels, model, method, fmp, step_size=.01)
+                    deletion_until_flip(samples, labels, model, method, step_size=.01, masking_policy=fmp)
                 )
                 res[m_name]["max-sens"].append(
                     max_sensitivity(samples, labels, method, perturbation_range=pert_range, num_perturbations=16)
@@ -90,10 +90,11 @@ if __name__ == "__main__":
                     sensitivity_n(samples, labels, model, method, mask_range[1:-1], num_subsets=16, masking_policy=fmp)
                 )
                 res[m_name]["impact"].append(
-                    impact_score(samples, labels, model, mask_range[1:], method, fmp, tau=.5, strict=False)[0]
+                    impact_score(samples, labels, model, method, mask_range[1:], strict=False, masking_policy=fmp,
+                                 tau=.5)[0]
                 )
                 res[m_name]["s-impact"].append(
-                    impact_score(samples, labels, model, mask_range[1:], method, fmp, strict=True)[0]
+                    impact_score(samples, labels, model, method, mask_range[1:], strict=True, masking_policy=fmp)[0]
                 )
         samples_done += samples.size(0)
         prog.update(samples.size(0))

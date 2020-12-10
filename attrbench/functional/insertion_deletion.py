@@ -3,8 +3,18 @@ from attrbench.lib import MaskingPolicy
 import torch
 
 
-def insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                       mask_range: List[int], masking_policy: MaskingPolicy, mode: str, debug_mode=False):
+def insertion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
+              mask_range: List[int], masking_policy: MaskingPolicy):
+    return _insertion_deletion(samples, labels, model, method, mask_range, masking_policy, "insertion")
+
+
+def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
+             mask_range: List[int], masking_policy: MaskingPolicy):
+    return _insertion_deletion(samples, labels, model, method, mask_range, masking_policy, "deletion")
+
+
+def _insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
+                        mask_range: List[int], masking_policy: MaskingPolicy, mode: str, debug_mode=False):
     if mode not in ["deletion", "insertion"]:
         raise ValueError("Mode must be either deletion or insertion")
     debug_data = {}
