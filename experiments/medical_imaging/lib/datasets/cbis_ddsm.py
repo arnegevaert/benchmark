@@ -38,7 +38,7 @@ class CBIS_DDSM_patches(Dataset):
             df = pd.read_csv(path.join(data_loc, "mass_case_description_test_set.csv"))
         self.df = df
         labels = [pat =="MALIGNANT" for pat in df['pathology']]
-        self.labels = np.array(labels,dtype=int)
+        self.labels = np.array(labels,dtype=np.int64)
         # self.labels = np.zeros((len(labels),2)) # one-hot
         # self.labels[np.arange(len(labels)), labels] = 1
 

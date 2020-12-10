@@ -5,7 +5,7 @@ import torch
 import torchvision
 import torch.nn as nn
 from torch.nn import functional as F
-from experiments.medical_imaging.lib.datasets import Aptos, Cxr8, CBIS_DDSM_patches, HAM10000
+from experiments.medical_imaging.lib.datasets import Aptos, Cxr8, CBIS_DDSM_patches, HAM10000,PcamDataset
 from experiments.medical_imaging.lib.models import Alexnet, Densenet, Resnet, EfficientNet
 
 _DATA_LOC = os.environ["BM_DATA_LOC"] if "BM_DATA_LOC" in os.environ else path.join(path.dirname(__file__), "../../data")
@@ -37,6 +37,10 @@ def get_dataset_model(name):
         ds = HAM10000(path.join(_DATA_LOC, "HAM10000"),train=False,)
         model = EfficientNet('efficientnet-b0',7,params_loc=path.join(_DATA_LOC, "models/HAM10000/efficientnet-b0.pt"))
         sample_shape = (224,224)
+    elif name == "PCAM":
+            ds = PcamDataset(path.join(_DATA_LOC, "PCAM"),train=False)
+            model = Densenet('densenet121',2, params_loc=path.join(_DATA_LOC, "models/PCAM/densenet121.pt"))
+            sample_shape = (96,96)
     else:
         raise ValueError(f"Invalid dataset: {name}")
     return ds, model, sample_shape
