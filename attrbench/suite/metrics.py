@@ -25,9 +25,6 @@ class Metric:
             result[method_name] = torch.cat(self.results[method_name], dim=0).numpy()
         return result
 
-    def get_metadata(self):
-        return {}
-
     def _run_single_method(self, samples, labels, method):
         raise NotImplementedError
 

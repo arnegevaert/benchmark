@@ -103,9 +103,12 @@ class Suite:
             for metric_name in self.metrics:
                 metric = self.metrics[metric_name]
                 group = fp.create_group(metric_name)
-                meta = metric.get_metadata()
+                # TODO save metadata as attributes for metric
+                # x_ticks, normalization method (string)
+                """
                 for key in meta:
                     group.attrs[key] = meta[key]
+                """
                 results = metric.get_results()
                 for method_name in results:
                     method_results = results[method_name]
