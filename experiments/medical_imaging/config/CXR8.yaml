@@ -1,0 +1,38 @@
+default:
+  masking_policy:
+    policy: pixel
+    value: 0.
+  mask_range: [0, 5243, 10486, 15729, 20972, 26214, 31457, 36700, 41943, 47186, 52429, 57672, 62915, 68157, 73400, 78643, 83886, 89129, 94372, 99615, 104858, 110100, 115343, 120586, 125829, 131072, 136315, 141558, 146801, 152044, 157286, 162529, 167772, 173015, 178258, 183501, 188744, 193987, 199229, 204472, 209715, 214958, 220201, 225444, 230687, 235930, 241172, 246415, 251658, 256901, 262144]
+  perturbation_range: [.1, .2, .3, .4, .5, .6, .7, .8, .9, 1., 1.1,
+                       1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
+metrics:
+  deletion_until_flip:
+    type: DeletionUntilFlip
+    args:
+      step_size: .01
+  impact_score:
+    type: ImpactScore
+    args:
+      strict: false
+      tau: 0.5
+  strict_impact_score:
+    type: ImpactScore
+    args:
+      strict: true
+  insertion:
+    type: Insertion
+  deletion:
+    type: Deletion
+  infidelity:
+    type: Infidelity
+    args:
+      num_perturbations: 16
+  max_sensitivity:
+    type: MaxSensitivity
+    args:
+      num_perturbations: 16
+  sensitivity_n:
+    type: SensitivityN
+    args:
+      n_range: [5243, 10486, 15729, 20972, 26214, 31457, 36700, 41943, 47186, 52429, 57672, 62915, 68157, 73400, 78643, 83886, 89129, 94372, 99615, 104858, 110100, 115343, 120586, 125829, 131072, 136315, 141558, 146801, 152044, 157286, 162529, 167772, 173015, 178258, 183501, 188744, 193987, 199229, 204472, 209715, 214958, 220201, 225444, 230687, 235930, 241172, 246415, 251658, 256901]
+      num_subsets: 16

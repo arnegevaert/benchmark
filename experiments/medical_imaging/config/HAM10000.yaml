@@ -1,0 +1,38 @@
+default:
+  masking_policy:
+    policy: pixel
+    value: 0.
+  mask_range: [0, 1004, 2007, 3011, 4014, 5018, 6021, 7025, 8028, 9032, 10035, 11039, 12042, 13046, 14049, 15053, 16056, 17060, 18063, 19067, 20070, 21074, 22077, 23081, 24084, 25088, 26092, 27095, 28099, 29102, 30106, 31109, 32113, 33116, 34120, 35123, 36127, 37130, 38134, 39137, 40141, 41144, 42148, 43151, 44155, 45158, 46162, 47165, 48169, 49172, 50176]
+  perturbation_range: [.1, .2, .3, .4, .5, .6, .7, .8, .9, 1., 1.1,
+                       1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
+metrics:
+  deletion_until_flip:
+    type: DeletionUntilFlip
+    args:
+      step_size: .01
+  impact_score:
+    type: ImpactScore
+    args:
+      strict: false
+      tau: 0.5
+  strict_impact_score:
+    type: ImpactScore
+    args:
+      strict: true
+  insertion:
+    type: Insertion
+  deletion:
+    type: Deletion
+  infidelity:
+    type: Infidelity
+    args:
+      num_perturbations: 16
+  max_sensitivity:
+    type: MaxSensitivity
+    args:
+      num_perturbations: 16
+  sensitivity_n:
+    type: SensitivityN
+    args:
+      n_range: [1004, 2007, 3011, 4014, 5018, 6021, 7025, 8028, 9032, 10035, 11039, 12042, 13046, 14049, 15053, 16056, 17060, 18063, 19067, 20070, 21074, 22077, 23081, 24084, 25088, 26092, 27095, 28099, 29102, 30106, 31109, 32113, 33116, 34120, 35123, 36127, 37130, 38134, 39137, 40141, 41144, 42148, 43151, 44155, 45158, 46162, 47165, 48169, 49172]
+      num_subsets: 16

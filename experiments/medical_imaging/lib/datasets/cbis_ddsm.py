@@ -30,7 +30,6 @@ class MyRotationTransform:
 
 class CBIS_DDSM_patches(Dataset):
     def __init__(self, data_loc, train, imsize):
-        self.sample_shape = (3, 224, 224)
         super(CBIS_DDSM_patches,self).__init__()
 
         if train:
@@ -100,8 +99,7 @@ def imshow(img, title):
 
 if __name__ == '__main__':
     # calc std and mean
-    my_ds = CBIS_DDSM_patches('D:\Project\Data\CBIS-DDSM',train=False,imsize = 224)
-    # my_ds = CBIS_DDSM_patches('D:\Project\Benchmark_branch_axel\data\CBIS-DDSM', train=False, imsize=224)
+    my_ds = CBIS_DDSM_patches('D:\Project\Data\CBIS-DDSM',train=True,imsize = 224)
     my_ds.transforms = transforms.Compose([
         transforms.ToTensor(),
         transforms.Resize((224, 224))
