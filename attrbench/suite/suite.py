@@ -2,6 +2,7 @@ from attrbench.suite import metrics
 from attrbench.lib import FeatureMaskingPolicy, PixelMaskingPolicy
 from tqdm import tqdm
 import torch
+import numpy as np
 import inspect
 from inspect import Parameter
 import yaml
@@ -40,7 +41,7 @@ class Suite:
     This allows us to very quickly run the benchmark, aggregate and save all the resulting data for
     a given model and dataset.
     """
-    def __init__(self, model, methods, dataloader, device="cpu"):
+    def __init__(self, model, methods, dataloader, device="cpu", save_images=False, save_attrs=False):
         self.metrics = {}
         self.model = model.to(device)
         self.model.eval()
@@ -48,6 +49,10 @@ class Suite:
         self.dataloader = dataloader
         self.device = device
         self.default_args = {}
+        self.save_images = save_images
+        self.save_attrs = save_attrs
+        self.images = []
+        self.attrs = {method_name: [] for method_name in self.methods}
 
     def load_config(self, loc):
         with open(loc) as fp:
@@ -89,7 +94,18 @@ class Suite:
             pred = torch.argmax(self.model(full_batch), dim=1)
             samples = full_batch[pred == full_labels]
             labels = full_labels[pred == full_labels]
+
+            # Save images and attributions if specified
+            if self.save_images:
+                self.images.append(samples.cpu().detach().numpy())
+            if self.save_attrs:
+                for method_name in self.methods:
+                    self.attrs[method_name].append(self.methods[method_name](samples, labels).cpu().detach().numpy())
             if samples.size(0) > 0:
+                if samples_done + samples.size(0) > num_samples:
+                    diff = num_samples - samples_done
+                    samples = samples[:diff]
+                    labels = labels[:diff]
                 for metric in self.metrics:
                     self.metrics[metric].run_batch(samples, labels)
                 if verbose:
@@ -98,18 +114,25 @@ class Suite:
 
     def save_result(self, loc):
         with h5py.File(loc, "w") as fp:
-            # HDF5 file is laid out as {metric}/{method}
+            # Save images if specified
+            if self.save_images:
+                fp.create_dataset("images", data=np.concatenate(self.images))
+            # Save attributions if specified
+            if self.save_attrs:
+                attr_group = fp.create_group("attributions")
+                for method_name in self.methods:
+                    attr_group.create_dataset(method_name, data=np.concatenate(self.attrs[method_name]))
+            # Save results
+            # results group is laid out as {metric}/{method}
             # Each metric group has the according metadata as attributes
+            result_group = fp.create_group("results")
             for metric_name in self.metrics:
                 metric = self.metrics[metric_name]
-                group = fp.create_group(metric_name)
-                # TODO save metadata as attributes for metric
-                # col_index, type
-                """
-                for key in meta:
-                    group.attrs[key] = meta[key]
-                """
+                metric_group = result_group.create_group(metric_name)
+                for key in metric.metadata:
+                    metric_group.attrs[key] = metric.metadata[key]
+                metric_group.attrs["type"] = type(metric).__name__
                 results = metric.get_results()
                 for method_name in results:
                     method_results = results[method_name]
-                    group.create_dataset(method_name, data=method_results)
+                    metric_group.create_dataset(method_name, data=method_results)

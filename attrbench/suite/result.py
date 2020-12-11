@@ -30,7 +30,18 @@ class Result:
                         for method in fp["results"][metric].keys()
                     } for metric in fp["results"].keys()
                 }
-                metadata = {}  # TODO add metadata from HDF5 file
+                metadata = {
+                    metric: {
+                        key: fp["results"][metric].attrs[key]
+                        for key in fp["results"][metric].attrs.keys()
+                    } for metric in fp["results"].keys()
+                }
             return Result(data, metadata, images, attributions)
         else:
             raise ValueError(f"File {filename} does not exist")
+
+    def get_metrics(self):
+        return list(self.data.keys())
+
+    def get_methods(self):
+        return list(self.data[self.get_metrics()[0]].keys())

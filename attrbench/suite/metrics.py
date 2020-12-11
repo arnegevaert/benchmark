@@ -70,7 +70,7 @@ class ImpactScore(Metric):
         result = {}
         for method_name in self.methods:
             stacked = torch.stack(self.results[method_name], dim=0)
-            result[method_name] = (torch.sum(stacked, dim=0).float() / stacked.size(0)).numpy()
+            result[method_name] = (torch.sum(stacked, dim=0).float() / stacked.size(0)).numpy().reshape(1, -1)
         return result
 
 
