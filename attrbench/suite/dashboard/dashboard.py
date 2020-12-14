@@ -24,10 +24,10 @@ class Dashboard:
         self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
         self.pages = {
-            "/overview": OverviewPage(self.app, self.result_obj),
-            "/correlations": CorrelationsPage(self.app),
-            "/clustering": ClusteringPage(self.app),
-            "/samples_attributions": SamplesAttributionsPage(self.app)
+            "/overview": OverviewPage(self.result_obj),
+            "/correlations": CorrelationsPage(self.result_obj),
+            "/clustering": ClusteringPage(),
+            "/samples_attributions": SamplesAttributionsPage()
         }
         self.root = "/overview"
         self.sidebar = Sidebar(self.app, path_titles={

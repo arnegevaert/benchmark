@@ -17,7 +17,8 @@ class Sidebar(Component):
     }
 
     def __init__(self, app, path_titles):
-        super().__init__(app)
+        super().__init__()
+        self.app = app
         self.path_titles = path_titles
         self.path_ids = {
             key: f"{key[1:]}-link" for key in path_titles

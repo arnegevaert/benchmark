@@ -23,8 +23,8 @@ class Lineplot(Component):
             }
         return data
 
-    def __init__(self, app, result_obj, metric_name):
-        super().__init__(app)
+    def __init__(self, result_obj, metric_name):
+        super().__init__()
         data = result_obj.data[metric_name]
         x_ticks = result_obj.metadata[metric_name]["col_index"]
         metric_type = result_obj.metadata[metric_name]["type"]
@@ -43,8 +43,8 @@ class Lineplot(Component):
 
 
 class Boxplot(Component):
-    def __init__(self, app, result_obj, metric_name):
-        super().__init__(app)
+    def __init__(self, result_obj, metric_name):
+        super().__init__()
         data = result_obj.data[metric_name]
         self.df = pd.concat(data, axis=1)
         self.df.columns = self.df.columns.get_level_values(0)
@@ -53,9 +53,32 @@ class Boxplot(Component):
         return px.box(self.df)
 
 
-class CorrelationPlot(Component):
+class InterMethodCorrelationPlot(Component):
+    def __init__(self, result_obj, method_name):
+        # Take the average metric value for each sample and each metric
+        # Only for metrics that have per-sample results (shape[0] > 1)
+        data = {metric_name: result_obj.data[metric_name][method_name].mean(axis=1)
+                for metric_name in result_obj.get_metrics()
+                if result_obj.data[metric_name][method_name].shape[0] > 1}
+        self.df = pd.concat(data, axis=1)
+
     def render(self):
-        return None
+        corrs = self.df.corr(method="spearman")
+        return px.imshow(corrs)
+
+
+class InterMetricCorrelationPlot(Component):
+    def __init__(self, result_obj, metric_name):
+        # Take the average metric value for each sample and method, for given metric
+        # No need to check shape, this plot should only be called for applicable metrics
+        data = {method_name: result_obj.data[metric_name][method_name].mean(axis=1)
+                for method_name in result_obj.get_methods()}
+        self.df = pd.concat(data, axis=1)
+
+    def render(self):
+        corrs = self.df.corr(method="spearman")
+        return px.imshow(corrs)
+
 
 
 class DendrogramPlot(Component):
