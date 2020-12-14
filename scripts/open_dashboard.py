@@ -1,7 +1,5 @@
 import argparse
-import webbrowser
-from attrbench.suite import Result
-from attrbench.suite import Dashboard
+from attrbench.suite import Result, Dashboard
 
 
 if __name__ == "__main__":
@@ -13,4 +11,3 @@ if __name__ == "__main__":
     hdf_obj = Result.load_hdf(args.file)
     db = Dashboard(hdf_obj, args.file, port=args.port)
     db.run()
-    webbrowser.open_new(f"localhost:{args.port}")
