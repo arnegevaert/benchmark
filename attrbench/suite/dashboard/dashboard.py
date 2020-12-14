@@ -3,8 +3,8 @@ import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-from attrbench.suite.dashboard.component import Sidebar
-from attrbench.suite.dashboard.pages import OverviewPage, CorrelationsPage, ClusteringPage
+from attrbench.suite.dashboard.sidebar import Sidebar
+from attrbench.suite.dashboard.pages import OverviewPage, CorrelationsPage, ClusteringPage, SamplesAttributionsPage
 
 
 class Dashboard:
@@ -24,15 +24,17 @@ class Dashboard:
         self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
         self.pages = {
-            "/overview": OverviewPage(self.result_obj, self.app),
-            "/correlations": CorrelationsPage(self.result_obj, self.app),
-            "/clustering": ClusteringPage(self.result_obj, self.app)
+            "/overview": OverviewPage(self.app, self.result_obj),
+            "/correlations": CorrelationsPage(self.app),
+            "/clustering": ClusteringPage(self.app),
+            "/samples_attributions": SamplesAttributionsPage(self.app)
         }
         self.root = "/overview"
         self.sidebar = Sidebar(self.app, path_titles={
             "/overview": "Overview",
             "/correlations": "Correlations",
-            "/clustering": "Clustering"
+            "/clustering": "Clustering",
+            "/samples_attributions": "Samples/Attributions"
         })
         self.page_content = html.Div(id="page-content", style=Dashboard._CONTENT_STYLE)
 

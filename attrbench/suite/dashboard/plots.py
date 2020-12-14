@@ -23,11 +23,18 @@ class Lineplot(Component):
             }
         return data
 
-    def __init__(self, data, x_ticks, app, normalization=None):
+    def __init__(self, app, result_obj, metric_name):
         super().__init__(app)
+        data = result_obj.data[metric_name]
+        x_ticks = result_obj.metadata[metric_name]["col_index"]
+        metric_type = result_obj.metadata[metric_name]["type"]
+        normalization = {
+            "Insertion": "increasing",
+            "Deletion": "decreasing",
+        }
         method_names = list(data.keys())
         self.df = pd.DataFrame(columns=method_names, index=x_ticks)
-        normalized_data = Lineplot._normalize(data, normalization)
+        normalized_data = Lineplot._normalize(data, mode=normalization.get(metric_type, None))
         for method_name in method_names:
             self.df[method_name] = np.average(normalized_data[method_name], axis=0)
 
@@ -36,8 +43,9 @@ class Lineplot(Component):
 
 
 class Boxplot(Component):
-    def __init__(self, data, app):
+    def __init__(self, app, result_obj, metric_name):
         super().__init__(app)
+        data = result_obj.data[metric_name]
         self.df = pd.concat(data, axis=1)
         self.df.columns = self.df.columns.get_level_values(0)
 

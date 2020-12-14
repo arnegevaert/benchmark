@@ -4,18 +4,10 @@ import dash_html_components as html
 import dash_core_components as dcc
 
 
-class Page(Component):
-    def __init__(self, result_obj, app):
+class OverviewPage(Component):
+    def __init__(self, app, result_obj):
         super().__init__(app)
         self.result_obj = result_obj
-
-    def render(self):
-        raise NotImplementedError
-
-
-class OverviewPage(Page):
-    def __init__(self, result_obj, app):
-        super().__init__(result_obj, app)
         self.rendered_contents = None
 
     def render(self):
@@ -24,20 +16,9 @@ class OverviewPage(Page):
             for metric_name in self.result_obj.get_metrics():
                 result.append(html.H2(metric_name))
                 if "col_index" in self.result_obj.metadata[metric_name].keys():
-                    metric_type = self.result_obj.metadata[metric_name]["type"]
-                    if metric_type == "Insertion":
-                        plot = Lineplot(self.result_obj.data[metric_name],
-                                        self.result_obj.metadata[metric_name]["col_index"], self.app,
-                                        normalization="increasing")
-                    elif metric_type == "Deletion":
-                        plot = Lineplot(self.result_obj.data[metric_name],
-                                        self.result_obj.metadata[metric_name]["col_index"], self.app,
-                                        normalization="decreasing")
-                    else:
-                        plot = Lineplot(self.result_obj.data[metric_name],
-                                        self.result_obj.metadata[metric_name]["col_index"], self.app)
+                    plot = Lineplot(self.app, self.result_obj, metric_name)
                 else:
-                    plot = Boxplot(self.result_obj.data[metric_name], self.app)
+                    plot = Boxplot(self.app, self.result_obj, metric_name)
                 result.append(dcc.Graph(
                     id=metric_name,
                     figure=plot.render()
@@ -47,11 +28,16 @@ class OverviewPage(Page):
         return self.rendered_contents
 
 
-class CorrelationsPage(Page):
+class CorrelationsPage(Component):
     def render(self):
         return html.P("Correlations page")
 
 
-class ClusteringPage(Page):
+class ClusteringPage(Component):
     def render(self):
         return html.P("Clustering page")
+
+
+class SamplesAttributionsPage(Component):
+    def render(self):
+        return html.P("Samples and attributions page")
