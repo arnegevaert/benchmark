@@ -5,7 +5,8 @@ import dash_core_components as dcc
 
 
 class Page(Component):
-    def __init__(self, result_obj):
+    def __init__(self, result_obj, app):
+        super().__init__(app)
         self.result_obj = result_obj
 
     def render(self):
@@ -13,8 +14,8 @@ class Page(Component):
 
 
 class OverviewPage(Page):
-    def __init__(self, result_obj):
-        super().__init__(result_obj)
+    def __init__(self, result_obj, app):
+        super().__init__(result_obj, app)
         self.rendered_contents = None
 
     def render(self):
@@ -26,17 +27,17 @@ class OverviewPage(Page):
                     metric_type = self.result_obj.metadata[metric_name]["type"]
                     if metric_type == "Insertion":
                         plot = Lineplot(self.result_obj.data[metric_name],
-                                        x_ticks=self.result_obj.metadata[metric_name]["col_index"],
+                                        self.result_obj.metadata[metric_name]["col_index"], self.app,
                                         normalization="increasing")
                     elif metric_type == "Deletion":
                         plot = Lineplot(self.result_obj.data[metric_name],
-                                        x_ticks=self.result_obj.metadata[metric_name]["col_index"],
+                                        self.result_obj.metadata[metric_name]["col_index"], self.app,
                                         normalization="decreasing")
                     else:
                         plot = Lineplot(self.result_obj.data[metric_name],
-                                        x_ticks=self.result_obj.metadata[metric_name]["col_index"])
+                                        self.result_obj.metadata[metric_name]["col_index"], self.app)
                 else:
-                    plot = Boxplot(self.result_obj.data[metric_name])
+                    plot = Boxplot(self.result_obj.data[metric_name], self.app)
                 result.append(dcc.Graph(
                     id=metric_name,
                     figure=plot.render()
@@ -44,3 +45,13 @@ class OverviewPage(Page):
             self.rendered_contents = result
             return result
         return self.rendered_contents
+
+
+class CorrelationsPage(Page):
+    def render(self):
+        return html.P("Correlations page")
+
+
+class ClusteringPage(Page):
+    def render(self):
+        return html.P("Clustering page")

@@ -4,7 +4,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 from attrbench.suite.dashboard.component import Sidebar
-from attrbench.suite.dashboard.pages import OverviewPage
+from attrbench.suite.dashboard.pages import OverviewPage, CorrelationsPage, ClusteringPage
 
 
 class Dashboard:
@@ -20,61 +20,49 @@ class Dashboard:
         self.result_obj = result_obj
         self.title = title
         self.port = port
-        self.sidebar = Sidebar()
-        self.content = html.Div(id="page-content", style=Dashboard._CONTENT_STYLE)
-        self.overview_page = OverviewPage(self.result_obj)
+
+        self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+
+        self.pages = {
+            "/overview": OverviewPage(self.result_obj, self.app),
+            "/correlations": CorrelationsPage(self.result_obj, self.app),
+            "/clustering": ClusteringPage(self.result_obj, self.app)
+        }
+        self.root = "/overview"
+        self.sidebar = Sidebar(self.app, path_titles={
+            "/overview": "Overview",
+            "/correlations": "Correlations",
+            "/clustering": "Clustering"
+        })
+        self.page_content = html.Div(id="page-content", style=Dashboard._CONTENT_STYLE)
+
+    def render_page_content(self, pathname):
+        content = [html.H1(self.title)]
+        if pathname == "/":
+            rendered = self.pages[self.root].render()
+            content.extend(rendered if type(rendered) == list else [rendered])
+        elif pathname in self.pages:
+            rendered = self.pages[pathname].render()
+            content.extend(rendered if type(rendered) == list else [rendered])
+        else:
+            # If the user tries to reach a different page, return a 404 message
+            return dbc.Jumbotron(
+                [
+                    html.H1("404: Not found", className="text-danger"),
+                    html.Hr(),
+                    html.P(f"The pathname {pathname} was not recognised..."),
+                ]
+            )
+        return content
 
     def run(self):
-        app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-        app.layout = html.Div(
-            [dcc.Location(id="url")] + self.sidebar.render() + [self.content]
+        self.app.layout = html.Div(
+            [dcc.Location(id="url")] + self.sidebar.render() + [self.page_content]
         )
 
-        """
-        app_children = 
+        self.app.callback(
+            Output("page-content", "children"),
+            [Input("url", "pathname")])(self.render_page_content)
 
-        for metric_name in self.result_obj.get_metrics():
-            app_children.append(html.H2(metric_name))
-            if "col_index" in self.result_obj.metadata[metric_name].keys():
-                plot = Lineplot(self.result_obj.data[metric_name],
-                                x_ticks=self.result_obj.metadata[metric_name]["col_index"])
-            else:
-                plot = Boxplot(self.result_obj.data[metric_name])
-            app_children.append(dcc.Graph(
-                id=metric_name,
-                figure=plot.render()
-            ))
-
-        app.layout = html.Div(children=app_children)
-        """
-
-        @app.callback(
-            [Output(f"page-{i}-link", "active") for i in range(1, 4)],
-            [Input("url", "pathname")]
-        )
-        def toggle_active_links(pathname):
-            if pathname == "/":
-                return True, False, False
-            return [pathname == f"/page-{i}" for i in range(1, 4)]
-
-        @app.callback(Output("page-content", "children"), [Input("url", "pathname")])
-        def render_page_content(pathname):
-            content = [html.H1(self.title)]
-            if pathname in ["/", "/overview"]:
-                content += self.overview_page.render()
-            elif pathname == "/correlations":
-                content.append(html.P("Correlations page"))
-            elif pathname == "/clustering":
-                content.append(html.P("Clustering page"))
-            else:
-                # If the user tries to reach a different page, return a 404 message
-                return dbc.Jumbotron(
-                    [
-                        html.H1("404: Not found", className="text-danger"),
-                        html.Hr(),
-                        html.P(f"The pathname {pathname} was not recognised..."),
-                    ]
-                )
-            return content
-        app.run_server(port=self.port)
+        self.app.run_server(port=self.port)
 

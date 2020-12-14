@@ -6,7 +6,8 @@ from dash.dependencies import Input, Output
 
 
 class Component:
-
+    def __init__(self, app):
+        self.app = app
 
     def render(self):
         raise NotImplementedError
@@ -24,20 +25,31 @@ class Sidebar(Component):
         "background-color": "#f8f9fa",
     }
 
+    def __init__(self, app, path_titles):
+        super().__init__(app)
+        self.path_titles = path_titles
+        self.path_ids = {
+            key: f"{key[1:]}-link" for key in path_titles
+        }
+
+        app.callback(
+            [Output(self.path_ids[key], "active") for key in self.path_ids],
+            [Input("url", "pathname")])(self.toggle_active_links)
+
+    def toggle_active_links(self, pathname):
+        if pathname == "/":
+            return tuple([True] + [False] * (len(self.path_titles) - 1))
+        return [pathname == n for n in self.path_titles.keys()]
+
     def render(self):
+        navlinks = [
+            dbc.NavLink(self.path_titles[key], href=key, id=self.path_ids[key]) for key in self.path_titles
+        ]
         return [html.Div(
             [
                 html.H2("Dashboard", className="display-4"),
                 html.Hr(),
-                dbc.Nav(
-                    [
-                        dbc.NavLink("Overview", href="/overview", id="overview-link"),
-                        dbc.NavLink("Correlations", href="/correlations", id="correlations-link"),
-                        dbc.NavLink("Clustering", href="/clustering", id="clustering-link"),
-                    ],
-                    vertical=True,
-                    pills=True,
-                ),
+                dbc.Nav(navlinks, vertical=True, pills=True),
             ],
             style=Sidebar._STYLE,
         )]
