@@ -52,6 +52,7 @@ class Suite:
         self.save_images = save_images
         self.save_attrs = save_attrs
         self.images = []
+        self.samples_done = 0
         self.attrs = {method_name: [] for method_name in self.methods}
 
     def load_config(self, loc):
@@ -111,6 +112,7 @@ class Suite:
                 if verbose:
                     prog.update(samples.size(0))
                 samples_done += samples.size(0)
+        self.samples_done += num_samples
 
     def save_result(self, loc):
         with h5py.File(loc, "w") as fp:
@@ -126,13 +128,15 @@ class Suite:
             # results group is laid out as {metric}/{method}
             # Each metric group has the according metadata as attributes
             result_group = fp.create_group("results")
+            result_group.attrs["num_samples"] = self.samples_done
             for metric_name in self.metrics:
                 metric = self.metrics[metric_name]
                 metric_group = result_group.create_group(metric_name)
                 for key in metric.metadata:
                     metric_group.attrs[key] = metric.metadata[key]
+                results, shape = metric.get_results()
+                metric_group.attrs["shape"] = shape
                 metric_group.attrs["type"] = type(metric).__name__
-                results = metric.get_results()
                 for method_name in results:
                     method_results = results[method_name]
                     metric_group.create_dataset(method_name, data=method_results)

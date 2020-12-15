@@ -1,7 +1,8 @@
-from attrbench.suite.dashboard.component import Component
 from attrbench.suite.dashboard.plots import *
 import dash_html_components as html
 import dash_core_components as dcc
+import numpy as np
+from attrbench.suite.dashboard.util import krippendorff_alpha
 
 
 class OverviewPage(Component):
@@ -15,7 +16,7 @@ class OverviewPage(Component):
             result = []
             for metric_name in self.result_obj.get_metrics():
                 result.append(html.H2(metric_name))
-                if "col_index" in self.result_obj.metadata[metric_name].keys():
+                if len(self.result_obj.metadata[metric_name]["shape"]) > 1:
                     plot = Lineplot(self.result_obj, metric_name)
                 else:
                     plot = Boxplot(self.result_obj, metric_name)
@@ -38,6 +39,24 @@ class CorrelationsPage(Component):
         if not self.rendered_contents:
             result = []
             # Krippendorff Alpha
+            result.append(html.H2("Krippendorff Alpha"))
+            names, values = [], []
+            for metric_name in self.result_obj.get_metrics():
+                metric_data = self.result_obj.data[metric_name]
+                metric_metadata = self.result_obj.metadata[metric_name]
+                if metric_metadata["shape"][0] == self.result_obj.num_samples:
+                    names.append(metric_name)
+                    if len(metric_metadata["shape"]) > 1:
+                        data = np.stack(
+                            [metric_data[method_name].mean(axis=1).to_numpy()
+                             for method_name in self.result_obj.get_methods()],
+                            axis=1)
+                        values.append(krippendorff_alpha(np.argsort(data)))
+            result.append(dcc.Graph(
+                id="krippendorff-alpha",
+                figure=BarPlot(values, names).render()
+            ))
+
 
             # Inter-metric correlation
             result.append(html.H2("Inter-method correlations"))
@@ -52,9 +71,8 @@ class CorrelationsPage(Component):
             # Inter-method correlation
             result.append(html.H2("Inter-metric correlations"))
             for metric_name in self.result_obj.get_metrics():
-                types = ["DeletionUntilFlip", "Insertion", "Deletion",
-                         "Infidelity", "MaxSensitivity", "SensitivityN"]
-                if self.result_obj.metadata[metric_name]["type"] in types:
+                metric_shape = self.result_obj.metadata[metric_name]["shape"]
+                if metric_shape[0] == self.result_obj.num_samples:
                     result.append(html.H3(metric_name))
                     plot = InterMetricCorrelationPlot(self.result_obj, metric_name)
                     result.append(dcc.Graph(

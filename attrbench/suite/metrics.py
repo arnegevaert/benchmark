@@ -22,9 +22,15 @@ class Metric:
         Returns the complete results for all batches and all methods in a dictionary
         """
         result = {}
+        shape = None
         for method_name in self.methods:
             result[method_name] = torch.cat(self.results[method_name], dim=0).numpy()
-        return result
+            if shape is None:
+                shape = result[method_name].shape
+            elif result[method_name].shape != shape:
+                raise ValueError(f"Inconsistent shapes for results: "
+                                 f"{method_name} had {result[method_name].shape} instead of {shape}")
+        return result, shape
 
     def _run_single_method(self, samples, labels, method):
         raise NotImplementedError
@@ -68,10 +74,16 @@ class ImpactScore(Metric):
 
     def get_results(self):
         result = {}
+        shape = None
         for method_name in self.methods:
             stacked = torch.stack(self.results[method_name], dim=0)
             result[method_name] = (torch.sum(stacked, dim=0).float() / stacked.size(0)).numpy().reshape(1, -1)
-        return result
+            if shape is None:
+                shape = result[method_name].shape
+            elif result[method_name].shape != shape:
+                raise ValueError(f"Inconsistent shapes for results: "
+                                 f"{method_name} had {result[method_name].shape} instead of {shape}")
+        return result, shape
 
 
 class Insertion(Metric):

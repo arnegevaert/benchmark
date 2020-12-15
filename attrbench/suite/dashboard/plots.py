@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from plotly import express as px
+import plotly.graph_objects as go
 from attrbench.suite.dashboard.component import Component
 
 
@@ -25,21 +26,32 @@ class Lineplot(Component):
 
     def __init__(self, result_obj, metric_name):
         super().__init__()
-        data = result_obj.data[metric_name]
-        x_ticks = result_obj.metadata[metric_name]["col_index"]
+        self.x_ticks = result_obj.metadata[metric_name]["col_index"]
+        self.result_obj = result_obj
         metric_type = result_obj.metadata[metric_name]["type"]
         normalization = {
             "Insertion": "increasing",
             "Deletion": "decreasing",
         }
-        method_names = list(data.keys())
-        self.df = pd.DataFrame(columns=method_names, index=x_ticks)
-        normalized_data = Lineplot._normalize(data, mode=normalization.get(metric_type, None))
-        for method_name in method_names:
-            self.df[method_name] = np.average(normalized_data[method_name], axis=0)
+        self.normalized_data = Lineplot._normalize(result_obj.data[metric_name],
+                                                   mode=normalization.get(metric_type, None))
 
     def render(self):
-        return px.line(self.df)
+        colors = px.colors.qualitative.Plotly
+        fig_list = []
+        for i, method_name in enumerate(self.result_obj.get_methods()):
+            method_data = self.normalized_data[method_name]
+            mean = np.mean(method_data, axis=0)
+            sd = np.std(method_data, axis=0)
+            ci_upper = mean + (1.96 * sd / np.sqrt(method_data.shape[0]))
+            ci_lower = mean - (1.96 * sd / np.sqrt(method_data.shape[0]))
+            fig_list.append(go.Scatter(x=self.x_ticks, y=mean, line=dict(color=colors[i]), name=method_name, mode="lines"))
+            rgb_col = px.colors.hex_to_rgb(colors[i])
+            fig_list.append(go.Scatter(x=np.concatenate([self.x_ticks, self.x_ticks[::-1]]),
+                                       y=np.concatenate([ci_upper, ci_lower[::-1]]), fill="toself",
+                                       fillcolor=f"rgba({rgb_col[0]},{rgb_col[1]},{rgb_col[2]},0.2)",
+                                       line=dict(color="rgba(255,255,255,0)"), hoverinfo="skip", showlegend=False))
+        return go.Figure(fig_list)
 
 
 class Boxplot(Component):
@@ -64,7 +76,7 @@ class InterMethodCorrelationPlot(Component):
 
     def render(self):
         corrs = self.df.corr(method="spearman")
-        return px.imshow(corrs)
+        return px.imshow(corrs, zmin=-1, zmax=1)
 
 
 class InterMetricCorrelationPlot(Component):
@@ -77,8 +89,16 @@ class InterMetricCorrelationPlot(Component):
 
     def render(self):
         corrs = self.df.corr(method="spearman")
-        return px.imshow(corrs)
+        return px.imshow(corrs, zmin=-1, zmax=1)
 
+
+class BarPlot(Component):
+    def __init__(self, values, names):
+        self.values = values
+        self.names = names
+
+    def render(self):
+        return go.Figure([go.Bar(x=self.names, y=self.values)])
 
 
 class DendrogramPlot(Component):
