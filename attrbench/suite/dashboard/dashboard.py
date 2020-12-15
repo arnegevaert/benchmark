@@ -1,10 +1,6 @@
 import dash
-import dash_bootstrap_components as dbc
-import dash_core_components as dcc
-import dash_html_components as html
-from dash.dependencies import Input, Output
 from attrbench.suite.dashboard.sidebar import Sidebar
-from attrbench.suite.dashboard.pages import OverviewPage, CorrelationsPage, ClusteringPage, SamplesAttributionsPage
+from attrbench.suite.dashboard.pages import *
 
 
 class Dashboard:
@@ -22,29 +18,30 @@ class Dashboard:
         self.port = port
 
         self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-
         self.pages = {
-            "/overview": OverviewPage(self.result_obj),
-            "/correlations": CorrelationsPage(self.result_obj),
-            "/clustering": ClusteringPage(),
-            "/samples_attributions": SamplesAttributionsPage()
+            "/overview": (OverviewPage(self.result_obj), "Overview"),
+            "/correlations": (CorrelationsPage(self.result_obj), "Correlations"),
+            "/clustering": (ClusteringPage(self.result_obj), "Clustering"),
+            "/samples_attributions": (SamplesAttributionsPage(self.result_obj), "Samples/Attributions"),
+            "/detail": (DetailPage(self.result_obj, self.app), "Detail")
         }
+
         self.root = "/overview"
-        self.sidebar = Sidebar(self.app, path_titles={
-            "/overview": "Overview",
-            "/correlations": "Correlations",
-            "/clustering": "Clustering",
-            "/samples_attributions": "Samples/Attributions"
-        })
+        self.sidebar = Sidebar(self.app, path_titles={path: self.pages[path][1] for path in self.pages.keys()})
         self.page_content = html.Div(id="page-content", style=Dashboard._CONTENT_STYLE)
+
+        # Callback to handle routing
+        self.app.callback(
+            Output("page-content", "children"),
+            [Input("url", "pathname")])(self.render_page_content)
 
     def render_page_content(self, pathname):
         content = [html.H1(self.title)]
         if pathname == "/":
-            rendered = self.pages[self.root].render()
+            rendered = self.pages[self.root][0].render()
             content.extend(rendered if type(rendered) == list else [rendered])
         elif pathname in self.pages:
-            rendered = self.pages[pathname].render()
+            rendered = self.pages[pathname][0].render()
             content.extend(rendered if type(rendered) == list else [rendered])
         else:
             # If the user tries to reach a different page, return a 404 message
@@ -61,10 +58,6 @@ class Dashboard:
         self.app.layout = html.Div(
             [dcc.Location(id="url")] + self.sidebar.render() + [self.page_content]
         )
-
-        self.app.callback(
-            Output("page-content", "children"),
-            [Input("url", "pathname")])(self.render_page_content)
 
         self.app.run_server(port=self.port)
 
