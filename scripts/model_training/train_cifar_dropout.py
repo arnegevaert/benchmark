@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 import torchvision.models
 from experiments.lib.models import Resnet
+from experiments.general_imaging.models import Resnet20
 from experiments.lib.datasets import Cifar, DropoutDataset
 import os
 import numpy as np
@@ -70,7 +71,7 @@ def validate_epoch(net,crit,dl):
 
 def train_loop(args, criterion, model, train_dl, val_dl):
     optimizer = optim.AdamW(model.parameters(), lr=args.lr)
-    schedule = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, threshold=0.001, factor=0.2, verbose=True)
+    schedule = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, threshold=0.001, factor=0.5, verbose=True)
 
     best_weights, best_loss = None, float("inf")
     counter = 0
@@ -126,6 +127,8 @@ def run(args):
 
     if args.model == 'resnet18':
         model = Resnet('resnet18', 10, pretrained=True, params_loc=args.param_loc)
+    elif args.model == 'resnet20':
+        model = Resnet20(10,params_loc=args.param_loc)
     else:
         raise Exception("{} is not a valid model.".format(args.model))
     model.to(device)
