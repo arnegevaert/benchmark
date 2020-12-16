@@ -102,21 +102,36 @@ class ClusteringPage(Page):
 class SamplesAttributionsPage(Page):
     def render(self):
         content = []
-        # [n_images, color_channels, rows, cols]
-        images = self.result_obj.images
-        # Put color channel axis last, remove if only 1 channel (squeeze)
-        images = np.squeeze(np.moveaxis(images, 1, 3))
-        size = 4 * images.shape[1] * 10
-        fig = px.imshow(images, facet_col=0,
-                        color_continuous_scale="gray" if len(images.shape) == 3 else None,
-                        height=size, width=size)
-        fig.update_xaxes(showticklabels=False)
-        fig.update_yaxes(showticklabels=False)
-        fig.update_layout(margin=dict(l=1, r=1, t=1, b=1))
-        content.append(dcc.Graph(
-            id=f"images",
-            figure=fig
-        ))
+        for i in range(self.result_obj.num_samples):
+            row_children = []
+            # Add original image
+            # Put color channel axis last, remove if only 1 channel (squeeze)
+            image = np.squeeze(np.moveaxis(self.result_obj.images[i, ...], 0, 2))
+            image_fig = px.imshow(image, color_continuous_scale="gray" if len(image.shape) == 2 else None,
+                                  width=300, height=300)
+            image_fig.update_xaxes(showticklabels=False)
+            image_fig.update_yaxes(showticklabels=False)
+            image_fig.update_layout(margin=dict(l=0, r=0, t=5, b=5))
+            row_children.append(dbc.Col(dcc.Graph(
+                id=f"orig-image-{i}",
+                figure=image_fig
+            ), className="col-md-3"))
+            # Add attribution maps
+            attrs = np.concatenate([self.result_obj.attributions[method_name][i, ...]
+                                    for method_name in self.result_obj.get_methods()])
+            attrs_fig = px.imshow(attrs, color_continuous_scale="gray", facet_col=0,
+                                  height=300, width=3*300, labels={"facet_col": "method"})
+            for j, method_name in enumerate(self.result_obj.get_methods()):
+                attrs_fig.layout.annotations[j]["text"] = method_name
+            attrs_fig.update_xaxes(showticklabels=False)
+            attrs_fig.update_yaxes(showticklabels=False)
+            attrs_fig.update_layout(margin=dict(l=0, r=0, t=15, b=0))
+            row_children.append(dbc.Col(dcc.Graph(
+                id=f"attrs-{i}",
+                figure=attrs_fig
+            )))
+
+            content.append(dbc.Row(row_children))
         return content
 
 
