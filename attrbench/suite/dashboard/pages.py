@@ -1,12 +1,13 @@
 from attrbench.suite.dashboard.plots import *
+from attrbench.suite.dashboard.components import SampleAttributionsComponent
 import dash_html_components as html
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 import numpy as np
 from attrbench.suite.dashboard.util import krippendorff_alpha
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from plotly import express as px
-import math
+import dash
 
 
 class Page(Component):
@@ -100,39 +101,64 @@ class ClusteringPage(Page):
 
 
 class SamplesAttributionsPage(Page):
-    def render(self):
-        content = []
-        for i in range(self.result_obj.num_samples):
-            row_children = []
-            # Add original image
-            # Put color channel axis last, remove if only 1 channel (squeeze)
-            image = np.squeeze(np.moveaxis(self.result_obj.images[i, ...], 0, 2))
-            image_fig = px.imshow(image, color_continuous_scale="gray" if len(image.shape) == 2 else None,
-                                  width=300, height=300)
-            image_fig.update_xaxes(showticklabels=False)
-            image_fig.update_yaxes(showticklabels=False)
-            image_fig.update_layout(margin=dict(l=0, r=0, t=5, b=5))
-            row_children.append(dbc.Col(dcc.Graph(
-                id=f"orig-image-{i}",
-                figure=image_fig
-            ), className="col-md-3"))
-            # Add attribution maps
-            attrs = np.concatenate([self.result_obj.attributions[method_name][i, ...]
-                                    for method_name in self.result_obj.get_methods()])
-            attrs_fig = px.imshow(attrs, color_continuous_scale="gray", facet_col=0,
-                                  height=300, width=3*300, labels={"facet_col": "method"})
-            for j, method_name in enumerate(self.result_obj.get_methods()):
-                attrs_fig.layout.annotations[j]["text"] = method_name
-            attrs_fig.update_xaxes(showticklabels=False)
-            attrs_fig.update_yaxes(showticklabels=False)
-            attrs_fig.update_layout(margin=dict(l=0, r=0, t=15, b=0))
-            row_children.append(dbc.Col(dcc.Graph(
-                id=f"attrs-{i}",
-                figure=attrs_fig
-            )))
+    def __init__(self, result_obj, app):
+        super().__init__(result_obj)
+        self.app = app
+        self.add_form = dbc.Form([
+            dbc.FormGroup([
+                dcc.Dropdown(options=[{"label": f"Sample {i}", "value": i}
+                                      for i in range(self.result_obj.num_samples)],
+                             placeholder="Select sample...",
+                             id="sample-dropdown")
+            ]),
+            dbc.FormGroup([
+                dcc.Dropdown(options=[{"label": method_name, "value": method_name}
+                                      for method_name in self.result_obj.get_methods()],
+                             placeholder="Select methods...", multi=True,
+                             id="method-dropdown")
+            ]),
+            dbc.FormGroup(
+                dbc.ButtonGroup([
+                    dbc.Button("Add", color="primary", id="add-btn"),
+                    dbc.Button("Reset", color="danger", id="reset-btn")
+                ])
+            )
+        ])
+        self.alert = dbc.Alert("Please select a sample and at least one method", id="inconsistency-alert",
+                               is_open=False, dismissable=True, color="danger")
+        self.content = html.Div(id="samples-attrs-content")
 
-            content.append(dbc.Row(row_children))
-        return content
+        # Callback for adding a row or resetting content
+        self.app.callback(Output("samples-attrs-content", "children"),
+                          Output("inconsistency-alert", "is_open"),
+                          Input("add-btn", "n_clicks"),
+                          Input("reset-btn", "n_clicks"),
+                          State("sample-dropdown", "value"),
+                          State("method-dropdown", "value"),
+                          State("samples-attrs-content", "children"), prevent_initial_call=True)(self.update_content)
+
+    def update_content(self, add_btn, reset_btn, sample_index, method_names, cur_children):
+        changed_id = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
+        if changed_id == "add-btn":
+            if sample_index is None or not method_names:
+                print("inconsistent")
+                return cur_children, True
+            else:
+                result = cur_children if cur_children else []
+                id = len(result)
+                image = self.result_obj.images[sample_index, ...]
+                attrs = np.concatenate([self.result_obj.attributions[method_name][sample_index, ...]
+                                        for method_name in method_names])
+                result.append(dbc.Row([
+                    dbc.Col(html.H4(f"Sample index: {sample_index}"), className="col-md-4")
+                ], className="mt-5"))
+                result.append(SampleAttributionsComponent(image, attrs, id, method_names).render())
+                return result, False
+        elif changed_id == "reset-btn":
+            return [], False
+
+    def render(self):
+        return [self.add_form, self.alert, self.content]
 
 
 class DetailPage(Page):

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from plotly import express as px
 import plotly.graph_objects as go
-from attrbench.suite.dashboard.component import Component
+from attrbench.suite.dashboard.components import Component
 
 
 class Lineplot(Component):

@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-from attrbench.suite.dashboard.component import Component
+from attrbench.suite.dashboard.components import Component
 
 
 class Sidebar(Component):

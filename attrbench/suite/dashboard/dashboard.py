@@ -18,11 +18,12 @@ class Dashboard:
         self.port = port
 
         self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+        self.app.config["suppress_callback_exceptions"] = True
         self.pages = {
             "/overview": (OverviewPage(self.result_obj), "Overview"),
             "/correlations": (CorrelationsPage(self.result_obj), "Correlations"),
             "/clustering": (ClusteringPage(self.result_obj), "Clustering"),
-            "/samples_attributions": (SamplesAttributionsPage(self.result_obj), "Samples/Attributions"),
+            "/samples_attributions": (SamplesAttributionsPage(self.result_obj, self.app), "Samples/Attributions"),
             "/detail": (DetailPage(self.result_obj, self.app), "Detail")
         }
 
