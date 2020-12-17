@@ -18,7 +18,11 @@ class SampleAttributionsComponent(Component):
         self.color_image = len(self.image.shape) > 2
 
     def render(self):
-        image_fig = px.imshow(self.image, color_continuous_scale="gray" if not self.color_image else None,
+        plot_image = self.image
+        if self.color_image:
+            plot_image = (plot_image - np.min(plot_image)) / (np.max(plot_image) - np.min(plot_image)) * 255
+            plot_image = plot_image.astype(np.uint8)
+        image_fig = px.imshow(plot_image, color_continuous_scale="gray" if not self.color_image else None,
                               width=300, height=300)
         image_fig.update_xaxes(showticklabels=False)
         image_fig.update_yaxes(showticklabels=False)

@@ -141,7 +141,6 @@ class SamplesAttributionsPage(Page):
         changed_id = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
         if changed_id == "add-btn":
             if sample_index is None or not method_names:
-                print("inconsistent")
                 return cur_children, True
             else:
                 result = cur_children if cur_children else []
