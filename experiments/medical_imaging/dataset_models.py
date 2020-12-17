@@ -6,7 +6,7 @@ import torchvision
 import torch.nn as nn
 from torch.nn import functional as F
 from experiments.medical_imaging.lib.datasets import Aptos, Cxr8, CBIS_DDSM_patches, HAM10000,PcamDataset, MedMNIST
-from experiments.medical_imaging.lib.models import Alexnet, Densenet, Resnet, EfficientNet, SmallResNet18
+from experiments.medical_imaging.lib.models import Alexnet, Densenet, Resnet, EfficientNet, MedMnist_ResNet18
 
 _DATA_LOC = os.environ["BM_DATA_LOC"] if "BM_DATA_LOC" in os.environ else path.join(path.dirname(__file__), "../../data")
 
@@ -43,15 +43,15 @@ def get_dataset_model(name):
         sample_shape = (96,96)
     elif name == "PathMNIST":
         ds = MedMNIST(path.join(_DATA_LOC, "MedMNIST"),"pathmnist",split='test')
-        model = SmallResNet18(num_classes=9, params_loc=path.join(_DATA_LOC,"models/MedMNIST/pathmnist.pt"))
+        model = MedMnist_ResNet18(num_classes=9, params_loc=path.join(_DATA_LOC, "models/MedMNIST/pathmnist.pt"))
         sample_shape=(28,28)
     elif name == "OCTMNIST":
         ds = MedMNIST(path.join(_DATA_LOC, "MedMNIST"), "octmnist", split='test')
-        model = SmallResNet18(num_classes=4, params_loc=path.join(_DATA_LOC, "models/MedMNIST/octmnist.pt"),in_channels=1)
+        model = MedMnist_ResNet18(num_classes=4, params_loc=path.join(_DATA_LOC, "models/MedMNIST/octmnist.pt"), in_channels=1)
         sample_shape = (28, 28)
     elif name == "ChestMNIST":
         ds = MedMNIST(path.join(_DATA_LOC, "MedMNIST"), "chestmnist", split='test')
-        model = SmallResNet18(num_classes=14, params_loc=path.join(_DATA_LOC, "models/MedMNIST/chestmnist.pt"), in_channels=1)
+        model = MedMnist_ResNet18(num_classes=14, params_loc=path.join(_DATA_LOC, "models/MedMNIST/chestmnist.pt"), in_channels=1)
         sample_shape = (28, 28)
     else:
         raise ValueError(f"Invalid dataset: {name}")

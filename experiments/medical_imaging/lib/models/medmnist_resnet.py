@@ -105,7 +105,7 @@ class ResNet(nn.Module):
         return out
 
 
-class SmallResNet18(ResNet):
+class MedMnist_ResNet18(ResNet):
     def __init__(self, num_classes, params_loc=None, in_channels = 3):
         super().__init__(BasicBlock, [2,2,2,2], num_classes=num_classes, in_channels=in_channels)
         if params_loc:
@@ -119,7 +119,7 @@ class SmallResNet18(ResNet):
 
 if __name__ == '__main__':
     ## for testing / debugging
-    model = SmallResNet18(4, 'D:\Project\MedMNIST-main\output\octmnist_checkpoints\ckpt_19_auc_0.98078.pth',1)
+    model = MedMnist_ResNet18(4, 'D:\Project\MedMNIST-main\output\octmnist_checkpoints\ckpt_19_auc_0.98078.pth', 1)
     # model = SmallResNet18(4)
     # torch.save(model.state_dict(),'D:\Project\MedMNIST-main\output\octmnist_checkpoints\\test.pt')
 

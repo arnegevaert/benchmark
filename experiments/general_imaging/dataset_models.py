@@ -34,7 +34,7 @@ def get_dataset_model(name):
             transforms.Normalize(mean=(0.4914, 0.4821, 0.4465), std=(0.2023, 0.1994, 0.2010))
         ])
         ds = datasets.CIFAR10(path.join(_DATA_LOC, "CIFAR10"), train=False, transform=transform, download=True)
-        model = Resnet20(10,path.join(_DATA_LOC, "models/CIFAR10/resnet18.pt"))
+        model = Resnet20(10,path.join(_DATA_LOC, "models/CIFAR10/resnet20.pt"))
         sample_shape = (32, 32)
     elif name == "ImageNette":
         transform = transforms.Compose([
