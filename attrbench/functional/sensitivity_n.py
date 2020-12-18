@@ -28,7 +28,7 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
             # Generate mask and masked samples
             # Mask is generated using replace=False, same mask is used for all samples in batch
             num_features = np.prod(attrs.shape[1:])
-            indices = torch.tensor(np.random.choice(num_features, size=n, replace=False)).repeat(batch_size, 1)
+            indices = torch.LongTensor(np.random.choice(num_features, size=n, replace=False)).repeat(batch_size, 1)
             masked_samples = masking_policy(samples, indices)
             if debug_mode:
                 debug_data[-1]["indices"].append(indices)
