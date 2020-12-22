@@ -4,25 +4,29 @@ import torch
 
 
 def insertion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-              mask_range: List[int], masking_policy: MaskingPolicy):
-    return _insertion_deletion(samples, labels, model, method, mask_range, masking_policy, "insertion")
+              mask_range: List[int], masking_policy: MaskingPolicy, debug_mode=False, writer=None):
+    return _insertion_deletion(samples, labels, model, method, mask_range, masking_policy, "insertion",
+                               debug_mode=debug_mode, writer = writer)
 
 
 def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-             mask_range: List[int], masking_policy: MaskingPolicy):
-    return _insertion_deletion(samples, labels, model, method, mask_range, masking_policy, "deletion")
+             mask_range: List[int], masking_policy: MaskingPolicy, debug_mode=False, writer=None):
+    return _insertion_deletion(samples, labels, model, method, mask_range, masking_policy, "deletion",
+                               debug_mode=debug_mode, writer = writer)
 
 
 def _insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                        mask_range: List[int], masking_policy: MaskingPolicy, mode: str, debug_mode=False):
+                        mask_range: List[int], masking_policy: MaskingPolicy, mode: str, debug_mode: bool=False,
+                        writer=None):
     if mode not in ["deletion", "insertion"]:
         raise ValueError("Mode must be either deletion or insertion")
     debug_data = {}
     result = []
     attrs = method(samples, labels).detach()  # [batch_size, *sample_shape]
     if debug_mode:
-        debug_data["attrs"] = attrs
-        debug_data["masked_samples"] = []
+        writer.add_images('Image samples', samples)
+        writer.add_images('attributions', attrs)
+
     # Flatten each sample in order to sort indices per sample
     attrs = attrs.flatten(1)  # [batch_size, -1]
     # Sort indices of attrs in ascending order
@@ -40,12 +44,11 @@ def _insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Call
             masked_samples = masking_policy(samples, to_mask)
 
         if debug_mode:
-            debug_data["masked_samples"].append(masked_samples)
+            writer.add_images('masked samples', masked_samples, global_step=i)
         # Get predictions for result
         with torch.no_grad():
             predictions = model(masked_samples).gather(dim=1, index=labels.unsqueeze(-1))
         result.append(predictions)
     result = torch.cat(result, dim=1).cpu()  # [batch_size, len(mask_range)]
-    if debug_mode:
-        return result, debug_data
+
     return result

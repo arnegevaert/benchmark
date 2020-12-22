@@ -4,7 +4,7 @@ import torch
 
 
 def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                    patch: torch.Tensor, target_label: int, debug_mode=False):
+                    patch: torch.Tensor, target_label: int, debug_mode=False,writer=None):
     if len(samples.shape) != 4:
            raise ValueError("Impact Coverage can only be computed for image data and expects 4 input dimensions")
     samples = samples.clone()
@@ -50,5 +50,6 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
     iou = intersection.float() / union.float()
     # [batch_size], [batch_size]
     if debug_mode:
-           return iou, keep.cpu(), {"attrs": attrs, "samples": samples}
+        writer.add_images('Image samples', samples)
+        writer.add_images('attributions', attrs)
     return iou, keep.cpu()

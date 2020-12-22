@@ -7,15 +7,15 @@ import torch
 # We assume none of the samples has the same label as the output of the network when given
 # a fully masked image (in which case we might not see a flip)
 def deletion_until_flip(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                        step_size: float, masking_policy: MaskingPolicy, debug_mode=False):
+                        step_size: float, masking_policy: MaskingPolicy, debug_mode=False, writer=None):
     if step_size < 0 or step_size > 0.5:
         raise ValueError("Step size must be between 0 and 0.5 (percentage of pixels)")
     debug_data = {}
     attrs = method(samples, labels).detach()
     if debug_mode:
-        debug_data["attrs"] = attrs
-        debug_data["orig_samples"] = samples
         debug_data["flipped_samples"] = [None for _ in range(samples.shape[0])]
+        writer.add_images('Image samples', samples)
+        writer.add_images('attributions', attrs)
     num_inputs = torch.prod(torch.tensor(attrs.shape[1:])).item()
     attrs = attrs.flatten(1)
     sorted_indices = attrs.argsort().cpu().detach().numpy()
@@ -42,11 +42,11 @@ def deletion_until_flip(samples: torch.Tensor, labels: torch.Tensor, model: Call
         if debug_mode:
             for i in range(samples.shape[0]):
                 if flipped_this_iteration[i]:
-                    debug_data["flipped_samples"] = masked_samples[i]
+                    debug_data["flipped_samples"][i] = masked_samples[i]
         result[flipped_this_iteration] = mask_size
         flipped = new_flipped
     # Set maximum value for samples that were never flipped
     result[result == -1] = num_inputs
     if debug_mode:
-        return result, debug_data
+        writer.add_images('Flipped samples', torch.stack(debug_data["flipped_samples"]))
     return result
