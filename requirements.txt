@@ -16,6 +16,7 @@ contextlib2==0.6.0
 cycler==0.10.0
 Cython==0.29.21
 dash==1.18.1
+dash-bootstrap-components==0.10.7
 dash-core-components==1.14.1
 dash-html-components==1.1.1
 dash-renderer==1.8.3
@@ -76,6 +77,7 @@ nbformat==5.0.6
 networkx==2.4
 nltk==3.5
 notebook==6.0.3
+numexpr==2.7.1
 numpy==1.18.2
 opencv-python==4.2.0.34
 packaging==20.4
@@ -126,6 +128,7 @@ six==1.14.0
 sklearn==0.0
 smmap==3.0.4
 stevedore==3.2.2
+tables==3.6.1
 terminado==0.8.3
 testpath==0.4.4
 toml==0.10.1
