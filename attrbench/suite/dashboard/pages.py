@@ -8,6 +8,7 @@ from attrbench.suite.dashboard.util import krippendorff_alpha
 from dash.dependencies import Input, Output, State
 from plotly import express as px
 import dash
+from scipy.stats import ttest_rel
 
 
 class Page(Component):
@@ -198,3 +199,30 @@ class DetailPage(Page):
             html.Div(id="plots-div")
         ]
         return contents
+
+
+class EffectSizePage(Page):
+    def __init__(self, result_obj):
+        super().__init__(result_obj)
+
+    def render(self):
+        result = []
+        for metric_name in self.result_obj.get_metrics():
+            metric_shape = self.result_obj.metadata[metric_name]["shape"]
+            if metric_shape[0] == self.result_obj.num_samples:
+                result.append(html.H2(metric_name))
+                data = {}
+                for method_name in self.result_obj.get_methods():
+                    method_data = self.result_obj.data[metric_name][method_name]
+                    # Aggregate if necessary
+                    data[method_name] = method_data.mean(axis=1) if len(metric_shape) > 1 else method_data[0]
+                df = pd.concat(data, axis=1)
+                plot = EffectSizePlot(df, "Random")  # TODO choose baseline name
+                result.append(dcc.Graph(
+                            id=f"{metric_name}-effect-size",
+                            figure=plot.render()
+                ))
+                for method_name in self.result_obj.get_methods():
+                    statistic, pvalue = ttest_rel(df[method_name].to_numpy(), df["Random"].to_numpy())
+                    print(metric_name, method_name, pvalue)
+        return result
