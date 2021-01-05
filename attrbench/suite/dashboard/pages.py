@@ -8,6 +8,8 @@ from attrbench.suite.dashboard.util import krippendorff_alpha
 from dash.dependencies import Input, Output, State
 from plotly import express as px
 import dash
+import dash_table
+from dash_table.Format import Format
 from scipy.stats import ttest_rel
 
 
@@ -222,7 +224,20 @@ class EffectSizePage(Page):
                             id=f"{metric_name}-effect-size",
                             figure=plot.render()
                 ))
+                pvalues = []
                 for method_name in self.result_obj.get_methods():
-                    statistic, pvalue = ttest_rel(df[method_name].to_numpy(), df["Random"].to_numpy())
-                    print(metric_name, method_name, pvalue)
+                    if method_name != "Random":
+                        statistic, pvalue = ttest_rel(df[method_name].to_numpy(), df["Random"].to_numpy())
+                        pvalues.append({"method": method_name, "pvalue": pvalue})
+                result.append(dash_table.DataTable(
+                    id=f"table-pvalues-{metric_name}",
+                    columns=[{"name": "Method", "id": f"method", "type": "text"},
+                             {"name": "p-value", "id": f"pvalue", "type": "numeric", "format": Format(precision=3)}],
+                    data=pvalues,
+                    style_data_conditional=[
+                        {"if": {"filter_query": "{pvalue} < 0.05"}, "backgroundColor": "lightgreen"},
+                        {"if": {"filter_query": "{pvalue} >= 0.05"}, "backgroundColor": "lightred"},
+                    ],
+                    style_table={"width": "30%"}
+                ))
         return result

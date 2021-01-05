@@ -45,12 +45,13 @@ class Lineplot(Component):
             sd = np.std(method_data, axis=0)
             ci_upper = mean + (1.96 * sd / np.sqrt(method_data.shape[0]))
             ci_lower = mean - (1.96 * sd / np.sqrt(method_data.shape[0]))
-            fig_list.append(go.Scatter(x=self.x_ticks, y=mean, line=dict(color=colors[i]), name=method_name, mode="lines"))
+            fig_list.append(go.Scatter(x=self.x_ticks, y=mean, line=dict(color=colors[i]), legendgroup=method_name, name=method_name, mode="lines"))
             rgb_col = px.colors.hex_to_rgb(colors[i])
             fig_list.append(go.Scatter(x=np.concatenate([self.x_ticks, self.x_ticks[::-1]]),
                                        y=np.concatenate([ci_upper, ci_lower[::-1]]), fill="toself",
                                        fillcolor=f"rgba({rgb_col[0]},{rgb_col[1]},{rgb_col[2]},0.2)",
-                                       line=dict(color="rgba(255,255,255,0)"), hoverinfo="skip", showlegend=False))
+                                       line=dict(color="rgba(255,255,255,0)"), hoverinfo="skip", showlegend=False,
+                                       legendgroup=method_name))
         return go.Figure(fig_list)
 
 
