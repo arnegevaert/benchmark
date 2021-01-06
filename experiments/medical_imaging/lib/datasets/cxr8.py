@@ -18,7 +18,7 @@ class Cxr8(Dataset):
         super(Cxr8, self).__init__()
 
         data_split = "train" if train else "valid"
-        df = pd.read_csv(os.path.join(data_location,"%s.csv" % (data_split)))
+        df = pd.read_csv(os.path.join(data_location,"%s_relabeled.csv" % (data_split)))
 
         if toy:
             df = df.sample(frac=0.01)
