@@ -7,6 +7,7 @@ class Metric:
         self.model = model
         self.methods = methods
         self.results = {method_name: [] for method_name in methods}
+        self.metadata = {}
 
     def run_batch(self, samples, labels):
         """
@@ -21,12 +22,15 @@ class Metric:
         Returns the complete results for all batches and all methods in a dictionary
         """
         result = {}
+        shape = None
         for method_name in self.methods:
             result[method_name] = torch.cat(self.results[method_name], dim=0).numpy()
-        return result
-
-    def get_metadata(self):
-        return {}
+            if shape is None:
+                shape = result[method_name].shape
+            elif result[method_name].shape != shape:
+                raise ValueError(f"Inconsistent shapes for results: "
+                                 f"{method_name} had {result[method_name].shape} instead of {shape}")
+        return result, shape
 
     def _run_single_method(self, samples, labels, method):
         raise NotImplementedError
@@ -60,6 +64,9 @@ class ImpactScore(Metric):
         self.strict = strict
         self.masking_policy = masking_policy
         self.tau = tau
+        self.metadata = {
+            "col_index": mask_range
+        }
 
     def _run_single_method(self, samples, labels, method):
         return functional.impact_score(samples, labels, self.model, method, self.mask_range,
@@ -67,10 +74,16 @@ class ImpactScore(Metric):
 
     def get_results(self):
         result = {}
+        shape = None
         for method_name in self.methods:
             stacked = torch.stack(self.results[method_name], dim=0)
-            result[method_name] = (torch.sum(stacked, dim=0).float() / stacked.size(0)).numpy()
-        return result
+            result[method_name] = (torch.sum(stacked, dim=0).float() / stacked.size(0)).numpy().reshape(1, -1)
+            if shape is None:
+                shape = result[method_name].shape
+            elif result[method_name].shape != shape:
+                raise ValueError(f"Inconsistent shapes for results: "
+                                 f"{method_name} had {result[method_name].shape} instead of {shape}")
+        return result, shape
 
 
 class Insertion(Metric):
@@ -78,6 +91,9 @@ class Insertion(Metric):
         super().__init__(model, methods)
         self.mask_range = mask_range
         self.masking_policy = masking_policy
+        self.metadata = {
+            "col_index": mask_range
+        }
 
     def _run_single_method(self, samples, labels, method):
         return functional.insertion(samples, labels, self.model, method, self.mask_range, self.masking_policy)
@@ -88,6 +104,9 @@ class Deletion(Metric):
         super().__init__(model, methods)
         self.mask_range = mask_range
         self.masking_policy = masking_policy
+        self.metadata = {
+            "col_index": mask_range
+        }
 
     def _run_single_method(self, samples, labels, method):
         return functional.deletion(samples, labels, self.model, method, self.mask_range, self.masking_policy)
@@ -98,6 +117,9 @@ class Infidelity(Metric):
         super().__init__(model, methods)
         self.perturbation_range = perturbation_range
         self.num_perturbations = num_perturbations
+        self.metadata = {
+            "col_index": perturbation_range
+        }
 
     def _run_single_method(self, samples, labels, method):
         return functional.infidelity(samples, labels, self.model, method,
@@ -109,6 +131,9 @@ class MaxSensitivity(Metric):
         super().__init__(model, methods)
         self.perturbation_range = perturbation_range
         self.num_perturbations = num_perturbations
+        self.metadata = {
+            "col_index": perturbation_range
+        }
 
     def _run_single_method(self, samples, labels, method):
         return functional.max_sensitivity(samples, labels, method, self.perturbation_range, self.num_perturbations)
@@ -120,6 +145,9 @@ class SensitivityN(Metric):
         self.n_range = n_range
         self.num_subsets = num_subsets
         self.masking_policy = masking_policy
+        self.metadata = {
+            "col_index": n_range
+        }
 
     def _run_single_method(self, samples, labels, method):
         return functional.sensitivity_n(samples, labels, self.model, method,
