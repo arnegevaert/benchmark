@@ -70,14 +70,16 @@ class ImpactScore(Metric):
 
     def _run_single_method(self, samples, labels, method):
         return functional.impact_score(samples, labels, self.model, method, self.mask_range,
-                                       self.strict, self.masking_policy, self.tau)[0]
+                                       self.strict, self.masking_policy, self.tau)
 
     def get_results(self):
         result = {}
         shape = None
         for method_name in self.methods:
-            stacked = torch.stack(self.results[method_name], dim=0)
-            result[method_name] = (torch.sum(stacked, dim=0).float() / stacked.size(0)).numpy().reshape(1, -1)
+            flipped = torch.stack([item[0] for item in self.results[method_name]], dim=0).float()
+            totals = torch.tensor([item[1] for item in self.results[method_name]]).reshape(-1, 1).float()
+            ratios = flipped / totals
+            result[method_name] = ratios.mean(dim=0).numpy()
             if shape is None:
                 shape = result[method_name].shape
             elif result[method_name].shape != shape:

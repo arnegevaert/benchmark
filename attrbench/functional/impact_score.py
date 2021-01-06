@@ -28,7 +28,7 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, m
         attrs = attrs.flatten(1)
         sorted_indices = attrs.argsort().cpu()
         for n in mask_range:
-            masked_samples = masking_policy(samples, sorted_indices[:, -n:])
+            masked_samples = masking_policy(samples, sorted_indices[:, -n:]) if n > 0 else samples.clone()
             if debug_mode:
                 debug_data["masked_samples"].append(masked_samples)
             with torch.no_grad():
