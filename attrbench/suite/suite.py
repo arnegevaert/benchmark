@@ -41,7 +41,7 @@ class Suite:
     This allows us to very quickly run the benchmark, aggregate and save all the resulting data for
     a given model and dataset.
     """
-    def __init__(self, model, methods, dataloader, device="cpu", save_images=False, save_attrs=False):
+    def __init__(self, model, methods, dataloader, device="cpu", save_images=False, save_attrs=False, seed=None):
         self.metrics = {}
         self.model = model.to(device)
         self.model.eval()
@@ -54,6 +54,7 @@ class Suite:
         self.images = []
         self.samples_done = 0
         self.attrs = {method_name: [] for method_name in self.methods}
+        self.seed = seed
 
     def load_config(self, loc):
         with open(loc) as fp:
@@ -85,6 +86,8 @@ class Suite:
     def run(self, num_samples, verbose=True):
         samples_done = 0
         prog = tqdm(total=num_samples) if verbose else None
+        if self.seed:
+            torch.manual_seed(self.seed)
         it = iter(self.dataloader)
         while samples_done < num_samples:
             full_batch, full_labels = next(it)
@@ -116,6 +119,8 @@ class Suite:
 
     def save_result(self, loc):
         with h5py.File(loc, "w") as fp:
+            if self.seed:
+                fp.attrs["seed"] = self.seed
             # Save images if specified
             if self.save_images:
                 fp.create_dataset("images", data=np.concatenate(self.images))

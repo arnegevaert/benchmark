@@ -6,10 +6,11 @@ import h5py
 
 # TODO this class should be used by Suite to keep track of its results
 class Result:
-    def __init__(self, data, metadata, num_samples, images=None, attributions=None):
+    def __init__(self, data, metadata, num_samples, seed=None, images=None, attributions=None):
         self.data = data
         self.metadata = metadata
         self.num_samples = num_samples
+        self.seed = seed
         self.images = images
         self.attributions = attributions
 
@@ -38,7 +39,8 @@ class Result:
                     } for metric in fp["results"].keys()
                 }
                 num_samples = fp["results"].attrs["num_samples"]
-            return Result(data, metadata, num_samples, images, attributions)
+                seed = fp.attrs.get("seed", None)
+            return Result(data, metadata, num_samples, seed, images, attributions)
         else:
             raise ValueError(f"File {filename} does not exist")
 
