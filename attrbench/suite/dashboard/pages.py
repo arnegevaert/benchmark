@@ -31,7 +31,7 @@ class OverviewPage(Page):
             result = []
             for metric_name in self.result_obj.get_metrics():
                 result.append(html.H2(metric_name))
-                if len(self.result_obj.metadata[metric_name]["shape"]) > 1:
+                if self.result_obj.metadata[metric_name]["shape"][1] > 1:
                     plot = Lineplot(self.result_obj, metric_name)
                 else:
                     plot = Boxplot(self.result_obj, metric_name)
@@ -55,17 +55,16 @@ class CorrelationsPage(Page):
             # Krippendorff Alpha
             result.append(html.H2("Krippendorff Alpha"))
             names, values = [], []
-            for metric_name in self.result_obj.get_metrics():
+            metrics = [m for m in self.result_obj.get_metrics() if self.result_obj.metadata[m]["shape"][0] > 1]
+            for metric_name in metrics:
                 metric_data = self.result_obj.data[metric_name]
                 metric_metadata = self.result_obj.metadata[metric_name]
-                if metric_metadata["shape"][0] == self.result_obj.num_samples:
-                    names.append(metric_name)
-                    if len(metric_metadata["shape"]) > 1:
-                        data = np.stack(
-                            [metric_data[method_name].mean(axis=1).to_numpy()
-                             for method_name in self.result_obj.get_methods()],
-                            axis=1)
-                        values.append(krippendorff_alpha(np.argsort(data)))
+                names.append(metric_name)
+                data = np.stack(
+                    [metric_data[method_name].mean(axis=1).to_numpy()
+                     for method_name in self.result_obj.get_methods()],
+                    axis=1)
+                values.append(krippendorff_alpha(np.argsort(data)))
             result.append(dcc.Graph(
                 id="krippendorff-alpha",
                 figure=BarPlot(values, names).render()
@@ -84,15 +83,15 @@ class CorrelationsPage(Page):
 
             # Inter-method correlation
             result.append(html.H2("Inter-metric correlations"))
-            for metric_name in self.result_obj.get_metrics():
-                metric_shape = self.result_obj.metadata[metric_name]["shape"]
-                if metric_shape[0] == self.result_obj.num_samples:
-                    result.append(html.H3(metric_name))
-                    plot = InterMetricCorrelationPlot(self.result_obj, metric_name)
-                    result.append(dcc.Graph(
-                        id=f"{metric_name}-method-corr",
-                        figure=plot.render()
-                    ))
+            metrics = [m for m in self.result_obj.get_metrics()
+                       if self.result_obj.metadata[m]["shape"][0] == self.result_obj.num_samples]
+            for metric_name in metrics:
+                result.append(html.H3(metric_name))
+                plot = InterMetricCorrelationPlot(self.result_obj, metric_name)
+                result.append(dcc.Graph(
+                    id=f"{metric_name}-method-corr",
+                    figure=plot.render()
+                ))
             self.rendered_contents = result
             return result
         return self.rendered_contents
@@ -182,7 +181,7 @@ class DetailPage(Page):
                     contents.append(html.H2(metric_name))
                     metric_data = self.result_obj.data[metric_name][method_name]
                     metric_shape = self.result_obj.metadata[metric_name]["shape"]
-                    plot = px.line(metric_data.transpose()) if len(metric_shape) > 1 else px.violin(metric_data)
+                    plot = px.line(metric_data.transpose()) if metric_shape[1] > 1 else px.violin(metric_data)
                     contents.append(dcc.Graph(id=metric_name, figure=plot))
                 self.rendered[method_name] = contents
                 return contents
@@ -217,8 +216,7 @@ class EffectSizePage(Page):
                 data = {}
                 for method_name in self.result_obj.get_methods():
                     method_data = self.result_obj.data[metric_name][method_name]
-                    # Aggregate if necessary
-                    data[method_name] = method_data.mean(axis=1) if len(metric_shape) > 1 else method_data[0]
+                    data[method_name] = method_data.mean(axis=1)
                 df = pd.concat(data, axis=1)
                 plot = EffectSizePlot(df, "Random")  # TODO choose baseline name
                 result.append(dcc.Graph(

@@ -10,41 +10,17 @@ import dash_html_components as html
 
 
 class Lineplot(Component):
-    @staticmethod
-    def _normalize(data, mode):
-        if mode == "decreasing":
-            return {
-                method_name:
-                    (data[method_name].sub(data[method_name].iloc[:, -1], axis=0))
-                    .div(data[method_name].iloc[:, 0] - data[method_name].iloc[:, -1], axis=0)
-                for method_name in data
-            }
-        elif mode == "increasing":
-            return {
-                method_name:
-                    (data[method_name].sub(data[method_name].iloc[:, 0], axis=0))
-                    .div(data[method_name].iloc[:, -1] - data[method_name].iloc[:, 0], axis=0)
-                for method_name in data
-            }
-        return data
-
     def __init__(self, result_obj, metric_name):
         super().__init__()
         self.x_ticks = result_obj.metadata[metric_name]["col_index"]
         self.result_obj = result_obj
-        metric_type = result_obj.metadata[metric_name]["type"]
-        normalization = {
-            "Insertion": "increasing",
-            "Deletion": "decreasing",
-        }
-        self.normalized_data = Lineplot._normalize(result_obj.data[metric_name],
-                                                   mode=normalization.get(metric_type, None))
+        self.data = result_obj.data[metric_name]
 
     def render(self):
         colors = px.colors.qualitative.Plotly
         fig_list = []
         for i, method_name in enumerate(self.result_obj.get_methods()):
-            method_data = self.normalized_data[method_name]
+            method_data = self.data[method_name]
             mean = np.mean(method_data, axis=0)
             sd = np.std(method_data, axis=0)
             ci_upper = mean + (1.96 * sd / np.sqrt(method_data.shape[0]))

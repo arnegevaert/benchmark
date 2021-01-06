@@ -43,3 +43,8 @@ metrics:
                  9025, 10025, 11025, 12025, 13025, 14025, 15025, 16025, 17025,
                  18025, 19025, 20025, 21025, 22025, 23025, 24025 ]
       num_subsets: 16
+  impact_coverage:
+    type: ImpactCoverage
+    args:
+      patch: ../../data/patches/ImageNette/resnet18.pt
+      target_label: 0
