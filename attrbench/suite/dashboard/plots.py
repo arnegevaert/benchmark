@@ -16,14 +16,14 @@ class Lineplot(Component):
             return {
                 method_name:
                     (data[method_name].sub(data[method_name].iloc[:, -1], axis=0))
-                    .div(data[method_name].iloc[:, 0] - data[method_name].iloc[:, -1], axis=0)
+                    #.div(data[method_name].iloc[:, 0] - data[method_name].iloc[:, -1], axis=0)
                 for method_name in data
             }
         elif mode == "increasing":
             return {
                 method_name:
                     (data[method_name].sub(data[method_name].iloc[:, 0], axis=0))
-                    .div(data[method_name].iloc[:, -1] - data[method_name].iloc[:, 0], axis=0)
+                    #.div(data[method_name].iloc[:, -1] - data[method_name].iloc[:, 0], axis=0)
                 for method_name in data
             }
         return data
@@ -35,7 +35,7 @@ class Lineplot(Component):
         metric_type = result_obj.metadata[metric_name]["type"]
         normalization = {
             "Insertion": "increasing",
-            "Deletion": "decreasing",
+            "Deletion": "increasing",
         }
         self.normalized_data = Lineplot._normalize(result_obj.data[metric_name],
                                                    mode=normalization.get(metric_type, None))
