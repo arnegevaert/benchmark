@@ -47,3 +47,9 @@ class Result:
 
     def get_methods(self):
         return list(self.data[self.get_metrics()[0]].keys())
+
+    def get_aggregated(self, metric, method=None):
+        pass  # TODO
+
+    def get_normalized(self, metric, method=None):
+        pass  # TODO

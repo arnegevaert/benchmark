@@ -100,7 +100,8 @@ class CorrelationsPage(Page):
 
 class ClusteringPage(Page):
     def render(self):
-        return html.P("Clustering page")
+        plot = GeneralClusterMapPlot(self.result_obj, aggregate=True)
+        return plot.render()
 
 
 class SamplesAttributionsPage(Page):

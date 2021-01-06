@@ -3,6 +3,10 @@ import numpy as np
 from plotly import express as px
 import plotly.graph_objects as go
 from attrbench.suite.dashboard.components import Component
+import seaborn as sns
+import base64
+from io import BytesIO
+import dash_html_components as html
 
 
 class Lineplot(Component):
@@ -102,9 +106,33 @@ class BarPlot(Component):
         return go.Figure([go.Bar(x=self.names, y=self.values)])
 
 
-class DendrogramPlot(Component):
+class GeneralClusterMapPlot(Component):
+    def __init__(self, result_obj, aggregate):
+        data = {metric_name: {} for metric_name in result_obj.get_metrics()}
+        for metric_name in result_obj.get_metrics():
+            for method_name in result_obj.get_methods():
+                data[metric_name][method_name] = result_obj.data[metric_name][method_name].stack().mean()
+        self.df = pd.DataFrame(data)
+
     def render(self):
-        return None
+        plot = sns.clustermap(self.df)
+        plot_img = BytesIO()
+        plot.savefig(plot_img, format="png")
+        plot_img.seek(0)
+        encoded = base64.b64encode(plot_img.read()).decode("ascii").replace("\n", "")
+        return html.Div([html.Img(src=f"data:image/png;base64,{encoded}")])
+
+
+class MetricClusterMapPlot(Component):
+    def render(self):
+        # Only applicable to per-sample metrics
+        return None  # TODO cluster for single metric (X=samples, Y=methods)
+
+
+class MethodClusterMapPlot(Component):
+    def render(self):
+        # Only applicable to per-sample metrics
+        return None  # TODO cluster for single method (X=samples, Y=metrics)
 
 
 class EffectSizePlot(Component):
