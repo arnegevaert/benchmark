@@ -5,6 +5,7 @@ import torch
 import torchvision
 import torch.nn as nn
 from torch.nn import functional as F
+from experiments.general_imaging.models import Resnet20
 
 
 _DATA_LOC = os.environ["BM_DATA_LOC"] if "BM_DATA_LOC" in os.environ else path.join(path.dirname(__file__), "../../data")
@@ -26,6 +27,14 @@ def get_dataset_model(name):
         ])
         ds = datasets.CIFAR10(path.join(_DATA_LOC, "CIFAR10"), train=False, transform=transform, download=True)
         model = Resnet18(path.join(_DATA_LOC, "models/CIFAR10/resnet18.pt"))
+        sample_shape = (32, 32)
+    elif name == "CIFAR10_resnet20": # replace regular CIFAR10 ?
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(0.4914, 0.4821, 0.4465), std=(0.2023, 0.1994, 0.2010))
+        ])
+        ds = datasets.CIFAR10(path.join(_DATA_LOC, "CIFAR10"), train=False, transform=transform, download=True)
+        model = Resnet20(10,path.join(_DATA_LOC, "models/CIFAR10/resnet20.pt"))
         sample_shape = (32, 32)
     elif name == "ImageNette":
         transform = transforms.Compose([
