@@ -2,8 +2,8 @@ import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import torchvision.models
-from experiments.lib.models import Alexnet, Resnet
-from experiments.lib.datasets import CBIS_DDSM_patches
+from experiments.medical_imaging.lib.models import Alexnet, Resnet
+from experiments.medical_imaging.lib.datasets import CBIS_DDSM_patches
 import os
 import numpy as np
 import argparse

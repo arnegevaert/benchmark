@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.metrics import cohen_kappa_score
 import matplotlib.pyplot as plt
-from experiments.lib import datasets, models
+from experiments.medical_imaging.lib import datasets, models
 from os import path
 
 
