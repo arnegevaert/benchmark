@@ -1,4 +1,3 @@
-import dash_core_components as dcc
 import dash_html_components as html
 import numpy as np
 
@@ -12,7 +11,7 @@ class CorrelationsPage(Page):
         super().__init__(result_obj)
         self.rendered_contents = None
 
-    def render(self):
+    def render(self) -> html.Div:
         if not self.rendered_contents:
             result = []
             # Krippendorff Alpha
@@ -28,21 +27,14 @@ class CorrelationsPage(Page):
                      for method_name in self.result_obj.get_methods()],
                     axis=1)
                 values.append(krippendorff_alpha(np.argsort(data)))
-            result.append(dcc.Graph(
-                id="krippendorff-alpha",
-                figure=BarPlot(values, names).render()
-            ))
-
+            result.append(BarPlot(values, names, id="krippendorff-alpha").render())
 
             # Inter-metric correlation
             result.append(html.H2("Inter-method correlations"))
             for method_name in self.result_obj.get_methods():
                 result.append(html.H3(method_name))
-                plot = InterMethodCorrelationPlot(self.result_obj, method_name)
-                result.append(dcc.Graph(
-                    id=f"{method_name}-metric-corr",
-                    figure=plot.render()
-                ))
+                plot = InterMethodCorrelationPlot(self.result_obj, method_name, id=f"{method_name}-metric-corr")
+                result.append(plot.render())
 
             # Inter-method correlation
             result.append(html.H2("Inter-metric correlations"))
@@ -50,11 +42,7 @@ class CorrelationsPage(Page):
                        if self.result_obj.metadata[m]["shape"][0] == self.result_obj.num_samples]
             for metric_name in metrics:
                 result.append(html.H3(metric_name))
-                plot = InterMetricCorrelationPlot(self.result_obj, metric_name)
-                result.append(dcc.Graph(
-                    id=f"{metric_name}-method-corr",
-                    figure=plot.render()
-                ))
-            self.rendered_contents = result
-            return result
+                plot = InterMetricCorrelationPlot(self.result_obj, metric_name, id=f"{metric_name}-method-corr")
+                result.append(plot.render())
+            self.rendered_contents = html.Div(result)
         return self.rendered_contents

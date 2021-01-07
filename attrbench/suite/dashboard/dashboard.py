@@ -44,12 +44,9 @@ class Dashboard:
 
     def render_page_content(self, pathname):
         content = [html.H1(self.title)]
-        if pathname == "/":
-            rendered = self.pages[self.root][0].render()
-            content.extend(rendered if type(rendered) == list else [rendered])
-        elif pathname in self.pages:
-            rendered = self.pages[pathname][0].render()
-            content.extend(rendered if type(rendered) == list else [rendered])
+        pathname = self.root if pathname == "/" else pathname
+        if pathname in self.pages.keys():
+            content.append(self.pages[pathname][0].render())
         else:
             # If the user tries to reach a different page, return a 404 message
             return dbc.Jumbotron(
@@ -62,9 +59,9 @@ class Dashboard:
         return content
 
     def run(self):
-        self.app.layout = html.Div(
-            [dcc.Location(id="url")] + self.sidebar.render() + [self.page_content]
-        )
-
+        self.app.layout = html.Div([
+            dcc.Location(id="url"),
+            self.sidebar.render(),
+            self.page_content
+        ])
         self.app.run_server(port=self.port)
-

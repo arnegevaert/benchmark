@@ -32,8 +32,8 @@ class DetailPage(Page):
             return self.rendered[method_name]
         return f"No method selected."
 
-    def render(self):
-        contents = [
+    def render(self) -> html.Div:
+        return html.Div([
             dbc.FormGroup([
                 dcc.Dropdown(
                     id="method-dropdown",
@@ -43,6 +43,4 @@ class DetailPage(Page):
                     placeholder="Select method...")
             ]),
             html.Div(id="plots-div")
-        ]
-        return contents
-
+        ])

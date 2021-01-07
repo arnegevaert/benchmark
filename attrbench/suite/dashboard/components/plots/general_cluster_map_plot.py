@@ -16,7 +16,7 @@ class GeneralClusterMapPlot(Component):
                 data[metric_name][method_name] = result_obj.data[metric_name][method_name].stack().mean()
         self.df = pd.DataFrame(data)
 
-    def render(self):
+    def render(self) -> html.Div:
         plot = sns.clustermap(self.df)
         plot_img = BytesIO()
         plot.savefig(plot_img, format="png")

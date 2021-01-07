@@ -1,18 +1,21 @@
 import numpy as np
 import plotly.graph_objects as go
 from plotly import express as px
+import dash_html_components as html
+import dash_core_components as dcc
 
 from attrbench.suite.dashboard.components import Component
 
 
 class Lineplot(Component):
-    def __init__(self, result_obj, metric_name):
+    def __init__(self, result_obj, metric_name, id):
         super().__init__()
         self.x_ticks = result_obj.metadata[metric_name]["col_index"]
         self.result_obj = result_obj
         self.data = result_obj.data[metric_name]
+        self.id = id
 
-    def render(self):
+    def render(self) -> html.Div:
         colors = px.colors.qualitative.Plotly
         fig_list = []
         for i, method_name in enumerate(self.result_obj.get_methods()):
@@ -28,5 +31,5 @@ class Lineplot(Component):
                                        fillcolor=f"rgba({rgb_col[0]},{rgb_col[1]},{rgb_col[2]},0.2)",
                                        line=dict(color="rgba(255,255,255,0)"), hoverinfo="skip", showlegend=False,
                                        legendgroup=method_name))
-        return go.Figure(fig_list)
+        return html.Div(dcc.Graph(id=self.id, figure=go.Figure(fig_list)))
 

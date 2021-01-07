@@ -65,7 +65,7 @@ class SamplesAttributionsPage(Page):
         elif changed_id == "reset-btn":
             return [], False
 
-    def render(self):
-        return [self.add_form, self.alert, self.content]
+    def render(self) -> html.Div:
+        return html.Div([self.add_form, self.alert, self.content])
 
 

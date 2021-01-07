@@ -39,11 +39,11 @@ class SidebarComponent(Component):
         navlinks = [
             dbc.NavLink(self.path_titles[key], href=key, id=self.path_ids[key]) for key in self.path_titles
         ]
-        return [html.Div(
+        return html.Div(
             [
                 html.H2("Dashboard", className="display-4"),
                 html.Hr(),
                 dbc.Nav(navlinks, vertical=True, pills=True),
             ],
             style=SidebarComponent._STYLE,
-        )]
+        )

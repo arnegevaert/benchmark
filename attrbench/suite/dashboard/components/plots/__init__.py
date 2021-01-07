@@ -7,3 +7,4 @@ from .inter_metric_correlation_plot import InterMetricCorrelationPlot
 from .line_plot import Lineplot
 from .method_cluster_map_plot import MethodClusterMapPlot
 from .metric_cluster_map_plot import MetricClusterMapPlot
+from .p_value_table import PValueTable
