@@ -2,19 +2,14 @@ import base64
 from io import BytesIO
 
 import dash_html_components as html
-import pandas as pd
 import seaborn as sns
 
 from attrbench.suite.dashboard.components import Component
 
 
-class GeneralClusterMapPlot(Component):
-    def __init__(self, result_obj, aggregate):
-        data = {metric_name: {} for metric_name in result_obj.get_metrics()}
-        for metric_name in result_obj.get_metrics():
-            for method_name in result_obj.get_methods():
-                data[metric_name][method_name] = result_obj.data[metric_name][method_name].stack().mean()
-        self.df = pd.DataFrame(data)
+class ClusterMap(Component):
+    def __init__(self, df):
+        self.df = df
 
     def render(self) -> html.Div:
         plot = sns.clustermap(self.df)

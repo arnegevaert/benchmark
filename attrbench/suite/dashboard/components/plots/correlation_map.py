@@ -1,20 +1,14 @@
+import dash_html_components as html
 from plotly import express as px
 import dash_core_components as dcc
-import dash_html_components as html
-
 from attrbench.suite.dashboard.components import Component
 
 
-class Boxplot(Component):
+class CorrelationMap(Component):
     def __init__(self, df, id):
-        super().__init__()
         self.df = df
         self.id = id
 
     def render(self) -> html.Div:
-        return html.Div(
-            dcc.Graph(
-                id=self.id,
-                figure=px.box(self.df)
-            )
-        )
+        corrs = self.df.corr(method="spearman")
+        return html.Div(dcc.Graph(id=self.id, figure=px.imshow(corrs, zmin=-1, zmax=1)))
