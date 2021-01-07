@@ -7,32 +7,32 @@ import warnings
 
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
                   n_range: List[int], num_subsets: int, masking_policy: MaskingPolicy,
-                  debug_mode=False):
+                  debug_mode=False, writer =None):
     attrs = method(samples, labels).detach()
+    if debug_mode:
+        writer.add_images('Image samples', samples)
+        writer.add_images('attributions', attrs)
     result = []
     batch_size = samples.size(0)
 
     with torch.no_grad():
         orig_output = model(samples)
 
-    debug_data = []
     for n in n_range:
         output_diffs = []
         sum_of_attrs = []
-        if debug_mode:
-            debug_data.append({
-                "indices": [],
-                "masked_samples": [],
-            })
-        for _ in range(num_subsets):
+
+        for ns in range(num_subsets):
             # Generate mask and masked samples
             # Mask is generated using replace=False, same mask is used for all samples in batch
             num_features = np.prod(attrs.shape[1:])
             indices = torch.LongTensor(np.random.choice(num_features, size=n, replace=False)).repeat(batch_size, 1)
             masked_samples = masking_policy(samples, indices)
             if debug_mode:
-                debug_data[-1]["indices"].append(indices)
-                debug_data[-1]["masked_samples"].append(masked_samples)
+                index_image = torch.ones([1,*masked_samples.shape[1:]])
+                index_image = masking_policy(index_image, indices[0][None])
+                writer.add_images("masking Indices N={}".format(n), index_image, global_step=ns)
+                writer.add_images("Masked samples N={}".format(n),masked_samples,global_step=ns)
             # Get output on masked samples
             with torch.no_grad():
                 output = model(masked_samples)
@@ -60,10 +60,6 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
         result.append(corrcoefs)
     # [batch_size, len(n_range)]
     result = torch.stack(result, dim=1).cpu().detach()
-    if debug_mode:
-        debug_result = {
-            "attrs": attrs,
-            "pert_data": debug_data
-        }
-        return result, debug_result
+
+
     return result

@@ -3,7 +3,8 @@ from typing import Callable, List
 
 
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-               perturbation_range: List[float], num_perturbations: int, debug_mode=False):
+               perturbation_range: List[float], num_perturbations: int, debug_mode: bool=False,
+               writer=None):
     result = []
     device = samples.device
     # Get original model output
@@ -16,20 +17,18 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, met
         shape[1] = samples.shape[1]
         attrs = attrs.repeat(*tuple(shape))
 
-    debug_data = []
+
     for eps in perturbation_range:
         eps_result = []
-        if debug_mode:
-            debug_data.append({
-                "perturbations": [],
-                "perturbed_samples": []
-            })
-        for _ in range(num_perturbations):
+
+        for n_p in range(num_perturbations):
             perturbation = torch.randn(samples.shape, device=device) * eps
             perturbed = samples + perturbation  # [batch_size, n_channels, width, height]
             if debug_mode:
-                debug_data[-1]["perturbations"].append(perturbation)
-                debug_data[-1]["perturbed_samples"].append(perturbed)
+                writer.add_images('perturbations eps: {}'.format(eps), perturbation, global_step=n_p)
+                writer.add_images('perturbed_samples eps: {}'.format(eps), perturbed, global_step=n_p)
+
+
             with torch.no_grad():
                 perturbed_output = model(perturbed).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
             # We calculate X * I (p3 in paper).
@@ -43,9 +42,6 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, met
         result.append(torch.stack(eps_result, dim=1).mean(dim=1))  # [batch_size]
     result = torch.cat(result, dim=1).cpu().detach()  # [batch_size, len(perturbation_range)]
     if debug_mode:
-        debug_result = {
-            "attrs": attrs,
-            "pert_data": debug_data
-        }
-        return result, debug_result
+        writer.add_images('Image samples', samples)
+        writer.add_images('attributions', attrs)
     return result

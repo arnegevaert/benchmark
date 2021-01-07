@@ -5,11 +5,10 @@ from torch.nn.functional import softmax
 
 
 def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable, mask_range: List[int],
-                 strict: bool, masking_policy: MaskingPolicy, tau: float = None, debug_mode=False):
+                 strict: bool, masking_policy: MaskingPolicy, tau: float = None, debug_mode=False,writer=None):
     if not (strict or tau):
         raise ValueError("Provide value for tau when calculating non-strict impact score")
     counts = []
-    debug_data = {}
 
     with torch.no_grad():
         orig_out = model(samples)
@@ -23,14 +22,15 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, m
     if batch_size > 0:
         attrs = method(samples, target=labels).detach()
         if debug_mode:
-            debug_data["attrs"] = attrs
-            debug_data["masked_samples"] = []
+            writer.add_images('Image samples', samples)
+            writer.add_images('attributions', attrs)
+
         attrs = attrs.flatten(1)
         sorted_indices = attrs.argsort().cpu()
         for n in mask_range:
             masked_samples = masking_policy(samples, sorted_indices[:, -n:]) if n > 0 else samples.clone()
             if debug_mode:
-                debug_data["masked_samples"].append(masked_samples)
+                writer.add_images('Masked samples', masked_samples, global_step=n)
             with torch.no_grad():
                 masked_out = model(masked_samples)
             confidence = softmax(masked_out, dim=1).gather(dim=1, index=labels.view(-1, 1))
@@ -40,8 +40,6 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, m
             counts.append(flipped.sum().item())
         # [len(mask_range)]
         result = torch.tensor(counts)
-        if debug_mode:
-            return result, batch_size, debug_data
         return result, batch_size
     if debug_mode:
         return torch.tensor([]), 0, {}
