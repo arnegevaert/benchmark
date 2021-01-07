@@ -1,10 +1,11 @@
 import dash_bootstrap_components as dbc
 import dash_html_components as html
 from dash.dependencies import Input, Output
+
 from attrbench.suite.dashboard.components import Component
 
 
-class Sidebar(Component):
+class SidebarComponent(Component):
     # the style arguments for the sidebar. We use position:fixed and a fixed width
     _STYLE = {
         "position": "fixed",
@@ -44,5 +45,5 @@ class Sidebar(Component):
                 html.Hr(),
                 dbc.Nav(navlinks, vertical=True, pills=True),
             ],
-            style=Sidebar._STYLE,
+            style=SidebarComponent._STYLE,
         )]

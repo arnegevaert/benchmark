@@ -1,6 +1,11 @@
 import dash
-from attrbench.suite.dashboard.sidebar import Sidebar
-from attrbench.suite.dashboard.pages import *
+import dash_bootstrap_components as dbc
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output
+
+from attrbench.suite.dashboard.components.pages import *
+from attrbench.suite.dashboard.components.sidebar_component import SidebarComponent
 
 
 class Dashboard:
@@ -29,7 +34,7 @@ class Dashboard:
         }
 
         self.root = "/overview"
-        self.sidebar = Sidebar(self.app, path_titles={path: self.pages[path][1] for path in self.pages.keys()})
+        self.sidebar = SidebarComponent(self.app, path_titles={path: self.pages[path][1] for path in self.pages.keys()})
         self.page_content = html.Div(id="page-content", style=Dashboard._CONTENT_STYLE)
 
         # Callback to handle routing
