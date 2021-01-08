@@ -1,6 +1,11 @@
 import dash
-from attrbench.suite.dashboard.sidebar import Sidebar
-from attrbench.suite.dashboard.pages import *
+import dash_bootstrap_components as dbc
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output
+
+from attrbench.suite.dashboard.components.pages import *
+from attrbench.suite.dashboard.components.sidebar_component import SidebarComponent
 
 
 class Dashboard:
@@ -29,7 +34,7 @@ class Dashboard:
         }
 
         self.root = "/overview"
-        self.sidebar = Sidebar(self.app, path_titles={path: self.pages[path][1] for path in self.pages.keys()})
+        self.sidebar = SidebarComponent(self.app, path_titles={path: self.pages[path][1] for path in self.pages.keys()})
         self.page_content = html.Div(id="page-content", style=Dashboard._CONTENT_STYLE)
 
         # Callback to handle routing
@@ -39,12 +44,9 @@ class Dashboard:
 
     def render_page_content(self, pathname):
         content = [html.H1(self.title)]
-        if pathname == "/":
-            rendered = self.pages[self.root][0].render()
-            content.extend(rendered if type(rendered) == list else [rendered])
-        elif pathname in self.pages:
-            rendered = self.pages[pathname][0].render()
-            content.extend(rendered if type(rendered) == list else [rendered])
+        pathname = self.root if pathname == "/" else pathname
+        if pathname in self.pages.keys():
+            content.append(self.pages[pathname][0].render())
         else:
             # If the user tries to reach a different page, return a 404 message
             return dbc.Jumbotron(
@@ -57,9 +59,9 @@ class Dashboard:
         return content
 
     def run(self):
-        self.app.layout = html.Div(
-            [dcc.Location(id="url")] + self.sidebar.render() + [self.page_content]
-        )
-
+        self.app.layout = html.Div([
+            dcc.Location(id="url"),
+            self.sidebar.render(),
+            self.page_content
+        ])
         self.app.run_server(port=self.port)
-

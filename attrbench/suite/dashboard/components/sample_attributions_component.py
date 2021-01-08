@@ -1,12 +1,9 @@
-import numpy as np
-from plotly import express as px
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
+import numpy as np
+from plotly import express as px
 
-
-class Component:
-    def render(self):
-        raise NotImplementedError
+from attrbench.suite.dashboard.components import Component
 
 
 class SampleAttributionsComponent(Component):
