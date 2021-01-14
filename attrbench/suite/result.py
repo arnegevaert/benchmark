@@ -84,15 +84,3 @@ class Result:
     def get_methods(self):
         return list(self.data[self.get_metrics()[0]].keys())
 
-if __name__ == '__main__':
-    ###################
-    # just for testing
-    ###################
-
-    result = Result.load_hdf('D:\Project\Benchmark_branch_axel\out\\results\cifar10.h5')
-
-    result.save_hdf('test.h5')
-
-    result2 = Result.load_hdf('test.h5')
-
-    print('testing')
