@@ -130,7 +130,7 @@ class Suite:
 
         meta_data = {}
         for metric_name, metric in self.metrics.items():
-            meta_data[metric_name]= { key: metric.metadata[key] for key in metric.metadata.keys()}
+            meta_data[metric_name]= metric.metadata
             meta_data[metric_name]["shape"] = metric.get_results()[1]
             meta_data[metric_name]["type"] = type(metric).__name__
 
@@ -138,4 +138,31 @@ class Suite:
         attrs = self.attrs if self.save_attrs else None
         res = Result(data,meta_data,num_samples=self.samples_done,seed=self.seed, images=images, attributions=attrs)
         res.save_hdf(loc)
-
+    def save_result_old(self, loc):
+        with h5py.File(loc, "w") as fp:
+            if self.seed:
+                fp.attrs["seed"] = self.seed
+            # Save images if specified
+            if self.save_images:
+                fp.create_dataset("images", data=np.concatenate(self.images))
+            # Save attributions if specified
+            if self.save_attrs:
+                attr_group = fp.create_group("attributions")
+                for method_name in self.methods:
+                    attr_group.create_dataset(method_name, data=np.concatenate(self.attrs[method_name]))
+            # Save results
+            # results group is laid out as {metric}/{method}
+            # Each metric group has the according metadata as attributes
+            result_group = fp.create_group("results")
+            result_group.attrs["num_samples"] = self.samples_done
+            for metric_name in self.metrics:
+                metric = self.metrics[metric_name]
+                metric_group = result_group.create_group(metric_name)
+                for key in metric.metadata:
+                    metric_group.attrs[key] = metric.metadata[key]
+                results, shape = metric.get_results()
+                metric_group.attrs["shape"] = shape
+                metric_group.attrs["type"] = type(metric).__name__
+                for method_name in results:
+                    method_results = results[method_name]
+                    metric_group.create_dataset(method_name, data=method_results)

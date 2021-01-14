@@ -1,4 +1,4 @@
-from os import path
+from os import path, makedirs
 import pandas as pd
 import numpy as np
 import h5py
@@ -17,6 +17,8 @@ class Result:
     def save_hdf(self,filename):
 
         # if dir not exists: create dir
+        if not path.exists(path.dirname(filename)) and path.dirname(filename) != '' :
+            makedirs(path.dirname(filename))
 
         with h5py.File(filename, "w") as fp:
             if self.seed is not None:
