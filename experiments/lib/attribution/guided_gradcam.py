@@ -1,22 +1,14 @@
-from experiments.lib.attribution import GradCAM
 from torch import nn
 from captum import attr
-from typing import Tuple
 
 
 class GuidedGradCAM:
-    """
-    GuidedGradCAM is just element-wise product of guided backprop and gradCAM.
-    Captum implementation multiplies with only non-negative elements of gradCAM which can result in constant
-    zero saliency maps.
-    """
-    def __init__(self, model: nn.Module, layer: nn.Module, upsample_shape: Tuple):
+    def __init__(self, model: nn.Module, layer: nn.Module):
         self.model = model
         self.layer = layer
-        self.gbp = attr.GuidedBackprop(model)
-        self.gcam = GradCAM(model, layer, upsample_shape)
+        self.method = attr.GuidedGradCam(self.model, self.layer)
 
     def __call__(self, x, target):
-        gcam_attrs = self.gcam(x, target)
-        gbp_attrs = self.gbp.attribute(x, target)
-        return gcam_attrs * gbp_attrs
+        # Interpolation in GGC paper is bilinear,
+        # default value in Captum is nearest
+        return self.method.attribute(x, target, interpolate_mode="bilinear")
