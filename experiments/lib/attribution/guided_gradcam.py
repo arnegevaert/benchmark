@@ -4,9 +4,7 @@ from captum import attr
 
 class GuidedGradCAM:
     def __init__(self, model: nn.Module, layer: nn.Module):
-        self.model = model
-        self.layer = layer
-        self.method = attr.GuidedGradCam(self.model, self.layer)
+        self.method = attr.GuidedGradCam(model, layer)
 
     def __call__(self, x, target):
         # Interpolation in GGC paper is bilinear,

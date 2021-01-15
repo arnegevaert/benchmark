@@ -1,4 +1,5 @@
 from experiments.lib.attribution.guided_gradcam import GuidedGradCAM
+from experiments.lib.attribution.smooth_grad import SmoothGrad
 from experiments.lib.datasets import Cifar, MNIST, ImageNette, Aptos, Cxr8, CBIS_DDSM_patches
 from experiments.lib.models import Alexnet, BasicCNN, BasicMLP, Densenet, Mobilenet_v2, Resnet, Squeezenet, Vgg
 from experiments.lib.attribution import *
@@ -59,7 +60,7 @@ _DATASET_MODELS = {
 
 _CAPTUM_METHODS = {
     "Gradient": lambda m: attr.Saliency(m),
-    "SmoothGrad": lambda m: attr.NoiseTunnel(attr.Saliency(m)),
+    "SmoothGrad": lambda m: SmoothGrad(m),
     "InputXGradient": lambda m: attr.InputXGradient(m),
     "GuidedBackprop": lambda m: attr.GuidedBackprop(m),
     "Deconvolution": lambda m: attr.Deconvolution(m)
@@ -67,7 +68,7 @@ _CAPTUM_METHODS = {
 
 _UPSAMPLE_METHODS = {
     "GradCAM": lambda m, shape: GradCAM(m, m.get_last_conv_layer(), shape),
-    "GuidedGradCAM": lambda m, shape: GuidedGradCAM(m, m.get_last_conv_layer(), shape),
+    "GuidedGradCAM": lambda m, shape: GuidedGradCAM(m, m.get_last_conv_layer()),
 }
 
 _BASELINE_METHODS = {

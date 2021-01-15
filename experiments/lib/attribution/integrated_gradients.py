@@ -1,5 +1,6 @@
 from captum import attr
 
+
 class IntegratedGradients:
     def __init__(self, forward_func, internal_batch_size=None):
         self.method = attr.IntegratedGradients(forward_func)
