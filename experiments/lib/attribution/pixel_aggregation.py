@@ -3,7 +3,7 @@ from typing import Callable
 
 
 class PixelAggregation:
-    def __init__(self, base_method: Callable, aggregation_fn: str) -> None:
+    def __init__(self, base_method: Callable, aggregation_fn: str):
         self.base_method = base_method
         if aggregation_fn not in ["max_abs", "avg"]:
             raise ValueError("aggregation_fn must be max_abs or avg")

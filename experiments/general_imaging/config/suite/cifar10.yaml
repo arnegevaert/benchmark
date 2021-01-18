@@ -1,0 +1,48 @@
+default:
+  masking_policy:
+    policy: pixel
+    value: 0.
+  mask_range: [ 0,   20,   41,   61,   82,  102,  123,  143,  164,  184,  205,
+                225,  246,  266,  287,  307,  328,  348,  369,  389,  410,  430,
+                451,  471,  492,  512,  532,  553,  573,  594,  614,  635,  655,
+                676,  696,  717,  737,  758,  778,  799,  819,  840,  860,  881,
+                901,  922,  942,  963,  983, 1004, 1024 ]
+  perturbation_range: [.1, .2, .3, .4, .5, .6, .7, .8, .9, 1., 1.1,
+                       1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
+metrics:
+  deletion_until_flip:
+    type: DeletionUntilFlip
+    args:
+      step_size: .01
+  impact_score:
+    type: ImpactScore
+    args:
+      strict: false
+      tau: 0.5
+  strict_impact_score:
+    type: ImpactScore
+    args:
+      strict: true
+  insertion:
+    type: Insertion
+  deletion:
+    type: Deletion
+  infidelity:
+    type: Infidelity
+    args:
+      num_perturbations: 16
+  max_sensitivity:
+    type: MaxSensitivity
+    args:
+      num_perturbations: 16
+  sensitivity_n:
+    type: SensitivityN
+    args:
+      n_range: [ 25,  50,  75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325,
+                 350, 375, 400, 425, 450, 475, 500 ]
+      num_subsets: 16
+  impact_coverage:
+    type: ImpactCoverage
+    args:
+      patch: ../../data/patches/CIFAR10/resnet18.pt
+      target_label: 0

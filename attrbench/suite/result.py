@@ -4,7 +4,6 @@ import numpy as np
 import h5py
 
 
-# TODO this class should be used by Suite to keep track of its results
 class Result:
     def __init__(self, data, metadata, num_samples, seed=None, images=None, attributions=None):
         self.data = data
@@ -14,10 +13,9 @@ class Result:
         self.images = images
         self.attributions = attributions
 
-    def save_hdf(self,filename):
-
+    def save_hdf(self, filename):
         # if dir not exists: create dir
-        if not path.exists(path.dirname(filename)) and path.dirname(filename) != '' :
+        if not path.exists(path.dirname(filename)) and path.dirname(filename) != '':
             makedirs(path.dirname(filename))
 
         with h5py.File(filename, "w") as fp:
@@ -46,7 +44,6 @@ class Result:
                 for method_name in metric.keys():
                     method_results = metric[method_name]
                     metric_group.create_dataset(method_name, data=method_results)
-
 
     @staticmethod
     def load_hdf(filename):

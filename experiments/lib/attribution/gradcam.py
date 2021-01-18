@@ -3,11 +3,12 @@ from torch import nn
 
 
 class GradCAM:
-    def __init__(self, model: nn.Module, layer: nn.Module, upsample_shape):
-        self.upsample_shape = upsample_shape
-        self.method = attr.LayerGradCam(model, layer)
+    def __init__(self, model: nn.Module, last_conv_layer: nn.Module, sample_shape):
+        self.sample_shape = sample_shape
+        self.method = attr.LayerGradCam(model, last_conv_layer)
 
     def __call__(self, x, target):
+        # Compute attributions
         attrs = self.method.attribute(x, target, relu_attributions=True)
         # Upsample attributions
-        return attr.LayerAttribution.interpolate(attrs, self.upsample_shape, interpolate_mode="bilinear")
+        return attr.LayerAttribution.interpolate(attrs, self.sample_shape, interpolate_mode="bilinear")
