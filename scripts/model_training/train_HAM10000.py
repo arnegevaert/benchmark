@@ -2,8 +2,8 @@ import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import torchvision.models
-from experiments.lib.models import EfficientNet, senet154
-from experiments.lib.datasets import HAM10000
+from experiments.medical_imaging.lib.models import EfficientNet, senet154
+from experiments.medical_imaging.lib.datasets import HAM10000
 import os
 import numpy as np
 import argparse

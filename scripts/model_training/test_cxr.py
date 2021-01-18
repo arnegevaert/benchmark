@@ -1,7 +1,7 @@
 import argparse
 from torch.utils.data import DataLoader
 import sklearn.metrics
-from experiments.lib.util import get_ds_model
+from experiments.medical_imaging.dataset_models import get_dataset_model
 import numpy as np
 import torch
 from os import path
@@ -79,23 +79,17 @@ def test_epoch(model, loader, criterion, epoch=1):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dataset", type=str, required=True)
-    parser.add_argument("-m", "--model", type=str, required=True)
+
     parser.add_argument("-b", "--batch-size", type=int, required=True)
-    parser.add_argument("-n", "--num-batches", type=int, required=True)
     parser.add_argument("-c", "--cuda", action="store_true")
-    parser.add_argument("-o", "--out-dir", type=str, required=True)
-    parser.add_argument("--methods", type=str, nargs="+", default=None)
-    parser.add_argument("--metrics", type=str, nargs="+", default=None)
-    parser.add_argument("--patch", type=str, default=None)
-    parser.add_argument("--aggregation_fn", type=str, choices=["avg", "max_abs"], default="avg")
+
     parser.add_argument("--num-workers", type=int, default=4)
 
 
     args = parser.parse_args()
-    if not path.isdir(args.out_dir):
-        os.makedirs(args.out_dir)
+
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
-    dataset, model = get_ds_model(args.dataset, args.model)
+    dataset, model, sample_shape = get_dataset_model(args.dataset)
     dataset.use_gpu = device=="cuda"
     loader = DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers)
     model.to(device)

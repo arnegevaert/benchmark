@@ -1,6 +1,6 @@
 import argparse
 import torch
-from experiments.lib.util import get_ds_model
+from experiments.general_imaging.dataset_models import get_dataset_model
 from attrbench.lib import make_patch
 from torch.utils.data import DataLoader
 
@@ -8,7 +8,6 @@ from torch.utils.data import DataLoader
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dataset", type=str)
-    parser.add_argument("-m", "--model", type=str)
     parser.add_argument("-b", "--batch-size", type=int)
     parser.add_argument("-c", "--cuda", action="store_true")
     parser.add_argument("-o", "--output", type=str)
@@ -23,7 +22,7 @@ if __name__ == "__main__":
         print("Output location OK")
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
 
-    dataset, model = get_ds_model(args.dataset, args.model)
+    dataset, model = get_dataset_model(args.dataset)
     model.to(device)
     model.eval()
 

@@ -1,10 +1,9 @@
 import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
-import torchvision.models
-from experiments.lib.models import Resnet
+from torchvision import transforms, datasets
 from experiments.general_imaging.models import Resnet20
-from experiments.lib.datasets import Cifar, DropoutDataset
+from experiments.general_imaging.dataset_models import Resnet18
 import os
 import numpy as np
 import argparse
@@ -46,9 +45,10 @@ def train_epoch(net, opt,crit,dl, dropout):
     for batch,labels in dl:
         labels = labels.type(torch.long).to(device)
         batch = batch.to(device)
-        opt.zero_grad()
+
         out = net(batch)
         loss = crit(out,labels)
+        opt.zero_grad()
         loss.backward()
         opt.step()
         losses.append(loss.item())
@@ -70,8 +70,10 @@ def validate_epoch(net,crit,dl):
     return val_loss
 
 def train_loop(args, criterion, model, train_dl, val_dl):
-    optimizer = optim.AdamW(model.parameters(), lr=args.lr)
-    schedule = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, threshold=0.001, factor=0.5, verbose=True)
+    # optimizer = optim.AdamW(model.parameters(), lr=args.lr)
+    optimizer = optim.SGD(model.parameters(), lr = args.lr,momentum=0.9, weight_decay= 1e-4)
+    schedule = optim.lr_scheduler.MultiStepLR(optimizer,milestones=[80,120],gamma=0.1)
+    # schedule = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=10, threshold=0.001, factor=0.1, verbose=True)
 
     best_weights, best_loss = None, float("inf")
     counter = 0
@@ -90,11 +92,11 @@ def train_loop(args, criterion, model, train_dl, val_dl):
             best_e = e
             counter = 0
             print("Model improved")
-        else:
-            counter += 1
-        if counter > 10:
-            print("No improvements: stopping")
-            break
+        # else:
+        #     counter += 1
+        # if counter > 22:
+        #     print("No improvements: stopping")
+        #     break
     torch.save(best_weights, args.model + '_epoch_{}_val{}.pt'.format(best_e,best_loss))
     print("Best Validation Sens:", best_loss)
     print("at epoch:", best_e)
@@ -126,19 +128,29 @@ def run(args):
 
 
     if args.model == 'resnet18':
-        model = Resnet('resnet18', 10, pretrained=True, params_loc=args.param_loc)
+        model = Resnet18(10,params_loc=args.param_loc)
     elif args.model == 'resnet20':
         model = Resnet20(10,params_loc=args.param_loc)
     else:
         raise Exception("{} is not a valid model.".format(args.model))
     model.to(device)
+    transform_train = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4821, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+    train_ds= datasets.CIFAR10(args.data_loc,train=True, transform=transform_train,download=False)
 
-    train_ds = Cifar(args.data_loc,train=True)
     if args.dropout:
         train_ds = DropoutDataset(train_ds)
     train_dl = DataLoader(train_ds,batch_size=args.batch_size,shuffle=True,num_workers=2,pin_memory=True)
-    val_ds = Cifar(args.data_loc, train=False)
-    val_dl = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
+    transform_val = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4821, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+    val_ds = datasets.CIFAR10(args.data_loc,train=False, transform=transform_val,download=False)
+    val_dl = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=1, pin_memory=True)
 
 
     criterion = torch.nn.CrossEntropyLoss()

@@ -4,6 +4,10 @@ import torch
 import imgaug.augmenters as iaa
 
 class DropoutDataset(Dataset):
+    ########################################
+    # takes a dataset and sets between
+    # 0 and 90% of pixels randomly to zero
+    ########################################
     def __init__(self, dataset, aug = None):
         self.dataset = dataset
         self.aug = aug if aug else iaa.Sometimes(0.95, iaa.Dropout(p=(0.0, 0.90)))
