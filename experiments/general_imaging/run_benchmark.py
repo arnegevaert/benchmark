@@ -1,7 +1,7 @@
 import argparse
 import torch
 from experiments.general_imaging.dataset_models import get_dataset_model
-from experiments.lib import get_methods, MethodLoader
+from experiments.lib import MethodLoader
 from attrbench.suite import Suite
 from torch.utils.data import DataLoader
 
