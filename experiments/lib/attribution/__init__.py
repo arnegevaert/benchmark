@@ -4,6 +4,7 @@ from .edge_detection import *
 
 # Methods not readily implemented in Captum
 from .expected_gradients import *
+from .smooth_grad import *
 from .gradcam import *  # Wrapper for upsampling
 from .guided_gradcam import *  # Wrapper for upsampling
 from .integrated_gradients import *  # Wrapper for internal batch size

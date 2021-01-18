@@ -1,7 +1,7 @@
 import argparse
 import torch
 from experiments.general_imaging.dataset_models import get_dataset_model
-from experiments.lib import get_methods
+from experiments.lib import get_methods, MethodLoader
 from attrbench.suite import Suite
 from torch.utils.data import DataLoader
 
@@ -27,12 +27,16 @@ if __name__ == "__main__":
 
     # Get dataset, model, methods
     ds, model, sample_shape = get_dataset_model(args.dataset)
+    """
     methods_dict = get_methods(model,
                                aggregation_fn="avg",
                                normalize=True,
                                methods=args.methods,
                                batch_size=args.batch_size,
                                sample_shape=sample_shape)
+    """
+    ml = MethodLoader()
+    ml.load_config("config/methods/default.yaml")
 
     # Run BM suite and save result to disk
     bm_suite = Suite(model,

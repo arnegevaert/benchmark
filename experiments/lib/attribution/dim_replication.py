@@ -1,5 +1,5 @@
-import torch
 from typing import Callable
+
 
 class DimReplication:
     def __init__(self, base_method: Callable, dim: int, amount: int) -> None:
