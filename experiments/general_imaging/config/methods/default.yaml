@@ -17,3 +17,5 @@ methods:
   - SmoothGrad:
       stdev: 0.15
       num_samples: 50
+  - ExpectedGradients:
+      num_samples: 100

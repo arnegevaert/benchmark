@@ -1,6 +1,7 @@
 import torch
 from skimage.filters import sobel
 
+
 class EdgeDetection:
     def __call__(self, x, target):
         device = x.device

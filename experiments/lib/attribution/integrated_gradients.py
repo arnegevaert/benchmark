@@ -2,8 +2,8 @@ from captum import attr
 
 
 class IntegratedGradients:
-    def __init__(self, forward_func, internal_batch_size=None):
-        self.method = attr.IntegratedGradients(forward_func)
+    def __init__(self, model, internal_batch_size):
+        self.method = attr.IntegratedGradients(model)
         self.internal_batch_size = internal_batch_size
 
     def __call__(self, x, target):

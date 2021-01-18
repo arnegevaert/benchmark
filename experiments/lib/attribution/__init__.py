@@ -2,14 +2,16 @@
 from .random import *
 from .edge_detection import *
 
-# Methods not readily implemented in Captum
-from .expected_gradients import *
-from .smooth_grad import *
-from .gradcam import *  # Wrapper for upsampling
-from .guided_gradcam import *  # Wrapper for upsampling
-from .integrated_gradients import *  # Wrapper for internal batch size
+# Methods
+from .deconvolution import Deconvolution
+from .expected_gradients import ExpectedGradients
+from .gradcam import GradCAM
+from .gradient import Gradient
+from .guided_backprop import GuidedBackprop
+from .guided_gradcam import GuidedGradCAM
+from .input_x_gradient import InputXGradient
+from .integrated_gradients import IntegratedGradients
+from .smooth_grad import SmoothGrad
 
 # Post-processing wrappers
 from .pixel_aggregation import *  # Aggregate along color channels
-
-#from .lime import LIME

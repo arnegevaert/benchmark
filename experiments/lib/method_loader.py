@@ -1,17 +1,16 @@
 import yaml
 from . import attribution
+from inspect import signature
 
 
 class MethodLoader:
-    def __init__(self, model, **kwargs):
-        self.model = model
+    def __init__(self, **kwargs):
         self.kwargs = kwargs
 
     def load_config(self, loc):
         with open(loc) as fp:
             methods = {}
             data = yaml.full_load(fp)
-            print(data)
             wrappers = []
             if "wrappers" in data.keys():
                 # Handle post-processing wrappers
@@ -22,21 +21,27 @@ class MethodLoader:
                     })
             if "methods" in data.keys():
                 # Handle methods
-                for method in data["methods"]:
-                    if type(method) == str:
-                        constructor = getattr(attribution, method)
-                        method_obj = constructor(self.model, **self.kwargs)
-                    elif type(method) == dict:
-                        if len(method) > 1:
-                            raise ValueError("Invalid configuration file")
-                        method_id = next(iter(method))
-                        constructor = getattr(attribution, method_id)
-                        method_obj = constructor(self.model, **self.kwargs, **method[method_id])
-                    else:
+                for entry in data["methods"]:
+                    # Method entries must be either string, or dictionary with a single entry
+                    # This corresponds to valid yaml list with optional nested parameters
+                    if (type(entry) not in (str, dict)) or (type(entry) == dict and len(entry) > 1):
                         raise ValueError(f"Invalid configuration file")
+                    method_name = entry if type(entry) == str else next(iter(entry))
+                    constructor = getattr(attribution, method_name)
+                    method_args = entry[method_name] if type(entry) == dict else {}
+                    sig = signature(constructor)
+                    args = {}
+                    for param in sig.parameters.keys():
+                        if param in self.kwargs:
+                            args[param] = self.kwargs[param]
+                        elif param in method_args:
+                            args[param] = method_args[param]
+                        else:
+                            raise ValueError(f"Required parameter {param} for method {method_name} not found")
+                    method_obj = constructor(**args)
                     for wrapper in wrappers:
-                        method_obj = wrapper["constructor"](method_obj, **wrapper["args"])
-                    methods[method] = method_obj
+                        method_obj = wrapper["constructor"](base_method=method_obj, **wrapper["args"])
+                    methods[method_name] = method_obj
             else:
                 raise ValueError(f"Invalid configuration file: file must contain key 'methods'")
             return methods
