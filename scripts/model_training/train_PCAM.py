@@ -1,9 +1,8 @@
 import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
-import torchvision.models
-from experiments.lib.models import EfficientNet, senet154,Densenet
-from experiments.lib.datasets import PcamDataset
+from experiments.medical_imaging.lib.models import EfficientNet, senet154,Densenet
+from experiments.medical_imaging.lib.datasets import PcamDataset
 import os
 import numpy as np
 import argparse
