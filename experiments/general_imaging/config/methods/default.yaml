@@ -1,19 +1,19 @@
-wrappers:
-  aggregation_fn: null
-  normalize: false
+# wrappers:
+#   PixelAggregation:
+#     aggregation_fn: avg
 methods:
   - Gradient
-  - SmoothGrad:
-      stdev: 0.15
-      num_samples: 50
   - InputXGradient
   - GuidedBackprop
   - Deconvolution
   - GradCAM
   - GuidedGradCAM
-  - IntegratedGradients:
-      internal_batch_size: 16
-      num_steps: 25
-      max_eps: 0.05
   - Random
   - EdgeDetection
+  - IntegratedGradients:
+      internal_batch_size: 16
+      # num_steps: 25
+      max_eps: 0.05
+  - SmoothGrad:
+      stdev: 0.15
+      num_samples: 50

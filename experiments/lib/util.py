@@ -47,8 +47,5 @@ def get_methods(model, aggregation_fn, normalize, methods=None, batch_size=None,
     # Add aggregation wrappers if necessary
     if aggregation_fn:
         method_objs = {key: PixelAggregation(method_objs[key], aggregation_fn) for key in method_objs}
-    # Add normalization wrappers if necessary
-    if normalize:
-        method_objs = {key: Normalization(method_objs[key]) for key in method_objs}
     return method_objs
 

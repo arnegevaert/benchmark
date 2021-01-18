@@ -117,11 +117,6 @@ class Suite:
                 samples_done += samples.size(0)
         self.samples_done += num_samples
 
-        if self.save_images:
-            self.images=np.concatenate(self.images)
-        for method_name in self.methods:
-            self.attrs[method_name] = np.concatenate(self.attrs[method_name])
-
     def save_result(self, loc):
         data = {
             k: v.get_results()[0]
@@ -134,7 +129,11 @@ class Suite:
             meta_data[metric_name]["shape"] = metric.get_results()[1]
             meta_data[metric_name]["type"] = type(metric).__name__
 
-        images = self.images if self.save_images else None
-        attrs = self.attrs if self.save_attrs else None
-        res = Result(data,meta_data,num_samples=self.samples_done,seed=self.seed, images=images, attributions=attrs)
+        attrs = None
+        if self.save_attrs:
+            attrs = {}
+            for method_name in self.methods:
+                attrs[method_name] = np.concatenate(self.attrs[method_name])
+        images = np.concatenate(self.images) if self.save_images else None
+        res = Result(data, meta_data, num_samples=self.samples_done, seed=self.seed, images=images, attributions=attrs)
         res.save_hdf(loc)
