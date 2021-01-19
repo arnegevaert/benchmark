@@ -89,6 +89,9 @@ class Suite:
         if self.seed:
             torch.manual_seed(self.seed)
         it = iter(self.dataloader)
+        # We will check the output shapes of methods on the first batch
+        # to make sure they are compatible with the masking policy
+        checked_shapes = False
         while samples_done < num_samples:
             full_batch, full_labels = next(it)
             full_batch = full_batch.to(self.device)
@@ -102,9 +105,20 @@ class Suite:
             # Save images and attributions if specified
             if self.save_images:
                 self.images.append(samples.cpu().detach().numpy())
-            if self.save_attrs:
-                for method_name in self.methods:
-                    self.attrs[method_name].append(self.methods[method_name](samples, labels).cpu().detach().numpy())
+            if self.save_attrs or not checked_shapes:
+                # We need the attributions, to save them or to check their shapes
+                attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach().numpy()
+                         for method_name in self.methods.keys()}
+                if self.save_attrs:
+                    # Save attributions if necessary
+                    for method_name in self.methods:
+                        self.attrs[method_name].append(attrs[method_name])
+                if not checked_shapes:
+                    # Check shapes of attributions if necessary
+                    for method_name in self.methods:
+                        if not self.default_args["masking_policy"].check_attribution_shape(samples, attrs[method_name]):
+                            raise ValueError(f"Attributions for method {method_name} "
+                                             f"are not compatible with masking policy")
             if samples.size(0) > 0:
                 if samples_done + samples.size(0) > num_samples:
                     diff = num_samples - samples_done
