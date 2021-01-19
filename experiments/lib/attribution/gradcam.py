@@ -11,4 +11,8 @@ class GradCAM:
         # Compute attributions
         attrs = self.method.attribute(x, target, relu_attributions=True)
         # Upsample attributions
-        return attr.LayerAttribution.interpolate(attrs, self.sample_shape, interpolate_mode="bilinear")
+        upsampled = attr.LayerAttribution.interpolate(attrs, self.sample_shape, interpolate_mode="bilinear")
+        # GradCAM aggregates over channels, check if we need to duplicate attributions in order to match input shape
+        if upsampled.shape[1] != x.shape[1]:
+            upsampled = upsampled.repeat(1, x.shape[1], 1, 1)
+        return upsampled
