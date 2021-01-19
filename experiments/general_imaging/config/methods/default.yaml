@@ -1,6 +1,6 @@
-wrappers:
-  PixelAggregation:
-    aggregation_fn: avg
+#wrappers:
+#  PixelAggregation:
+#    aggregation_fn: avg
 methods:
   - Gradient
   - InputXGradient
