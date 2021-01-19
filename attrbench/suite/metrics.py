@@ -54,7 +54,7 @@ class ImpactCoverage(Metric):
 
     def _run_single_method(self, samples, labels, method):
         iou, keep = functional.impact_coverage(samples, labels, self.model, method, self.patch, self.target_label)
-        return iou[keep].reshape(-1, 1)
+        return iou.reshape(-1, 1)
 
 
 class ImpactScore(Metric):
