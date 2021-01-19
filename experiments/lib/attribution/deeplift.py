@@ -6,4 +6,4 @@ class DeepLift:
 
 
     def __call__(self, x, target):
-        self.method.attribute(x, target=target)
+        return self.method.attribute(x, target=target)

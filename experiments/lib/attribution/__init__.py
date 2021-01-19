@@ -12,6 +12,8 @@ from .guided_gradcam import GuidedGradCAM
 from .input_x_gradient import InputXGradient
 from .integrated_gradients import IntegratedGradients
 from .smooth_grad import SmoothGrad
+from .var_grad import VarGrad
+from .deeplift import DeepLift
 
 # Post-processing wrappers
 from .pixel_aggregation import *  # Aggregate along color channels
