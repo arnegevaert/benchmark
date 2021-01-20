@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from attrbench import functional
 
 
@@ -37,13 +38,13 @@ class Metric:
 
 
 class DeletionUntilFlip(Metric):
-    def __init__(self, model, methods, step_size, masking_policy):
+    def __init__(self, model, methods, num_steps, masking_policy):
         super().__init__(model, methods)
-        self.step_size = step_size
+        self.num_steps = num_steps
         self.masking_policy = masking_policy
 
     def _run_single_method(self, samples, labels, method):
-        return functional.deletion_until_flip(samples, labels, self.model, method, self.step_size, self.masking_policy).reshape(-1, 1)
+        return functional.deletion_until_flip(samples, labels, self.model, method, self.num_steps, self.masking_policy).reshape(-1, 1)
 
 
 class ImpactCoverage(Metric):
@@ -58,18 +59,15 @@ class ImpactCoverage(Metric):
 
 
 class ImpactScore(Metric):
-    def __init__(self, model, methods, mask_range, strict, masking_policy, tau=None):
+    def __init__(self, model, methods, num_steps, strict, masking_policy, tau=None):
         super().__init__(model, methods)
-        self.mask_range = mask_range
+        self.num_steps = num_steps
         self.strict = strict
         self.masking_policy = masking_policy
         self.tau = tau
-        self.metadata = {
-            "col_index": mask_range
-        }
 
     def _run_single_method(self, samples, labels, method):
-        return functional.impact_score(samples, labels, self.model, method, self.mask_range,
+        return functional.impact_score(samples, labels, self.model, method, self.num_steps,
                                        self.strict, self.masking_policy, self.tau)
 
     def get_results(self):
@@ -89,29 +87,23 @@ class ImpactScore(Metric):
 
 
 class Insertion(Metric):
-    def __init__(self, model, methods, mask_range, masking_policy):
+    def __init__(self, model, methods, num_steps, masking_policy):
         super().__init__(model, methods)
-        self.mask_range = mask_range
+        self.num_steps = num_steps
         self.masking_policy = masking_policy
-        self.metadata = {
-            "col_index": mask_range
-        }
 
     def _run_single_method(self, samples, labels, method):
-        return functional.insertion(samples, labels, self.model, method, self.mask_range, self.masking_policy)
+        return functional.insertion(samples, labels, self.model, method, self.num_steps, self.masking_policy)
 
 
 class Deletion(Metric):
-    def __init__(self, model, methods, mask_range, masking_policy):
+    def __init__(self, model, methods, num_steps, masking_policy):
         super().__init__(model, methods)
-        self.mask_range = mask_range
+        self.num_steps = num_steps
         self.masking_policy = masking_policy
-        self.metadata = {
-            "col_index": mask_range
-        }
 
     def _run_single_method(self, samples, labels, method):
-        return functional.deletion(samples, labels, self.model, method, self.mask_range, self.masking_policy)
+        return functional.deletion(samples, labels, self.model, method, self.num_steps, self.masking_policy)
 
 
 class Infidelity(Metric):
@@ -137,15 +129,18 @@ class MaxSensitivity(Metric):
 
 
 class SensitivityN(Metric):
-    def __init__(self, model, methods, n_range, num_subsets, masking_policy):
+    def __init__(self, model, methods, min_subset_size, max_subset_size, num_steps, num_subsets, masking_policy):
         super().__init__(model, methods)
-        self.n_range = n_range
+        self.min_subset_size = min_subset_size
+        self.max_subset_size = max_subset_size
+        self.num_steps = num_steps
         self.num_subsets = num_subsets
         self.masking_policy = masking_policy
         self.metadata = {
-            "col_index": n_range
+            "col_index": np.linspace(min_subset_size, max_subset_size, num_steps)
         }
 
     def _run_single_method(self, samples, labels, method):
         return functional.sensitivity_n(samples, labels, self.model, method,
-                                        self.n_range, self.num_subsets, self.masking_policy)
+                                        self.min_subset_size, self.max_subset_size, self.num_steps,
+                                        self.num_subsets, self.masking_policy)

@@ -1,26 +1,26 @@
 from typing import Callable, List
 from attrbench.lib import MaskingPolicy
 import torch
+import numpy as np
 
 
 def insertion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-              mask_range: List[int], masking_policy: MaskingPolicy, debug_mode=False, writer=None):
-    return _insertion_deletion(samples, labels, model, method, mask_range, masking_policy, "insertion",
-                               debug_mode=debug_mode, writer = writer)
+              num_steps: int, masking_policy: MaskingPolicy, debug_mode=False, writer=None):
+    return _insertion_deletion(samples, labels, model, method, num_steps, masking_policy, "insertion",
+                               debug_mode=debug_mode, writer=writer)
 
 
 def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-             mask_range: List[int], masking_policy: MaskingPolicy, debug_mode=False, writer=None):
-    return _insertion_deletion(samples, labels, model, method, mask_range, masking_policy, "deletion",
-                               debug_mode=debug_mode, writer = writer)
+             num_steps: int, masking_policy: MaskingPolicy, debug_mode=False, writer=None):
+    return _insertion_deletion(samples, labels, model, method, num_steps, masking_policy, "deletion",
+                               debug_mode=debug_mode, writer=writer)
 
 
 def _insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                        mask_range: List[int], masking_policy: MaskingPolicy, mode: str, debug_mode: bool=False,
+                        num_steps: int, masking_policy: MaskingPolicy, mode: str, debug_mode: bool=False,
                         writer=None):
     if mode not in ["deletion", "insertion"]:
         raise ValueError("Mode must be either deletion or insertion")
-    debug_data = {}
     result = []
     attrs = method(samples, labels).detach()  # [batch_size, *sample_shape]
     if debug_mode:
@@ -32,6 +32,8 @@ def _insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Call
     # Sort indices of attrs in ascending order
     sorted_indices = attrs.argsort().cpu().detach().numpy()
 
+    total_features = attrs.shape[1]
+    mask_range = list((np.linspace(0, 1, num_steps) * total_features).astype(np.int))
     for i in mask_range:
         # Mask/insert pixels
         if i == 0:
