@@ -115,17 +115,15 @@ class Deletion(Metric):
 
 
 class Infidelity(Metric):
-    def __init__(self, model, methods, perturbation_range, num_perturbations):
+    def __init__(self, model, methods, perturbation_mode, perturbation_size, num_perturbations):
         super().__init__(model, methods)
-        self.perturbation_range = perturbation_range
+        self.perturbation_mode = perturbation_mode
+        self.perturbation_size = perturbation_size
         self.num_perturbations = num_perturbations
-        self.metadata = {
-            "col_index": perturbation_range
-        }
 
     def _run_single_method(self, samples, labels, method):
         return functional.infidelity(samples, labels, self.model, method,
-                                     self.perturbation_range, self.num_perturbations)
+                                     self.perturbation_mode, self.perturbation_size, self.num_perturbations)
 
 
 class MaxSensitivity(Metric):
