@@ -48,13 +48,12 @@ class DeletionUntilFlip(Metric):
 
 
 class ImpactCoverage(Metric):
-    def __init__(self, model, methods, patch, target_label):
+    def __init__(self, model, methods, patch_folder):
         super().__init__(model, methods)
-        self.patch = torch.load(patch) if type(patch) == str else patch
-        self.target_label = target_label
+        self.patch_folder = patch_folder
 
     def _run_single_method(self, samples, labels, method):
-        iou, keep = functional.impact_coverage(samples, labels, self.model, method, self.patch, self.target_label)
+        iou, keep = functional.impact_coverage(samples, labels, self.model, method, self.patch_folder)
         return iou.reshape(-1, 1)
 
 

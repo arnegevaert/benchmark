@@ -26,7 +26,7 @@ if __name__ == "__main__":
     print("Saving attributions" if args.save_attrs else "Not saving attributions")
 
     # Get dataset, model, methods
-    ds, model, sample_shape = get_dataset_model(args.dataset)
+    ds, model, sample_shape, patch_folder = get_dataset_model(args.dataset)
     ml = MethodLoader(model=model, last_conv_layer=model.get_last_conv_layer(),
                       sample_shape=sample_shape, reference_dataset=ds)
     methods = ml.load_config("config/methods/default.yaml")
@@ -37,7 +37,8 @@ if __name__ == "__main__":
                      device,
                      save_images=args.save_images,
                      save_attrs=args.save_attrs,
-                     seed=args.seed)
+                     seed=args.seed,
+                     patch_folder=patch_folder)
     bm_suite.load_config(args.suite_config)
     bm_suite.run(args.num_samples, verbose=True)
     bm_suite.save_result(args.output)
