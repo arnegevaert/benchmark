@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("suite_config", type=str)
-    parser.add_argument("method_config", nargs="?", type=str, default="config/methods/default.yaml")
+    parser.add_argument("method_config", nargs="?", type=str, default="config/methods/channel.yaml")
     parser.add_argument("-d", "--dataset", type=str, required=True)
     parser.add_argument("-b", "--batch-size", type=int, required=True)
     parser.add_argument("-n", "--num-samples", type=int, required=True)
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     ds, model, sample_shape, patch_folder = get_dataset_model(args.dataset)
     ml = MethodLoader(model=model, last_conv_layer=model.get_last_conv_layer(),
                       sample_shape=sample_shape, reference_dataset=ds)
-    methods = ml.load_config("config/methods/default.yaml")
+    methods = ml.load_config(args.method_config)
 
     # Run BM suite and save result to disk
     bm_suite = Suite(model, methods,
