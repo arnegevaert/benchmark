@@ -124,7 +124,9 @@ class Suite:
                     diff = num_samples - samples_done
                     samples = samples[:diff]
                     labels = labels[:diff]
-                for metric in self.metrics:
+                for i, metric in enumerate(self.metrics.keys()):
+                    if verbose:
+                        prog.set_postfix_str(f"{metric} ({i+1}/{len(self.metrics)})")
                     self.metrics[metric].run_batch(samples, labels)
                 if verbose:
                     prog.update(samples.size(0))
