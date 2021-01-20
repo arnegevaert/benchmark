@@ -1,5 +1,5 @@
 # Baseline pseudo-methods
-# from .random import *
+from .random import *
 from .edge_detection import *
 
 # Methods

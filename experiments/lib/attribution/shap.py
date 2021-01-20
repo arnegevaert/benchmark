@@ -13,11 +13,11 @@ class Shap:
 
 
 def get_super_pixels(x,k):
-    x = x.detach().cpu().numpy()
-    nr_of_channels = x.shape[1] # assuming grayscale images have 1 channel
+    images = x.detach().cpu().numpy()
+    nr_of_channels = images.shape[1] # assuming grayscale images have 1 channel
     masks = []
-    for i in range(x.shape[0]):
-        input_image = np.transpose(x[i],(1, 2, 0))
+    for i in range(images.shape[0]):
+        input_image = np.transpose(images[i],(1, 2, 0))
         mask=segmentation.slic(input_image,n_segments=k,slic_zero=True)
         masks.append(mask)
     masks = torch.LongTensor(np.stack(masks))
