@@ -1,5 +1,5 @@
 # Baseline pseudo-methods
-from .random import *
+# from .random import *
 from .edge_detection import *
 
 # Methods
@@ -14,6 +14,7 @@ from .integrated_gradients import IntegratedGradients
 from .smooth_grad import SmoothGrad
 from .var_grad import VarGrad
 from .deeplift import DeepLift
+from .shap import Shap
 
 # Post-processing wrappers
 from .pixel_aggregation import *  # Aggregate along color channels
