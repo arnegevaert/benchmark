@@ -3,11 +3,12 @@ import torch
 
 
 def max_sensitivity(samples: torch.Tensor, labels: torch.Tensor, method: Callable, perturbation_range: List[float],
-                    num_perturbations: int, debug_mode=False,writer=None):
+                    num_perturbations: int,attrs, debug_mode=False,writer=None):
     result = []
     device = samples.device
-
-    attrs = method(samples, labels).detach()  # [batch_size, *sample_shape]
+    if attrs is None:
+        attrs = method(samples, labels).detach()  # [batch_size, *sample_shape]
+    attrs = attrs.to(device)
     norm = torch.norm(attrs.flatten(1), dim=1)
     debug_data = []
     for eps in perturbation_range:

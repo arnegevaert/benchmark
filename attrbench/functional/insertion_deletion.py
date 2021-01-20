@@ -4,25 +4,26 @@ import torch
 
 
 def insertion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-              mask_range: List[int], masking_policy: MaskingPolicy, debug_mode=False, writer=None):
-    return _insertion_deletion(samples, labels, model, method, mask_range, masking_policy, "insertion",
+              mask_range: List[int], masking_policy: MaskingPolicy,attrs, debug_mode=False, writer=None):
+    return _insertion_deletion(samples, labels, model, method, mask_range, masking_policy, "insertion", attrs,
                                debug_mode=debug_mode, writer = writer)
 
 
 def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-             mask_range: List[int], masking_policy: MaskingPolicy, debug_mode=False, writer=None):
-    return _insertion_deletion(samples, labels, model, method, mask_range, masking_policy, "deletion",
+             mask_range: List[int], masking_policy: MaskingPolicy,attrs, debug_mode=False, writer=None):
+    return _insertion_deletion(samples, labels, model, method, mask_range, masking_policy, "deletion", attrs,
                                debug_mode=debug_mode, writer = writer)
 
 
 def _insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                        mask_range: List[int], masking_policy: MaskingPolicy, mode: str, debug_mode: bool=False,
+                        mask_range: List[int], masking_policy: MaskingPolicy, mode: str,attrs, debug_mode: bool=False,
                         writer=None):
     if mode not in ["deletion", "insertion"]:
         raise ValueError("Mode must be either deletion or insertion")
     debug_data = {}
     result = []
-    attrs = method(samples, labels).detach()  # [batch_size, *sample_shape]
+    if attrs is None:
+        attrs = method(samples, labels).detach()  # [batch_size, *sample_shape]
     if debug_mode:
         writer.add_images('Image samples', samples)
         writer.add_images('attributions', attrs)

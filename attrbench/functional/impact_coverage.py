@@ -5,7 +5,7 @@ import torch
 
 
 def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                    patch: torch.Tensor, target_label: int, debug_mode=False,writer=None):
+                    patch: torch.Tensor, target_label: int, attrs: torch.Tensor, debug_mode=False,writer=None):
     if len(samples.shape) != 4:
            raise ValueError("Impact Coverage can only be computed for image data and expects 4 input dimensions")
     samples = samples.clone()
@@ -20,9 +20,11 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
     #indx = image_size // 2 - patch_size // 2
     #indy = indx
     samples[:, :, indx:indx + patch_size, indy:indy + patch_size] = patch
-
+    device = samples.device
     # Get attributions
-    attrs = method(samples, target=target_label).detach()
+    if attrs is None:
+        attrs = method(samples, target=target_label).detach()
+    attrs = attrs.to(device)
     # Check attributions shape
     if attrs.shape[1] not in (1, 3):
         raise ValueError(f"Impact Coverage only works on image data. Attributions must have 1 or 3 color channels."

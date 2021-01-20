@@ -7,11 +7,12 @@ import torch
 # We assume none of the samples has the same label as the output of the network when given
 # a fully masked image (in which case we might not see a flip)
 def deletion_until_flip(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                        step_size: float, masking_policy: MaskingPolicy, debug_mode=False, writer=None):
+                        step_size: float, masking_policy: MaskingPolicy, attrs, debug_mode=False, writer=None):
     if step_size < 0 or step_size > 0.5:
         raise ValueError("Step size must be between 0 and 0.5 (percentage of pixels)")
     debug_data = {}
-    attrs = method(samples, labels).detach()
+    if attrs is None:
+        attrs = method(samples, labels).detach()
     if debug_mode:
         debug_data["flipped_samples"] = [None for _ in range(samples.shape[0])]
         writer.add_images('Image samples', samples)

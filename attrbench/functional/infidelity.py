@@ -3,14 +3,16 @@ from typing import Callable, List
 
 
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-               perturbation_range: List[float], num_perturbations: int, debug_mode: bool=False,
+               perturbation_range: List[float], num_perturbations: int,attrs, debug_mode: bool=False,
                writer=None):
     result = []
     device = samples.device
     # Get original model output
     with torch.no_grad():
         orig_output = (model(samples)).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
-    attrs = method(samples, labels).detach()
+    if attrs is None:
+        attrs = method(samples, labels).detach()
+    attrs=attrs.to(device)
     # Replicate attributions along channel dimension if necessary
     if attrs.shape[1] != samples.shape[1]:
         shape = [1 for _ in range(len(attrs.shape))]

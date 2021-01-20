@@ -6,9 +6,12 @@ import warnings
 
 
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                  n_range: List[int], num_subsets: int, masking_policy: MaskingPolicy,
+                  n_range: List[int], num_subsets: int, masking_policy: MaskingPolicy, attrs,
                   debug_mode=False, writer =None):
-    attrs = method(samples, labels).detach()
+    if attrs is None:
+        attrs = method(samples, labels).detach()
+    device = samples.device
+    attrs = attrs.to(device)
     if debug_mode:
         writer.add_images('Image samples', samples)
         writer.add_images('attributions', attrs)
