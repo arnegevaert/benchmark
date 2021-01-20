@@ -127,16 +127,13 @@ class Infidelity(Metric):
 
 
 class MaxSensitivity(Metric):
-    def __init__(self, model, methods, perturbation_range, num_perturbations):
+    def __init__(self, model, methods, radius, num_perturbations):
         super().__init__(model, methods)
-        self.perturbation_range = perturbation_range
+        self.radius = radius
         self.num_perturbations = num_perturbations
-        self.metadata = {
-            "col_index": perturbation_range
-        }
 
     def _run_single_method(self, samples, labels, method):
-        return functional.max_sensitivity(samples, labels, method, self.perturbation_range, self.num_perturbations)
+        return functional.max_sensitivity(samples, labels, method, self.radius, self.num_perturbations)
 
 
 class SensitivityN(Metric):
