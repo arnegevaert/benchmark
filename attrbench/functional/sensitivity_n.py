@@ -1,4 +1,4 @@
-from typing import Callable, List
+from typing import Callable
 import numpy as np
 from attrbench.lib import sum_of_attributions, MaskingPolicy
 import torch
@@ -6,8 +6,8 @@ import warnings
 
 
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                  n_range: List[int], num_subsets: int, masking_policy: MaskingPolicy,
-                  debug_mode=False, writer =None):
+                  min_subset_size: float, max_subset_size: float, num_steps: int, num_subsets: int,
+                  masking_policy: MaskingPolicy, debug_mode=False, writer=None):
     attrs = method(samples, labels).detach()
     if debug_mode:
         writer.add_images('Image samples', samples)
@@ -18,6 +18,8 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
     with torch.no_grad():
         orig_output = model(samples)
 
+    total_features = attrs.flatten(1).shape[1]
+    n_range = (np.linspace(min_subset_size, max_subset_size, num_steps) * total_features).astype(np.int)
     for n in n_range:
         output_diffs = []
         sum_of_attrs = []

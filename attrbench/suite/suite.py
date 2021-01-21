@@ -41,14 +41,15 @@ class Suite:
     This allows us to very quickly run the benchmark, aggregate and save all the resulting data for
     a given model and dataset.
     """
-    def __init__(self, model, methods, dataloader, device="cpu", save_images=False, save_attrs=False, seed=None):
+    def __init__(self, model, methods, dataloader, device="cpu",
+                 save_images=False, save_attrs=False, seed=None, patch_folder=None):
         self.metrics = {}
         self.model = model.to(device)
         self.model.eval()
         self.methods = methods
         self.dataloader = dataloader
         self.device = device
-        self.default_args = {}
+        self.default_args = {"patch_folder": patch_folder}
         self.save_images = save_images
         self.save_attrs = save_attrs
         self.images = []
@@ -60,7 +61,8 @@ class Suite:
         with open(loc) as fp:
             data = yaml.full_load(fp)
             # Parse default arguments if present
-            self.default_args = _parse_default_args(data.get("default", {}))
+            default_args = _parse_default_args(data.get("default", {}))
+            self.default_args = {**self.default_args, **default_args}
             # Build metric objects
             for metric_name in data["metrics"]:
                 metric_dict = data["metrics"][metric_name]
@@ -124,7 +126,9 @@ class Suite:
                     diff = num_samples - samples_done
                     samples = samples[:diff]
                     labels = labels[:diff]
-                for metric in self.metrics:
+                for i, metric in enumerate(self.metrics.keys()):
+                    if verbose:
+                        prog.set_postfix_str(f"{metric} ({i+1}/{len(self.metrics)})")
                     self.metrics[metric].run_batch(samples, labels)
                 if verbose:
                     prog.update(samples.size(0))

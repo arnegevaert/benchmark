@@ -207,7 +207,7 @@ class Resnet20(ResNet):
             self.load_state_dict(state_dict)
 
     def get_last_conv_layer(self) -> nn.Module:
-        return self.layer4[-1]
+        return self.layer3[-1]
 
 
 

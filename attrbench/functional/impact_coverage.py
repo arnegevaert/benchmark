@@ -2,10 +2,16 @@ from typing import Callable
 from attrbench.lib import PixelMaskingPolicy, FeatureMaskingPolicy
 import random
 import torch
+from os import path
 
 
 def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                    patch: torch.Tensor, target_label: int, debug_mode=False,writer=None):
+                    patch_folder: str, debug_mode=False,writer=None):
+    # TODO this is temporary, will be fixed when fixing issue #86
+    if not path.isfile(path.join(patch_folder, "resnet18.pt")):
+        raise ValueError(f"File not found: {path.join(patch_folder, 'resnet18.pt')}")
+    patch = torch.load(path.join(patch_folder, "resnet18.pt"))
+    target_label = 0
     if len(samples.shape) != 4:
            raise ValueError("Impact Coverage can only be computed for image data and expects 4 input dimensions")
     samples = samples.clone()

@@ -7,9 +7,7 @@ import torch
 # We assume none of the samples has the same label as the output of the network when given
 # a fully masked image (in which case we might not see a flip)
 def deletion_until_flip(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                        step_size: float, masking_policy: MaskingPolicy, debug_mode=False, writer=None):
-    if step_size < 0 or step_size > 0.5:
-        raise ValueError("Step size must be between 0 and 0.5 (percentage of pixels)")
+                        num_steps: int, masking_policy: MaskingPolicy, debug_mode=False, writer=None):
     debug_data = {}
     attrs = method(samples, labels).detach()
     if debug_mode:
@@ -19,7 +17,10 @@ def deletion_until_flip(samples: torch.Tensor, labels: torch.Tensor, model: Call
     num_inputs = torch.prod(torch.tensor(attrs.shape[1:])).item()
     attrs = attrs.flatten(1)
     sorted_indices = attrs.argsort().cpu().detach().numpy()
-    abs_step_size = max(1, int(step_size * num_inputs))
+    total_features = attrs.shape[1]
+    step_size = int(total_features / num_steps)
+    if num_steps > total_features or num_steps < 2:
+        raise ValueError(f"Number of steps must be between 2 and {total_features} (got {num_steps})")
 
     result = torch.tensor([-1 for _ in range(samples.shape[0])]).int()
     flipped = torch.tensor([False for _ in range(samples.shape[0])]).bool()
@@ -27,7 +28,7 @@ def deletion_until_flip(samples: torch.Tensor, labels: torch.Tensor, model: Call
     orig_predictions = model(samples)
     orig_predictions = torch.argmax(orig_predictions, dim=1)
     while not torch.all(flipped) and mask_size < num_inputs:
-        mask_size += abs_step_size
+        mask_size += step_size
         # Mask/insert pixels
         if mask_size == 0:
             masked_samples = samples
