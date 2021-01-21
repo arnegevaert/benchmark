@@ -2,15 +2,52 @@ from captum import attr
 from skimage import segmentation
 import numpy as np
 import torch
+from torch.utils.data import DataLoader
 
 class Shap:
-    def __init__(self, model, n_segments):
+    def __init__(self, model, n_samples, super_pixels=True, n_segments=None):
+        if super_pixels and n_samples is None:
+            raise ValueError(f"n_segments cannot be None when using super_pixels")
         self.n_segments=n_segments
-        self.method = attr.ShapleyValues(model)
-    def __call__(self, x, target):
-        masks = get_super_pixels(x,self.n_segments)
-        return self.method.attribute(x, target=target, feature_mask= masks)
+        self.super_pixels = super_pixels
+        self.method = attr.KernelShap(model)
+        self.n_samples =n_samples
 
+
+    def __call__(self, x, target):
+        masks = get_super_pixels(x,self.n_segments) if self.super_pixels else None
+        return self.method.attribute(x, target=target, feature_mask= masks, n_samples=self.n_samples)
+
+
+class DeepShap:
+    def __init__(self, model,reference_dataset, n_baseline_samples):
+        self.method = attr.DeepLiftShap(model)
+        # self.debug = attr.DeepLift(model)
+        self.n_baseline_samples= n_baseline_samples
+        self.reference_dataset = reference_dataset
+        self.ref_sampler = DataLoader(
+            dataset=self.reference_dataset,
+            batch_size=self.n_baseline_samples,
+            shuffle=True, drop_last=True)
+
+    def _get_reference_batch(self):
+        self.ref_sampler = DataLoader(
+            dataset=self.reference_dataset,
+            batch_size=self.n_baseline_samples,
+            shuffle=True, drop_last=True)
+        return next(iter(self.ref_sampler))[0]
+
+    def __call__(self, x, target):
+        baseline = self._get_reference_batch().to(x.device)
+
+        # dl_attr = x*0
+        # for base in baseline:
+        #     dl_attr += self.debug.attribute(x,target=target,baselines=base[None])
+        # dl_attr = dl_attr/self.n_baseline_samples
+        attr = self.method.attribute(x, target=target, baselines=baseline)
+
+        # assert torch.allclose(dl_attr, attr)
+        return attr
 
 def get_super_pixels(x,k):
     images = x.detach().cpu().numpy()

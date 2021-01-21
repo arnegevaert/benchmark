@@ -16,11 +16,11 @@ methods:
       num_steps: 25
   - SmoothGrad:
       stdev: 0.15
-      num_samples: 50  # This should be 50 but noisetunnel doesn't support internal batch size
+      num_samples: 50
       internal_batch_size: 16
   - VarGrad:
       stdev: 0.15
-      num_samples: 50  # This should be 50 but noisetunnel doesn't support internal batch size
+      num_samples: 50
       internal_batch_size: 16
   #- ExpectedGradients:
   #    num_samples: 100

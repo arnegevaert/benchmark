@@ -9,5 +9,9 @@ class SmoothGrad:
         self.internal_batch_size = internal_batch_size
 
     def __call__(self, x, target):
+        # sigma = self.noise_level / (x.max()-x.min()) # follows paper more closely, but not perfectly.
+        # in paper the sigma is set per image, here per batch
         return self.method.attribute(x, target=target, nt_type="smoothgrad",
-                                     n_samples=self.num_samples, stdevs=self.stdev)
+                                     nt_samples=self.num_samples,
+                                     nt_samples_batch_size=self.internal_batch_size,
+                                     stdevs=self.stdev)
