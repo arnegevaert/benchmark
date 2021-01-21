@@ -2,8 +2,8 @@ import torch
 from typing import Callable, List
 
 
-def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-               perturbation_range: List[float], num_perturbations: int,attrs, debug_mode: bool=False,
+def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
+               perturbation_range: List[float], num_perturbations: int, debug_mode: bool=False,
                writer=None):
     result = []
     device = samples.device

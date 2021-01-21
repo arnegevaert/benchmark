@@ -102,28 +102,29 @@ class Suite:
             samples = full_batch[pred == full_labels]
             labels = full_labels[pred == full_labels]
 
-            # Save images and attributions if specified
-            if self.save_images:
-                self.images.append(samples.cpu().detach().numpy())
 
-            # We need the attributions, to save them or to check their shapes
-            attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach()
-                     for method_name in self.methods.keys()}
-            if self.save_attrs:
-                # Save attributions if necessary
-                for method_name in self.methods:
-                    self.attrs[method_name].append(attrs[method_name].numpy())
-            if not checked_shapes:
-                # Check shapes of attributions if necessary
-                for method_name in self.methods:
-                    if not self.default_args["masking_policy"].check_attribution_shape(samples, attrs[method_name]):
-                        raise ValueError(f"Attributions for method {method_name} "
-                                         f"are not compatible with masking policy")
             if samples.size(0) > 0:
                 if samples_done + samples.size(0) > num_samples:
                     diff = num_samples - samples_done
                     samples = samples[:diff]
                     labels = labels[:diff]
+                # Save images and attributions if specified
+                if self.save_images:
+                    self.images.append(samples.cpu().detach().numpy())
+
+                # We need the attributions, to save them or to check their shapes
+                attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach()
+                         for method_name in self.methods.keys()}
+                if self.save_attrs:
+                    # Save attributions if necessary
+                    for method_name in self.methods:
+                        self.attrs[method_name].append(attrs[method_name].numpy())
+                if not checked_shapes:
+                    # Check shapes of attributions if necessary
+                    for method_name in self.methods:
+                        if not self.default_args["masking_policy"].check_attribution_shape(samples, attrs[method_name]):
+                            raise ValueError(f"Attributions for method {method_name} "
+                                             f"are not compatible with masking policy")
                 for metric in self.metrics:
                     self.metrics[metric].run_batch(samples, labels, attrs)
                 if verbose:

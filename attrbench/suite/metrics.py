@@ -9,13 +9,18 @@ class Metric:
         self.results = {method_name: [] for method_name in methods}
         self.metadata = {}
 
-    def run_batch(self, samples, labels, attrs: dict):
+    def run_batch(self, samples, labels, attrs_dict: dict):
         """
         Runs the metric for a given batch, for all methods, and saves result internally
         """
+
+        #### If the metric is used outside of suite, it may be easier to calc attrs here
+        if attrs_dict is None:
+            attrs_dict = {method_name: method(samples, labels).cpu().detach()
+                     for method_name, method in self.methods.itmes()}
+
         for method_name in self.methods:
-            method = self.methods[method_name]
-            self.results[method_name].append(self._run_single_method(samples, labels, method, attrs[method_name]))
+            self.results[method_name].append(self._run_single_method(samples, labels, attrs_dict[method_name]))
 
     def get_results(self):
         """
@@ -32,7 +37,7 @@ class Metric:
                                  f"{method_name} had {result[method_name].shape} instead of {shape}")
         return result, shape
 
-    def _run_single_method(self, samples, labels, method, attrs):
+    def _run_single_method(self, samples, labels, attrs):
         raise NotImplementedError
 
 
@@ -42,9 +47,9 @@ class DeletionUntilFlip(Metric):
         self.step_size = step_size
         self.masking_policy = masking_policy
 
-    def _run_single_method(self, samples, labels, method, attrs):
-        return functional.deletion_until_flip(samples, labels, self.model, method, self.step_size, self.masking_policy,
-                                              attrs).reshape(-1, 1)
+    def _run_single_method(self, samples, labels, attrs):
+        return functional.deletion_until_flip(samples, labels, self.model, attrs, self.step_size,
+                                              self.masking_policy).reshape(-1, 1)
 
 
 class ImpactCoverage(Metric):
@@ -53,9 +58,8 @@ class ImpactCoverage(Metric):
         self.patch = torch.load(patch) if type(patch) == str else patch
         self.target_label = target_label
 
-    def _run_single_method(self, samples, labels, method, attrs):
-        iou, keep = functional.impact_coverage(samples, labels, self.model, method, self.patch, self.target_label,
-                                               attrs)
+    def _run_single_method(self, samples, labels, attrs):
+        iou, keep = functional.impact_coverage(samples, labels, self.model, attrs, self.patch, self.target_label)
         return iou.reshape(-1, 1)
 
 
@@ -70,9 +74,9 @@ class ImpactScore(Metric):
             "col_index": mask_range
         }
 
-    def _run_single_method(self, samples, labels, method, attrs):
-        return functional.impact_score(samples, labels, self.model, method, self.mask_range,
-                                       self.strict, self.masking_policy, self.tau, attrs=attrs)
+    def _run_single_method(self, samples, labels, attrs):
+        return functional.impact_score(samples, labels, self.model, attrs, self.mask_range,
+                                       self.strict, self.masking_policy, self.tau)
 
     def get_results(self):
         result = {}
@@ -99,8 +103,8 @@ class Insertion(Metric):
             "col_index": mask_range
         }
 
-    def _run_single_method(self, samples, labels, method, attrs):
-        return functional.insertion(samples, labels, self.model, method, self.mask_range, self.masking_policy, attrs)
+    def _run_single_method(self, samples, labels, attrs):
+        return functional.insertion(samples, labels, self.model, attrs, self.mask_range, self.masking_policy)
 
 
 class Deletion(Metric):
@@ -112,8 +116,8 @@ class Deletion(Metric):
             "col_index": mask_range
         }
 
-    def _run_single_method(self, samples, labels, method, attrs):
-        return functional.deletion(samples, labels, self.model, method, self.mask_range, self.masking_policy, attrs)
+    def _run_single_method(self, samples, labels, attrs):
+        return functional.deletion(samples, labels, self.model, attrs, self.mask_range, self.masking_policy)
 
 
 class Infidelity(Metric):
@@ -125,9 +129,9 @@ class Infidelity(Metric):
             "col_index": perturbation_range
         }
 
-    def _run_single_method(self, samples, labels, method, attrs):
-        return functional.infidelity(samples, labels, self.model, method,
-                                     self.perturbation_range, self.num_perturbations, attrs)
+    def _run_single_method(self, samples, labels, attrs):
+        return functional.infidelity(samples, labels, self.model, attrs,
+                                     self.perturbation_range, self.num_perturbations)
 
 
 class MaxSensitivity(Metric):
@@ -138,6 +142,14 @@ class MaxSensitivity(Metric):
         self.metadata = {
             "col_index": perturbation_range
         }
+
+    def run_batch(self, samples, labels, attrs_dict: dict):
+        """
+        Runs the metric for a given batch, for all methods, and saves result internally
+        """
+        for method_name in self.methods:
+            method = self.methods[method_name]
+            self.results[method_name].append(self._run_single_method(samples, labels, method, attrs_dict[method_name]))
 
     def _run_single_method(self, samples, labels, method, attrs):
         return functional.max_sensitivity(samples, labels, method, self.perturbation_range, self.num_perturbations,
@@ -154,6 +166,6 @@ class SensitivityN(Metric):
             "col_index": n_range
         }
 
-    def _run_single_method(self, samples, labels, method, attrs):
-        return functional.sensitivity_n(samples, labels, self.model, method,
-                                        self.n_range, self.num_subsets, self.masking_policy, attrs)
+    def _run_single_method(self, samples, labels, attrs):
+        return functional.sensitivity_n(samples, labels, self.model, attrs,
+                                        self.n_range, self.num_subsets, self.masking_policy)

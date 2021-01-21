@@ -5,11 +5,10 @@ import torch
 import warnings
 
 
-def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                  n_range: List[int], num_subsets: int, masking_policy: MaskingPolicy, attrs,
+def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
+                  n_range: List[int], num_subsets: int, masking_policy: MaskingPolicy,
                   debug_mode=False, writer =None):
-    if attrs is None:
-        attrs = method(samples, labels).detach()
+
     device = samples.device
     attrs = attrs.to(device)
     if debug_mode:
