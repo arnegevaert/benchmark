@@ -61,6 +61,7 @@ class Suite:
             data = yaml.full_load(fp)
             # Parse default arguments if present
             self.default_args = _parse_default_args(data.get("default", {}))
+            self.default_args["methods"] = self.methods
             # Build metric objects
             for metric_name in data["metrics"]:
                 metric_dict = data["metrics"][metric_name]
@@ -70,7 +71,7 @@ class Suite:
                 constructor = getattr(metrics, metric_dict["type"])
                 # Add model and methods args
                 args_dict["model"] = self.model
-                args_dict["methods"] = self.methods
+
                 # Compare to required args, add missing ones from default args
                 signature = inspect.signature(constructor).parameters
                 expected_arg_names = [arg for arg in signature if signature[arg].default == Parameter.empty]

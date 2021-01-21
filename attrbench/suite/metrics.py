@@ -3,10 +3,9 @@ from attrbench import functional
 
 
 class Metric:
-    def __init__(self, model, methods):
+    def __init__(self, model):
         self.model = model
-        self.methods = methods
-        self.results = {method_name: [] for method_name in methods}
+        self.results = {}
         self.metadata = {}
 
     def run_batch(self, samples, labels, attrs_dict: dict):
@@ -14,12 +13,9 @@ class Metric:
         Runs the metric for a given batch, for all methods, and saves result internally
         """
 
-        #### If the metric is used outside of suite, it may be easier to calc attrs here
-        if attrs_dict is None:
-            attrs_dict = {method_name: method(samples, labels).cpu().detach()
-                     for method_name, method in self.methods.itmes()}
-
-        for method_name in self.methods:
+        for method_name in attrs_dict:
+            if method_name not in self.results:
+                self.results[method_name] = []
             self.results[method_name].append(self._run_single_method(samples, labels, attrs_dict[method_name]))
 
     def get_results(self):
@@ -42,8 +38,8 @@ class Metric:
 
 
 class DeletionUntilFlip(Metric):
-    def __init__(self, model, methods, step_size, masking_policy):
-        super().__init__(model, methods)
+    def __init__(self, model, step_size, masking_policy):
+        super().__init__(model)
         self.step_size = step_size
         self.masking_policy = masking_policy
 
@@ -53,7 +49,7 @@ class DeletionUntilFlip(Metric):
 
 
 class ImpactCoverage(Metric):
-    def __init__(self, model, methods, patch, target_label, ):
+    def __init__(self, model, patch, target_label, ):
         super().__init__(model, methods)
         self.patch = torch.load(patch) if type(patch) == str else patch
         self.target_label = target_label
@@ -64,8 +60,8 @@ class ImpactCoverage(Metric):
 
 
 class ImpactScore(Metric):
-    def __init__(self, model, methods, mask_range, strict, masking_policy, tau=None):
-        super().__init__(model, methods)
+    def __init__(self, model, mask_range, strict, masking_policy, tau=None):
+        super().__init__(model)
         self.mask_range = mask_range
         self.strict = strict
         self.masking_policy = masking_policy
@@ -95,8 +91,8 @@ class ImpactScore(Metric):
 
 
 class Insertion(Metric):
-    def __init__(self, model, methods, mask_range, masking_policy):
-        super().__init__(model, methods)
+    def __init__(self, model, mask_range, masking_policy):
+        super().__init__(model)
         self.mask_range = mask_range
         self.masking_policy = masking_policy
         self.metadata = {
@@ -108,8 +104,8 @@ class Insertion(Metric):
 
 
 class Deletion(Metric):
-    def __init__(self, model, methods, mask_range, masking_policy):
-        super().__init__(model, methods)
+    def __init__(self, model, mask_range, masking_policy):
+        super().__init__(model)
         self.mask_range = mask_range
         self.masking_policy = masking_policy
         self.metadata = {
@@ -121,8 +117,8 @@ class Deletion(Metric):
 
 
 class Infidelity(Metric):
-    def __init__(self, model, methods, perturbation_range, num_perturbations):
-        super().__init__(model, methods)
+    def __init__(self, model, perturbation_range, num_perturbations):
+        super().__init__(model)
         self.perturbation_range = perturbation_range
         self.num_perturbations = num_perturbations
         self.metadata = {
@@ -136,7 +132,9 @@ class Infidelity(Metric):
 
 class MaxSensitivity(Metric):
     def __init__(self, model, methods, perturbation_range, num_perturbations):
-        super().__init__(model, methods)
+        super().__init__(model)
+        self.methods = methods
+        self.results = {method_name: [] for method_name in methods}
         self.perturbation_range = perturbation_range
         self.num_perturbations = num_perturbations
         self.metadata = {
