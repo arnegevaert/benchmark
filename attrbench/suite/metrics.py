@@ -24,7 +24,7 @@ class Metric:
         """
         result = {}
         shape = None
-        for method_name in self.methods:
+        for method_name in self.results:
             result[method_name] = torch.cat(self.results[method_name], dim=0).numpy()
             if shape is None:
                 shape = result[method_name].shape
@@ -77,7 +77,7 @@ class ImpactScore(Metric):
     def get_results(self):
         result = {}
         shape = None
-        for method_name in self.methods:
+        for method_name in self.results:
             flipped = torch.stack([item[0] for item in self.results[method_name]], dim=0).float()
             totals = torch.tensor([item[1] for item in self.results[method_name]]).reshape(-1, 1).float()
             ratios = flipped / totals
