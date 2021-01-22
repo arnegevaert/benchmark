@@ -16,7 +16,7 @@ def apply_patches(samples, labels, model, patch_folder):
     attacked_samples = samples.clone()
     targets = torch.zeros(labels.shape).long()
     patch_mask = torch.zeros(samples.shape)
-    max_tries = 10
+    max_tries = 50
     num_tries = 0
     while not torch.all(successful):
         # Load next patch
