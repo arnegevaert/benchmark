@@ -12,11 +12,11 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--batch-size", type=int, required=True)
     parser.add_argument("-c", "--cuda", action="store_true")
     parser.add_argument("--lr", type=float, default=0.05)
-    parser.add_argument("--epochs", type=int, default=1)
+    parser.add_argument("--epochs", type=int, default=5)
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
 
-    dataset, model, sample_shape, patch_folder = get_dataset_model(args.dataset, train=True)
+    dataset, model, sample_shape, patch_folder = get_dataset_model(args.dataset)
     model.to(device)
     model.eval()
 

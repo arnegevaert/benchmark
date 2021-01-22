@@ -53,7 +53,7 @@ class ImpactCoverage(Metric):
         self.patch_folder = patch_folder
 
     def _run_single_method(self, samples, labels, method):
-        iou, keep = functional.impact_coverage(samples, labels, self.model, method, self.patch_folder)
+        iou = functional.impact_coverage(samples, labels, self.model, method, self.patch_folder)
         return iou.reshape(-1, 1)
 
 
