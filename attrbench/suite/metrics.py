@@ -51,9 +51,23 @@ class ImpactCoverage(Metric):
     def __init__(self, model, methods, patch_folder):
         super().__init__(model, methods)
         self.patch_folder = patch_folder
+        self.attacked_samples, self.patch_mask, self.targets = None, None, None
+
+    def run_batch(self, samples, labels):
+        """
+        Runs the metric for a given batch, for all methods, and saves result internally
+        """
+        self.attacked_samples, self.patch_mask, self.targets = functional.apply_patches(samples, labels,
+                                                                                        self.model, self.patch_folder)
+        for method_name in self.methods:
+            method = self.methods[method_name]
+            self.results[method_name].append(self._run_single_method(samples, labels, method))
 
     def _run_single_method(self, samples, labels, method):
-        iou, keep = functional.impact_coverage(samples, labels, self.model, method, self.patch_folder)
+        iou = functional.impact_coverage(samples, labels, self.model, method,
+                                         attacked_samples=self.attacked_samples,
+                                         patch_mask=self.patch_mask,
+                                         targets=self.targets)
         return iou.reshape(-1, 1)
 
 
