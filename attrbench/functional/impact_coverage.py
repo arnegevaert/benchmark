@@ -7,7 +7,7 @@ from itertools import cycle
 import re
 
 
-def _apply_patches(samples, labels, model, patch_folder):
+def apply_patches(samples, labels, model, patch_folder):
     target_expr = re.compile(r".*_([0-9]*)\.pt")
     patch_names = cycle([filename for filename in listdir(patch_folder) if filename.endswith(".pt")])
     with torch.no_grad():
@@ -16,7 +16,7 @@ def _apply_patches(samples, labels, model, patch_folder):
     attacked_samples = samples.clone()
     targets = torch.zeros(labels.shape).long()
     patch_mask = torch.zeros(samples.shape)
-    max_tries = 20
+    max_tries = 10
     num_tries = 0
     while not torch.all(successful):
         # Load next patch
@@ -52,11 +52,19 @@ def _apply_patches(samples, labels, model, patch_folder):
 
 
 def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                    patch_folder: str, debug_mode=False, writer=None):
+                    patch_folder=None, attacked_samples=None, patch_mask=None, targets=None,
+                    debug_mode=False, writer=None):
     if len(samples.shape) != 4:
         raise ValueError("Impact Coverage can only be computed for image data and expects 4 input dimensions")
 
-    attacked_samples, patch_mask, targets = _apply_patches(samples, labels, model, patch_folder)
+    # Argument validation: either provide patch folder, or provide attacked samples, patch mask, and targets.
+    if patch_folder is None and (attacked_samples is None or patch_mask is None or targets is None):
+        raise ValueError(f"If no patch folder is given, you must supply attacked_samples, patch_mask and targets.")
+    if patch_folder is not None and not (attacked_samples is None and patch_mask is None and targets is None):
+        print("patch_folder was provided, attacked_samples, patch_mask, targets will be ignored.")
+
+    if patch_folder is not None:
+        attacked_samples, patch_mask, targets = apply_patches(samples, labels, model, patch_folder)
 
     # Get attributions
     attrs = method(samples, target=targets).detach()
