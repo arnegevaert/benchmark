@@ -30,6 +30,11 @@ class MetricDetailPage(Page):
             meta_data = self.result_obj.metadata[metric_name]
             metric_data = self.result_obj.data[metric_name]
 
+            if meta_data["shape"][1] -1 < colum_value:
+                # not all metrics have same nr samples. prevent crash when selecting
+                # metric when invalid collumn was still selected
+                colum_value = meta_data["shape"][1] -1
+
             ## Krippendorff
             if meta_data["shape"][0]>1:
                 data = np.stack(
