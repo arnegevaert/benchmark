@@ -6,6 +6,7 @@ import numpy as np
 import inspect
 from inspect import Parameter
 import yaml
+from os import path
 
 
 def _parse_masking_policy(d):
@@ -56,7 +57,7 @@ class Suite:
         self.samples_done = 0
         self.attrs = {method_name: [] for method_name in self.methods}
         self.seed = seed
-        self.writer = AttributionWriter(log_dir=log_dir) if log_dir is not None else None
+        self.log_dir = log_dir
 
 
     def load_config(self, loc):
@@ -75,7 +76,9 @@ class Suite:
                 # Add model, methods, and (optional) writer args
                 args_dict["model"] = self.model
                 args_dict["methods"] = self.methods
-                args_dict["writer"] = self.writer
+                if self.log_dir:
+                    subdir = path.join(self.log_dir, metric_name)
+                    args_dict["writer"] = AttributionWriter(subdir)
                 # Compare to required args, add missing ones from default args
                 signature = inspect.signature(constructor).parameters
                 expected_arg_names = [arg for arg in signature if signature[arg].default == Parameter.empty]

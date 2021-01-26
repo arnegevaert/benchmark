@@ -23,7 +23,7 @@ def _square_removal_perturbation(samples, square_size):
     y_loc = random.randint(0, height - square_size_int)
     perturbation_mask = torch.zeros(samples.shape)
     perturbation_mask[:, :, x_loc:x_loc + square_size_int, y_loc:y_loc+square_size_int] = 1
-    perturbation_vector = -samples * perturbation_mask.to(samples.device)
+    perturbation_vector = samples * perturbation_mask.to(samples.device)
     perturbed_samples = samples - perturbation_vector
     return perturbed_samples, perturbation_vector
 
@@ -72,13 +72,14 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, met
         # Calculate dot product between each sample and its corresponding perturbation vector
         # This is equivalent to diagonal of matmul
         dot_product = (attrs_flattened * perturbation_vector.flatten(1)).sum(dim=1, keepdim=True)  # [batch_size, 1]
-        infid.append(((dot_product - (orig_output - perturbed_output))**2).detach())
+        pred_diff = orig_output - perturbed_output
+        infid.append(((dot_product - pred_diff)**2).detach())
     # Take average across all perturbations
     infid = torch.cat(infid, dim=1).mean(dim=1)  # [batch_size]
     infid = infid.unsqueeze(1)  # [batch_size, 1]
 
     if writer:
-        writer.add_images("Images", samples)
-        writer.add_images("Attributions", attrs)
+        writer.add_images("samples", samples)
+        writer.add_images("attrs", attrs)
 
     return infid.cpu()
