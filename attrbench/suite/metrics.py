@@ -49,13 +49,23 @@ class DeletionUntilFlip(Metric):
 
 
 class ImpactCoverage(Metric):
-    def __init__(self, model, patch, target_label, ):
-        super().__init__(model, methods)
+    def __init__(self, model, methods, patch, target_label):
+        super().__init__(model)
+        self.methods = methods
+        self.results = {method_name: [] for method_name in methods}
         self.patch = torch.load(patch) if type(patch) == str else patch
         self.target_label = target_label
 
-    def _run_single_method(self, samples, labels, attrs):
-        iou, keep = functional.impact_coverage(samples, labels, self.model, attrs, self.patch, self.target_label)
+    def run_batch(self, samples, labels, attrs_dict: dict=None):
+        """
+        Runs the metric for a given batch, for all methods, and saves result internally
+        """
+        for method_name in self.methods:
+            method = self.methods[method_name]
+            self.results[method_name].append(self._run_single_method(samples, labels, method))
+
+    def _run_single_method(self, samples, labels, method):
+        iou, keep = functional.impact_coverage(samples, labels, self.model, method, self.patch, self.target_label)
         return iou.reshape(-1, 1)
 
 
@@ -155,8 +165,8 @@ class MaxSensitivity(Metric):
 
 
 class SensitivityN(Metric):
-    def __init__(self, model, methods, n_range, num_subsets, masking_policy):
-        super().__init__(model, methods)
+    def __init__(self, model, n_range, num_subsets, masking_policy):
+        super().__init__(model)
         self.n_range = n_range
         self.num_subsets = num_subsets
         self.masking_policy = masking_policy
