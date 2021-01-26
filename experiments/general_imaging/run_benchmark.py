@@ -17,6 +17,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--save-images", action="store_true")
     parser.add_argument("-a", "--save-attrs", action="store_true")
     parser.add_argument("-o", "--output", type=str, required=True)
+    parser.add_argument("--log-dir", type=str, default=None)
     parser.add_argument("--seed", type=int, default=None)
     # Parse arguments
     args = parser.parse_args()
@@ -38,7 +39,8 @@ if __name__ == "__main__":
                      save_images=args.save_images,
                      save_attrs=args.save_attrs,
                      seed=args.seed,
-                     patch_folder=patch_folder)
+                     patch_folder=patch_folder,
+                     log_dir=args.log_dir)
     bm_suite.load_config(args.suite_config)
     bm_suite.run(args.num_samples, verbose=True)
     bm_suite.save_result(args.output)
