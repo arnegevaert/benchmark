@@ -6,3 +6,4 @@ from .effect_size_page import EffectSizePage
 from .overview_page import OverviewPage
 from .samples_attributions_page import SamplesAttributionsPage
 from .normality_page import NormalityPage
+from .metric_detail_page import MetricDetailPage
