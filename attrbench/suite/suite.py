@@ -88,7 +88,7 @@ class Suite:
                             args_dict[e_arg] = self.default_args[e_arg]
                         else:
                             raise ValueError(
-                                f"Invalid JSON: required argument {e_arg} not found for metric {metric_name}")
+                                f"Invalid configuration: required argument {e_arg} not found for metric {metric_name}")
                 # Create metric object using args_dict
                 self.metrics[metric_name] = constructor(**args_dict)
 
