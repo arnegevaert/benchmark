@@ -1,12 +1,12 @@
 from attrbench.suite import metrics, Result
-from attrbench.lib import FeatureMaskingPolicy, PixelMaskingPolicy
+from attrbench.lib import FeatureMaskingPolicy, PixelMaskingPolicy, AttributionWriter
 from tqdm import tqdm
 import torch
 import numpy as np
 import inspect
 from inspect import Parameter
 import yaml
-import h5py
+from os import path
 
 
 def _parse_masking_policy(d):
@@ -42,7 +42,8 @@ class Suite:
     a given model and dataset.
     """
     def __init__(self, model, methods, dataloader, device="cpu",
-                 save_images=False, save_attrs=False, seed=None, patch_folder=None):
+                 save_images=False, save_attrs=False, seed=None, patch_folder=None,
+                 log_dir=None):
         self.metrics = {}
         self.model = model.to(device)
         self.model.eval()
@@ -56,6 +57,8 @@ class Suite:
         self.samples_done = 0
         self.attrs = {method_name: [] for method_name in self.methods}
         self.seed = seed
+        self.log_dir = log_dir
+
 
     def load_config(self, loc):
         with open(loc) as fp:
@@ -70,9 +73,12 @@ class Suite:
                 args_dict = _parse_metric_args(metric_dict.get("args", {}))
                 # Get constructor
                 constructor = getattr(metrics, metric_dict["type"])
-                # Add model and methods args
+                # Add model, methods, and (optional) writer args
                 args_dict["model"] = self.model
                 args_dict["methods"] = self.methods
+                if self.log_dir:
+                    subdir = path.join(self.log_dir, metric_name)
+                    args_dict["writer"] = AttributionWriter(subdir)
                 # Compare to required args, add missing ones from default args
                 signature = inspect.signature(constructor).parameters
                 expected_arg_names = [arg for arg in signature if signature[arg].default == Parameter.empty]

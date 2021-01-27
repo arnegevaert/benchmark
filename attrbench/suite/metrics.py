@@ -4,11 +4,12 @@ from attrbench import functional
 
 
 class Metric:
-    def __init__(self, model, methods):
+    def __init__(self, model, methods, writer=None):
         self.model = model
         self.methods = methods
         self.results = {method_name: [] for method_name in methods}
         self.metadata = {}
+        self.writer = writer
 
     def run_batch(self, samples, labels):
         """
@@ -38,18 +39,19 @@ class Metric:
 
 
 class DeletionUntilFlip(Metric):
-    def __init__(self, model, methods, num_steps, masking_policy):
-        super().__init__(model, methods)
+    def __init__(self, model, methods, num_steps, masking_policy, writer=None):
+        super().__init__(model, methods, writer)
         self.num_steps = num_steps
         self.masking_policy = masking_policy
 
     def _run_single_method(self, samples, labels, method):
-        return functional.deletion_until_flip(samples, labels, self.model, method, self.num_steps, self.masking_policy).reshape(-1, 1)
+        return functional.deletion_until_flip(samples, labels, self.model, method,
+                                              self.num_steps, self.masking_policy, writer=self.writer).reshape(-1, 1)
 
 
 class ImpactCoverage(Metric):
-    def __init__(self, model, methods, patch_folder):
-        super().__init__(model, methods)
+    def __init__(self, model, methods, patch_folder, writer=None):
+        super().__init__(model, methods, writer)
         self.patch_folder = patch_folder
         self.attacked_samples, self.patch_mask, self.targets = None, None, None
 
@@ -67,13 +69,14 @@ class ImpactCoverage(Metric):
         iou = functional.impact_coverage(samples, labels, self.model, method,
                                          attacked_samples=self.attacked_samples,
                                          patch_mask=self.patch_mask,
-                                         targets=self.targets)
+                                         targets=self.targets,
+                                         writer=self.writer)
         return iou.reshape(-1, 1)
 
 
 class ImpactScore(Metric):
-    def __init__(self, model, methods, num_steps, strict, masking_policy, tau=None):
-        super().__init__(model, methods)
+    def __init__(self, model, methods, num_steps, strict, masking_policy, tau=None, writer=None):
+        super().__init__(model, methods, writer)
         self.num_steps = num_steps
         self.strict = strict
         self.masking_policy = masking_policy
@@ -81,7 +84,8 @@ class ImpactScore(Metric):
 
     def _run_single_method(self, samples, labels, method):
         return functional.impact_score(samples, labels, self.model, method, self.num_steps,
-                                       self.strict, self.masking_policy, self.tau)
+                                       self.strict, self.masking_policy, self.tau,
+                                       writer=self.writer)
 
     def get_results(self):
         result = {}
@@ -100,50 +104,54 @@ class ImpactScore(Metric):
 
 
 class Insertion(Metric):
-    def __init__(self, model, methods, num_steps, masking_policy):
-        super().__init__(model, methods)
+    def __init__(self, model, methods, num_steps, masking_policy, writer=None):
+        super().__init__(model, methods, writer)
         self.num_steps = num_steps
         self.masking_policy = masking_policy
 
     def _run_single_method(self, samples, labels, method):
-        return functional.insertion(samples, labels, self.model, method, self.num_steps, self.masking_policy)
+        return functional.insertion(samples, labels, self.model, method, self.num_steps,
+                                    self.masking_policy, writer=self.writer)
 
 
 class Deletion(Metric):
-    def __init__(self, model, methods, num_steps, masking_policy):
-        super().__init__(model, methods)
+    def __init__(self, model, methods, num_steps, masking_policy, writer=None):
+        super().__init__(model, methods, writer)
         self.num_steps = num_steps
         self.masking_policy = masking_policy
 
     def _run_single_method(self, samples, labels, method):
-        return functional.deletion(samples, labels, self.model, method, self.num_steps, self.masking_policy)
+        return functional.deletion(samples, labels, self.model, method, self.num_steps, self.masking_policy,
+                                   writer=self.writer)
 
 
 class Infidelity(Metric):
-    def __init__(self, model, methods, perturbation_mode, perturbation_size, num_perturbations):
-        super().__init__(model, methods)
+    def __init__(self, model, methods, perturbation_mode, perturbation_size, num_perturbations, writer=None):
+        super().__init__(model, methods, writer)
         self.perturbation_mode = perturbation_mode
         self.perturbation_size = perturbation_size
         self.num_perturbations = num_perturbations
 
     def _run_single_method(self, samples, labels, method):
         return functional.infidelity(samples, labels, self.model, method,
-                                     self.perturbation_mode, self.perturbation_size, self.num_perturbations)
+                                     self.perturbation_mode, self.perturbation_size, self.num_perturbations,
+                                     writer=self.writer)
 
 
 class MaxSensitivity(Metric):
-    def __init__(self, model, methods, radius, num_perturbations):
-        super().__init__(model, methods)
+    def __init__(self, model, methods, radius, num_perturbations, writer=None):
+        super().__init__(model, methods, writer)
         self.radius = radius
         self.num_perturbations = num_perturbations
 
     def _run_single_method(self, samples, labels, method):
-        return functional.max_sensitivity(samples, labels, method, self.radius, self.num_perturbations)
+        return functional.max_sensitivity(samples, labels, method, self.radius, self.num_perturbations,
+                                          writer=self.writer)
 
 
 class SensitivityN(Metric):
-    def __init__(self, model, methods, min_subset_size, max_subset_size, num_steps, num_subsets, masking_policy):
-        super().__init__(model, methods)
+    def __init__(self, model, methods, min_subset_size, max_subset_size, num_steps, num_subsets, masking_policy, writer=None):
+        super().__init__(model, methods, writer)
         self.min_subset_size = min_subset_size
         self.max_subset_size = max_subset_size
         self.num_steps = num_steps
@@ -156,4 +164,5 @@ class SensitivityN(Metric):
     def _run_single_method(self, samples, labels, method):
         return functional.sensitivity_n(samples, labels, self.model, method,
                                         self.min_subset_size, self.max_subset_size, self.num_steps,
-                                        self.num_subsets, self.masking_policy)
+                                        self.num_subsets, self.masking_policy,
+                                        writer=self.writer)
