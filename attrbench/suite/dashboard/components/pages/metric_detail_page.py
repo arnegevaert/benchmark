@@ -5,7 +5,7 @@ from dash.dependencies import Input, Output
 from attrbench.suite.dashboard.components.plots import CorrelationMap, BarPlot
 from attrbench.suite.dashboard.util import krippendorff_alpha
 from attrbench.suite.dashboard.components.plots import EffectSizePlot, PValueTable
-from scipy.stats import ttest_rel
+from scipy.stats import wilcoxon
 import numpy as np
 import pandas as pd
 from attrbench.suite.dashboard.components.pages import Page
@@ -20,8 +20,6 @@ class MetricDetailPage(Page):
                      [Input("metric-dropdown", "value"),Input('column_select', 'value')])(self._update_method)
         app.callback(Output('column_select', 'options'),
                      Input("metric-dropdown", "value"))(self._update_dropdown)
-
-
 
     def _update_method(self, metric_name, colum_value):
         if metric_name is not None and colum_value is not None:
@@ -62,15 +60,11 @@ class MetricDetailPage(Page):
                 pvalues = []
                 for method_name in self.result_obj.get_methods():
                     if method_name != "Random":
-                        statistic, pvalue = ttest_rel(df[method_name].to_numpy(), df["Random"].to_numpy())
+                        statistic, pvalue = wilcoxon(df[method_name].to_numpy(), df["Random"].to_numpy(), alternative="two-sided")
                         pvalues.append({"method": method_name, "pvalue": pvalue})
                 contents.append(PValueTable(pvalues, id=f"table-pvalues-{metric_name}").render())
 
             return contents
-        return f"No metric selected."
-
-
-
         return f"No metric selected."
 
     def _update_dropdown(self, metric_name):

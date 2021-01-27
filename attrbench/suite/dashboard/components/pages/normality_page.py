@@ -10,7 +10,8 @@ class NormalityPage(Page):
         super().__init__(result_obj)
 
     def render(self) -> html.Div:
-        result = []
+        result = [html.P("Normality of results is tested using Shapiro-Wilk test. "
+                         "Significance (p < 0.05) means that the data is NOT normally distributed.")]
         for metric_name in self.result_obj.get_metrics():
             metric_shape = self.result_obj.metadata[metric_name]["shape"]
             if metric_shape[0] > 1:
