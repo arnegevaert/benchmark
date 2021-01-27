@@ -30,7 +30,8 @@ class Dashboard:
             "/clustering": (ClusteringPage(self.result_obj), "Clustering"),
             "/samples_attributions": (SamplesAttributionsPage(self.result_obj, self.app), "Samples/Attributions"),
             "/detail": (DetailPage(self.result_obj, self.app), "Detail"),
-            "/effect_size": (EffectSizePage(self.result_obj), "Effect Size")
+            "/effect_size": (EffectSizePage(self.result_obj), "Effect Size"),
+            "/normality": (NormalityPage(self.result_obj), "Normality")
         }
 
         self.root = "/overview"
