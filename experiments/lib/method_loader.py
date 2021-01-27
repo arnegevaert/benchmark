@@ -1,6 +1,6 @@
 import yaml
 from . import attribution
-from inspect import signature
+from inspect import signature, Parameter
 
 
 class MethodLoader:
@@ -36,7 +36,8 @@ class MethodLoader:
                             args[param] = self.kwargs[param]
                         elif param in method_args:
                             args[param] = method_args[param]
-                        else:
+                        elif sig.parameters[param].default == Parameter.empty:
+                            # Default is empty so parameter is required
                             raise ValueError(f"Required parameter {param} for method {method_name} not found")
                     method_obj = constructor(**args)
                     for wrapper in wrappers:
