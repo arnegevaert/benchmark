@@ -5,11 +5,12 @@ import torch
 import warnings
 
 
-def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
+def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
                   min_subset_size: float, max_subset_size: float, num_steps: int, num_subsets: int,
-                  masking_policy: MaskingPolicy, debug_mode=False, writer=None):
-    attrs = method(samples, labels).detach()
-    if debug_mode:
+                  masking_policy: MaskingPolicy, writer=None):
+    device = samples.device
+    attrs = attrs.to(device)
+    if writer is not None:
         writer.add_images('Image samples', samples)
         writer.add_images('attributions', attrs)
     result = []
@@ -30,11 +31,11 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
             num_features = np.prod(attrs.shape[1:])
             indices = torch.LongTensor(np.random.choice(num_features, size=n, replace=False)).repeat(batch_size, 1)
             masked_samples = masking_policy(samples, indices)
-            if debug_mode:
-                index_image = torch.ones([1,*masked_samples.shape[1:]])
+            if writer is not None:
+                index_image = torch.ones([1, *masked_samples.shape[1:]])
                 index_image = masking_policy(index_image, indices[0][None])
                 writer.add_images("masking Indices N={}".format(n), index_image, global_step=ns)
-                writer.add_images("Masked samples N={}".format(n),masked_samples,global_step=ns)
+                writer.add_images("Masked samples N={}".format(n), masked_samples, global_step=ns)
             # Get output on masked samples
             with torch.no_grad():
                 output = model(masked_samples)
@@ -53,15 +54,14 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
         cov = (sum_of_attrs * output_diffs).sum(dim=1) / (num_subsets - 1)
         # Divide by product of standard deviations
         # [batch_size]
-        denom = sum_of_attrs.std(dim=1)*output_diffs.std(dim=1)
+        denom = sum_of_attrs.std(dim=1) * output_diffs.std(dim=1)
         denom_zero = (denom == 0.)
         if torch.any(denom_zero):
             warnings.warn("Zero standard deviation detected.")
-        corrcoefs = cov / (sum_of_attrs.std(dim=1)*output_diffs.std(dim=1))
+        corrcoefs = cov / (sum_of_attrs.std(dim=1) * output_diffs.std(dim=1))
         corrcoefs[denom_zero] = 0.
         result.append(corrcoefs)
     # [batch_size, len(n_range)]
     result = torch.stack(result, dim=1).cpu().detach()
-
 
     return result

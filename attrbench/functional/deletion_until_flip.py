@@ -1,15 +1,13 @@
-from typing import Callable, List
+from typing import Callable
 from attrbench.lib import MaskingPolicy
 import torch
 
 
-# TODO do this more intelligently (using rough linear search + individual binary search)
 # We assume none of the samples has the same label as the output of the network when given
 # a fully masked image (in which case we might not see a flip)
-def deletion_until_flip(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                        num_steps: int, masking_policy: MaskingPolicy, debug_mode=False, writer=None):
+def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: torch.Tensor,
+                        num_steps: float, masking_policy: MaskingPolicy, debug_mode=False, writer=None):
     debug_data = {}
-    attrs = method(samples, labels).detach()
     if debug_mode:
         debug_data["flipped_samples"] = [None for _ in range(samples.shape[0])]
         writer.add_images('Image samples', samples)

@@ -39,7 +39,7 @@ _PERTURBATION_FUNCTIONS = {
 }
 
 
-def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
+def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
                perturbation_mode: str, perturbation_size: float, num_perturbations: int,
                writer=None):
     if perturbation_mode not in _PERTURBATION_FUNCTIONS.keys():
@@ -50,8 +50,7 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, met
     # Get original model output
     with torch.no_grad():
         orig_output = (model(samples)).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
-    attrs = method(samples, labels).detach()
-
+    attrs=attrs.to(samples.device)
     # Replicate attributions along channel dimension if necessary (if explanation has fewer channels than image)
     if attrs.shape[1] != samples.shape[1]:
         shape = [1 for _ in range(len(attrs.shape))]

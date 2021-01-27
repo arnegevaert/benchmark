@@ -8,11 +8,12 @@ def _normalize_attrs(attrs):
     return flattened / torch.norm(flattened, dim=1, p=math.inf, keepdim=True)
 
 
-def max_sensitivity(samples: torch.Tensor, labels: torch.Tensor, method: Callable, radius: float,
+def max_sensitivity(samples: torch.Tensor, labels: torch.Tensor, method: Callable, attrs: torch.Tensor, radius: float,
                     num_perturbations: int, writer=None):
     device = samples.device
-
-    attrs = _normalize_attrs(method(samples, labels).detach())  # [batch_size, -1]
+    if attrs is None:
+        attrs = method(samples, labels).detach()  # [batch_size, *sample_shape]
+    attrs = _normalize_attrs(attrs)  # [batch_size, -1]
 
     diffs = []
     for n_p in range(num_perturbations):

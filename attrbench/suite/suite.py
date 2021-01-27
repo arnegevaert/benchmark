@@ -41,6 +41,7 @@ class Suite:
     This allows us to very quickly run the benchmark, aggregate and save all the resulting data for
     a given model and dataset.
     """
+
     def __init__(self, model, methods, dataloader, device="cpu",
                  save_images=False, save_attrs=False, seed=None, patch_folder=None,
                  log_dir=None):
@@ -58,7 +59,6 @@ class Suite:
         self.attrs = {method_name: [] for method_name in self.methods}
         self.seed = seed
         self.log_dir = log_dir
-
 
     def load_config(self, loc):
         with open(loc) as fp:
@@ -87,7 +87,8 @@ class Suite:
                         if e_arg in self.default_args:
                             args_dict[e_arg] = self.default_args[e_arg]
                         else:
-                            raise ValueError(f"Invalid JSON: required argument {e_arg} not found for metric {metric_name}")
+                            raise ValueError(
+                                f"Invalid JSON: required argument {e_arg} not found for metric {metric_name}")
                 # Create metric object using args_dict
                 self.metrics[metric_name] = constructor(**args_dict)
 
@@ -110,32 +111,32 @@ class Suite:
             samples = full_batch[pred == full_labels]
             labels = full_labels[pred == full_labels]
 
-            # Save images and attributions if specified
-            if self.save_images:
-                self.images.append(samples.cpu().detach().numpy())
-            if self.save_attrs or not checked_shapes:
+            if samples.size(0) > 0:
+                if samples_done + samples.size(0) > num_samples:
+                    diff = num_samples - samples_done
+                    samples = samples[:diff]
+                    labels = labels[:diff]
+                # Save images and attributions if specified
+                if self.save_images:
+                    self.images.append(samples.cpu().detach().numpy())
+
                 # We need the attributions, to save them or to check their shapes
-                attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach().numpy()
+                attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach()
                          for method_name in self.methods.keys()}
                 if self.save_attrs:
                     # Save attributions if necessary
                     for method_name in self.methods:
-                        self.attrs[method_name].append(attrs[method_name])
+                        self.attrs[method_name].append(attrs[method_name].numpy())
                 if not checked_shapes:
                     # Check shapes of attributions if necessary
                     for method_name in self.methods:
                         if not self.default_args["masking_policy"].check_attribution_shape(samples, attrs[method_name]):
                             raise ValueError(f"Attributions for method {method_name} "
                                              f"are not compatible with masking policy")
-            if samples.size(0) > 0:
-                if samples_done + samples.size(0) > num_samples:
-                    diff = num_samples - samples_done
-                    samples = samples[:diff]
-                    labels = labels[:diff]
                 for i, metric in enumerate(self.metrics.keys()):
                     if verbose:
-                        prog.set_postfix_str(f"{metric} ({i+1}/{len(self.metrics)})")
-                    self.metrics[metric].run_batch(samples, labels)
+                        prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
+                    self.metrics[metric].run_batch(samples, labels, attrs)
                 if verbose:
                     prog.update(samples.size(0))
                 samples_done += samples.size(0)
@@ -144,12 +145,12 @@ class Suite:
     def save_result(self, loc):
         data = {
             k: v.get_results()[0]
-                for k,v in self.metrics.items()
+            for k, v in self.metrics.items()
         }
 
         meta_data = {}
         for metric_name, metric in self.metrics.items():
-            meta_data[metric_name]= metric.metadata
+            meta_data[metric_name] = metric.metadata
             meta_data[metric_name]["shape"] = metric.get_results()[1]
             meta_data[metric_name]["type"] = type(metric).__name__
 
