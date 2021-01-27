@@ -40,13 +40,13 @@ class Metric:
 
 
 class DeletionUntilFlip(Metric):
-    def __init__(self, model, step_size, masking_policy, writer=None):
+    def __init__(self, model, num_steps, masking_policy, writer=None):
         super().__init__(model, writer)
-        self.step_size = step_size
+        self.num_steps = num_steps
         self.masking_policy = masking_policy
 
     def _run_single_method(self, samples, labels, attrs):
-        return functional.deletion_until_flip(samples, self.model, attrs, self.step_size,
+        return functional.deletion_until_flip(samples, self.model, attrs, self.num_steps,
                                               self.masking_policy, writer=self.writer).reshape(-1, 1)
 
 
@@ -154,8 +154,8 @@ class MaxSensitivity(Metric):
         """
         for method_name in self.methods:
             method = self.methods[method_name]
-            max_sens = functional.max_sensitivity(samples, labels, method, self.radius, self.num_perturbations,
-                                                  attrs_dict[method_name], writer=self.writer)
+            max_sens = functional.max_sensitivity(samples, labels, method, attrs_dict[method_name], self.radius,
+                                                  self.num_perturbations, writer=self.writer)
             self.results[method_name].append(max_sens)
 
     def _run_single_method(self, samples, labels, attrs):
