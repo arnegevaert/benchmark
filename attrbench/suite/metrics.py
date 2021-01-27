@@ -1,12 +1,14 @@
 import torch
+import numpy as np
 from attrbench import functional
 
 
 class Metric:
-    def __init__(self, model):
+    def __init__(self, model, writer=None):
         self.model = model
         self.results = {}
         self.metadata = {}
+        self.writer = writer
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         """
@@ -38,51 +40,54 @@ class Metric:
 
 
 class DeletionUntilFlip(Metric):
-    def __init__(self, model, step_size, masking_policy):
-        super().__init__(model)
+    def __init__(self, model, step_size, masking_policy, writer=None):
+        super().__init__(model, writer)
         self.step_size = step_size
         self.masking_policy = masking_policy
 
     def _run_single_method(self, samples, labels, attrs):
-        return functional.deletion_until_flip(samples, labels, self.model, attrs, self.step_size,
-                                              self.masking_policy).reshape(-1, 1)
+        return functional.deletion_until_flip(samples, self.model, attrs, self.step_size,
+                                              self.masking_policy, writer=self.writer).reshape(-1, 1)
 
 
 class ImpactCoverage(Metric):
-    def __init__(self, model, methods, patch, target_label):
-        super().__init__(model)
+    def __init__(self, model, methods, patch_folder, writer=None):
+        super().__init__(model, writer)
         self.methods = methods
         self.results = {method_name: [] for method_name in methods}
-        self.patch = torch.load(patch) if type(patch) == str else patch
-        self.target_label = target_label
+        self.patch_folder = patch_folder
 
-    def run_batch(self, samples, labels, attrs_dict: dict=None):
+    def run_batch(self, samples, labels, attrs_dict=None):
         """
         Runs the metric for a given batch, for all methods, and saves result internally
         """
+        attacked_samples, patch_mask, targets = functional.apply_patches(samples, labels,
+                                                                         self.model, self.patch_folder)
         for method_name in self.methods:
             method = self.methods[method_name]
-            self.results[method_name].append(self._run_single_method(samples, labels, method))
+            iou = functional.impact_coverage(samples, labels, self.model, method,
+                                             attacked_samples=attacked_samples,
+                                             patch_mask=patch_mask,
+                                             targets=targets,
+                                             writer=self.writer).reshape(-1, 1)
+            self.results[method_name].append(iou)
 
-    def _run_single_method(self, samples, labels, method):
-        iou, keep = functional.impact_coverage(samples, labels, self.model, method, self.patch, self.target_label)
-        return iou.reshape(-1, 1)
+    def _run_single_method(self, samples, labels, method, attacked_samples=None, patch_mask=None, targets=None):
+        raise NotImplementedError
 
 
 class ImpactScore(Metric):
-    def __init__(self, model, mask_range, strict, masking_policy, tau=None):
-        super().__init__(model)
-        self.mask_range = mask_range
+    def __init__(self, model, num_steps, strict, masking_policy, tau=None, writer=None):
+        super().__init__(model, writer)
+        self.num_steps = num_steps
         self.strict = strict
         self.masking_policy = masking_policy
         self.tau = tau
-        self.metadata = {
-            "col_index": mask_range
-        }
 
     def _run_single_method(self, samples, labels, attrs):
-        return functional.impact_score(samples, labels, self.model, attrs, self.mask_range,
-                                       self.strict, self.masking_policy, self.tau)
+        return functional.impact_score(samples, labels, self.model, attrs, self.num_steps,
+                                       self.strict, self.masking_policy, self.tau,
+                                       writer=self.writer)
 
     def get_results(self):
         result = {}
@@ -101,55 +106,47 @@ class ImpactScore(Metric):
 
 
 class Insertion(Metric):
-    def __init__(self, model, mask_range, masking_policy):
-        super().__init__(model)
-        self.mask_range = mask_range
+    def __init__(self, model, num_steps, masking_policy, writer=None):
+        super().__init__(model, writer)
+        self.num_steps = num_steps
         self.masking_policy = masking_policy
-        self.metadata = {
-            "col_index": mask_range
-        }
 
     def _run_single_method(self, samples, labels, attrs):
-        return functional.insertion(samples, labels, self.model, attrs, self.mask_range, self.masking_policy)
+        return functional.insertion(samples, labels, self.model, attrs, self.num_steps, self.masking_policy,
+                                    writer=self.writer)
 
 
 class Deletion(Metric):
-    def __init__(self, model, mask_range, masking_policy):
-        super().__init__(model)
-        self.mask_range = mask_range
+    def __init__(self, model, num_steps, masking_policy, writer=None):
+        super().__init__(model, writer)
+        self.num_steps = num_steps
         self.masking_policy = masking_policy
-        self.metadata = {
-            "col_index": mask_range
-        }
 
     def _run_single_method(self, samples, labels, attrs):
-        return functional.deletion(samples, labels, self.model, attrs, self.mask_range, self.masking_policy)
+        return functional.deletion(samples, labels, self.model, attrs, self.num_steps, self.masking_policy,
+                                   writer=self.writer)
 
 
 class Infidelity(Metric):
-    def __init__(self, model, perturbation_range, num_perturbations):
-        super().__init__(model)
-        self.perturbation_range = perturbation_range
+    def __init__(self, model, perturbation_mode, perturbation_size, num_perturbations, writer=None):
+        super().__init__(model, writer)
+        self.perturbation_mode = perturbation_mode
+        self.perturbation_size = perturbation_size
         self.num_perturbations = num_perturbations
-        self.metadata = {
-            "col_index": perturbation_range
-        }
 
     def _run_single_method(self, samples, labels, attrs):
         return functional.infidelity(samples, labels, self.model, attrs,
-                                     self.perturbation_range, self.num_perturbations)
+                                     self.perturbation_mode, self.perturbation_size, self.num_perturbations,
+                                     writer=self.writer)
 
 
 class MaxSensitivity(Metric):
-    def __init__(self, model, methods, perturbation_range, num_perturbations):
-        super().__init__(model)
+    def __init__(self, model, methods, radius, num_perturbations, writer=None):
+        super().__init__(model, writer)
         self.methods = methods
         self.results = {method_name: [] for method_name in methods}
-        self.perturbation_range = perturbation_range
+        self.radius = radius
         self.num_perturbations = num_perturbations
-        self.metadata = {
-            "col_index": perturbation_range
-        }
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         """
@@ -157,23 +154,28 @@ class MaxSensitivity(Metric):
         """
         for method_name in self.methods:
             method = self.methods[method_name]
-            self.results[method_name].append(self._run_single_method(samples, labels, method, attrs_dict[method_name]))
+            max_sens = functional.max_sensitivity(samples, labels, method, self.radius, self.num_perturbations,
+                                                  attrs_dict[method_name], writer=self.writer)
+            self.results[method_name].append(max_sens)
 
-    def _run_single_method(self, samples, labels, method, attrs):
-        return functional.max_sensitivity(samples, labels, method, self.perturbation_range, self.num_perturbations,
-                                          attrs)
+    def _run_single_method(self, samples, labels, attrs):
+        raise NotImplementedError
 
 
 class SensitivityN(Metric):
-    def __init__(self, model, n_range, num_subsets, masking_policy):
-        super().__init__(model)
-        self.n_range = n_range
+    def __init__(self, model, min_subset_size, max_subset_size, num_steps, num_subsets, masking_policy, writer=None):
+        super().__init__(model, writer)
+        self.min_subset_size = min_subset_size
+        self.max_subset_size = max_subset_size
+        self.num_steps = num_steps
         self.num_subsets = num_subsets
         self.masking_policy = masking_policy
         self.metadata = {
-            "col_index": n_range
+            "col_index": np.linspace(min_subset_size, max_subset_size, num_steps)
         }
 
     def _run_single_method(self, samples, labels, attrs):
         return functional.sensitivity_n(samples, labels, self.model, attrs,
-                                        self.n_range, self.num_subsets, self.masking_policy)
+                                        self.min_subset_size, self.max_subset_size, self.num_steps,
+                                        self.num_subsets, self.masking_policy,
+                                        writer=self.writer)

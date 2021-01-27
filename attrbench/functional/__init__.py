@@ -1,4 +1,4 @@
-from .impact_coverage import impact_coverage
+from .impact_coverage import impact_coverage, apply_patches
 from .impact_score import impact_score
 from .infidelity import infidelity
 from .insertion_deletion import insertion, deletion
