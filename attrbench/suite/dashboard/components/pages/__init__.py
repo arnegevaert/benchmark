@@ -5,3 +5,4 @@ from .detail_page import DetailPage
 from .effect_size_page import EffectSizePage
 from .overview_page import OverviewPage
 from .samples_attributions_page import SamplesAttributionsPage
+from .normality_page import NormalityPage
