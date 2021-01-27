@@ -154,8 +154,8 @@ class MaxSensitivity(Metric):
         """
         for method_name in self.methods:
             method = self.methods[method_name]
-            max_sens = functional.max_sensitivity(samples, labels, method, self.radius, self.num_perturbations,
-                                                  attrs_dict[method_name], writer=self.writer)
+            max_sens = functional.max_sensitivity(samples, labels, method, attrs_dict[method_name], self.radius,
+                                                  self.num_perturbations, writer=self.writer)
             self.results[method_name].append(max_sens)
 
     def _run_single_method(self, samples, labels, attrs):

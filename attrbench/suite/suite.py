@@ -51,7 +51,7 @@ class Suite:
         self.methods = methods
         self.dataloader = dataloader
         self.device = device
-        self.default_args = {"patch_folder": patch_folder}
+        self.default_args = {"patch_folder": patch_folder, "methods": self.methods}
         self.save_images = save_images
         self.save_attrs = save_attrs
         self.images = []
@@ -75,7 +75,6 @@ class Suite:
                 constructor = getattr(metrics, metric_dict["type"])
                 # Add model, methods, and (optional) writer args
                 args_dict["model"] = self.model
-                args_dict["methods"] = self.methods
                 if self.log_dir:
                     subdir = path.join(self.log_dir, metric_name)
                     args_dict["writer"] = AttributionWriter(subdir)
