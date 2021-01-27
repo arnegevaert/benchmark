@@ -1,6 +1,6 @@
 import dash_html_components as html
 import pandas as pd
-from scipy.stats import ttest_rel, wilcoxon
+from scipy.stats import wilcoxon
 
 from attrbench.suite.dashboard.components.pages import Page
 from attrbench.suite.dashboard.components.plots import EffectSizePlot, PValueTable
@@ -25,7 +25,6 @@ class EffectSizePage(Page):
                 pvalues = []
                 for method_name in self.result_obj.get_methods():
                     if method_name != "Random":
-                        #statistic, pvalue = ttest_rel(df[method_name].to_numpy(), df["Random"].to_numpy())
                         statistic, pvalue = wilcoxon(df[method_name].to_numpy(), df["Random"].to_numpy(), alternative="two-sided")
                         pvalues.append({"method": method_name, "p-value": pvalue})
                 result.append(PValueTable(pvalues, id=f"table-pvalues-{metric_name}").render())
