@@ -38,8 +38,10 @@ class SampleAttributionsComponent(Component):
                                       height=300, width=300, title=self.method_names[i])
             elif self.attrs.shape[1] == 3:
                 # Per-channel attributions, color
-                attrs_fig = px.imshow(np.moveaxis(self.attrs[i, ...], 0, 2),
-                                      height=300, width=300, title=self.method_names[i])
+                plot_attrs = np.moveaxis(self.attrs[i, ...], 0, 2)
+                plot_attrs = (plot_attrs - np.min(plot_attrs)) / (np.max(plot_attrs) - np.min(plot_attrs)) * 255
+                plot_attrs = plot_attrs.astype(np.uint8)
+                attrs_fig = px.imshow(plot_attrs, height=300, width=300, title=self.method_names[i])
             else:
                 raise ValueError(f"Invalid attributions shape: {self.attrs.shape}")
             attrs_fig.update_xaxes(showticklabels=False)
