@@ -30,6 +30,11 @@ def _insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Call
     # Sort indices of attrs in ascending order
     sorted_indices = attrs.argsort().cpu().detach().numpy()
 
+    # Get original predictions
+    with torch.no_grad():
+        orig_predictions = model(samples).gather(dim=1, index=labels.unsqueeze(-1))
+        neutral_predictions = model(masking_policy(samples, sorted_indices)).gather(dim=1, index=labels.unsqueeze(-1))
+
     total_features = attrs.shape[1]
     mask_range = list((np.linspace(0, 1, num_steps) * total_features).astype(np.int))
     for i in mask_range:
@@ -49,7 +54,10 @@ def _insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Call
         # Get predictions for result
         with torch.no_grad():
             predictions = model(masked_samples).gather(dim=1, index=labels.unsqueeze(-1))
-        result.append(predictions)
+        if mode == "deletion":
+            result.append((predictions - orig_predictions) / orig_predictions)
+        else:
+            result.append((predictions - neutral_predictions) / orig_predictions)
     result = torch.cat(result, dim=1).cpu()  # [batch_size, len(mask_range)]
 
     return result
