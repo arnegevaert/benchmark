@@ -8,38 +8,45 @@ from attrbench.suite.dashboard.components import Component
 
 class SampleAttributionsComponent(Component):
     def __init__(self, image, attrs, id, method_names):
-        self.image = np.squeeze(np.moveaxis(image, 0, 2))
+        self.image = image
         self.attrs = attrs
         self.id = id
         self.method_names = method_names
-        self.color_image = len(self.image.shape) > 2
 
     def render(self):
-        plot_image = self.image
-        if self.color_image:
+        cols = []
+        plot_image = np.squeeze(np.moveaxis(self.image, 0, 2))
+        color_image = self.image.shape[0] == 3
+        print(plot_image.shape)
+        if color_image:
             plot_image = (plot_image - np.min(plot_image)) / (np.max(plot_image) - np.min(plot_image)) * 255
             plot_image = plot_image.astype(np.uint8)
-        image_fig = px.imshow(plot_image, color_continuous_scale="gray" if not self.color_image else None,
+        image_fig = px.imshow(plot_image, color_continuous_scale="gray" if not color_image else None,
                               width=300, height=300)
         image_fig.update_xaxes(showticklabels=False)
         image_fig.update_yaxes(showticklabels=False)
-        image_fig.update_layout(margin=dict(l=0, r=0, t=5, b=5))
+        image_fig.update_layout(margin=dict(l=0, r=0, t=30, b=0))
+        cols.append(dbc.Col(dcc.Graph(
+            id=f"orig-image-{self.id}",
+            figure=image_fig
+        ), className="col-md-3"))
 
-        attrs_fig = px.imshow(self.attrs, color_continuous_scale="gray", facet_col=0,
-                              height=300, width=self.attrs.shape[0]*300, labels={"facet_col": "method"})
-        for j, method_name in enumerate(self.method_names):
-            attrs_fig.layout.annotations[j]["text"] = method_name
-        attrs_fig.update_xaxes(showticklabels=False)
-        attrs_fig.update_yaxes(showticklabels=False)
-        attrs_fig.update_layout(margin=dict(l=0, r=0, t=15, b=0))
-
-        return dbc.Row([
-            dbc.Col(dcc.Graph(
-                id=f"orig-image-{self.id}",
-                figure=image_fig
-            ), className="col-md-3"),
-            dbc.Col(dcc.Graph(
-                id=f"attrs-{self.id}",
+        for i in range(self.attrs.shape[0]):
+            if self.attrs.shape[1] == 1:
+                # Per-pixel attributions, grayscale
+                attrs_fig = px.imshow(np.squeeze(self.attrs[i, ...]), color_continuous_scale="gray",
+                                      height=300, width=300, title=self.method_names[i])
+            elif self.attrs.shape[1] == 3:
+                # Per-channel attributions, color
+                attrs_fig = px.imshow(np.moveaxis(self.attrs[i, ...], 0, 2),
+                                      height=300, width=300, title=self.method_names[i])
+            else:
+                raise ValueError(f"Invalid attributions shape: {self.attrs.shape}")
+            attrs_fig.update_xaxes(showticklabels=False)
+            attrs_fig.update_yaxes(showticklabels=False)
+            attrs_fig.update_layout(margin=dict(l=0, r=0, t=30, b=0))
+            cols.append(dbc.Col(dcc.Graph(
+                id=f"attrs-{self.id}-{self.method_names[i]}",
                 figure=attrs_fig
-            ), className="col-md-6"),
-        ])
+            ), className="col-md-3"))
+        return dbc.Row(cols, className="mt-1")
