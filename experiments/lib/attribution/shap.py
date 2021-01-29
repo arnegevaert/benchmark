@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-class Shap:
+class KernelShap:
     def __init__(self, model, n_samples, super_pixels=True, n_segments=None):
         if super_pixels and n_samples is None:
             raise ValueError(f"n_segments cannot be None when using super_pixels")
@@ -21,8 +21,7 @@ class Shap:
 
 class DeepShap:
     def __init__(self, model,reference_dataset, n_baseline_samples):
-        self.method = attr.DeepLiftShap(model)
-        # self.debug = attr.DeepLift(model)
+        self.method = attr.DeepLift(model)
         self.n_baseline_samples= n_baseline_samples
         self.reference_dataset = reference_dataset
         self.ref_sampler = DataLoader(
@@ -40,13 +39,11 @@ class DeepShap:
     def __call__(self, x, target):
         baseline = self._get_reference_batch().to(x.device)
 
-        # dl_attr = x*0
-        # for base in baseline:
-        #     dl_attr += self.debug.attribute(x,target=target,baselines=base[None])
-        # dl_attr = dl_attr/self.n_baseline_samples
-        attr = self.method.attribute(x, target=target, baselines=baseline)
+        dl_attr = x*0
+        for base in baseline:
+            dl_attr += self.method.attribute(x,target=target,baselines=base[None])
+        attr = dl_attr/self.n_baseline_samples
 
-        # assert torch.allclose(dl_attr, attr)
         return attr
 
 def get_super_pixels(x,k):
@@ -55,7 +52,7 @@ def get_super_pixels(x,k):
     masks = []
     for i in range(images.shape[0]):
         input_image = np.transpose(images[i],(1, 2, 0))
-        mask=segmentation.slic(input_image,n_segments=k,slic_zero=True)
+        mask=segmentation.slic(input_image,n_segments=k,slic_zero=True,start_label=0)
         masks.append(mask)
     masks = torch.LongTensor(np.stack(masks))
     masks = masks.unsqueeze(dim=1)

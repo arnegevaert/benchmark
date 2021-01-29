@@ -22,5 +22,11 @@ methods:
       stdev: 0.15
       num_samples: 50
       internal_batch_size: 16
+  - DeepShap:
+      n_baseline_samples: 100
+  - KernelShap:
+      n_segments: 32
+      n_samples: 300
+      super_pixels: True
   #- ExpectedGradients:
   #    num_samples: 100

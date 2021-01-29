@@ -14,7 +14,7 @@ from .integrated_gradients import IntegratedGradients
 from .smooth_grad import SmoothGrad
 from .var_grad import VarGrad
 from .deeplift import DeepLift
-from .shap import Shap, DeepShap
+from .shap import KernelShap, DeepShap
 
 # Post-processing wrappers
 from .pixel_aggregation import *  # Aggregate along color channels
