@@ -1,13 +1,13 @@
 from typing import Callable
 import numpy as np
-from attrbench.lib import sum_of_attributions, MaskingPolicy
+from attrbench.lib import sum_of_attributions, Masker
 import torch
 import warnings
 
 
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
                   min_subset_size: float, max_subset_size: float, num_steps: int, num_subsets: int,
-                  masking_policy: MaskingPolicy, writer=None):
+                  masking_policy: Masker, writer=None):
     device = samples.device
     attrs = attrs.to(device)
     if writer is not None:

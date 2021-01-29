@@ -1,4 +1,4 @@
-from attrbench.lib import MaskingPolicy
+from attrbench.lib import Masker
 from typing import Callable
 import torch
 import numpy as np
@@ -6,7 +6,7 @@ from torch.nn.functional import softmax
 
 
 def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.tensor, num_steps: int,
-                 strict: bool, masking_policy: MaskingPolicy, tau: float = None, debug_mode=False, writer=None):
+                 strict: bool, masking_policy: Masker, tau: float = None, debug_mode=False, writer=None):
     if not (strict or tau):
         raise ValueError("Provide value for tau when calculating non-strict impact score")
     counts = []

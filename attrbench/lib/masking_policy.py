@@ -1,48 +1,67 @@
 import numpy as np
+import torch
 
 
-class MaskingPolicy:
-    def __call__(self, samples, indices):
+class Masker:
+    def __init__(self, feature_level):
+        if feature_level not in ("channel", "pixel"):
+            raise ValueError(f"feature_level must be 'channel' or 'pixel'. Found {feature_level}.")
+        self.feature_level = feature_level
+
+    def predict_masked(self, samples, indices, model, return_masked_samples=False):
+        masked = self.mask(samples, indices)
+        with torch.no_grad():
+            pred = model(masked)
+        if return_masked_samples:
+            return pred, masked
+        return pred
+
+    def mask(self, samples, indices):
         raise NotImplementedError
 
     def check_attribution_shape(self, samples, attributions):
         raise NotImplementedError
 
 
-class FeatureMaskingPolicy(MaskingPolicy):
-    def __init__(self, mask_value) -> None:
-        super().__init__()
+class ConstantMasker(Masker):
+    def __init__(self, feature_level, mask_value=0):
+        super().__init__(feature_level)
         self.mask_value = mask_value
 
-    def __call__(self, samples, indices):
-        flattened = samples.clone().flatten(1)
+    def mask(self, samples, indices):
+        flattened = samples.clone().flatten(1 if self.feature_level == "channel" else 2)
         batch_dim = np.tile(range(samples.shape[0]), (indices.shape[1], 1)).transpose()
-        flattened[batch_dim, indices] = self.mask_value
-        return flattened.reshape(samples.shape)
+
+        if self.feature_level == "channel":
+            flattened[batch_dim, indices] = self.mask_value
+            return flattened.reshape(samples.shape)
+        elif self.feature_level == "pixel":
+            try:
+                flattened[batch_dim, :, indices] = self.mask_value
+            except IndexError:
+                raise ValueError("Masking index was out of bounds. "
+                                 "Make sure the masking policy is compatible with method output.")
+            return flattened.reshape(samples.shape)
 
     def check_attribution_shape(self, samples, attributions):
-        # FeatureMaskingPolicy expects attributions to have the same shape as samples
-        return list(samples.shape) == list(attributions.shape)
+        if self.feature_level == "channel":
+            # Attributions should be same shape as samples
+            return list(samples.shape) == list(attributions.shape)
+        elif self.feature_level == "pixel":
+            # attributions should have the same shape as samples,
+            # except the channel dimension must be 1
+            aggregated_shape = list(samples.shape)
+            aggregated_shape[1] = 1
+            return aggregated_shape == list(attributions.shape)
 
 
-class PixelMaskingPolicy(MaskingPolicy):
-    def __init__(self, mask_value) -> None:
-        super().__init__()
-        self.mask_value = mask_value
+class SampleAverageMasker(Masker):
+    pass
 
-    def __call__(self, samples, indices):
-        flattened = samples.clone().flatten(2)
-        batch_dim = np.tile(range(samples.shape[0]), (indices.shape[1], 1)).transpose()
-        try:
-            flattened[batch_dim, :, indices] = self.mask_value
-        except IndexError:
-            raise ValueError("Masking index was out of bounds. "
-                             "Make sure the masking policy is compatible with method output.")
-        return flattened.reshape(samples.shape)
 
-    def check_attribution_shape(self, samples, attributions):
-        # PixelMaskingPolicy expects attributions to have the same shape as samples,
-        # except the channel dimension must be 1
-        aggregated_shape = list(samples.shape)
-        aggregated_shape[1] = 1
-        return aggregated_shape == list(attributions.shape)
+class BlurringMasker(Masker):
+    pass
+
+
+class RandomMasker(Masker):
+    pass

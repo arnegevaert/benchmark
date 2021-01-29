@@ -1,5 +1,5 @@
 from attrbench.suite import metrics, Result
-from attrbench.lib import FeatureMaskingPolicy, PixelMaskingPolicy, AttributionWriter
+from attrbench.lib import FeatureMasker, PixelMasker, AttributionWriter
 from tqdm import tqdm
 import torch
 import numpy as np
@@ -11,9 +11,9 @@ from os import path
 
 def _parse_masking_policy(d):
     if d["policy"] == "pixel":
-        masking_policy = PixelMaskingPolicy(d["value"])
+        masking_policy = PixelMasker(d["value"])
     elif d["policy"] == "feature":
-        masking_policy = FeatureMaskingPolicy(d["value"])
+        masking_policy = FeatureMasker(d["value"])
     else:
         raise ValueError("policy attribute of masking_policy must be either \"pixel\" or \"feature\"")
     return masking_policy

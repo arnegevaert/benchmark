@@ -1,23 +1,23 @@
 from typing import Callable
-from attrbench.lib import MaskingPolicy
+from attrbench.lib import Masker
 import torch
 import numpy as np
 
 
 def insertion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
-              num_steps: int, masking_policy: MaskingPolicy, writer=None):
+              num_steps: int, masking_policy: Masker, writer=None):
     return _insertion_deletion(samples, labels, model, attrs, num_steps, masking_policy, "insertion",
                                writer=writer)
 
 
 def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
-             num_steps: int, masking_policy: MaskingPolicy, writer=None):
+             num_steps: int, masking_policy: Masker, writer=None):
     return _insertion_deletion(samples, labels, model, attrs, num_steps, masking_policy, "deletion",
                                writer=writer)
 
 
 def _insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
-                        num_steps: int, masking_policy: MaskingPolicy, mode: str, writer=None):
+                        num_steps: int, masking_policy: Masker, mode: str, writer=None):
     if mode not in ["deletion", "insertion"]:
         raise ValueError("Mode must be either deletion or insertion")
     result = []

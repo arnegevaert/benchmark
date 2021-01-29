@@ -1,5 +1,5 @@
 from typing import Callable
-from attrbench.lib import PixelMaskingPolicy, FeatureMaskingPolicy
+from attrbench.lib import PixelMasker, FeatureMasker
 import random
 import torch
 from os import path, listdir
@@ -83,7 +83,7 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
 
     # Create mask of critical factors (most important pixels/features according to attributions)
     to_mask = sorted_indices[:, -nr_top_attributions:]
-    pmp = PixelMaskingPolicy(mask_value=1.) if attrs.shape[1] == 1 else FeatureMaskingPolicy(mask_value=1.)
+    pmp = PixelMasker(mask_value=1.) if attrs.shape[1] == 1 else FeatureMasker(mask_value=1.)
     critical_factor_mask = pmp(torch.zeros(attrs.shape), to_mask)
 
     # Calculate IoU of critical factors (top n attributions) with adversarial patch
