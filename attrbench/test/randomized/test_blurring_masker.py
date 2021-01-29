@@ -1,5 +1,5 @@
 import unittest
-from attrbench.lib import BlurringMasker
+from attrbench.lib.masking import BlurringMasker
 from attrbench.test.util import generate_images_indices, get_index
 from cv2 import blur
 import numpy as np
@@ -19,11 +19,11 @@ class TestBlurringMasker(unittest.TestCase):
         return blurred
 
     def test_mask_pixels_grayscale(self):
-        channel_masker = BlurringMasker("channel")
-        pixel_masker = BlurringMasker("pixel")
+        kernel_size = 3
+        channel_masker = BlurringMasker("channel", kernel_size)
+        pixel_masker = BlurringMasker("pixel", kernel_size)
         mask_size = 500
         shape = (16, 1, 100, 100)
-        kernel_size = 3
         images, indices = generate_images_indices(shape, mask_size, "pixel")
         original = images.clone()
 
@@ -49,12 +49,12 @@ class TestBlurringMasker(unittest.TestCase):
         self.assertAlmostEqual((original - images).abs().sum().item(), 0.)
 
     def test_mask_pixels_rgb_pixel_level(self):
-        pixel_masker = BlurringMasker("pixel")
+        kernel_size = 3
+        pixel_masker = BlurringMasker("pixel", kernel_size)
         mask_size = 500
         shape = (16, 3, 100, 100)
         images, indices = generate_images_indices(shape, mask_size, "pixel")
         original = images.clone()
-        kernel_size = 3
         blurred = self._blur_images(images, kernel_size)
 
         assert (blurred.shape == shape)
@@ -75,12 +75,12 @@ class TestBlurringMasker(unittest.TestCase):
         self.assertAlmostEqual((original - images).abs().sum().item(), 0.)
 
     def test_mask_pixels_channel_level(self):
-        pixel_masker = BlurringMasker("channel")
+        kernel_size = 3
+        pixel_masker = BlurringMasker("channel", kernel_size)
         mask_size = 500
         shape = (16, 3, 100, 100)
         images, indices = generate_images_indices(shape, mask_size, "pixel")
         original = images.clone()
-        kernel_size = 3
         blurred = self._blur_images(images, kernel_size)
 
         res = pixel_masker.mask(images, indices)

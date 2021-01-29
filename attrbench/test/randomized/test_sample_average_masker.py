@@ -1,6 +1,6 @@
 import unittest
 import torch
-from attrbench.lib import SampleAverageMasker
+from attrbench.lib.masking import SampleAverageMasker
 from attrbench.test.util import get_index, generate_images_indices
 
 

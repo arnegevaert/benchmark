@@ -1,5 +1,5 @@
 import unittest
-from attrbench.lib import RandomMasker
+from attrbench.lib.masking import RandomMasker
 from attrbench.test.util import get_index, generate_images_indices
 
 

@@ -1,7 +1,7 @@
 import unittest
 import torch
 import numpy as np
-from attrbench.lib import ConstantMasker
+from attrbench.lib.masking import ConstantMasker
 from os import path
 
 

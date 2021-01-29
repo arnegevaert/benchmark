@@ -1,5 +1,5 @@
 import unittest
-from attrbench.lib import ConstantMasker
+from attrbench.lib.masking import ConstantMasker
 from attrbench.test.util import get_index, generate_images_indices
 
 
