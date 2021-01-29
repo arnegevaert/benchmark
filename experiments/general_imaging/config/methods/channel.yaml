@@ -7,6 +7,7 @@ methods:
   - GuidedGradCAM
   - Random
   - EdgeDetection
+  - DeepLift
   - IntegratedGradients:
       internal_batch_size: 16
       num_steps: 25
