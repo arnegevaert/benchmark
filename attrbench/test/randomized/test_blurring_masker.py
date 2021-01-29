@@ -26,25 +26,18 @@ class TestBlurringMasker(unittest.TestCase):
         shape = (16, 1, 100, 100)
         images, indices = generate_images_indices(shape, mask_size, "pixel")
         original = images.clone()
-
         blurred = self._blur_images(images, kernel_size)
-        assert (blurred.shape == shape)
 
         res1 = channel_masker.mask(images, indices)
         res2 = pixel_masker.mask(images, indices)
+        manual = images.clone()
         for i in range(shape[0]):
-            for j in range(shape[-1] * shape[-2]):
-                index = get_index(shape[1:], j)
-                if j in indices[i]:
-                    self.assertAlmostEqual(res1[i, index[0], index[1], index[2]].item(),
-                                           blurred[i, index[0], index[1], index[2]].item())
-                    self.assertAlmostEqual(res2[i, index[0], index[1], index[2]].item(),
-                                           blurred[i, index[0], index[1], index[2]].item())
-                else:
-                    self.assertAlmostEqual(res1[i, index[0], index[1], index[2]].item(),
-                                           images[i, index[0], index[1], index[2]].item())
-                    self.assertAlmostEqual(res2[i, index[0], index[1], index[2]].item(),
-                                           images[i, index[0], index[1], index[2]].item())
+            for j in range(mask_size):
+                index = get_index(shape[1:], indices[i, j])
+                manual[i, index[0], index[1], index[2]] = blurred[i, index[0], index[1], index[2]]
+        # Check for correctness
+        self.assertAlmostEqual((res1 - manual).abs().sum().item(), 0., places=5)
+        self.assertAlmostEqual((res2 - manual).abs().sum().item(), 0., places=5)
         # Check that original images weren't mutated
         self.assertAlmostEqual((original - images).abs().sum().item(), 0.)
 
@@ -57,20 +50,15 @@ class TestBlurringMasker(unittest.TestCase):
         original = images.clone()
         blurred = self._blur_images(images, kernel_size)
 
-        assert (blurred.shape == shape)
-
         res = pixel_masker.mask(images, indices)
+        manual = images.clone()
         for i in range(shape[0]):
-            for j in range(shape[-1] * shape[-2]):
-                index = get_index(shape[2:], j)
-                if j in indices[i]:
-                    for c in range(3):
-                        self.assertAlmostEqual(blurred[i, c, index[0], index[1]].item(),
-                                               res[i, c, index[0], index[1]].item())
-                else:
-                    for c in range(3):
-                        self.assertAlmostEqual(images[i, c, index[0], index[1]].item(),
-                                               res[i, c, index[0], index[1]].item())
+            for j in range(3):
+                for k in range(mask_size):
+                    index = get_index(shape[2:], indices[i, k])
+                    manual[i, j, index[0], index[1]] = blurred[i, j, index[0], index[1]]
+        # Check for correctness
+        self.assertAlmostEqual((res - manual).abs().sum().item(), 0., places=5)
         # Check that original images weren't mutated
         self.assertAlmostEqual((original - images).abs().sum().item(), 0.)
 
@@ -84,14 +72,12 @@ class TestBlurringMasker(unittest.TestCase):
         blurred = self._blur_images(images, kernel_size)
 
         res = pixel_masker.mask(images, indices)
+        manual = images.clone()
         for i in range(shape[0]):
-            for j in range(shape[-1] * shape[-2] * shape[-3]):
-                index = get_index(shape[1:], j)
-                if j in indices[i]:
-                    self.assertAlmostEqual(blurred[i, index[0], index[1], index[2]].item(),
-                                           res[i, index[0], index[1], index[2]].item())
-                else:
-                    self.assertAlmostEqual(images[i, index[0], index[1], index[2]].item(),
-                                           res[i, index[0], index[1], index[2]].item())
+            for j in range(mask_size):
+                index = get_index(shape[1:], indices[i, j])
+                manual[i, index[0], index[1], index[2]] = blurred[i, index[0], index[1], index[2]]
+        # Check for correctness
+        self.assertAlmostEqual((res - manual).abs().sum().item(), 0., places=5)
         # Check that original images weren't mutated
         self.assertAlmostEqual((original - images).abs().sum().item(), 0.)
