@@ -1,12 +1,12 @@
 from attrbench.suite import metrics, Result
-from attrbench.lib import FeatureMaskingPolicy, PixelMaskingPolicy
+from attrbench.lib import FeatureMaskingPolicy, PixelMaskingPolicy, AttributionWriter
 from tqdm import tqdm
 import torch
 import numpy as np
 import inspect
 from inspect import Parameter
 import yaml
-import h5py
+from os import path
 
 
 def _parse_masking_policy(d):
@@ -41,26 +41,31 @@ class Suite:
     This allows us to very quickly run the benchmark, aggregate and save all the resulting data for
     a given model and dataset.
     """
-    def __init__(self, model, methods, dataloader, device="cpu", save_images=False, save_attrs=False, seed=None):
+
+    def __init__(self, model, methods, dataloader, device="cpu",
+                 save_images=False, save_attrs=False, seed=None, patch_folder=None,
+                 log_dir=None):
         self.metrics = {}
         self.model = model.to(device)
         self.model.eval()
         self.methods = methods
         self.dataloader = dataloader
         self.device = device
-        self.default_args = {}
+        self.default_args = {"patch_folder": patch_folder, "methods": self.methods}
         self.save_images = save_images
         self.save_attrs = save_attrs
         self.images = []
         self.samples_done = 0
         self.attrs = {method_name: [] for method_name in self.methods}
         self.seed = seed
+        self.log_dir = log_dir
 
     def load_config(self, loc):
         with open(loc) as fp:
             data = yaml.full_load(fp)
             # Parse default arguments if present
-            self.default_args = _parse_default_args(data.get("default", {}))
+            default_args = _parse_default_args(data.get("default", {}))
+            self.default_args = {**self.default_args, **default_args}
             # Build metric objects
             for metric_name in data["metrics"]:
                 metric_dict = data["metrics"][metric_name]
@@ -68,9 +73,11 @@ class Suite:
                 args_dict = _parse_metric_args(metric_dict.get("args", {}))
                 # Get constructor
                 constructor = getattr(metrics, metric_dict["type"])
-                # Add model and methods args
+                # Add model, methods, and (optional) writer args
                 args_dict["model"] = self.model
-                args_dict["methods"] = self.methods
+                if self.log_dir:
+                    subdir = path.join(self.log_dir, metric_name)
+                    args_dict["writer"] = AttributionWriter(subdir)
                 # Compare to required args, add missing ones from default args
                 signature = inspect.signature(constructor).parameters
                 expected_arg_names = [arg for arg in signature if signature[arg].default == Parameter.empty]
@@ -79,7 +86,8 @@ class Suite:
                         if e_arg in self.default_args:
                             args_dict[e_arg] = self.default_args[e_arg]
                         else:
-                            raise ValueError(f"Invalid JSON: required argument {e_arg} not found for metric {metric_name}")
+                            raise ValueError(
+                                f"Invalid configuration: required argument {e_arg} not found for metric {metric_name}")
                 # Create metric object using args_dict
                 self.metrics[metric_name] = constructor(**args_dict)
 
@@ -89,6 +97,9 @@ class Suite:
         if self.seed:
             torch.manual_seed(self.seed)
         it = iter(self.dataloader)
+        # We will check the output shapes of methods on the first batch
+        # to make sure they are compatible with the masking policy
+        checked_shapes = False
         while samples_done < num_samples:
             full_batch, full_labels = next(it)
             full_batch = full_batch.to(self.device)
@@ -99,19 +110,32 @@ class Suite:
             samples = full_batch[pred == full_labels]
             labels = full_labels[pred == full_labels]
 
-            # Save images and attributions if specified
-            if self.save_images:
-                self.images.append(samples.cpu().detach().numpy())
-            if self.save_attrs:
-                for method_name in self.methods:
-                    self.attrs[method_name].append(self.methods[method_name](samples, labels).cpu().detach().numpy())
             if samples.size(0) > 0:
                 if samples_done + samples.size(0) > num_samples:
                     diff = num_samples - samples_done
                     samples = samples[:diff]
                     labels = labels[:diff]
-                for metric in self.metrics:
-                    self.metrics[metric].run_batch(samples, labels)
+                # Save images and attributions if specified
+                if self.save_images:
+                    self.images.append(samples.cpu().detach().numpy())
+
+                # We need the attributions, to save them or to check their shapes
+                attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach()
+                         for method_name in self.methods.keys()}
+                if self.save_attrs:
+                    # Save attributions if necessary
+                    for method_name in self.methods:
+                        self.attrs[method_name].append(attrs[method_name].numpy())
+                if not checked_shapes:
+                    # Check shapes of attributions if necessary
+                    for method_name in self.methods:
+                        if not self.default_args["masking_policy"].check_attribution_shape(samples, attrs[method_name]):
+                            raise ValueError(f"Attributions for method {method_name} "
+                                             f"are not compatible with masking policy")
+                for i, metric in enumerate(self.metrics.keys()):
+                    if verbose:
+                        prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
+                    self.metrics[metric].run_batch(samples, labels, attrs)
                 if verbose:
                     prog.update(samples.size(0))
                 samples_done += samples.size(0)
@@ -120,12 +144,12 @@ class Suite:
     def save_result(self, loc):
         data = {
             k: v.get_results()[0]
-                for k,v in self.metrics.items()
+            for k, v in self.metrics.items()
         }
 
         meta_data = {}
         for metric_name, metric in self.metrics.items():
-            meta_data[metric_name]= metric.metadata
+            meta_data[metric_name] = metric.metadata
             meta_data[metric_name]["shape"] = metric.get_results()[1]
             meta_data[metric_name]["type"] = type(metric).__name__
 

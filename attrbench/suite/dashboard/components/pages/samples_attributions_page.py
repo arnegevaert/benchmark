@@ -55,8 +55,8 @@ class SamplesAttributionsPage(Page):
                 result = cur_children if cur_children else []
                 id = len(result)
                 image = self.result_obj.images[sample_index, ...]
-                attrs = np.concatenate([self.result_obj.attributions[method_name][sample_index, ...]
-                                        for method_name in method_names])
+                attrs = np.stack([self.result_obj.attributions[method_name][sample_index, ...]
+                                  for method_name in method_names], axis=0)
                 result.append(dbc.Row([
                     dbc.Col(html.H4(f"Sample index: {sample_index}"), className="col-md-4")
                 ], className="mt-5"))
