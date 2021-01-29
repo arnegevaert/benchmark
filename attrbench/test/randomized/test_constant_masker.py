@@ -12,7 +12,7 @@ def _get_index(shape, index):
     return tuple(res)
 
 
-class TestMaskingRandomized(unittest.TestCase):
+class TestConstantMasker(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
     

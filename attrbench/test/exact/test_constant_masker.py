@@ -5,7 +5,7 @@ from attrbench.lib import ConstantMasker
 from os import path
 
 
-class TestMasking(unittest.TestCase):
+class TestConstantMasker(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.data = {}
