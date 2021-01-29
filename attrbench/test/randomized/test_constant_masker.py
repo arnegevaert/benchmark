@@ -2,7 +2,7 @@ import unittest
 import torch
 import numpy as np
 from attrbench.lib import ConstantMasker
-from attrbench.test.util import get_index
+from attrbench.test.util import get_index, generate_images_indices
 
 
 class TestConstantMasker(unittest.TestCase):
@@ -15,13 +15,8 @@ class TestConstantMasker(unittest.TestCase):
         pmp = ConstantMasker("pixel")
         mask_size = 500
         shape = (16, 1, 100, 100)
-        images = torch.randn(shape)
+        images, indices = generate_images_indices(shape, mask_size, "pixel")
         original = images.clone()
-        indices = torch.stack([
-            torch.tensor(
-                np.random.choice(shape[-1]*shape[-2]*shape[-3], size=mask_size, replace=False)
-            ) for _ in range(shape[0])
-        ], dim=0)
         res1 = fmp.mask(images, indices)
         res2 = pmp.mask(images, indices)
         manual = images.clone()
@@ -29,25 +24,19 @@ class TestConstantMasker(unittest.TestCase):
             for j in range(mask_size):
                 index = get_index(shape[1:], indices[i, j])
                 manual[i, index[0], index[1], index[2]] = mask_value
-        diff1 = (res1 - manual).abs().sum().item()
-        diff2 = (res2 - manual).abs().sum().item()
-        self.assertAlmostEqual(diff1, 0., places=5)
-        self.assertAlmostEqual(diff2, 0., places=5)
-        diff_orig = (original - images).abs().sum().item()
-        self.assertAlmostEqual(diff_orig, 0.)
+        # Check for correctness
+        self.assertAlmostEqual((res1 - manual).abs().sum().item(), 0., places=5)
+        self.assertAlmostEqual((res2 - manual).abs().sum().item(), 0., places=5)
+        # Check that original images weren't mutated
+        self.assertAlmostEqual((original - images).abs().sum().item(), 0.)
 
     def test_mask_pixels_rgb_pixel_level(self):
         mask_value = 0.
         pmp = ConstantMasker("pixel")
         mask_size = 500
         shape = (16, 3, 100, 100)
-        images = torch.randn(shape)
+        images, indices = generate_images_indices(shape, mask_size, "pixel")
         original = images.clone()
-        indices = torch.stack([
-            torch.tensor(
-                np.random.choice(shape[-1]*shape[-2], size=mask_size, replace=False)
-            ) for _ in range(shape[0])
-        ], dim=0)
         res = pmp.mask(images, indices)
         manual = images.clone()
         for i in range(shape[0]):
@@ -55,30 +44,25 @@ class TestConstantMasker(unittest.TestCase):
                 for k in range(mask_size):
                     index = get_index(shape[2:], indices[i, k])
                     manual[i, j, index[0], index[1]] = mask_value
-        diff = (res - manual).abs().sum().item()
-        self.assertAlmostEqual(diff, 0., places=5)
-        diff_orig = (original - images).abs().sum().item()
-        self.assertAlmostEqual(diff_orig, 0.)
+        # Check for correctness
+        self.assertAlmostEqual((res - manual).abs().sum().item(), 0., places=5)
+        # Check that original images weren't mutated
+        self.assertAlmostEqual((original - images).abs().sum().item(), 0.)
     
     def test_mask_pixels_channel_level(self):
         mask_value = 0.
         fmp = ConstantMasker("channel")
         mask_size = 500
         shape = (16, 3, 100, 100)
-        images = torch.randn(shape)
+        images, indices = generate_images_indices(shape, mask_size, "channel")
         original = images.clone()
-        indices = torch.stack([
-            torch.tensor(
-                np.random.choice(shape[-1]*shape[-2]*shape[-3], size=mask_size, replace=False)
-            ) for _ in range(shape[0])
-        ], dim=0)
         res = fmp.mask(images, indices)
         manual = images.clone()
         for i in range(shape[0]):
             for j in range(mask_size):
                 index = get_index(shape[1:], indices[i, j])
                 manual[i, index[0], index[1], index[2]] = mask_value
-        diff = (res - manual).abs().sum().item()
-        self.assertAlmostEqual(diff, 0., places=5)
-        diff_orig = (original - images).abs().sum().item()
-        self.assertAlmostEqual(diff_orig, 0.)
+        # Check for correctness
+        self.assertAlmostEqual((res - manual).abs().sum().item(), 0., places=5)
+        # Check that original images weren't mutated
+        self.assertAlmostEqual((original - images).abs().sum().item(), 0.)
