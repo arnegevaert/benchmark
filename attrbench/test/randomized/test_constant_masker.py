@@ -1,6 +1,4 @@
 import unittest
-import torch
-import numpy as np
 from attrbench.lib import ConstantMasker
 from attrbench.test.util import get_index, generate_images_indices
 
