@@ -1,1 +1,2 @@
-from .small_resnet import Resnet20
+
+from .torchvision_resnet import Resnet18, Resnet20

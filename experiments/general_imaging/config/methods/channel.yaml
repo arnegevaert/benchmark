@@ -7,11 +7,23 @@ methods:
   - GuidedGradCAM
   - Random
   - EdgeDetection
+  - DeepLift
   - IntegratedGradients:
       internal_batch_size: 16
       num_steps: 25
   - SmoothGrad:
       stdev: 0.15
-      num_samples: 5  # This should be 50 but noisetunnel doesn't support internal batch size
+      num_samples: 50
+      internal_batch_size: 16
+  - VarGrad:
+      stdev: 0.15
+      num_samples: 50
+      internal_batch_size: 16
+  - DeepShap:
+      n_baseline_samples: 100
+  - KernelShap:
+      n_segments: 32
+      n_samples: 300
+      super_pixels: True
   #- ExpectedGradients:
   #    num_samples: 100

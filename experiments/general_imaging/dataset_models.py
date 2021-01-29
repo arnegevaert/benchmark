@@ -5,7 +5,7 @@ import torch
 import torchvision
 import torch.nn as nn
 from torch.nn import functional as F
-from experiments.general_imaging.models import Resnet20
+from experiments.general_imaging.models import Resnet20, Resnet18
 
 
 _DATA_LOC = os.environ["BM_DATA_LOC"] if "BM_DATA_LOC" in os.environ else path.join(path.dirname(__file__), "../../data")
@@ -47,27 +47,6 @@ def get_dataset_model(name, train=False):
     return ds, model, sample_shape, patch_folder
 
 
-class Resnet18(nn.Module):
-    """
-    Wrapper class around torchvision Resnet18 model,
-    with 10 output classes and function to get the last convolutional layer
-    """
-    def __init__(self, params_loc=None):
-        super().__init__()
-        self.model = torchvision.models.resnet18()
-        self.model.fc = nn.Linear(self.model.fc.in_features, 10)
-
-        if params_loc:
-            self.model.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
-
-    def forward(self, x):
-        return self.model(x)
-
-    def get_last_conv_layer(self):
-        last_block = self.model.layer4[-1]  # Last BasicBlock of layer 3
-        return last_block.conv2
-
-
 class BasicCNN(nn.Module):
     """
     Basic convolutional network for MNIST
@@ -80,6 +59,8 @@ class BasicCNN(nn.Module):
         self.dropout2 = nn.Dropout2d(0.5)
         self.fc1 = nn.Linear(9216, 128)
         self.fc2 = nn.Linear(128, num_classes)
+        self.relu1 =nn.ReLU()
+        self.relu2 = nn.ReLU()
         if params_loc:
             # map_location allows taking a model trained on GPU and loading it on CPU
             # without it, a model trained on GPU will be loaded in GPU even if DEVICE is CPU
@@ -93,13 +74,13 @@ class BasicCNN(nn.Module):
 
         relu = nn.ReLU()
         x = self.conv1(x)
-        x = relu(x)
+        x = self.relu1(x)
         x = self.conv2(x)
         x = F.max_pool2d(x, 2)
         x = self.dropout1(x)
         x = torch.flatten(x, 1)
         x = self.fc1(x)
-        x = relu(x)
+        x = self.reul2(x)
         x = self.dropout2(x)
         return self.fc2(x)
 
