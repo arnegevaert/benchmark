@@ -56,12 +56,28 @@ class ConstantMasker(Masker):
 
 
 class SampleAverageMasker(Masker):
-    pass
+    def __init__(self, feature_level, mask_value=0):
+        super().__init__(feature_level)
+        self.mask_value = mask_value
+
+    def mask(self, samples, indices):
+        return samples
+
+    def check_attribution_shape(self, samples, attributions):
+        return True
 
 
 class BlurringMasker(Masker):
-    pass
+    def mask(self, samples, indices):
+        return samples
+
+    def check_attribution_shape(self, samples, attributions):
+        return True
 
 
 class RandomMasker(Masker):
-    pass
+    def mask(self, samples, indices):
+        return samples
+
+    def check_attribution_shape(self, samples, attributions):
+        return True

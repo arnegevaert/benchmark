@@ -2,14 +2,7 @@ import unittest
 import torch
 import numpy as np
 from attrbench.lib import ConstantMasker
-
-
-def _get_index(shape, index):
-    res = []
-    for i in range(len(shape)):
-        res.append(int(index // np.prod(shape[i+1:])))
-        index = index % np.prod(shape[i+1:])
-    return tuple(res)
+from attrbench.test.util import get_index
 
 
 class TestConstantMasker(unittest.TestCase):
@@ -34,7 +27,7 @@ class TestConstantMasker(unittest.TestCase):
         manual = images.clone()
         for i in range(shape[0]):
             for j in range(mask_size):
-                index = _get_index(shape[1:], indices[i, j])
+                index = get_index(shape[1:], indices[i, j])
                 manual[i, index[0], index[1], index[2]] = mask_value
         diff1 = (res1 - manual).abs().sum().item()
         diff2 = (res2 - manual).abs().sum().item()
@@ -60,7 +53,7 @@ class TestConstantMasker(unittest.TestCase):
         for i in range(shape[0]):
             for j in range(3):
                 for k in range(mask_size):
-                    index = _get_index(shape[2:], indices[i, k])
+                    index = get_index(shape[2:], indices[i, k])
                     manual[i, j, index[0], index[1]] = mask_value
         diff = (res - manual).abs().sum().item()
         self.assertAlmostEqual(diff, 0., places=5)
@@ -83,7 +76,7 @@ class TestConstantMasker(unittest.TestCase):
         manual = images.clone()
         for i in range(shape[0]):
             for j in range(mask_size):
-                index = _get_index(shape[1:], indices[i, j])
+                index = get_index(shape[1:], indices[i, j])
                 manual[i, index[0], index[1], index[2]] = mask_value
         diff = (res - manual).abs().sum().item()
         self.assertAlmostEqual(diff, 0., places=5)
