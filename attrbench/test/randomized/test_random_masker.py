@@ -49,20 +49,20 @@ class TestRandomMasker(unittest.TestCase):
                 else:
                     for c in range(3):
                         # This value should be the same
-                        self.assertNotEqual(images[i, c, index[0], index[1]],
-                                            res[i, c, index[0], index[1]])
+                        self.assertAlmostEqual(images[i, c, index[0], index[1]],
+                                               res[i, c, index[0], index[1]])
         # Check that original images weren't mutated
         self.assertAlmostEqual((original - images).abs().sum().item(), 0.)
 
     def test_mask_pixels_channel_level(self):
         pixel_masker = RandomMasker("channel")
         mask_size = 500
-        shape = (16, 1, 100, 100)
+        shape = (16, 3, 100, 100)
         images, indices = generate_images_indices(shape, mask_size, "channel")
         original = images.clone()
         res = pixel_masker.mask(images, indices)
         for i in range(shape[0]):
-            for j in range(shape[-1] * shape[-2]):
+            for j in range(shape[-1] * shape[-2] * shape[-3]):
                 index = get_index(shape[1:], j)
                 if j in indices[i]:
                     # This value should be different (replaced by random value)
@@ -70,7 +70,7 @@ class TestRandomMasker(unittest.TestCase):
                                         res[i, index[0], index[1], index[2]])
                 else:
                     # This value should be the same
-                    self.assertNotEqual(images[i, index[0], index[1], index[2]],
-                                        res[i, index[0], index[1], index[2]])
+                    self.assertAlmostEqual(images[i, index[0], index[1], index[2]],
+                                           res[i, index[0], index[1], index[2]])
         # Check that original images weren't mutated
         self.assertAlmostEqual((original - images).abs().sum().item(), 0.)
