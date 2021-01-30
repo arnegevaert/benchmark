@@ -25,4 +25,14 @@ class RandomMasker(Masker):
         return torch.stack(res, dim=0)
 
     def predict_masked(self, samples, indices, model, return_masked_samples=False):
-        pass  # TODO
+        preds = []
+        masked = None
+        for i in range(self.num_samples):
+            masked = self.mask(samples, indices)
+            with torch.no_grad():
+                preds.append(model(masked).detach())
+        preds = torch.stack(preds, dim=0)  # [num_samples, batch_size, num_outputs]
+        preds = torch.mean(preds, dim=0)  # [batch_size, num_outputs]
+        if return_masked_samples:
+            return preds, masked
+        return preds
