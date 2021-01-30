@@ -1,4 +1,4 @@
-from attrbench.lib import Masker
+from attrbench.lib.masking import Masker
 from typing import Callable
 import torch
 import numpy as np
@@ -6,7 +6,7 @@ from torch.nn.functional import softmax
 
 
 def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.tensor, num_steps: int,
-                 strict: bool, masking_policy: Masker, tau: float = None, debug_mode=False, writer=None):
+                 strict: bool, masker: Masker, tau: float = None, debug_mode=False, writer=None):
     if not (strict or tau):
         raise ValueError("Provide value for tau when calculating non-strict impact score")
     counts = []
@@ -31,11 +31,14 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, a
         total_features = attrs.shape[1]
         mask_range = list((np.linspace(0, 1, num_steps) * total_features).astype(np.int))
         for n in mask_range:
-            masked_samples = masking_policy(samples, sorted_indices[:, -n:]) if n > 0 else samples.clone()
+            if n > 0:
+                masked_out, masked_samples = masker.predict_masked(samples, sorted_indices[:, -n:],
+                                                                   model, return_masked_samples=True)
+            else:
+                masked_samples = samples.clone()
+                masked_out = orig_out
             if debug_mode:
                 writer.add_images('Masked samples', masked_samples, global_step=n)
-            with torch.no_grad():
-                masked_out = model(masked_samples)
             confidence = softmax(masked_out, dim=1).gather(dim=1, index=labels.view(-1, 1))
             flipped = torch.argmax(masked_out, dim=1) != labels
             if not strict:

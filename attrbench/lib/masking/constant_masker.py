@@ -3,7 +3,7 @@ import numpy as np
 
 
 class ConstantMasker(Masker):
-    def __init__(self, feature_level, mask_value=0):
+    def __init__(self, feature_level, mask_value=0.):
         super().__init__(feature_level)
         self.mask_value = mask_value
 

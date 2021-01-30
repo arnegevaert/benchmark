@@ -1,23 +1,23 @@
 from typing import Callable
-from attrbench.lib import Masker
+from attrbench.lib.masking import Masker
 import torch
 import numpy as np
 
 
 def insertion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
-              num_steps: int, masking_policy: Masker, writer=None):
-    return _insertion_deletion(samples, labels, model, attrs, num_steps, masking_policy, "insertion",
+              num_steps: int, masker: Masker, writer=None):
+    return _insertion_deletion(samples, labels, model, attrs, num_steps, masker, "insertion",
                                writer=writer)
 
 
 def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
-             num_steps: int, masking_policy: Masker, writer=None):
-    return _insertion_deletion(samples, labels, model, attrs, num_steps, masking_policy, "deletion",
+             num_steps: int, masker: Masker, writer=None):
+    return _insertion_deletion(samples, labels, model, attrs, num_steps, masker, "deletion",
                                writer=writer)
 
 
 def _insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
-                        num_steps: int, masking_policy: Masker, mode: str, writer=None):
+                        num_steps: int, masker: Masker, mode: str, writer=None):
     if mode not in ["deletion", "insertion"]:
         raise ValueError("Mode must be either deletion or insertion")
     result = []
@@ -33,31 +33,32 @@ def _insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Call
     # Get original predictions
     with torch.no_grad():
         orig_predictions = model(samples).gather(dim=1, index=labels.unsqueeze(-1))
-        neutral_predictions = model(masking_policy(samples, sorted_indices)).gather(dim=1, index=labels.unsqueeze(-1))
+        neutral_predictions = masker.predict_masked(samples, sorted_indices, model)\
+            .gather(dim=1, index=labels.unsqueeze(-1))
 
     total_features = attrs.shape[1]
     mask_range = list((np.linspace(0, 1, num_steps) * total_features).astype(np.int))
     for i in mask_range:
-        # Mask/insert pixels
-        if i == 0:
-            if mode == "deletion":
+        if mode == "deletion":
+            if i == 0:
+                predictions = orig_predictions
                 masked_samples = samples
             else:
-                masked_samples = masking_policy(samples,
-                                                sorted_indices)  # If i == 0, we insert no pixels, ie mask all pixels
+                predictions, masked_samples = masker.predict_masked(samples, sorted_indices[:, -i:],
+                                                                    model, return_masked_samples=True)
         else:
-            to_mask = sorted_indices[:, -i:] if mode == "deletion" else sorted_indices[:, :-i]
-            masked_samples = masking_policy(samples, to_mask)
-
+            if i == 0:
+                predictions = neutral_predictions
+                masked_samples = masker.mask(samples, sorted_indices)
+            else:
+                predictions, masked_samples = masker.predict_masked(samples, sorted_indices[:, :-i],
+                                                                    model, return_masked_samples=True)
         if writer is not None:
             writer.add_images('masked samples', masked_samples, global_step=i)
-        # Get predictions for result
-        with torch.no_grad():
-            predictions = model(masked_samples).gather(dim=1, index=labels.unsqueeze(-1))
+        predictions = predictions.gather(dim=1, index=labels.unsqueeze(-1))
         if mode == "deletion":
             result.append((predictions - orig_predictions) / orig_predictions)
         else:
             result.append((predictions - neutral_predictions) / orig_predictions)
     result = torch.cat(result, dim=1).cpu()  # [batch_size, len(mask_range)]
-
     return result

@@ -1,5 +1,5 @@
 from typing import Callable
-from attrbench.lib import Masker
+from attrbench.lib.masking import Masker
 import torch
 
 

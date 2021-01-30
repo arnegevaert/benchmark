@@ -1,13 +1,14 @@
 from typing import Callable
 import numpy as np
-from attrbench.lib import sum_of_attributions, Masker
+from attrbench.lib import sum_of_attributions
+from attrbench.lib.masking import Masker, ConstantMasker
 import torch
 import warnings
 
 
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
                   min_subset_size: float, max_subset_size: float, num_steps: int, num_subsets: int,
-                  masking_policy: Masker, writer=None):
+                  masker: Masker, writer=None):
     device = samples.device
     attrs = attrs.to(device)
     if writer is not None:
@@ -30,15 +31,9 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
             # Mask is generated using replace=False, same mask is used for all samples in batch
             num_features = np.prod(attrs.shape[1:])
             indices = torch.LongTensor(np.random.choice(num_features, size=n, replace=False)).repeat(batch_size, 1)
-            masked_samples = masking_policy(samples, indices)
+            output, masked_samples = masker.predict_masked(samples, indices, model, return_masked_samples=True)
             if writer is not None:
-                index_image = torch.ones([1, *masked_samples.shape[1:]])
-                index_image = masking_policy(index_image, indices[0][None])
-                writer.add_images("masking Indices N={}".format(n), index_image, global_step=ns)
                 writer.add_images("Masked samples N={}".format(n), masked_samples, global_step=ns)
-            # Get output on masked samples
-            with torch.no_grad():
-                output = model(masked_samples)
             # Get difference in output confidence for desired class
             output_diffs.append((orig_output - output).gather(dim=1, index=labels.unsqueeze(-1)))
             # Get sum of attribution values for masked inputs
