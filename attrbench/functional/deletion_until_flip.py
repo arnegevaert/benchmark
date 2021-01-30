@@ -26,7 +26,8 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: torch.Ten
     while not torch.all(flipped) and mask_size < num_inputs:
         mask_size += step_size
         # Mask/insert pixels
-        masked_samples, masked_output = masker.predict_masked(samples, sorted_indices[:, -mask_size:], model)
+        masked_output, masked_samples = masker.predict_masked(samples, sorted_indices[:, -mask_size:],
+                                                              model, return_masked_samples=True)
         predictions = torch.argmax(masked_output, dim=1)
 
         criterion = (predictions != orig_predictions)

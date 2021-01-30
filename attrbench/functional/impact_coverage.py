@@ -23,7 +23,7 @@ def apply_patches(samples, labels, model, patch_folder):
         num_tries += 1
         patch_name = next(patch_names)
         target = int(target_expr.match(patch_name).group(1))
-        patch = torch.load(path.join(patch_folder, patch_name))
+        patch = torch.load(path.join(patch_folder, patch_name), map_location=lambda storage, loc: storage)
         image_size = samples.shape[-1]
         patch_size = patch.shape[-1]
 

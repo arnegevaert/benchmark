@@ -46,6 +46,7 @@ def _insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Call
             else:
                 predictions, masked_samples = masker.predict_masked(samples, sorted_indices[:, -i:],
                                                                     model, return_masked_samples=True)
+                predictions = predictions.gather(dim=1, index=labels.unsqueeze(-1))
         else:
             if i == 0:
                 predictions = neutral_predictions
@@ -53,9 +54,9 @@ def _insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Call
             else:
                 predictions, masked_samples = masker.predict_masked(samples, sorted_indices[:, :-i],
                                                                     model, return_masked_samples=True)
+                predictions = predictions.gather(dim=1, index=labels.unsqueeze(-1))
         if writer is not None:
             writer.add_images('masked samples', masked_samples, global_step=i)
-        predictions = predictions.gather(dim=1, index=labels.unsqueeze(-1))
         if mode == "deletion":
             result.append((predictions - orig_predictions) / orig_predictions)
         else:
