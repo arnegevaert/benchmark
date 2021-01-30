@@ -1,6 +1,8 @@
 import unittest
 from attrbench.lib.masking import RandomMasker
 from attrbench.test.util import get_index, generate_images_indices
+import torch
+import numpy as np
 
 
 class TestRandomMasker(unittest.TestCase):
@@ -14,9 +16,17 @@ class TestRandomMasker(unittest.TestCase):
         res1 = channel_masker.mask(images, indices)
         res2 = pixel_masker.mask(images, indices)
         for i in range(shape[0]):
-            for j in range(shape[-1] * shape[-2]):
-                index = get_index(shape[1:], j)
-                if j in indices[i]:
+            rand_indices = torch.tensor(np.random.choice(shape[-1]*shape[-2], size=mask_size, replace=False))
+            for pert_idx in indices[i]:
+                index = get_index(shape[1:], pert_idx)
+                # This value should be different (replaced by random value)
+                self.assertNotEqual(images[i, index[0], index[1], index[2]],
+                                    res1[i, index[0], index[1], index[2]])
+                self.assertNotEqual(images[i, index[0], index[1], index[2]],
+                                    res2[i, index[0], index[1], index[2]])
+            for rand_idx in rand_indices:
+                index = get_index(shape[1:], rand_idx)
+                if rand_idx in indices[i]:
                     # This value should be different (replaced by random value)
                     self.assertNotEqual(images[i, index[0], index[1], index[2]],
                                         res1[i, index[0], index[1], index[2]])
@@ -39,9 +49,16 @@ class TestRandomMasker(unittest.TestCase):
         original = images.clone()
         res = pixel_masker.mask(images, indices)
         for i in range(shape[0]):
-            for j in range(shape[-1] * shape[-2]):
-                index = get_index(shape[2:], j)
-                if j in indices[i]:
+            rand_indices = torch.tensor(np.random.choice(shape[-1]*shape[-2], size=mask_size, replace=False))
+            for pert_idx in indices[i]:
+                index = get_index(shape[2:], pert_idx)
+                for c in range(3):
+                    # This value should be different (replaced by random value)
+                    self.assertNotEqual(images[i, c, index[0], index[1]],
+                                        res[i, c, index[0], index[1]])
+            for rand_idx in rand_indices:
+                index = get_index(shape[2:], rand_idx)
+                if rand_idx in indices[i]:
                     for c in range(3):
                         # This value should be different (replaced by random value)
                         self.assertNotEqual(images[i, c, index[0], index[1]],
@@ -62,9 +79,15 @@ class TestRandomMasker(unittest.TestCase):
         original = images.clone()
         res = pixel_masker.mask(images, indices)
         for i in range(shape[0]):
-            for j in range(shape[-1] * shape[-2] * shape[-3]):
-                index = get_index(shape[1:], j)
-                if j in indices[i]:
+            rand_indices = torch.tensor(np.random.choice(shape[-1]*shape[-2]*shape[-3], size=mask_size, replace=False))
+            for pert_idx in indices[i]:
+                index = get_index(shape[1:], pert_idx)
+                # This value should be different (replaced by random value)
+                self.assertNotEqual(images[i, index[0], index[1], index[2]],
+                                    res[i, index[0], index[1], index[2]])
+            for rand_idx in rand_indices:
+                index = get_index(shape[1:], rand_idx)
+                if rand_idx in indices[i]:
                     # This value should be different (replaced by random value)
                     self.assertNotEqual(images[i, index[0], index[1], index[2]],
                                         res[i, index[0], index[1], index[2]])
