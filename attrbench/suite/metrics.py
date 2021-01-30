@@ -40,14 +40,14 @@ class Metric:
 
 
 class DeletionUntilFlip(Metric):
-    def __init__(self, model, num_steps, masking_policy, writer=None):
+    def __init__(self, model, num_steps, masker, writer=None):
         super().__init__(model, writer)
         self.num_steps = num_steps
-        self.masking_policy = masking_policy
+        self.masker = masker
 
     def _run_single_method(self, samples, labels, attrs):
         return functional.deletion_until_flip(samples, self.model, attrs, self.num_steps,
-                                              self.masking_policy, writer=self.writer).reshape(-1, 1)
+                                              self.masker, writer=self.writer).reshape(-1, 1)
 
 
 class ImpactCoverage(Metric):
@@ -77,16 +77,16 @@ class ImpactCoverage(Metric):
 
 
 class ImpactScore(Metric):
-    def __init__(self, model, num_steps, strict, masking_policy, tau=None, writer=None):
+    def __init__(self, model, num_steps, strict, masker, tau=None, writer=None):
         super().__init__(model, writer)
         self.num_steps = num_steps
         self.strict = strict
-        self.masking_policy = masking_policy
+        self.masker = masker
         self.tau = tau
 
     def _run_single_method(self, samples, labels, attrs):
         return functional.impact_score(samples, labels, self.model, attrs, self.num_steps,
-                                       self.strict, self.masking_policy, self.tau,
+                                       self.strict, self.masker, self.tau,
                                        writer=self.writer)
 
     def get_results(self):
@@ -106,24 +106,24 @@ class ImpactScore(Metric):
 
 
 class Insertion(Metric):
-    def __init__(self, model, num_steps, masking_policy, writer=None):
+    def __init__(self, model, num_steps, masker, writer=None):
         super().__init__(model, writer)
         self.num_steps = num_steps
-        self.masking_policy = masking_policy
+        self.masker = masker
 
     def _run_single_method(self, samples, labels, attrs):
-        return functional.insertion(samples, labels, self.model, attrs, self.num_steps, self.masking_policy,
+        return functional.insertion(samples, labels, self.model, attrs, self.num_steps, self.masker,
                                     writer=self.writer)
 
 
 class Deletion(Metric):
-    def __init__(self, model, num_steps, masking_policy, writer=None):
+    def __init__(self, model, num_steps, masker, writer=None):
         super().__init__(model, writer)
         self.num_steps = num_steps
-        self.masking_policy = masking_policy
+        self.masker = masker
 
     def _run_single_method(self, samples, labels, attrs):
-        return functional.deletion(samples, labels, self.model, attrs, self.num_steps, self.masking_policy,
+        return functional.deletion(samples, labels, self.model, attrs, self.num_steps, self.masker,
                                    writer=self.writer)
 
 
@@ -163,13 +163,13 @@ class MaxSensitivity(Metric):
 
 
 class SensitivityN(Metric):
-    def __init__(self, model, min_subset_size, max_subset_size, num_steps, num_subsets, masking_policy, writer=None):
+    def __init__(self, model, min_subset_size, max_subset_size, num_steps, num_subsets, masker, writer=None):
         super().__init__(model, writer)
         self.min_subset_size = min_subset_size
         self.max_subset_size = max_subset_size
         self.num_steps = num_steps
         self.num_subsets = num_subsets
-        self.masking_policy = masking_policy
+        self.masker = masker
         self.metadata = {
             "col_index": np.linspace(min_subset_size, max_subset_size, num_steps)
         }
@@ -177,5 +177,5 @@ class SensitivityN(Metric):
     def _run_single_method(self, samples, labels, attrs):
         return functional.sensitivity_n(samples, labels, self.model, attrs,
                                         self.min_subset_size, self.max_subset_size, self.num_steps,
-                                        self.num_subsets, self.masking_policy,
+                                        self.num_subsets, self.masker,
                                         writer=self.writer)
