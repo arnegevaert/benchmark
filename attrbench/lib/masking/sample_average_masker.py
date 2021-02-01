@@ -7,10 +7,10 @@ class SampleAverageMasker(Masker):
         res = []
         for i in range(samples.shape[0]):
             sample = samples[i, ...]
-            baseline = torch.zeros(sample.shape).float()
+            baseline = torch.zeros(sample.shape).float().to(samples.device)
             for c in range(sample.shape[0]):
                 baseline[c, ...] = torch.mean(sample[c, ...])
-            to_mask = torch.zeros(sample.shape).flatten(0 if self.feature_level == "channel" else 1)
+            to_mask = torch.zeros(sample.shape).flatten(0 if self.feature_level == "channel" else 1).to(samples.device)
             if self.feature_level == "channel":
                 to_mask[indices[i]] = 1.
             else:

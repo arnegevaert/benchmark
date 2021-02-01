@@ -13,13 +13,13 @@ class BlurringMasker(Masker):
         res = []
         for i in range(samples.shape[0]):
             sample = samples[i, ...]
-            cv_sample = sample.permute(1, 2, 0).numpy()
+            cv_sample = sample.permute(1, 2, 0).cpu().numpy()
             blurred_sample = torch.tensor(blur(cv_sample, (self.kernel_size, self.kernel_size)))
             if len(blurred_sample.shape) == 2:
                 blurred_sample = blurred_sample.unsqueeze(-1)
-            baseline = blurred_sample.permute(2, 0, 1)
+            baseline = blurred_sample.permute(2, 0, 1).to(samples.device)
 
-            to_mask = torch.zeros(sample.shape).flatten(0 if self.feature_level == "channel" else 1)
+            to_mask = torch.zeros(sample.shape).flatten(0 if self.feature_level == "channel" else 1).to(samples.device)
             if self.feature_level == "channel":
                 to_mask[indices[i]] = 1.
             else:

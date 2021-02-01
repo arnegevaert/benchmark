@@ -11,7 +11,7 @@ from os import path
 
 def _parse_masker(d):
     constructor = getattr(masking, d["type"])
-    return constructor(**d["args"])
+    return constructor(**{key: d[key] for key in d if key != "type"})
 
 
 def _parse_args(args):
@@ -51,9 +51,11 @@ class Suite:
             self.default_args = {**self.default_args, **default_args}
             # Build metric objects
             for metric_name in data["metrics"]:
+                if metric_name in self.metrics.keys():
+                    raise ValueError(f"Invalid configuration: duplicate entry {metric_name}")
                 metric_dict = data["metrics"][metric_name]
                 # Parse args from config file
-                args_dict = _parse_args(metric_dict.get("args", {}))
+                args_dict = _parse_args({key: metric_dict[key] for key in metric_dict if key != "type"})
                 # Get constructor
                 constructor = getattr(metrics, metric_dict["type"])
                 # Add model, methods, and (optional) writer args
@@ -109,15 +111,15 @@ class Suite:
                     # Save attributions if necessary
                     for method_name in self.methods:
                         self.attrs[method_name].append(attrs[method_name].numpy())
-                if not checked_shapes:
-                    # Check shapes of attributions if necessary
-                    for method_name in self.methods:
-                        if not self.default_args["masker"].check_attribution_shape(samples, attrs[method_name]):
-                            raise ValueError(f"Attributions for method {method_name} "
-                                             f"are not compatible with masker")
                 for i, metric in enumerate(self.metrics.keys()):
                     if verbose:
                         prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
+                    if not checked_shapes and hasattr(self.metrics[metric], "masker"):
+                        # Check shapes of attributions if necessary
+                        for method_name in self.methods:
+                            if not self.metrics[metric].masker.check_attribution_shape(samples, attrs[method_name]):
+                                raise ValueError(f"Attributions for method {method_name} "
+                                                 f"are not compatible with masker")
                     self.metrics[metric].run_batch(samples, labels, attrs)
                 if verbose:
                     prog.update(samples.size(0))

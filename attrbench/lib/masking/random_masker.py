@@ -3,7 +3,7 @@ import torch
 
 
 class RandomMasker(Masker):
-    def __init__(self, feature_level, additive=False, std=1, num_samples=100):
+    def __init__(self, feature_level, additive=False, std=1, num_samples=10):
         super().__init__(feature_level)
         self.additive = additive
         self.std = std
@@ -14,8 +14,8 @@ class RandomMasker(Masker):
         for i in range(samples.shape[0]):
             sample = samples[i, ...]
             mean = sample if self.additive else torch.zeros(sample.shape)
-            baseline = torch.normal(mean=mean, std=self.std)
-            to_mask = torch.zeros(sample.shape).flatten(0 if self.feature_level == "channel" else 1)
+            baseline = torch.normal(mean=mean, std=self.std).to(samples.device)
+            to_mask = torch.zeros(sample.shape).flatten(0 if self.feature_level == "channel" else 1).to(samples.device)
             if self.feature_level == "channel":
                 to_mask[indices[i]] = 1.
             else:
