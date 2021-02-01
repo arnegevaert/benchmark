@@ -7,26 +7,38 @@ methods:
   - GuidedBackprop
   - Deconvolution
   - GradCAM
-  - NoReluGradCAM
   - GuidedGradCAM
-  - NoReluGuidedGradCAM
+  - GradCAM_no_relu:
+      type: GradCAM
+      relu_attributions: False
+  - GuidedGradCAM_no_relu:
+      type: GuidedGradCAM
+      relu_attributions: False
   - Random
+  - Random_pos_only:
+      type: Random
+      positive_only: True
   - EdgeDetection
   - DeepLift
   - IntegratedGradients:
+      type: IntegratedGradients
       internal_batch_size: 16
       num_steps: 25
   - SmoothGrad:
+      type: SmoothGrad
       stdev: 0.15
       num_samples: 50
       internal_batch_size: 16
   - VarGrad:
+      type: VarGrad
       stdev: 0.15
       num_samples: 50
       internal_batch_size: 16
   - DeepShap:
+      type: DeepShap
       n_baseline_samples: 100
   - KernelShap:
+      type: KernelShap
       n_segments: 32
       n_samples: 300
       super_pixels: True
