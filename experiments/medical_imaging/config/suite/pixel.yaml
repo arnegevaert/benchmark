@@ -6,21 +6,18 @@ metrics:
   # ################### #
   infidelity_gaussian:
     type: Infidelity
-    args:
-      num_perturbations: 1000
-      perturbation_mode: gaussian
-      perturbation_size: 0.2
+    num_perturbations: 1000
+    perturbation_mode: gaussian
+    perturbation_size: 0.2
   infidelity_sq:
     type: Infidelity
-    args:
-      num_perturbations: 1000
-      perturbation_mode: square
-      perturbation_size: 0.2
+    num_perturbations: 1000
+    perturbation_mode: square
+    perturbation_size: 0.2
   max_sensitivity:
     type: MaxSensitivity
-    args:
-      num_perturbations: 50
-      radius: 0.1
+    num_perturbations: 50
+    radius: 0.1
   impact_coverage:
     type: ImpactCoverage
 
