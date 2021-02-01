@@ -27,8 +27,10 @@ class MethodLoader:
                     if (type(entry) not in (str, dict)) or (type(entry) == dict and len(entry) > 1):
                         raise ValueError(f"Invalid configuration file")
                     method_name = entry if type(entry) == str else next(iter(entry))
-                    constructor = getattr(attribution, method_name)
+                    method_type = entry[method_name]["type"] if type(entry) == dict else method_name
+                    constructor = getattr(attribution, method_type)
                     method_args = entry[method_name] if type(entry) == dict else {}
+                    method_args = {k: method_args[k] for k in method_args if k != "type"}
                     sig = signature(constructor)
                     args = {}
                     for param in sig.parameters.keys():
