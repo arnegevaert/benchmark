@@ -56,7 +56,7 @@ class BasicCNN(nn.Module):
         self.dropout2 = nn.Dropout2d(0.5)
         self.fc1 = nn.Linear(9216, 128)
         self.fc2 = nn.Linear(128, num_classes)
-        self.relu1 =nn.ReLU()
+        self.relu1 = nn.ReLU()
         self.relu2 = nn.ReLU()
         if params_loc:
             # map_location allows taking a model trained on GPU and loading it on CPU
@@ -77,7 +77,7 @@ class BasicCNN(nn.Module):
         x = self.dropout1(x)
         x = torch.flatten(x, 1)
         x = self.fc1(x)
-        x = self.reul2(x)
+        x = self.relu2(x)
         x = self.dropout2(x)
         return self.fc2(x)
 

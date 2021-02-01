@@ -16,7 +16,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
 
-    dataset, model, sample_shape, patch_folder = get_dataset_model(args.dataset)
+    dataset, model, patch_folder = get_dataset_model(args.dataset)
     model.to(device)
     model.eval()
 
