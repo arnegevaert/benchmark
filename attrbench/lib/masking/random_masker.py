@@ -14,7 +14,7 @@ class RandomMasker(Masker):
         for i in range(samples.shape[0]):
             sample = samples[i, ...]
             mean = sample if self.additive else torch.zeros(sample.shape, device=samples.device)
-            baseline = torch.normal(mean=mean, std=self.std, device=samples.device)
+            baseline = torch.normal(mean=mean, std=self.std)
             to_mask = torch.zeros(sample.shape, device=samples.device).flatten(0 if self.feature_level == "channel" else 1)
             if self.feature_level == "channel":
                 to_mask[indices[i]] = 1.
