@@ -11,7 +11,7 @@ def _get_index(shape, index):
     return tuple(res)
 
 
-class TestSumOfAttributionsRandomized(unittest.TestCase):
+class TestSumOfAttributions(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

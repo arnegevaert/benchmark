@@ -1,7 +1,9 @@
 default:
-  masking_policy:
-    policy: pixel
-    value: 0.
+  masker:
+    type: ConstantMasker
+    args:
+      feature_level: pixel
+      mask_value: 0.
   num_steps: 50  # Used by deletion_until_flip, (strict_)impact_score, insertion, deletion
 metrics:
   deletion_until_flip:

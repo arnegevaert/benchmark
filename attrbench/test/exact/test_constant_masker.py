@@ -1,11 +1,11 @@
 import unittest
 import torch
 import numpy as np
-from attrbench.lib import PixelMaskingPolicy, FeatureMaskingPolicy
+from attrbench.lib.masking import ConstantMasker
 from os import path
 
 
-class TestMasking(unittest.TestCase):
+class TestConstantMasker(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.data = {}
@@ -16,15 +16,13 @@ class TestMasking(unittest.TestCase):
     def test_mask_pixels_grayscale(self):
         mask_value = 3.
         original = self.data["grayscale_image"].clone()
-        fmp = FeatureMaskingPolicy(mask_value)
-        pmp = PixelMaskingPolicy(mask_value)
+        fmp = ConstantMasker("channel", mask_value)
+        pmp = ConstantMasker("pixel", mask_value)
         # Test masking for grayscale image
         # Use both pixel_level_mask=False and =True, should be exactly the same result
         indices = torch.tensor([[1, 5, 3], [2, 4, 6]])
-        #masked1 = mask_pixels(self.data["grayscale_image"], indices, mask_value, pixel_level_mask=False)
-        #masked2 = mask_pixels(self.data["grayscale_image"], indices, mask_value, pixel_level_mask=True)
-        masked1 = fmp(self.data["grayscale_image"], indices)
-        masked2 = pmp(self.data["grayscale_image"], indices)
+        masked1 = fmp.mask(self.data["grayscale_image"], indices)
+        masked2 = pmp.mask(self.data["grayscale_image"], indices)
         # Manual masking
         masked_manual = self.data["grayscale_image"].clone()
         masked_manual[0, 0, 0, 1] = mask_value  # 1
@@ -44,10 +42,10 @@ class TestMasking(unittest.TestCase):
 
     def test_mask_pixels_rgb_pixel_level(self):
         mask_value = 3.
-        pmp = PixelMaskingPolicy(mask_value)
+        pmp = ConstantMasker("pixel", mask_value)
         indices = torch.tensor([[0, 5, 7], [2, 6, 1]])
         original = self.data["rgb_image"].clone()
-        masked = pmp(self.data["rgb_image"], indices)
+        masked = pmp.mask(self.data["rgb_image"], indices)
         # Manual masking
         masked_manual = self.data["rgb_image"].clone()
         for i in range(3):
@@ -65,11 +63,10 @@ class TestMasking(unittest.TestCase):
     
     def test_mask_pixels_channel_level(self):
         mask_value = 3.
-        fmp = FeatureMaskingPolicy(mask_value)
+        fmp = ConstantMasker("channel", mask_value)
         indices = torch.tensor([[12, 21, 3], [5, 19, 25]])
         original = self.data["rgb_image"].clone()
-        # masked = mask_pixels(self.data["rgb_image"], indices, mask_value, pixel_level_mask=False)
-        masked = fmp(self.data["rgb_image"], indices)
+        masked = fmp.mask(self.data["rgb_image"], indices)
         # Manual masking
         masked_manual = self.data["rgb_image"].clone()
         masked_manual[0, 1, 1, 0] = mask_value  # 12

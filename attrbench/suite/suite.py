@@ -1,5 +1,5 @@
 from attrbench.suite import metrics, Result
-from attrbench.lib import FeatureMaskingPolicy, PixelMaskingPolicy, AttributionWriter
+from attrbench.lib import AttributionWriter, masking
 from tqdm import tqdm
 import torch
 import numpy as np
@@ -9,30 +9,13 @@ import yaml
 from os import path
 
 
-def _parse_masking_policy(d):
-    if d["policy"] == "pixel":
-        masking_policy = PixelMaskingPolicy(d["value"])
-    elif d["policy"] == "feature":
-        masking_policy = FeatureMaskingPolicy(d["value"])
-    else:
-        raise ValueError("policy attribute of masking_policy must be either \"pixel\" or \"feature\"")
-    return masking_policy
+def _parse_masker(d):
+    constructor = getattr(masking, d["type"])
+    return constructor(**{key: d[key] for key in d if key != "type"})
 
 
-def _parse_metric_args(metric_args):
-    result = {}
-    # Fill dictionary with metric-specific arguments from JSON data
-    for arg in metric_args:
-        if arg == "masking_policy":
-            result["masking_policy"] = _parse_masking_policy(metric_args[arg])
-        else:
-            result[arg] = metric_args[arg]
-    return result
-
-
-def _parse_default_args(default_args):
-    return {key: (default_args[key] if key != "masking_policy" else _parse_masking_policy(default_args[key]))
-            for key in default_args}
+def _parse_args(args):
+    return {key: _parse_masker(args[key]) if key == "masker" else args[key] for key in args}
 
 
 class Suite:
@@ -64,13 +47,15 @@ class Suite:
         with open(loc) as fp:
             data = yaml.full_load(fp)
             # Parse default arguments if present
-            default_args = _parse_default_args(data.get("default", {}))
+            default_args = _parse_args(data.get("default", {}))
             self.default_args = {**self.default_args, **default_args}
             # Build metric objects
             for metric_name in data["metrics"]:
+                if metric_name in self.metrics.keys():
+                    raise ValueError(f"Invalid configuration: duplicate entry {metric_name}")
                 metric_dict = data["metrics"][metric_name]
                 # Parse args from config file
-                args_dict = _parse_metric_args(metric_dict.get("args", {}))
+                args_dict = _parse_args({key: metric_dict[key] for key in metric_dict if key != "type"})
                 # Get constructor
                 constructor = getattr(metrics, metric_dict["type"])
                 # Add model, methods, and (optional) writer args
@@ -126,15 +111,15 @@ class Suite:
                     # Save attributions if necessary
                     for method_name in self.methods:
                         self.attrs[method_name].append(attrs[method_name].numpy())
-                if not checked_shapes:
-                    # Check shapes of attributions if necessary
-                    for method_name in self.methods:
-                        if not self.default_args["masking_policy"].check_attribution_shape(samples, attrs[method_name]):
-                            raise ValueError(f"Attributions for method {method_name} "
-                                             f"are not compatible with masking policy")
                 for i, metric in enumerate(self.metrics.keys()):
                     if verbose:
                         prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
+                    if not checked_shapes and hasattr(self.metrics[metric], "masker"):
+                        # Check shapes of attributions if necessary
+                        for method_name in self.methods:
+                            if not self.metrics[metric].masker.check_attribution_shape(samples, attrs[method_name]):
+                                raise ValueError(f"Attributions for method {method_name} "
+                                                 f"are not compatible with masker")
                     self.metrics[metric].run_batch(samples, labels, attrs)
                 if verbose:
                     prog.update(samples.size(0))

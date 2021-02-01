@@ -1,5 +1,5 @@
 from typing import Callable
-from attrbench.lib import PixelMaskingPolicy, FeatureMaskingPolicy
+from attrbench.lib.masking import ConstantMasker
 import random
 import torch
 from os import path, listdir
@@ -23,7 +23,7 @@ def apply_patches(samples, labels, model, patch_folder):
         num_tries += 1
         patch_name = next(patch_names)
         target = int(target_expr.match(patch_name).group(1))
-        patch = torch.load(path.join(patch_folder, patch_name))
+        patch = torch.load(path.join(patch_folder, patch_name), map_location=lambda storage, loc: storage)
         image_size = samples.shape[-1]
         patch_size = patch.shape[-1]
 
@@ -83,8 +83,8 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
 
     # Create mask of critical factors (most important pixels/features according to attributions)
     to_mask = sorted_indices[:, -nr_top_attributions:]
-    pmp = PixelMaskingPolicy(mask_value=1.) if attrs.shape[1] == 1 else FeatureMaskingPolicy(mask_value=1.)
-    critical_factor_mask = pmp(torch.zeros(attrs.shape), to_mask)
+    masker = ConstantMasker(feature_level="pixel" if attrs.shape[1] == 1 else "channel", mask_value=1.)
+    critical_factor_mask = masker.mask(torch.zeros(attrs.shape), to_mask)
 
     # Calculate IoU of critical factors (top n attributions) with adversarial patch
     patch_mask_flattened = patch_mask.flatten(1).bool()

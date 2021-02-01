@@ -1,0 +1,236 @@
+default:
+  num_steps: 50  # Used by deletion_until_flip, (strict_)impact_score, insertion, deletion
+metrics:
+  # ################ #
+  # CONSTANT MASKING #
+  # ################ #
+  
+  deletion_until_flip_cst:
+    type: DeletionUntilFlip
+    masker:
+        type: ConstantMasker
+        feature_level: channel
+        mask_value: 0.
+  impact_score_cst:
+    type: ImpactScore
+    strict: false
+    tau: 0.5
+    masker:
+        type: ConstantMasker
+        feature_level: channel
+        mask_value: 0.
+  strict_impact_score_cst:
+    type: ImpactScore
+    strict: true
+    masker:
+        type: ConstantMasker
+        feature_level: channel
+        mask_value: 0.
+  insertion_cst:
+    type: Insertion
+    masker:
+        type: ConstantMasker
+        feature_level: channel
+        mask_value: 0.
+  deletion_cst:
+    type: Deletion
+    masker:
+        type: ConstantMasker
+        feature_level: channel
+        mask_value: 0.
+  sensitivity_n_cst:
+    type: SensitivityN
+    min_subset_size: 0.1
+    max_subset_size: 0.5
+    num_steps: 5
+    num_subsets: 100
+    masker:
+        type: ConstantMasker
+        feature_level: channel
+        mask_value: 0.
+  
+  # ################## #
+  # SAMPLE AVG MASKING #
+  # ################## #
+
+  deletion_until_flip_avg:
+    type: DeletionUntilFlip
+    masker:
+        type: SampleAverageMasker
+        feature_level: channel
+  impact_score_avg:
+    type: ImpactScore
+    strict: false
+    tau: 0.5
+    masker:
+        type: SampleAverageMasker
+        feature_level: channel
+  strict_impact_score_avg:
+    type: ImpactScore
+    strict: true
+    masker:
+        type: SampleAverageMasker
+        feature_level: channel
+  insertion_avg:
+    type: Insertion
+    masker:
+        type: SampleAverageMasker
+        feature_level: channel
+  deletion_avg:
+    type: Deletion
+    masker:
+        type: SampleAverageMasker
+        feature_level: channel
+  sensitivity_n_avg:
+    type: SensitivityN
+    min_subset_size: 0.1
+    max_subset_size: 0.5
+    num_steps: 5
+    num_subsets: 100
+    masker:
+        type: SampleAverageMasker
+        feature_level: channel
+
+  # ############## #
+  # RANDOM MASKING #
+  # ############## #
+
+  deletion_until_flip_rand:
+    type: DeletionUntilFlip
+    masker:
+        type: RandomMasker
+        feature_level: channel
+  impact_score_rand:
+    type: ImpactScore
+    strict: false
+    tau: 0.5
+    masker:
+        type: RandomMasker
+        feature_level: channel
+  strict_impact_score_rand:
+    type: ImpactScore
+    strict: true
+    masker:
+        type: RandomMasker
+        feature_level: channel
+  insertion_rand:
+    type: Insertion
+    masker:
+        type: RandomMasker
+        feature_level: channel
+  deletion_rand:
+    type: Deletion
+    masker:
+        type: RandomMasker
+        feature_level: channel
+  sensitivity_n_rand:
+    type: SensitivityN
+    masker:
+        type: RandomMasker
+        feature_level: channel
+    min_subset_size: 0.1
+    max_subset_size: 0.5
+    num_steps: 5
+    num_subsets: 100
+
+  # ####################### #
+  # ADDITIVE RANDOM MASKING #
+  # ####################### #
+
+  deletion_until_flip_rand_add:
+    type: DeletionUntilFlip
+    masker:
+        type: RandomMasker
+        feature_level: channel
+        additive: True
+        std: 0.2
+  impact_score_rand_add:
+    type: ImpactScore
+    strict: false
+    tau: 0.5
+    masker:
+        type: RandomMasker
+        feature_level: channel
+        additive: True
+        std: 0.2
+  strict_impact_score_rand_add:
+    type: ImpactScore
+    strict: true
+    masker:
+        type: RandomMasker
+        feature_level: channel
+        additive: True
+        std: 0.2
+  insertion_rand_add:
+    type: Insertion
+    masker:
+        type: RandomMasker
+        feature_level: channel
+        additive: True
+        std: 0.2
+  deletion_rand_add:
+    type: Deletion
+    masker:
+        type: RandomMasker
+        feature_level: channel
+        additive: True
+        std: 0.2
+  sensitivity_n_rand_add:
+    type: SensitivityN
+    min_subset_size: 0.1
+    max_subset_size: 0.5
+    num_steps: 5
+    num_subsets: 100
+    masker:
+        type: RandomMasker
+        feature_level: channel
+        additive: True
+        std: 0.2
+
+  # ################ #
+  # BLURRING MASKING #
+  # ################ #
+
+  deletion_until_flip_blur:
+    type: DeletionUntilFlip
+    masker:
+        type: BlurringMasker
+        feature_level: channel
+        kernel_size: 5
+  impact_score_blur:
+    type: ImpactScore
+    strict: false
+    tau: 0.5
+    masker:
+        type: BlurringMasker
+        feature_level: channel
+        kernel_size: 5
+  strict_impact_score_blur:
+    type: ImpactScore
+    strict: true
+    masker:
+        type: BlurringMasker
+        feature_level: channel
+        kernel_size: 5
+  insertion_blur:
+    type: Insertion
+    masker:
+        type: BlurringMasker
+        feature_level: channel
+        kernel_size: 5
+  deletion_blur:
+    type: Deletion
+    masker:
+        type: BlurringMasker
+        feature_level: channel
+        kernel_size: 5
+  sensitivity_n_blur:
+    type: SensitivityN
+    min_subset_size: 0.1
+    max_subset_size: 0.5
+    num_steps: 5
+    num_subsets: 100
+    masker:
+        type: BlurringMasker
+        feature_level: channel
+        kernel_size: 5
