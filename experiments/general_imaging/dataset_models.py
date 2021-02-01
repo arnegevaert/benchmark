@@ -19,7 +19,6 @@ def get_dataset_model(name, train=False):
         ])
         ds = datasets.MNIST(path.join(_DATA_LOC, "MNIST"), train=train, transform=transform, download=True)
         model = BasicCNN(10, path.join(_DATA_LOC, "models/MNIST/cnn.pt"))
-        sample_shape = (28, 28)
         patch_folder = None
     elif name == "CIFAR10":
         transform = transforms.Compose([
@@ -28,7 +27,6 @@ def get_dataset_model(name, train=False):
         ])
         ds = datasets.CIFAR10(path.join(_DATA_LOC, "CIFAR10"), train=train, transform=transform, download=True)
         model = Resnet20(10,path.join(_DATA_LOC, "models/CIFAR10/resnet20.pt"))
-        sample_shape = (32, 32)
         patch_folder = path.join(_DATA_LOC, "patches/CIFAR10")
     elif name == "ImageNette":
         transform = transforms.Compose([
@@ -40,11 +38,10 @@ def get_dataset_model(name, train=False):
         dir = "train" if train else "val"
         ds = datasets.ImageFolder(path.join(_DATA_LOC, "imagenette2", dir), transform=transform)
         model = Resnet18(path.join(_DATA_LOC, "models/ImageNette/resnet18.pt"))
-        sample_shape = (224, 224)
         patch_folder = path.join(_DATA_LOC, "patches/ImageNette")
     else:
         raise ValueError(f"Invalid dataset: {name}")
-    return ds, model, sample_shape, patch_folder
+    return ds, model, patch_folder
 
 
 class BasicCNN(nn.Module):

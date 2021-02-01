@@ -7,7 +7,9 @@ methods:
   - GuidedBackprop
   - Deconvolution
   - GradCAM
+  - NoReluGradCAM
   - GuidedGradCAM
+  - NoReluGuidedGradCAM
   - Random
   - EdgeDetection
   - DeepLift
