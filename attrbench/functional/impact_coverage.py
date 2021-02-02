@@ -79,7 +79,8 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
     flattened_attrs = attrs.flatten(1)
     sorted_indices = flattened_attrs.argsort().cpu()
     # Number of top attributions is equal to number of features masked by the patch
-    nr_top_attributions = patch_mask.long().sum().item()
+    # We assume here that the mask is the same size for all samples!
+    nr_top_attributions = patch_mask[0, ...].long().sum().item()
 
     # Create mask of critical factors (most important pixels/features according to attributions)
     to_mask = sorted_indices[:, -nr_top_attributions:]
