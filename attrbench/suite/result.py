@@ -46,7 +46,7 @@ class Result:
                     metric_group.create_dataset(method_name, data=method_results)
 
     @staticmethod
-    def load_hdf(filename):
+    def load_hdf(filename, metrics=None, methods=None):
         if path.isfile(filename):
             images, attributions = None, None
             with h5py.File(filename, "r") as fp:
@@ -56,12 +56,14 @@ class Result:
                     attributions = {
                         method: np.array(fp["attributions"][method])
                         for method in fp["attributions"].keys()
+                        if methods is None or method in methods
                     }
                 data = {
                     metric: {
                         method: pd.DataFrame(fp["results"][metric][method])
                         for method in fp["results"][metric].keys()
                     } for metric in fp["results"].keys()
+                    if metrics is None or metric in metrics
                 }
                 metadata = {
                     metric: {

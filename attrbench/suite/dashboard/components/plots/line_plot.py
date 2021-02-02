@@ -3,6 +3,7 @@ import plotly.graph_objects as go
 from plotly import express as px
 import dash_html_components as html
 import dash_core_components as dcc
+from itertools import cycle
 
 from attrbench.suite.dashboard.components import Component
 
@@ -15,17 +16,18 @@ class Lineplot(Component):
         self.id = id
 
     def render(self) -> html.Div:
-        colors = px.colors.qualitative.Plotly
+        colors = cycle(px.colors.qualitative.Alphabet)
         fig_list = []
         for i, key in enumerate(self.data.keys()):
+            color = next(colors)
             key_data = self.data[key]
             mean = np.mean(key_data, axis=0)
             sd = np.std(key_data, axis=0)
             ci_upper = mean + (1.96 * sd / np.sqrt(key_data.shape[0]))
             ci_lower = mean - (1.96 * sd / np.sqrt(key_data.shape[0]))
-            fig_list.append(go.Scatter(x=self.x_ticks, y=mean, line=dict(color=colors[i]),
+            fig_list.append(go.Scatter(x=self.x_ticks, y=mean, line=dict(color=color),
                                        legendgroup=key, name=key, mode="lines"))
-            rgb_col = px.colors.hex_to_rgb(colors[i])
+            rgb_col = px.colors.hex_to_rgb(color)
             fig_list.append(go.Scatter(x=np.concatenate([self.x_ticks, self.x_ticks[::-1]]),
                                        y=np.concatenate([ci_upper, ci_lower[::-1]]), fill="toself",
                                        fillcolor=f"rgba({rgb_col[0]},{rgb_col[1]},{rgb_col[2]},0.2)",
