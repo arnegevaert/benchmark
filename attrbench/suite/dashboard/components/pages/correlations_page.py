@@ -1,4 +1,5 @@
 import dash_html_components as html
+import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
 
@@ -48,8 +49,7 @@ class CorrelationsPage(Page):
                         data[metric_name].append(self.result_obj.data[metric_name][method_name].mean(axis=1))
             for metric_name in data.keys():
                 data[metric_name] = pd.concat(data[metric_name], axis=0)
-            plot = CorrelationMap(pd.concat(data, axis=1), id=f"metric-corr")
-            result.append(plot.render())
+            inter_metric_corr = CorrelationMap(pd.concat(data, axis=1), id=f"metric-corr")
 
             """
             # Inter-method correlation
@@ -63,5 +63,19 @@ class CorrelationsPage(Page):
                 plot = CorrelationMap(pd.concat(data, axis=1), id=f"{metric_name}-method-corr")
                 result.append(plot.render())
             """
+
+            data = {method_name: [] for method_name in self.result_obj.get_methods()}
+            for metric_name in self.result_obj.get_metrics():
+                if self.result_obj.metadata[metric_name]["shape"][0] > 1:
+                    for method_name in self.result_obj.get_methods():
+                        data[method_name].append(self.result_obj.data[metric_name][method_name].mean(axis=1))
+            for method_name in data.keys():
+                data[method_name] = pd.concat(data[method_name], axis=0)
+            inter_method_corr = CorrelationMap(pd.concat(data, axis=1), id="method-corr")
+            result.append(dbc.Row([
+                dbc.Col(inter_metric_corr.render()),
+                dbc.Col(inter_method_corr.render())
+            ]))
+
             self.rendered_contents = html.Div(result)
         return self.rendered_contents
