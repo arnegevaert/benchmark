@@ -11,4 +11,7 @@ class CorrelationMap(Component):
 
     def render(self) -> html.Div:
         corrs = self.df.corr(method="spearman")
-        return html.Div(dcc.Graph(id=self.id, figure=px.imshow(corrs, zmin=-1, zmax=1)))
+        return html.Div(dcc.Graph(id=self.id,
+                                  figure=px.imshow(corrs, zmin=-1, zmax=1,
+                                                   height=40*corrs.shape[0],
+                                                   width=40*corrs.shape[0])))
