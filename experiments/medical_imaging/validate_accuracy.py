@@ -62,7 +62,7 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
 
     # Get dataset, model, methods
-    ds, model, sample_shape = get_dataset_model(args.dataset)
+    ds, model = get_dataset_model(args.dataset)
     dl = DataLoader(ds, batch_size=args.batch_size, shuffle=False, num_workers=4)
     acc,balanced_acc, auc = test_epoch(model, dl)
     print("validation set results:\n"

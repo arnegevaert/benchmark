@@ -45,6 +45,18 @@ def get_dataset_model(name):
     elif name == "ChestMNIST":
         ds = MedMNIST(path.join(_DATA_LOC, "MedMNIST"), "chestmnist", split='test')
         model = MedMnist_ResNet18(num_classes=14, params_loc=path.join(_DATA_LOC, "models/MedMNIST/chestmnist.pt"), in_channels=1)
+    elif name == "breastMNIST":
+        ds = MedMNIST(path.join(_DATA_LOC, "MedMNIST"), "breastmnist", split='test')
+        model = MedMnist_ResNet18(num_classes=2, params_loc=path.join(_DATA_LOC, "models/MedMNIST/breastmnist.pth"),
+                                  in_channels=1)
+    elif name == "retinaMNIST":
+        ds = MedMNIST(path.join(_DATA_LOC, "MedMNIST"), "retinamnist", split='test')
+        model = MedMnist_ResNet18(num_classes=5, params_loc=path.join(_DATA_LOC, "models/MedMNIST/retinamnist.pth"),
+                                  in_channels=3)
+    elif name == "pneumoniaMNIST":
+        ds = MedMNIST(path.join(_DATA_LOC, "MedMNIST"), "pneumoniamnist", split='test')
+        model = MedMnist_ResNet18(num_classes=5, params_loc=path.join(_DATA_LOC, "models/MedMNIST/pneumoniamnist.pth"),
+                                  in_channels=3)
     else:
         raise ValueError(f"Invalid dataset: {name}")
     return ds, model

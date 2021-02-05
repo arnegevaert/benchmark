@@ -23,8 +23,8 @@ class BasicBlock(nn.Module):
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3,
                                stride=1, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(planes)
-        self.relu1 = nn.Relu()
-        self.relu2 = nn.Relu()
+        self.relu1 = nn.ReLU()
+        self.relu2 = nn.ReLU()
 
         self.shortcut = nn.Sequential()
         if stride != 1 or in_planes != self.expansion*planes:
@@ -63,9 +63,9 @@ class Bottleneck(nn.Module):
                           kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(self.expansion*planes)
             )
-        self.relu1 = nn.Relu()
-        self.relu2 = nn.Relu()
-        self.relu3 = nn.Relu()
+        self.relu1 = nn.ReLU()
+        self.relu2 = nn.ReLU()
+        self.relu3 = nn.ReLU()
 
     def forward(self, x):
         out = self.relu1(self.bn1(self.conv1(x)))
@@ -89,7 +89,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
         self.linear = nn.Linear(512*block.expansion, num_classes)
-        self.relu1 = nn.Relu()
+        self.relu1 = nn.ReLU()
 
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
