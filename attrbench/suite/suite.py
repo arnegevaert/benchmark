@@ -28,7 +28,7 @@ class Suite:
 
     def __init__(self, model, methods, dataloader, device="cpu",
                  save_images=False, save_attrs=False, seed=None, patch_folder=None,
-                 log_dir=None):
+                 log_dir=None, explain_label=None, multi_label=False):
         self.metrics = {}
         self.model = model.to(device)
         self.model.eval()
@@ -43,6 +43,8 @@ class Suite:
         self.attrs = {method_name: [] for method_name in self.methods}
         self.seed = seed
         self.log_dir = log_dir
+        self.explain_label = explain_label
+        self.multi_label = multi_label
 
     def load_config(self, loc):
         with open(loc) as fp:
@@ -95,9 +97,22 @@ class Suite:
             full_labels = full_labels.to(self.device)
 
             # Only use correctly classified samples
-            pred = torch.argmax(self.model(full_batch), dim=1)
-            samples = full_batch[pred == full_labels]
-            labels = full_labels[pred == full_labels]
+            with torch.no_grad():
+                out = self.model(full_batch)
+                if self.multi_label:
+                    if (out<0).any():
+                        out = torch.sigmoid(out)
+                    pred = torch.argmax(out,dim=1)
+                    pred_labels = full_labels[torch.arange(len(pred)), pred]
+                    samples = full_batch[pred_labels == 1]
+                    labels = pred[pred_labels == 1]
+                else:
+                    pred = torch.argmax(out, dim=1)
+                    samples = full_batch[pred == full_labels]
+                    labels = full_labels[pred == full_labels]
+                    if self.explain_label is not None:
+                        samples = samples[pred == self.explain_label]
+                        labels = labels[pred == self.explain_label]
 
             if samples.size(0) > 0:
                 if samples_done + samples.size(0) > num_samples:
