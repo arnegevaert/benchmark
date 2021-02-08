@@ -81,7 +81,7 @@ class CBIS_DDSM_patches(Dataset):
         else:
             i = cv.imread(path, cv.IMREAD_ANYDEPTH)
             i = (i - i.min()) / (i.max() - i.min())
-            image = i
+            image = i.astype(np.float32)
 
         image = self.transforms(image)
         image = image.expand(3,*image.shape[1:])

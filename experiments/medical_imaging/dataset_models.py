@@ -6,7 +6,7 @@ import torchvision
 import torch.nn as nn
 from torch.nn import functional as F
 from experiments.medical_imaging.lib.datasets import Aptos, Cxr8, CBIS_DDSM_patches, HAM10000,PcamDataset, MedMNIST
-from experiments.medical_imaging.lib.models import Alexnet, Densenet, Resnet, EfficientNet, MedMnist_ResNet18
+from experiments.medical_imaging.lib.models import Alexnet, Densenet, Resnet50, EfficientNet, MedMnist_ResNet18
 
 _DATA_LOC = os.environ["BM_DATA_LOC"] if "BM_DATA_LOC" in os.environ else path.join(path.dirname(__file__), "../../data")
 
@@ -29,7 +29,7 @@ def get_dataset_model(name):
         model = Densenet("densenet121", 14, path.join(_DATA_LOC, "models/CXR8/densenet121.pt"))
     elif name == "CBIS-DDSM":
         ds = CBIS_DDSM_patches(path.join(_DATA_LOC,"CBIS-DDSM"), train=False,imsize=224)
-        model = Resnet("resnet50", 2, path.join(_DATA_LOC, "models/CBIS-DDSM/resnet50.pt"))
+        model = Resnet50( 2, path.join(_DATA_LOC, "models/CBIS-DDSM/resnet50.pt"))
     elif name == "HAM10000":
         ds = HAM10000(path.join(_DATA_LOC, "HAM10000"),train=False,)
         model = EfficientNet('efficientnet-b0',7,params_loc=path.join(_DATA_LOC, "models/HAM10000/efficientnet-b0.pt"))
