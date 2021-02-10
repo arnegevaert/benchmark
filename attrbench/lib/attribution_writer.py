@@ -14,6 +14,14 @@ class AttributionWriter(SummaryWriter):
         self.mean = mean
         self.std = std
 
+        self.batch_nr=0
+        self.method_name=None
+
+    def set_method_name(self, name):
+        self.method_name = name
+    def increment_batch(self):
+        self.batch_nr +=1
+
     def _scale_images(self, img_tensor):
         return (img_tensor - img_tensor.min()) / (img_tensor.max() - img_tensor.min())
 
@@ -45,6 +53,7 @@ class AttributionWriter(SummaryWriter):
         return fig
 
     def add_images(self, tag, img_tensor, **kwargs):
+        tag = tag + "/{}/{}".format(self.method_name, self.batch_nr)
         if 'samples' in tag:
             # normalize images
             if self.mean and self.std:

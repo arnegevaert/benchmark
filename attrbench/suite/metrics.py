@@ -14,8 +14,9 @@ class Metric:
         """
         Runs the metric for a given batch, for all methods, and saves result internally
         """
-
+        self.writer.increment_batch()
         for method_name in attrs_dict:
+            self.writer.set_method_name(method_name)
             if method_name not in self.results:
                 self.results[method_name] = []
             self.results[method_name].append(self._run_single_method(samples, labels, attrs_dict[method_name]))
