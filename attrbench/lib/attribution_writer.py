@@ -52,8 +52,30 @@ class AttributionWriter(SummaryWriter):
         plt.tight_layout()
         return fig
 
+    def add_image_sample(self,img_tensor, batch_nr,tag=None):
+        tag = tag if tag else "Image samples"
+        if self.mean and self.std:
+            img_tensor = self._normalize_images(img_tensor)
+        # scale values to [0,1] for plotting if no std or mean were given
+        else:
+            img_tensor = self._scale_images(img_tensor)
+        super().add_images(tag, img_tensor, global_step=batch_nr)
+
+    def add_attribution(self, img_tensor, batch_nr, method_name, tag = None):
+        tag = tag if tag else "attributions"
+        if not method_name:
+            method_name = self.method_name
+        tag = tag+"/"+method_name
+        if img_tensor.shape[-3] > 1:
+            img_tensor = self._scale_images(img_tensor)
+            super().add_images(tag, img_tensor, global_step=batch_nr)
+        # if attributions have one channel, use the figure method
+        else:
+            fig = self._attrshow(img_tensor)
+            super().add_figure(tag, fig, global_step=batch_nr)
+
     def add_images(self, tag, img_tensor, **kwargs):
-        tag = tag + "/{}/{}".format(self.method_name, self.batch_nr)
+        tag = tag + "/{}/batch {}".format(self.method_name, self.batch_nr)
         if 'samples' in tag:
             # normalize images
             if self.mean and self.std:

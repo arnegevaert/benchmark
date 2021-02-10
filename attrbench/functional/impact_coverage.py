@@ -94,7 +94,7 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
     union = (patch_mask_flattened | critical_factor_mask_flattened).sum(dim=1)
     iou = intersection.float() / union.float()
     if debug_mode:
-        writer.add_images('Image samples', samples)
-        writer.add_images('attributions', attrs)
+        writer.add_images('Attacked samples', samples)
+        writer.add_images('Attacked attributions', attrs)
     # [batch_size]
     return iou

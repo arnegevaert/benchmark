@@ -6,7 +6,7 @@ from torch.nn.functional import softmax
 
 
 def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.tensor, num_steps: int,
-                 strict: bool, masker: Masker, tau: float = None, debug_mode=False, writer=None):
+                 strict: bool, masker: Masker, tau: float = None, writer=None):
     if not (strict or tau):
         raise ValueError("Provide value for tau when calculating non-strict impact score")
     counts = []
@@ -22,9 +22,6 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, a
     orig_confidence = softmax(orig_out, dim=1).gather(dim=1, index=labels.view(-1, 1))
     if batch_size > 0:
         assert attrs.shape[0] == samples.shape[0]
-        if debug_mode:
-            writer.add_images('Image samples', samples)
-            writer.add_images('attributions', attrs)
 
         attrs = attrs.flatten(1)
         sorted_indices = attrs.argsort().cpu()
@@ -37,8 +34,8 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, a
             else:
                 masked_samples = samples.clone()
                 masked_out = orig_out
-            if debug_mode:
-                writer.add_images('Masked samples', masked_samples, global_step=n)
+            if writer:
+                writer.add_images('masked samples', masked_samples, global_step=n)
             confidence = softmax(masked_out, dim=1).gather(dim=1, index=labels.view(-1, 1))
             flipped = torch.argmax(masked_out, dim=1) != labels
             if not strict:
@@ -47,6 +44,5 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, a
         # [len(mask_range)]
         result = torch.tensor(counts)
         return result, batch_size
-    if debug_mode:
-        return torch.tensor([]), 0, {}
+
     return torch.tensor([]), 0
