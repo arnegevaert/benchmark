@@ -50,6 +50,9 @@ class CorrelationsPage(Page):
             for metric_name in data.keys():
                 data[metric_name] = pd.concat(data[metric_name], axis=0)
             inter_metric_corr = CorrelationMap(pd.concat(data, axis=1), id=f"metric-corr")
+            result.append(dbc.Row([
+                dbc.Col(inter_metric_corr.render()),
+            ]))
 
             """
             # Inter-method correlation
@@ -73,7 +76,6 @@ class CorrelationsPage(Page):
                 data[method_name] = pd.concat(data[method_name], axis=0)
             inter_method_corr = CorrelationMap(pd.concat(data, axis=1), id="method-corr")
             result.append(dbc.Row([
-                dbc.Col(inter_metric_corr.render()),
                 dbc.Col(inter_method_corr.render())
             ]))
 
