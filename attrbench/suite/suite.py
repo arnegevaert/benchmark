@@ -43,6 +43,7 @@ class Suite:
         self.attrs = {method_name: [] for method_name in self.methods}
         self.seed = seed
         self.log_dir = log_dir
+        self.writer = None
 
     def load_config(self, loc):
         with open(loc) as fp:
@@ -114,7 +115,7 @@ class Suite:
                 # We need the attributions, to save them or to check their shapes
                 attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach()
                          for method_name in self.methods.keys()}
-                if self.writer:
+                if self.writer is not None:
                     self.writer.add_image_sample(samples,batch_nr)
                     for name in attrs.keys():
                         self.writer.add_attribution(attrs[name],batch_nr,name)
