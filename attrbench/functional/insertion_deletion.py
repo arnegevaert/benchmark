@@ -24,6 +24,7 @@ def _insertion_deletion(samples: torch.Tensor, labels: torch.Tensor, model: Call
     if writer is not None:
         writer.add_images('Image samples', samples)
         writer.add_images('attributions', attrs)
+    masker.initialize_baselines(samples)
 
     # Flatten each sample in order to sort indices per sample
     attrs = attrs.flatten(1)  # [batch_size, -1]

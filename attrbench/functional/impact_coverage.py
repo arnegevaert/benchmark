@@ -85,7 +85,10 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
     # Create mask of critical factors (most important pixels/features according to attributions)
     to_mask = sorted_indices[:, -nr_top_attributions:]
     masker = ConstantMasker(feature_level="pixel" if attrs.shape[1] == 1 else "channel", mask_value=1.)
-    critical_factor_mask = masker.mask(torch.zeros(attrs.shape), to_mask)
+    # Initialize as constant zeros, "mask" the most important features with 1
+    critical_factor_mask = torch.zeros(attrs.shape)
+    masker.initialize_baselines(critical_factor_mask)
+    critical_factor_mask = masker.mask(critical_factor_mask, to_mask)
 
     # Calculate IoU of critical factors (top n attributions) with adversarial patch
     patch_mask_flattened = patch_mask.flatten(1).bool()
