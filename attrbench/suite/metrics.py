@@ -179,3 +179,12 @@ class SensitivityN(Metric):
                                         self.min_subset_size, self.max_subset_size, self.num_steps,
                                         self.num_subsets, self.masker,
                                         writer=self.writer)
+
+
+class IROF(Metric):
+    def __init__(self, model, masker, writer=None):
+        super().__init__(model, writer)
+        self.masker = masker
+
+    def _run_single_method(self, samples, labels, attrs):
+        return functional.irof(samples, labels, self.model, attrs, self.masker, self.writer)
