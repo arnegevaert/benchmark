@@ -26,8 +26,8 @@ def insertion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attr
 
 def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
              num_steps: int, masker: Masker, writer=None):
-    sorted_indices, orig_predictions, neutral_predictions, mask_range = _init(samples, labels, model, attrs,
-                                                                              num_steps, masker, writer)
+    sorted_indices, orig_predictions, _, mask_range = _init(samples, labels, model, attrs,
+                                                            num_steps, masker, writer)
     result = []
     for i in mask_range:
         if i == 0:

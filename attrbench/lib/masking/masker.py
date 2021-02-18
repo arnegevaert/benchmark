@@ -45,7 +45,11 @@ class Masker:
                 raise ValueError("Masking index was out of bounds. "
                                  "Make sure the masking policy is compatible with method output.")
         to_mask = to_mask.reshape(samples.shape)
-        return samples - (to_mask * samples) + (to_mask * self.baseline)
+        return self.mask_boolean(samples, to_mask)
+
+    def mask_boolean(self, samples, bool_mask):
+        bool_mask = bool_mask.to(samples.device)
+        return samples - (bool_mask * samples) + (bool_mask * self.baseline.to(samples.device))
 
     def initialize_baselines(self, samples):
         raise NotImplementedError
