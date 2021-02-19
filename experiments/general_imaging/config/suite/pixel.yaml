@@ -68,49 +68,13 @@ metrics:
         type: ConstantMasker
         feature_level: pixel
         mask_value: 0.
+  irof_cst:
+    type: IROF
+    masker:
+      type: ConstantMasker
+      feature_level: pixel
+      mask_value: 0.
   
-  # ################## #
-  # SAMPLE AVG MASKING #
-  # ################## #
-
-  deletion_until_flip_avg:
-    type: DeletionUntilFlip
-    masker:
-        type: SampleAverageMasker
-        feature_level: pixel
-  impact_score_avg:
-    type: ImpactScore
-    strict: false
-    tau: 0.5
-    masker:
-        type: SampleAverageMasker
-        feature_level: pixel
-  strict_impact_score_avg:
-    type: ImpactScore
-    strict: true
-    masker:
-        type: SampleAverageMasker
-        feature_level: pixel
-  insertion_avg:
-    type: Insertion
-    masker:
-        type: SampleAverageMasker
-        feature_level: pixel
-  deletion_avg:
-    type: Deletion
-    masker:
-        type: SampleAverageMasker
-        feature_level: pixel
-  sensitivity_n_avg:
-    type: SensitivityN
-    min_subset_size: 0.1
-    max_subset_size: 0.5
-    num_steps: 5
-    num_subsets: 100
-    masker:
-        type: SampleAverageMasker
-        feature_level: pixel
-
   # ############## #
   # RANDOM MASKING #
   # ############## #
@@ -152,60 +116,11 @@ metrics:
     max_subset_size: 0.5
     num_steps: 5
     num_subsets: 100
-
-  # ####################### #
-  # ADDITIVE RANDOM MASKING #
-  # ####################### #
-
-  deletion_until_flip_rand_add:
-    type: DeletionUntilFlip
+  irof_rand:
+    type: IROF
     masker:
-        type: RandomMasker
-        feature_level: pixel
-        additive: True
-        std: 0.2
-  impact_score_rand_add:
-    type: ImpactScore
-    strict: false
-    tau: 0.5
-    masker:
-        type: RandomMasker
-        feature_level: pixel
-        additive: True
-        std: 0.2
-  strict_impact_score_rand_add:
-    type: ImpactScore
-    strict: true
-    masker:
-        type: RandomMasker
-        feature_level: pixel
-        additive: True
-        std: 0.2
-  insertion_rand_add:
-    type: Insertion
-    masker:
-        type: RandomMasker
-        feature_level: pixel
-        additive: True
-        std: 0.2
-  deletion_rand_add:
-    type: Deletion
-    masker:
-        type: RandomMasker
-        feature_level: pixel
-        additive: True
-        std: 0.2
-  sensitivity_n_rand_add:
-    type: SensitivityN
-    min_subset_size: 0.1
-    max_subset_size: 0.5
-    num_steps: 5
-    num_subsets: 100
-    masker:
-        type: RandomMasker
-        feature_level: pixel
-        additive: True
-        std: 0.2
+      type: RandomMasker
+      feature_level: pixel
 
   # ################ #
   # BLURRING MASKING #
@@ -254,3 +169,9 @@ metrics:
         type: BlurringMasker
         feature_level: pixel
         kernel_size: 0.5
+  irof_blur:
+    type: IROF
+    masker:
+      type: BlurringMasker
+      feature_level: pixel
+      kernel_size: 0.5

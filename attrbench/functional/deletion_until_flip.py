@@ -9,7 +9,7 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: torch.Ten
                         num_steps: float, masker: Masker, writer=None):
     if writer is not None:
         flipped_samples = [None for _ in range(samples.shape[0])]
-
+    masker.initialize_baselines(samples)
     num_inputs = torch.prod(torch.tensor(attrs.shape[1:])).item()
     attrs = attrs.flatten(1)
     sorted_indices = attrs.argsort().cpu().detach().numpy()

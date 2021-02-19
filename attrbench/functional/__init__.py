@@ -5,3 +5,4 @@ from .insertion_deletion import insertion, deletion
 from .max_sensitivity import max_sensitivity
 from .sensitivity_n import sensitivity_n
 from .deletion_until_flip import deletion_until_flip
+from .irof import irof

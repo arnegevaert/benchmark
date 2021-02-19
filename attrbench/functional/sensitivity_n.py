@@ -14,6 +14,7 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
 
     result = []
     batch_size = samples.size(0)
+    masker.initialize_baselines(samples)
 
     with torch.no_grad():
         orig_output = model(samples)
@@ -28,7 +29,7 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
             # Generate mask and masked samples
             # Mask is generated using replace=False, same mask is used for all samples in batch
             num_features = np.prod(attrs.shape[1:])
-            indices = torch.LongTensor(np.random.choice(num_features, size=n, replace=False)).repeat(batch_size, 1)
+            indices = torch.tensor(np.random.choice(num_features, size=n, replace=False)).long().repeat(batch_size, 1)
             output, masked_samples = masker.predict_masked(samples, indices, model, return_masked_samples=True)
             if writer is not None:
                 writer.add_images("Masked samples N={}".format(n), masked_samples, global_step=ns)

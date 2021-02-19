@@ -10,6 +10,7 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, a
     if not (strict or tau):
         raise ValueError("Provide value for tau when calculating non-strict impact score")
     counts = []
+    masker.initialize_baselines(samples)
 
     with torch.no_grad():
         orig_out = model(samples)
