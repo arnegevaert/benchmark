@@ -21,8 +21,8 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
     with torch.no_grad():
         orig_output = model(samples)
 
-    total_features = attrs.flatten(1).shape[1]
-    n_range = (np.linspace(min_subset_size, max_subset_size, num_steps) * total_features).astype(np.int)
+    num_features = attrs.flatten(1).shape[1]
+    n_range = (np.linspace(min_subset_size, max_subset_size, num_steps) * num_features).astype(np.int)
     for n in n_range:
         output_diffs = []
         sum_of_attrs = []
@@ -30,7 +30,6 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
         for ns in range(num_subsets):
             # Generate mask and masked samples
             # Mask is generated using replace=False, same mask is used for all samples in batch
-            num_features = np.prod(attrs.shape[1:])
             indices = torch.tensor(np.random.choice(num_features, size=n, replace=False)).long().repeat(batch_size, 1)
             output, masked_samples = masker.predict_masked(samples, indices, model, return_masked_samples=True)
             if writer is not None:

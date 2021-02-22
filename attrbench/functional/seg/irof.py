@@ -17,7 +17,7 @@ def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: to
     # Sort segment attribution values
     sorted_indices = avg_attrs.argsort()  # [batch_size, num_segments]
 
-    # Get original and neutral predictions
+    # Get original predictions
     with torch.no_grad():
         orig_predictions = model(samples).gather(dim=1, index=labels.unsqueeze(-1))
 

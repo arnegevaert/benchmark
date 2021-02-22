@@ -20,7 +20,7 @@ def mask_segments(images: np.ndarray, seg_images: np.ndarray, segments: np.ndarr
 
 def segment_samples_attributions(samples: np.ndarray, attrs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     # Segment images using SLIC
-    seg_images = np.stack([slic(np.transpose(samples[i, ...].detach().cpu().numpy(), (1, 2, 0)),
+    seg_images = np.stack([slic(np.transpose(samples[i, ...], (1, 2, 0)),
                                 start_label=0, slic_zero=True)
                            for i in range(samples.shape[0])])
     seg_images = np.expand_dims(seg_images, axis=1)
