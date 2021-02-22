@@ -43,6 +43,7 @@ class Suite:
         self.attrs = {method_name: [] for method_name in self.methods}
         self.seed = seed
         self.log_dir = log_dir
+        self.writer = None
 
     def load_config(self, loc):
         with open(loc) as fp:
@@ -62,8 +63,9 @@ class Suite:
                 # Add model, methods, and (optional) writer args
                 args_dict["model"] = self.model
                 if self.log_dir:
+                    self.writer = AttributionWriter(path.join(self.log_dir, "images_and_attributions"))
                     subdir = path.join(self.log_dir, metric_name)
-                    args_dict["writer"] = AttributionWriter(subdir)
+                    args_dict["writer_dir"] = subdir
                 # Compare to required args, add missing ones from default args
                 signature = inspect.signature(constructor).parameters
                 expected_arg_names = [arg for arg in signature if signature[arg].default == Parameter.empty]
@@ -89,6 +91,7 @@ class Suite:
         # We will check the output shapes of methods on the first batch
         # to make sure they are compatible with the masking policy
         checked_shapes = False
+        batch_nr = 0
         while samples_done < num_samples:
             full_batch, full_labels = next(it)
             full_batch = full_batch.to(self.device)
@@ -100,6 +103,7 @@ class Suite:
             labels = full_labels[pred == full_labels]
 
             if samples.size(0) > 0:
+                batch_nr +=1
                 if samples_done + samples.size(0) > num_samples:
                     diff = num_samples - samples_done
                     samples = samples[:diff]
@@ -111,6 +115,10 @@ class Suite:
                 # We need the attributions, to save them or to check their shapes
                 attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach()
                          for method_name in self.methods.keys()}
+                if self.writer is not None:
+                    self.writer.add_image_sample(samples,batch_nr)
+                    for name in attrs.keys():
+                        self.writer.add_attribution(attrs[name],batch_nr,name)
                 if self.save_attrs:
                     # Save attributions if necessary
                     for method_name in self.methods:

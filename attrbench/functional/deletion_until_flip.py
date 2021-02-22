@@ -9,8 +9,6 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: torch.Ten
                         num_steps: float, masker: Masker, writer=None):
     if writer is not None:
         flipped_samples = [None for _ in range(samples.shape[0])]
-        writer.add_images('Image samples', samples)
-        writer.add_images('attributions', attrs)
     masker.initialize_baselines(samples)
     num_inputs = torch.prod(torch.tensor(attrs.shape[1:])).item()
     attrs = attrs.flatten(1)

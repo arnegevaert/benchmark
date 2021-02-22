@@ -77,8 +77,6 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, att
     infid = torch.cat(infid, dim=1).mean(dim=1)  # [batch_size]
     infid = infid.unsqueeze(1)  # [batch_size, 1]
 
-    if writer:
-        writer.add_images("samples", samples)
-        writer.add_images("attrs", attrs)
+
 
     return infid.cpu()

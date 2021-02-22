@@ -11,9 +11,7 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
                   masker: Masker, writer=None):
     device = samples.device
     attrs = attrs.to(device)
-    if writer is not None:
-        writer.add_images('Image samples', samples)
-        writer.add_images('attributions', attrs)
+
     result = []
     batch_size = samples.size(0)
     masker.initialize_baselines(samples)
