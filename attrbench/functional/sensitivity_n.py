@@ -1,7 +1,7 @@
 from typing import Callable
 import numpy as np
 from attrbench.lib import sum_of_attributions
-from attrbench.lib.masking import Masker, ConstantMasker
+from attrbench.lib.masking import Masker
 import torch
 import warnings
 
