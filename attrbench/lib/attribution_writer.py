@@ -41,6 +41,9 @@ class AttributionWriter(SummaryWriter):
 
     def _attrshow(self, attrs):
         npattrs = attrs.squeeze().detach().cpu().numpy()  # [batch_size, rows, cols]
+        if len(npattrs.shape) == 2:
+            # If the batch had only 1 sample, we need to add back the original batch dim
+            npattrs = npattrs[np.newaxis, ...]
         npattrs = np.concatenate(npattrs, axis=-1)
         min_value = min(np.min(npattrs), -.01)
         max_value = max(np.max(npattrs), .01)
