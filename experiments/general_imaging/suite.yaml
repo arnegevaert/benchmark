@@ -1,0 +1,12 @@
+default:
+  masker:
+    type: ConstantMasker
+    feature_level: pixel
+    mask_value: 0.
+metrics:
+  irof:
+    type: IROF
+  iiof:
+    type: IIOF
+  seg_sens_n:
+    type: SegSensN
