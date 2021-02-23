@@ -13,6 +13,9 @@ def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callab
     # Segment images and attributions
     segmented_images, avg_attrs = segment_samples_attributions(samples.detach().cpu().numpy(),
                                                                attrs.detach().cpu().numpy())
+    if writer is not None:
+        writer.add_images("segmented images", segmented_images)
+        writer.add_images("segment attributions", avg_attrs)
 
     # Initialize masker
     masker.initialize_baselines(samples)
@@ -37,6 +40,8 @@ def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callab
                                 for i in range(samples.size(0))])
             # Mask samples and get predictions
             masked_samples = mask_segments(samples, segmented_images, indices, masker)
+            if writer is not None:
+                writer.add_images("Masked samples N={}".format(n), masked_samples, global_step=ns)
             with torch.no_grad():
                 predictions = model(masked_samples).gather(dim=1, index=labels.unsqueeze(-1))
             # Save prediction differences and sum of attrs

@@ -14,13 +14,14 @@ class AttributionWriter(SummaryWriter):
         self.mean = mean
         self.std = std
 
-        self.batch_nr=0
-        self.method_name=None
+        self.batch_nr = 0
+        self.method_name = None
 
     def set_method_name(self, name):
         self.method_name = name
+
     def increment_batch(self):
-        self.batch_nr +=1
+        self.batch_nr += 1
 
     def _scale_images(self, img_tensor):
         return (img_tensor - img_tensor.min()) / (img_tensor.max() - img_tensor.min())
@@ -52,7 +53,7 @@ class AttributionWriter(SummaryWriter):
         plt.tight_layout()
         return fig
 
-    def add_image_sample(self,img_tensor, batch_nr,tag=None):
+    def add_image_sample(self, img_tensor, batch_nr, tag=None):
         tag = tag if tag else "Image samples"
         if self.mean and self.std:
             img_tensor = self._normalize_images(img_tensor)
@@ -61,11 +62,11 @@ class AttributionWriter(SummaryWriter):
             img_tensor = self._scale_images(img_tensor)
         super().add_images(tag, img_tensor, global_step=batch_nr)
 
-    def add_attribution(self, img_tensor, batch_nr, method_name, tag = None):
+    def add_attribution(self, img_tensor, batch_nr, method_name, tag=None):
         tag = tag if tag else "attributions"
         if not method_name:
             method_name = self.method_name
-        tag = tag+"/"+method_name
+        tag = tag + "/" + method_name
         if img_tensor.shape[-3] > 1:
             img_tensor = self._scale_images(img_tensor)
             super().add_images(tag, img_tensor, global_step=batch_nr)
