@@ -53,7 +53,7 @@ def apply_patches(samples, labels, model, patch_folder):
 
 def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
                     patch_folder=None, attacked_samples=None, patch_mask=None, targets=None,
-                    debug_mode=False, writer=None):
+                    writer=None):
     if len(samples.shape) != 4:
         raise ValueError("Impact Coverage can only be computed for image data and expects 4 input dimensions")
 
@@ -96,8 +96,8 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
     intersection = (patch_mask_flattened & critical_factor_mask_flattened).sum(dim=1)
     union = (patch_mask_flattened | critical_factor_mask_flattened).sum(dim=1)
     iou = intersection.float() / union.float()
-    if debug_mode:
-        writer.add_images('Image samples', samples)
-        writer.add_images('attributions', attrs)
+    if writer:
+        writer.add_images('Attacked samples', samples)
+        writer.add_images('Attacked attributions', attrs)
     # [batch_size]
     return iou

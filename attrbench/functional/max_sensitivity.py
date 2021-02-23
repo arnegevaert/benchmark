@@ -13,8 +13,6 @@ def max_sensitivity(samples: torch.Tensor, labels: torch.Tensor, method: Callabl
     device = samples.device
     if attrs is None:
         attrs = method(samples, labels).detach()  # [batch_size, *sample_shape]
-    if writer:
-        writer.add_images('attributions', attrs)
     attrs = _normalize_attrs(attrs)  # [batch_size, -1]
 
     diffs = []

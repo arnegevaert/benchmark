@@ -46,11 +46,10 @@ def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs
     return result
 
 
+
 def _init(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
           num_steps: int, masker: Masker, writer=None):
-    if writer is not None:
-        writer.add_images('Image samples', samples)
-        writer.add_images('attributions', attrs)
+  
     masker.initialize_baselines(samples)
 
     # Flatten each sample in order to sort indices per sample
