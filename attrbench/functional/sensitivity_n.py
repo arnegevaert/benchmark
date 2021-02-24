@@ -6,6 +6,24 @@ import torch
 import warnings
 
 
+def _calculate_correlations(sum_of_attrs, output_diffs):
+    # Calculate correlation between output difference and sum of attribution values
+    # Subtract mean
+    sum_of_attrs -= sum_of_attrs.mean(dim=1, keepdim=True)
+    output_diffs -= output_diffs.mean(dim=1, keepdim=True)
+    # Calculate covariances
+    cov = (sum_of_attrs * output_diffs).sum(dim=1) / (sum_of_attrs.shape[1] - 1)
+    # Divide by product of standard deviations
+    # [batch_size]
+    denom = sum_of_attrs.std(dim=1) * output_diffs.std(dim=1)
+    denom_zero = (denom == 0.)
+    if torch.any(denom_zero):
+        warnings.warn("Zero standard deviation detected.")
+    corrcoefs = cov / (sum_of_attrs.std(dim=1) * output_diffs.std(dim=1))
+    corrcoefs[denom_zero] = 0.
+    return corrcoefs
+
+
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
                   min_subset_size: float, max_subset_size: float, num_steps: int, num_subsets: int,
                   masker: Masker, writer=None):
@@ -39,25 +57,12 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
         # [batch_size, num_subsets]
         sum_of_attrs = torch.cat(sum_of_attrs, dim=1)
         output_diffs = torch.cat(output_diffs, dim=1)
-        # Calculate correlation between output difference and sum of attribution values
-        # Subtract mean
-        sum_of_attrs -= sum_of_attrs.mean(dim=1, keepdim=True)
-        output_diffs -= output_diffs.mean(dim=1, keepdim=True)
-        # Calculate covariances
-        cov = (sum_of_attrs * output_diffs).sum(dim=1) / (num_subsets - 1)
-        # Divide by product of standard deviations
-        # [batch_size]
-        denom = sum_of_attrs.std(dim=1) * output_diffs.std(dim=1)
-        denom_zero = (denom == 0.)
-        if torch.any(denom_zero):
-            warnings.warn("Zero standard deviation detected.")
-        corrcoefs = cov / (sum_of_attrs.std(dim=1) * output_diffs.std(dim=1))
-        corrcoefs[denom_zero] = 0.
-        result.append(corrcoefs)
+        result.append(_calculate_correlations(sum_of_attrs, output_diffs))
     # [batch_size, len(n_range)]
     result = torch.stack(result, dim=1).cpu().detach()
-
     return result
+
+
 def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
                       min_subset_size: float, max_subset_size: float, num_steps: int, num_subsets: int,
                       masker: Masker, writer=None):
@@ -100,21 +105,7 @@ def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callab
         # [batch_size, num_subsets]
         sum_of_attrs = torch.cat(sum_of_attrs, dim=1)
         output_diffs = torch.cat(output_diffs, dim=1)
-        # Calculate correlation between output difference and sum of attribution values
-        # Subtract mean
-        sum_of_attrs -= sum_of_attrs.mean(dim=1, keepdim=True)
-        output_diffs -= output_diffs.mean(dim=1, keepdim=True)
-        # Calculate covariances
-        cov = (sum_of_attrs * output_diffs).sum(dim=1) / (num_subsets - 1)
-        # Divide by product of standard deviations
-        # [batch_size]
-        denom = sum_of_attrs.std(dim=1) * output_diffs.std(dim=1)
-        denom_zero = (denom == 0.)
-        if torch.any(denom_zero):
-            warnings.warn("Zero standard deviation detected.")
-        corrcoefs = cov / (sum_of_attrs.std(dim=1) * output_diffs.std(dim=1))
-        corrcoefs[denom_zero] = 0.
-        result.append(corrcoefs)
+        result.append(_calculate_correlations(sum_of_attrs, output_diffs))
     # [batch_size, len(n_range)]
     result = torch.stack(result, dim=1).cpu().detach()
     return result
