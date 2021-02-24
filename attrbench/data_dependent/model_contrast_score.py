@@ -15,7 +15,6 @@ def model_contrast_score(overlays: torch.Tensor, masks: torch.Tensor, object_lab
     scene_labels = scene_labels.to(device)
     masks = masks.squeeze().to(device)
     # We check if both the object model and the scene model make the correct classification
-    # TODO do we also need to check the scene model?
     with torch.no_grad():
         y_pred_obj = torch.argmax(object_model(overlays), dim=1)
         y_pred_scene = torch.argmax(scene_model(overlays), dim=1)

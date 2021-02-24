@@ -1,0 +1,16 @@
+metrics:
+  infidelity_seg:
+    type: Infidelity
+    num_perturbations: 100
+    perturbation_mode: segment
+    perturbation_size: 5
+  infidelity_gaussian:
+    type: Infidelity
+    num_perturbations: 100
+    perturbation_mode: gaussian
+    perturbation_size: 0.2
+  infidelity_sq:
+    type: Infidelity
+    num_perturbations: 100
+    perturbation_mode: square
+    perturbation_size: 0.2

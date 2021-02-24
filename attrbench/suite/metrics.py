@@ -24,18 +24,18 @@ class Metric:
 
             self.results[method_name].append(self._run_single_method(samples, labels, attrs_dict[method_name],
                                                                      writer=self._get_writer(method_name)))
-    def _get_writer(self,method_name):
+
+    def _get_writer(self, method_name):
         if method_name not in self.writers:
             if self.writer_dir is None:
                 self.writers[method_name] = None
             else:
-                self.writers[method_name]=AttributionWriter(path.join(self.writer_dir,method_name))
+                self.writers[method_name] = AttributionWriter(path.join(self.writer_dir, method_name))
         writer = self.writers[method_name]
         if writer:
             writer.set_method_name(method_name)
             writer.increment_batch()
         return writer
-
 
     def get_results(self):
         """
@@ -62,7 +62,7 @@ class DeletionUntilFlip(Metric):
         self.num_steps = num_steps
         self.masker = masker
 
-    def _run_single_method(self, samples, labels, attrs,writer=None):
+    def _run_single_method(self, samples, labels, attrs, writer=None):
         return functional.deletion_until_flip(samples, self.model, attrs, self.num_steps,
                                               self.masker, writer=writer).reshape(-1, 1)
 
@@ -73,7 +73,8 @@ class ImpactCoverage(Metric):
         self.methods = methods
         self.results = {method_name: [] for method_name in methods}
         self.patch_folder = patch_folder
-        self.writers={method_name: path.joint(writer_dir,method_name) if writer_dir else None for method_name in methods}
+        self.writers = {method_name: path.join(writer_dir, method_name) if writer_dir else None for method_name in
+                        methods}
 
     def run_batch(self, samples, labels, attrs_dict=None):
         """
@@ -102,7 +103,7 @@ class ImpactScore(Metric):
         self.masker = masker
         self.tau = tau
 
-    def _run_single_method(self, samples, labels, attrs,writer=None):
+    def _run_single_method(self, samples, labels, attrs, writer=None):
         return functional.impact_score(samples, labels, self.model, attrs, self.num_steps,
                                        self.strict, self.masker, self.tau,
                                        writer=writer)
@@ -129,7 +130,7 @@ class Insertion(Metric):
         self.num_steps = num_steps
         self.masker = masker
 
-    def _run_single_method(self, samples, labels, attrs,writer=None):
+    def _run_single_method(self, samples, labels, attrs, writer=None):
         return functional.insertion(samples, labels, self.model, attrs, self.num_steps, self.masker,
                                     writer=writer)
 
@@ -140,7 +141,7 @@ class Deletion(Metric):
         self.num_steps = num_steps
         self.masker = masker
 
-    def _run_single_method(self, samples, labels, attrs,writer=None):
+    def _run_single_method(self, samples, labels, attrs, writer=None):
         return functional.deletion(samples, labels, self.model, attrs, self.num_steps, self.masker,
                                    writer=writer)
 
@@ -152,7 +153,7 @@ class Infidelity(Metric):
         self.perturbation_size = perturbation_size
         self.num_perturbations = num_perturbations
 
-    def _run_single_method(self, samples, labels, attrs,writer=None):
+    def _run_single_method(self, samples, labels, attrs, writer=None):
         return functional.infidelity(samples, labels, self.model, attrs,
                                      self.perturbation_mode, self.perturbation_size, self.num_perturbations,
                                      writer=writer)
@@ -165,7 +166,7 @@ class MaxSensitivity(Metric):
         self.results = {method_name: [] for method_name in methods}
         self.radius = radius
         self.num_perturbations = num_perturbations
-        self.writers = {method_name: path.joint(writer_dir, method_name) if writer_dir else None for method_name in
+        self.writers = {method_name: path.join(writer_dir, method_name) if writer_dir else None for method_name in
                         methods}
 
     def run_batch(self, samples, labels, attrs_dict: dict):
@@ -178,7 +179,7 @@ class MaxSensitivity(Metric):
                                                   self.num_perturbations, writer=self._get_writer(method_name))
             self.results[method_name].append(max_sens)
 
-    def _run_single_method(self, samples, labels, attrs,writer=None):
+    def _run_single_method(self, samples, labels, attrs, writer=None):
         raise NotImplementedError
 
 
@@ -194,7 +195,7 @@ class SensitivityN(Metric):
             "col_index": np.linspace(min_subset_size, max_subset_size, num_steps)
         }
 
-    def _run_single_method(self, samples, labels, attrs,writer=None):
+    def _run_single_method(self, samples, labels, attrs, writer=None):
         return functional.sensitivity_n(samples, labels, self.model, attrs,
                                         self.min_subset_size, self.max_subset_size, self.num_steps,
                                         self.num_subsets, self.masker,
@@ -202,9 +203,36 @@ class SensitivityN(Metric):
 
 
 class IROF(Metric):
-    def __init__(self, model, masker, writer=None):
-        super().__init__(model, writer)
+    def __init__(self, model, masker, writer_dir=None):
+        super().__init__(model, writer_dir)
         self.masker = masker
 
-    def _run_single_method(self, samples, labels, attrs):
-        return functional.irof(samples, labels, self.model, attrs, self.masker, self.writer)
+    def _run_single_method(self, samples, labels, attrs, writer=None):
+        return functional.irof(samples, labels, self.model, attrs, self.masker, writer)
+
+
+class IIOF(Metric):
+    def __init__(self, model, masker, writer_dir=None):
+        super().__init__(model, writer_dir)
+        self.masker = masker
+
+    def _run_single_method(self, samples, labels, attrs, writer=None):
+        return functional.iiof(samples, labels, self.model, attrs, self.masker, writer)
+
+
+class SegSensN(Metric):
+    def __init__(self, model, masker, min_subset_size, max_subset_size, num_steps, num_subsets, writer_dir=None):
+        super().__init__(model, writer_dir)
+        self.min_subset_size = min_subset_size
+        self.max_subset_size = max_subset_size
+        self.num_steps = num_steps
+        self.num_subsets = num_subsets
+        self.masker = masker
+        self.metadata = {
+            "col_index": np.linspace(min_subset_size, max_subset_size, num_steps)
+        }
+
+    def _run_single_method(self, samples, labels, attrs, writer=None):
+        return functional.seg_sensitivity_n(samples, labels, self.model, attrs, self.min_subset_size,
+                                            self.max_subset_size, self.num_steps, self.num_subsets,
+                                            self.masker, writer)

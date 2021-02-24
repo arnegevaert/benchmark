@@ -103,7 +103,7 @@ class Suite:
             labels = full_labels[pred == full_labels]
 
             if samples.size(0) > 0:
-                batch_nr +=1
+                batch_nr += 1
                 if samples_done + samples.size(0) > num_samples:
                     diff = num_samples - samples_done
                     samples = samples[:diff]
@@ -116,9 +116,9 @@ class Suite:
                 attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach()
                          for method_name in self.methods.keys()}
                 if self.writer is not None:
-                    self.writer.add_image_sample(samples,batch_nr)
+                    self.writer.add_image_sample(samples, batch_nr)
                     for name in attrs.keys():
-                        self.writer.add_attribution(attrs[name],batch_nr,name)
+                        self.writer.add_attribution(attrs[name], batch_nr, name)
                 if self.save_attrs:
                     # Save attributions if necessary
                     for method_name in self.methods:
