@@ -5,73 +5,81 @@ from skimage.segmentation import slic
 import numpy as np
 
 
-# TODO use classes for perturbation, allows for uniform interface
-def _gaussian_perturbation(samples, stdev):
-    """
-    Calculates and applies Gaussian perturbation
-    :param samples: Input samples
-    :param stdev: Standard deviation
-    :return: (perturbed samples, perturbation vector (I in paper))
-    """
-    perturbation_vector = torch.randn(samples.shape, device=samples.device) * stdev
-    perturbed_samples = samples - perturbation_vector
-    return perturbed_samples, perturbation_vector
+class Perturbation:
+    def __init__(self, samples, perturbation_size):
+        self.samples = samples
+        self.perturbation_size = perturbation_size
+
+    def __call__(self):
+        raise NotImplementedError
 
 
-def _square_removal_perturbation(samples, square_size):
-    height = samples.shape[2]
-    width = samples.shape[3]
-    square_size_int = int(square_size * height)
-    x_loc = random.randint(0, width - square_size_int)
-    y_loc = random.randint(0, height - square_size_int)
-    perturbation_mask = torch.zeros(samples.shape)
-    perturbation_mask[:, :, x_loc:x_loc + square_size_int, y_loc:y_loc+square_size_int] = 1
-    perturbation_vector = samples * perturbation_mask.to(samples.device)
-    perturbed_samples = samples - perturbation_vector
-    return perturbed_samples, perturbation_vector
+class GaussianPerturbation(Perturbation):
+    # perturbation_size is stdev of noise
+    def __call__(self):
+        perturbation_vector = np.random.normal(0, self.perturbation_size, self.samples.shape)
+        perturbed_samples = self.samples - perturbation_vector
+        return perturbed_samples, perturbation_vector
 
 
-def _segment_removal_perturbation(samples, seg_samples, num_segments):
-    # This needs to happen per sample, since samples don't necessarily have
-    # the same number of segments
-    perturbed_samples, perturbation_vectors = [], []
-    for i in range(samples.shape[0]):
-        seg_sample = seg_samples[i, ...]
-        sample = samples[i, ...]
-        # Get all segment numbers
-        all_segments = np.unique(seg_sample)
-        # Select segments to mask
-        segments_to_mask = np.random.choice(all_segments, num_segments, replace=False)
-        # Create boolean mask of pixels that need to be removed
-        to_remove = np.isin(seg_sample, segments_to_mask)
-        # Create perturbation vector by multiplying mask with image
-        perturbation_vector = sample * to_remove.astype(np.float)
-        perturbed_samples.append(sample - perturbation_vector)
-        perturbation_vectors.append(perturbation_vector)
-    return np.stack(perturbed_samples, axis=0), np.stack(perturbation_vectors, axis=0)
+class SquareRemovalPerturbation(Perturbation):
+    # perturbation_size is (square height)/(image height)
+    def __call__(self):
+        height = self.samples.shape[2]
+        width = self.samples.shape[3]
+        square_size_int = int(self.perturbation_size * height)
+        x_loc = random.randint(0, width - square_size_int)
+        y_loc = random.randint(0, height - square_size_int)
+        perturbation_mask = np.zeros(self.samples.shape)
+        perturbation_mask[:, :, x_loc:x_loc + square_size_int, y_loc:y_loc + square_size_int] = 1
+        perturbation_vector = self.samples * perturbation_mask
+        perturbed_samples = self.samples - perturbation_vector
+        return perturbed_samples, perturbation_vector
 
 
-_PERTURBATION_FUNCTIONS = {
-    "gaussian": _gaussian_perturbation,
-    "square": _square_removal_perturbation,
-    "segment": _segment_removal_perturbation
+class SegmentRemovalPerturbation(Perturbation):
+    # perturbation size is number of segments
+    def __init__(self, samples, perturbation_size):
+        super().__init__(samples, perturbation_size)
+        seg_samples = np.stack([slic(np.transpose(samples[i, ...], (1, 2, 0)),
+                                     start_label=0, slic_zero=True)
+                               for i in range(samples.shape[0])])
+        self.seg_samples = np.expand_dims(seg_samples, axis=1)
+
+    def __call__(self):
+        perturbed_samples, perturbation_vectors = [], []
+        # This needs to happen per sample, since samples don't necessarily have
+        # the same number of segments
+        for i in range(self.samples.shape[0]):
+            seg_sample = self.seg_samples[i, ...]
+            sample = self.samples[i, ...]
+            # Get all segment numbers
+            all_segments = np.unique(seg_sample)
+            # Select segments to mask
+            segments_to_mask = np.random.choice(all_segments, self.perturbation_size, replace=False)
+            # Create boolean mask of pixels that need to be removed
+            to_remove = np.isin(seg_sample, segments_to_mask)
+            # Create perturbation vector by multiplying mask with image
+            perturbation_vector = sample * to_remove.astype(np.float)
+            perturbed_samples.append(sample - perturbation_vector)
+            perturbation_vectors.append(perturbation_vector)
+        return np.stack(perturbed_samples, axis=0), np.stack(perturbation_vectors, axis=0)
+
+
+_PERTURBATION_CLASSES = {
+    "gaussian": GaussianPerturbation,
+    "square": SquareRemovalPerturbation,
+    "segment": SegmentRemovalPerturbation
 }
 
 
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
                perturbation_mode: str, perturbation_size: float, num_perturbations: int,
                writer=None):
-    if perturbation_mode not in _PERTURBATION_FUNCTIONS.keys():
+    if perturbation_mode not in _PERTURBATION_CLASSES.keys():
         raise ValueError(f"Invalid perturbation mode {perturbation_mode}. "
-                         f"Valid options are {', '.join(list(_PERTURBATION_FUNCTIONS.keys()))}")
-    perturbation_fn = _PERTURBATION_FUNCTIONS[perturbation_mode]
-
-    seg_images = None
-    if perturbation_mode == "segment":
-        seg_images = np.stack([slic(np.transpose(samples[i, ...], (1, 2, 0)),
-                                    start_label=0, slic_zero=True)
-                               for i in range(samples.shape[0])])
-        seg_images = np.expand_dims(seg_images, axis=1)
+                         f"Valid options are {', '.join(list(_PERTURBATION_CLASSES.keys()))}")
+    perturbation_fn = _PERTURBATION_CLASSES[perturbation_mode](samples.cpu().numpy(), perturbation_size)
 
     # Get original model output
     with torch.no_grad():
@@ -87,12 +95,9 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, att
     infid = []
     for i_pert in range(num_perturbations):
         # Get perturbation vector I and perturbed samples (x - I)
-
-        # TODO remove this interface (by making perturbations classes)
-        if perturbation_mode == "segment":
-            perturbed_samples, perturbation_vector = perturbation_fn(samples, seg_images, perturbation_size)
-        else:
-            perturbed_samples, perturbation_vector = perturbation_fn(samples, perturbation_size)
+        perturbed_samples, perturbation_vector = perturbation_fn()
+        perturbed_samples = torch.tensor(perturbed_samples, dtype=torch.float).to(samples.device)
+        perturbation_vector = torch.tensor(perturbation_vector, dtype=torch.float).to(samples.device)
         if writer:
             writer.add_images("perturbation_vector", perturbation_vector, global_step=i_pert)
             writer.add_images("perturbed_samples", perturbed_samples, global_step=i_pert)
