@@ -2,16 +2,16 @@ from torchvision import datasets, transforms
 import os
 from os import path
 import torch
-import torchvision
 import torch.nn as nn
 from torch.nn import functional as F
-from experiments.general_imaging.models import Resnet20, Resnet18
+from experiments.general_imaging.lib.models import Resnet20, Resnet18, Resnet56, Resnet50
+from experiments.general_imaging.lib.datasets import Imagenet_dataset
 
 
 _DATA_LOC = os.environ["BM_DATA_LOC"] if "BM_DATA_LOC" in os.environ else path.join(path.dirname(__file__), "../../data")
 
 
-def get_dataset_model(name, train=False):
+def get_dataset_model(name, model=None, train=False):
     if name == "MNIST":
         transform = transforms.Compose([
             transforms.ToTensor(),
@@ -20,25 +20,70 @@ def get_dataset_model(name, train=False):
         ds = datasets.MNIST(path.join(_DATA_LOC, "MNIST"), train=train, transform=transform, download=True)
         model = BasicCNN(10, path.join(_DATA_LOC, "models/MNIST/cnn.pt"))
         patch_folder = None
+    elif name == "FashionMNIST":
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.2859635), (0.35296154)),
+        ])
+        ds = datasets.FashionMNIST(path.join(_DATA_LOC, "FashionMNIST"), train=train, transform=transform, download=True)
+        model = BasicCNN(10, path.join(_DATA_LOC, "models/FashionMNIST/cnn.pt"))
+        patch_folder = None
     elif name == "CIFAR10":
         transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize(mean=(0.4914, 0.4821, 0.4465), std=(0.2023, 0.1994, 0.2010))
+            transforms.Normalize(mean=(0.4913, 0.4821, 0.4464), std=(0.247,0.2434, 0.2615))
         ])
         ds = datasets.CIFAR10(path.join(_DATA_LOC, "CIFAR10"), train=train, transform=transform, download=True)
-        model = Resnet20(10,path.join(_DATA_LOC, "models/CIFAR10/resnet20.pt"))
+        if model.lower() == 'resnet20':
+            model = Resnet20(10,path.join(_DATA_LOC, "models/CIFAR10/resnet20.pt"))
+        elif model.lower() == 'resnet56':
+            model = Resnet56(10, path.join(_DATA_LOC, "models/CIFAR10/resnet56.pt"))
+        else:
+            raise ValueError(f"Invalid model for this dataset: {model}")
         patch_folder = path.join(_DATA_LOC, "patches/CIFAR10")
-    elif name == "ImageNette":
+    elif name == "CIFAR100":
         transform = transforms.Compose([
-            transforms.Resize(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(0.5072, 0.4867, 0.441), std=[0.2673, 0.2565, 0.2762])
+        ])
+        ds = datasets.CIFAR100(path.join(_DATA_LOC, "CIFAR100"), train=train, transform=transform, download=True)
+        if model.lower() == 'resnet20':
+            model = Resnet20(10, path.join(_DATA_LOC, "models/CIFAR100/resnet20.pt"))
+        elif model.lower() == 'resnet56':
+            model = Resnet56(10, path.join(_DATA_LOC, "models/CIFAR100/resnet56.pt"))
+        else:
+            raise ValueError(f"Invalid model for this dataset: {model}")
+        patch_folder = path.join(_DATA_LOC, "patches/CIFAR100")
+
+    elif name == "SVHN":
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970)),
+        ])
+        ds = datasets.CIFAR100(path.join(_DATA_LOC, "SVHN"), train=train, transform=transform, download=True)
+        if model.lower() == 'resnet20':
+            model = Resnet20(10, path.join(_DATA_LOC, "models/SVHN/resnet20.pt"))
+        elif model.lower() == 'resnet56':
+            model = Resnet56(10, path.join(_DATA_LOC, "models/SVHN/resnet56.pt"))
+        else:
+            raise ValueError(f"Invalid model for this dataset: {model}")
+        patch_folder = path.join(_DATA_LOC, "patches/SVHN")
+
+    elif name == "ImageNet":
+        transform = transforms.Compose([
+            transforms.Resize(256),
             transforms.CenterCrop(224),
             transforms.ToTensor(),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
         ])
         dir = "train" if train else "val"
-        ds = datasets.ImageFolder(path.join(_DATA_LOC, "imagenette2", dir), transform=transform)
-        model = Resnet18(path.join(_DATA_LOC, "models/ImageNette/resnet18.pt"))
-        patch_folder = path.join(_DATA_LOC, "patches/ImageNette")
+        ds = Imagenet_dataset(path.join(_DATA_LOC, "imagenette2", dir), transform=transform)
+        if model.lower() == 'resnet18':
+            model = Resnet18(1000, pretrained=True)
+        elif model.lower() == 'resnet50':
+            model = Resnet50(1000, pretrained=True)
+        patch_folder = path.join(_DATA_LOC, "patches/ImageNet")
     else:
         raise ValueError(f"Invalid dataset: {name}")
     return ds, model, patch_folder
