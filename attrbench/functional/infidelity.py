@@ -102,7 +102,6 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, att
 
     infid = []
     for i_pert, (perturbed_samples, perturbation_vector) in enumerate(perturbation_dl):
-        print(i_pert)
         # Get perturbation vector I and perturbed samples (x - I)
         #perturbed_samples = torch.tensor(perturbed_samples[0], dtype=torch.float, device=device)
         #perturbation_vector = torch.tensor(perturbation_vector[0], dtype=torch.float, device=device)
