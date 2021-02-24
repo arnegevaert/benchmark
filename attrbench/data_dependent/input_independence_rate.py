@@ -9,4 +9,4 @@ draw attention to a perturbation that has no functionality.
 
 
 def input_independence_rate():
-    pass  # TODO
+    pass
