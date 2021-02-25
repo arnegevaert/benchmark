@@ -4,7 +4,6 @@ from experiments.general_imaging.dataset_models import get_dataset_model
 from experiments.lib import MethodLoader
 from attrbench.suite import Suite
 from torch.utils.data import DataLoader
-import logging
 import time
 
 
@@ -25,12 +24,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
 
-    # Logging configuration
-    logging.basicConfig(format="[%(asctime)s] %(levelname)s: %(message)s")
-    logging.root.setLevel(logging.NOTSET)
-
-    logging.info("Saving images" if args.save_images else "Not saving images")
-    logging.info("Saving attributions" if args.save_images else "Not saving attributions")
+    print("Saving images" if args.save_images else "Not saving images")
+    print("Saving attributions" if args.save_images else "Not saving attributions")
 
     # Get dataset, model, methods
     ds, model, patch_folder = get_dataset_model(args.dataset)
@@ -52,6 +47,5 @@ if __name__ == "__main__":
     start_t = time.time()
     bm_suite.run(args.num_samples, verbose=True)
     end_t = time.time()
-    print(f"Suite ran in {end_t - start_t:.3f}s.")
 
     bm_suite.save_result(args.output)

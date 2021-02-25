@@ -8,7 +8,6 @@ from inspect import Parameter
 import yaml
 from os import path
 import warnings
-import logging
 
 
 def _parse_masker(d):
@@ -45,7 +44,7 @@ class Suite:
         self.seed = seed
         self.log_dir = log_dir
         if self.log_dir is not None:
-            logging.info(f"Logging TensorBoard to {self.log_dir}")
+            print(f"Logging TensorBoard to {self.log_dir}")
         self.writer = None
 
     def load_config(self, loc):
@@ -80,7 +79,7 @@ class Suite:
                             raise ValueError(
                                 f"Invalid configuration: required argument {e_arg} not found for metric {metric_name}")
                 if metric_dict["type"] == "ImpactCoverage" and self.default_args["patch_folder"] is None:
-                    logging.warning("No patch folder provided, skipping impact coverage.")
+                    warnings.warning("No patch folder provided, skipping impact coverage.")
                 else:
                     # Create metric object using args_dict
                     self.metrics[metric_name] = constructor(**args_dict)
