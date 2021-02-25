@@ -27,7 +27,7 @@ class IterativeMaskingDataset(Dataset):
 
     def __getitem__(self, item):
         num_to_mask = self.mask_range[item]
-        indices = self.sorted_indices[:, :-num_to_mask] if self.mode == "deletion" \
+        indices = self.sorted_indices[:, :-num_to_mask] if self.mode == "insertion" \
             else self.sorted_indices[:, -num_to_mask:]
         masked_samples = self.masker.mask(self.samples, indices)
         return masked_samples
