@@ -8,6 +8,7 @@ from inspect import Parameter
 import yaml
 from os import path
 import warnings
+import logging
 
 
 def _parse_masker(d):
@@ -43,6 +44,8 @@ class Suite:
         self.attrs = {method_name: [] for method_name in self.methods}
         self.seed = seed
         self.log_dir = log_dir
+        if self.log_dir is not None:
+            logging.info(f"Logging TensorBoard to {self.log_dir}")
         self.writer = None
 
     def load_config(self, loc):
@@ -77,7 +80,7 @@ class Suite:
                             raise ValueError(
                                 f"Invalid configuration: required argument {e_arg} not found for metric {metric_name}")
                 if metric_dict["type"] == "ImpactCoverage" and self.default_args["patch_folder"] is None:
-                    warnings.warn("No patch folder provided, skipping impact coverage.")
+                    logging.warning("No patch folder provided, skipping impact coverage.")
                 else:
                     # Create metric object using args_dict
                     self.metrics[metric_name] = constructor(**args_dict)
@@ -93,14 +96,15 @@ class Suite:
         checked_shapes = False
         batch_nr = 0
         while samples_done < num_samples:
-            full_batch, full_labels = next(it)
-            full_batch = full_batch.to(self.device)
-            full_labels = full_labels.to(self.device)
+            full_batch_cpu, full_labels_cpu = next(it)
+            full_batch = full_batch_cpu.to(self.device)
+            full_labels = full_labels_cpu.to(self.device)
 
             # Only use correctly classified samples
-            pred = torch.argmax(self.model(full_batch), dim=1)
-            samples = full_batch[pred == full_labels]
-            labels = full_labels[pred == full_labels]
+            with torch.no_grad():
+                pred = torch.argmax(self.model(full_batch), dim=1)
+                samples = full_batch[pred == full_labels]
+                labels = full_labels[pred == full_labels]
 
             if samples.size(0) > 0:
                 batch_nr += 1
@@ -113,7 +117,7 @@ class Suite:
                     self.images.append(samples.cpu().detach().numpy())
 
                 # We need the attributions, to save them or to check their shapes
-                attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach()
+                attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach().numpy()
                          for method_name in self.methods.keys()}
                 if self.writer is not None:
                     self.writer.add_image_sample(samples, batch_nr)
@@ -122,7 +126,7 @@ class Suite:
                 if self.save_attrs:
                     # Save attributions if necessary
                     for method_name in self.methods:
-                        self.attrs[method_name].append(attrs[method_name].numpy())
+                        self.attrs[method_name].append(attrs[method_name])
                 for i, metric in enumerate(self.metrics.keys()):
                     if verbose:
                         prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")

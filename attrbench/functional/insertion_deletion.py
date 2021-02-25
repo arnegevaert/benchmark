@@ -2,67 +2,70 @@ from typing import Callable
 from attrbench.lib.masking import Masker
 import torch
 import numpy as np
+from torch.utils.data import Dataset, DataLoader
 
 
-def insertion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
+class IterativeMaskingDataset(Dataset):
+    def __init__(self, mode, num_steps, samples: np.ndarray, attrs: np.ndarray, masker):
+        if mode not in ["insertion", "deletion"]:
+            raise ValueError("Mode must be insertion or deletion")
+        self.mode = mode
+        self.num_steps = num_steps
+        self.samples = samples
+        self.masker = masker
+        self.masker.initialize_baselines(samples)
+        # Flatten each sample in order to sort indices per sample
+        attrs = attrs.reshape(attrs.shape[0], -1)  # [batch_size, -1]
+        # Sort indices of attrs in ascending order
+        self.sorted_indices = np.argsort(attrs)
+
+        total_features = attrs.shape[1]
+        self.mask_range = list((np.linspace(0, 1, num_steps) * total_features)[1:-1].astype(np.int))
+
+    def __len__(self):
+        return len(self.mask_range)
+
+    def __getitem__(self, item):
+        num_to_mask = self.mask_range[item]
+        indices = self.sorted_indices[:, :-num_to_mask] if self.mode == "deletion" \
+            else self.sorted_indices[:, -num_to_mask:]
+        masked_samples = self.masker.mask(self.samples, indices)
+        return masked_samples
+
+
+def insertion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
               num_steps: int, masker: Masker, writer=None):
-    sorted_indices, orig_predictions, neutral_predictions, mask_range = _init(samples, labels, model, attrs,
-                                                                              num_steps, masker, writer)
-    result = []
-    for i in mask_range:
-        if i == 0:
-            predictions = neutral_predictions
-            masked_samples = masker.mask(samples, sorted_indices)
-        else:
-            predictions, masked_samples = masker.predict_masked(samples, sorted_indices[:, :-i],
-                                                                model, return_masked_samples=True)
-            with torch.no_grad():
-                predictions = predictions.gather(dim=1, index=labels.unsqueeze(-1))
-        if writer is not None:
-            writer.add_images('masked samples', masked_samples, global_step=i)
-        result.append((predictions - neutral_predictions) / orig_predictions)
-    result = torch.cat(result, dim=1).cpu()  # [batch_size, len(mask_range)]
-    return result
+    masking_dataset = IterativeMaskingDataset("insertion", num_steps, samples.cpu().numpy(), attrs, masker)
+    orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, masking_dataset, writer)
+    result = [neutral_preds] + inter_preds + [orig_preds]
+    result = torch.cat(result, dim=1)  # [batch_size, len(mask_range)]
+    return (result / orig_preds).cpu()
 
 
-def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
+def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
              num_steps: int, masker: Masker, writer=None):
-    sorted_indices, orig_predictions, _, mask_range = _init(samples, labels, model, attrs,
-                                                            num_steps, masker, writer)
-    result = []
-    for i in mask_range:
-        if i == 0:
-            predictions = orig_predictions
-            masked_samples = samples
-        else:
-            predictions, masked_samples = masker.predict_masked(samples, sorted_indices[:, -i:],
-                                                                model, return_masked_samples=True)
-            with torch.no_grad():
-                predictions = predictions.gather(dim=1, index=labels.unsqueeze(-1))
-        if writer is not None:
-            writer.add_images('masked samples', masked_samples, global_step=i)
-        result.append((predictions - orig_predictions) / orig_predictions)
-    result = torch.cat(result, dim=1).cpu()  # [batch_size, len(mask_range)]
-    return result
+    masking_dataset = IterativeMaskingDataset("deletion", num_steps, samples.cpu().numpy(), attrs, masker)
+    orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, masking_dataset, writer)
+    result = [orig_preds] + inter_preds + [neutral_preds]
+    result = torch.cat(result, dim=1)  # [batch_size, len(mask_range)]
+    return (result / orig_preds).cpu()
 
 
-
-def _init(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
-          num_steps: int, masker: Masker, writer=None):
-  
-    masker.initialize_baselines(samples)
-
-    # Flatten each sample in order to sort indices per sample
-    attrs = attrs.flatten(1)  # [batch_size, -1]
-    # Sort indices of attrs in ascending order
-    sorted_indices = attrs.argsort().cpu().detach().numpy()
-
-    # Get original predictions
+def _get_predictions(samples: torch.Tensor, labels: torch.Tensor,
+                     model: Callable, masking_dataset: IterativeMaskingDataset, writer=None):
+    device = samples.device
     with torch.no_grad():
-        orig_predictions = model(samples).gather(dim=1, index=labels.unsqueeze(-1))
-        neutral_predictions = masker.predict_masked(samples, sorted_indices, model) \
-            .gather(dim=1, index=labels.unsqueeze(-1))
+        orig_preds = model(samples).gather(dim=1, index=labels.unsqueeze(-1))
+        fully_masked = torch.tensor(masking_dataset.masker.baseline, device=device, dtype=torch.float)
+        neutral_preds = model(fully_masked.to(device)).gather(dim=1, index=labels.unsqueeze(-1))
+    masking_dl = DataLoader(masking_dataset, shuffle=False, num_workers=4, pin_memory=True, batch_size=1)
 
-    total_features = attrs.shape[1]
-    mask_range = list((np.linspace(0, 1, num_steps) * total_features).astype(np.int))
-    return sorted_indices, orig_predictions, neutral_predictions, mask_range
+    inter_preds = []
+    for i, batch in enumerate(masking_dl):
+        batch = batch[0].to(device).float()
+        with torch.no_grad():
+            predictions = model(batch).gather(dim=1, index=labels.unsqueeze(-1))
+        if writer is not None:
+            writer.add_images('masked samples', batch, global_step=i)
+        inter_preds.append(predictions)
+    return orig_preds, neutral_preds, inter_preds

@@ -52,7 +52,7 @@ class Metric:
                                  f"{method_name} had {result[method_name].shape} instead of {shape}")
         return result, shape
 
-    def _run_single_method(self, samples, labels, attrs, writer=None):
+    def _run_single_method(self, samples, labels, attrs: np.ndarray, writer=None):
         raise NotImplementedError
 
 
@@ -130,7 +130,7 @@ class Insertion(Metric):
         self.num_steps = num_steps
         self.masker = masker
 
-    def _run_single_method(self, samples, labels, attrs, writer=None):
+    def _run_single_method(self, samples, labels, attrs: np.ndarray, writer=None):
         return functional.insertion(samples, labels, self.model, attrs, self.num_steps, self.masker,
                                     writer=writer)
 
@@ -141,7 +141,7 @@ class Deletion(Metric):
         self.num_steps = num_steps
         self.masker = masker
 
-    def _run_single_method(self, samples, labels, attrs, writer=None):
+    def _run_single_method(self, samples, labels, attrs: np.ndarray, writer=None):
         return functional.deletion(samples, labels, self.model, attrs, self.num_steps, self.masker,
                                    writer=writer)
 

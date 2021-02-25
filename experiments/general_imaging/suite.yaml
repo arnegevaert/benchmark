@@ -1,16 +1,37 @@
+default:
+  num_steps: 100
 metrics:
-  infidelity_seg:
-    type: Infidelity
-    num_perturbations: 100
-    perturbation_mode: segment
-    perturbation_size: 5
-  infidelity_gaussian:
-    type: Infidelity
-    num_perturbations: 100
-    perturbation_mode: gaussian
-    perturbation_size: 0.2
-  infidelity_sq:
-    type: Infidelity
-    num_perturbations: 100
-    perturbation_mode: square
-    perturbation_size: 0.2
+  insertion_cst:
+    type: Insertion
+    masker:
+      type: ConstantMasker
+      feature_level: pixel
+      mask_value: 0.
+  deletion_cst:
+    type: Deletion
+    masker:
+      type: ConstantMasker
+      feature_level: pixel
+      mask_value: 0.
+  insertion_rand:
+    type: Insertion
+    masker:
+      type: RandomMasker
+      feature_level: pixel
+  deletion_rand:
+    type: Deletion
+    masker:
+      type: RandomMasker
+      feature_level: pixel
+  insertion_blur:
+    type: Insertion
+    masker:
+      type: BlurringMasker
+      feature_level: pixel
+      kernel_size: 0.5
+  deletion_blur:
+    type: Deletion
+    masker:
+      type: BlurringMasker
+      feature_level: pixel
+      kernel_size: 0.5
