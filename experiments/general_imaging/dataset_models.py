@@ -83,9 +83,46 @@ def get_dataset_model(name, model=None, train=False):
             model = Resnet18(1000, pretrained=True)
         elif model.lower() == 'resnet50':
             model = Resnet50(1000, pretrained=True)
+        else:
+            raise ValueError(f"Invalid model for this dataset: {model}")
         patch_folder = path.join(_DATA_LOC, "patches/ImageNet")
+
+    elif name=="Places365":
+        transform = transforms.Compose([
+            transforms.Resize((256, 256)),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
+        dir = "train" if train else "val"
+        ds = datasets.Places365(path.join(_DATA_LOC, 'Places365'), split='val', transform=transform, small=True,
+                                download=False)
+        if model.lower() == 'resnet18':
+            model = Resnet18(365,params_loc = path.join(_DATA_LOC, "models/Places365/resnet18.pt"),pretrained=False)
+        elif model.lower() == 'resnet50':
+            model = Resnet50(365,params_loc = path.join(_DATA_LOC, "models/Places365/resnet50.pt"),pretrained=False)
+        else:
+            raise ValueError(f"Invalid model for this dataset: {model}")
+        patch_folder = path.join(_DATA_LOC, "patches/Places365")
+    elif name=="Caltech256":
+        transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.552, 0.5332, 0.5047], [0.3154, 0.312, 0.3256])
+        ])
+        dir = "Train" if train else "Test"
+        ds = datasets.ImageFolder(path.join(_DATA_LOC,'Caltech256',dir), transform=transform)
+        if model.lower() == 'resnet18':
+            model = Resnet18(267, params_loc=path.join(_DATA_LOC, "models/Caltech256/resnet18.pt"))
+        elif model.lower() == 'resnet50':
+            model = Resnet50(267, params_loc=path.join(_DATA_LOC, "models/Caltech256/resnet50.pt"))
+        else:
+            raise ValueError(f"Invalid model for this dataset: {model}")
+        patch_folder = path.join(_DATA_LOC, "patches/Caltech256")
+
     else:
         raise ValueError(f"Invalid dataset: {name}")
+
     return ds, model, patch_folder
 
 
