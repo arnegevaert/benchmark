@@ -20,7 +20,7 @@ def mask_segments(images: np.ndarray, seg_images: np.ndarray, segments: np.ndarr
         seg_img = seg_images[i, ...]
         segs = segments[i, ...]
         bool_masks.append(np.isin(seg_img, segs))
-    bool_masks = torch.tensor(np.stack(bool_masks, axis=0)).long()
+    bool_masks = np.stack(bool_masks, axis=0)
     return masker.mask_boolean(images, bool_masks)
 
 

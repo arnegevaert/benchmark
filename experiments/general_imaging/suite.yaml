@@ -1,36 +1,34 @@
-default:
-  num_steps: 100
 metrics:
-  insertion_cst:
-    type: Insertion
+  IROF_cst:
+    type: IROF
     masker:
       type: ConstantMasker
       feature_level: pixel
       mask_value: 0.
-  deletion_cst:
-    type: Deletion
+  IIOF_cst:
+    type: IIOF
     masker:
       type: ConstantMasker
       feature_level: pixel
       mask_value: 0.
-  insertion_rand:
-    type: Insertion
+  IROF_rand:
+    type: IROF
     masker:
       type: RandomMasker
       feature_level: pixel
-  deletion_rand:
-    type: Deletion
+  IIOF_rand:
+    type: IIOF
     masker:
       type: RandomMasker
       feature_level: pixel
-  insertion_blur:
-    type: Insertion
+  IROF_blur:
+    type: IROF
     masker:
       type: BlurringMasker
       feature_level: pixel
       kernel_size: 0.5
-  deletion_blur:
-    type: Deletion
+  IIOF_blur:
+    type: IIOF
     masker:
       type: BlurringMasker
       feature_level: pixel
