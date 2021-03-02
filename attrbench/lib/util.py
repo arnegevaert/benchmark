@@ -5,12 +5,6 @@ from skimage.segmentation import slic
 from typing import Tuple
 
 
-def sum_of_attributions(attrs, indices):
-    attrs = attrs.flatten(1)
-    mask_attrs = attrs.gather(dim=1, index=indices)
-    return mask_attrs.sum(dim=1, keepdim=True)
-
-
 def mask_segments(images: np.ndarray, seg_images: np.ndarray, segments: np.ndarray, masker: Masker) -> np.ndarray:
     if not (images.shape[0] == seg_images.shape[0] and images.shape[0] == segments.shape[0] and
             images.shape[-2:] == seg_images.shape[-2:]):

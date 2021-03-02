@@ -1,35 +1,40 @@
+default:
+  min_subset_size: 0.1
+  max_subset_size: 0.5
+  num_steps: 5
+  num_subsets: 100
 metrics:
-  IROF_cst:
-    type: IROF
-    masker:
-      type: ConstantMasker
-      feature_level: pixel
-      mask_value: 0.
-  IIOF_cst:
-    type: IIOF
-    masker:
-      type: ConstantMasker
-      feature_level: pixel
-      mask_value: 0.
-  IROF_rand:
-    type: IROF
-    masker:
-      type: RandomMasker
-      feature_level: pixel
-  IIOF_rand:
-    type: IIOF
-    masker:
-      type: RandomMasker
-      feature_level: pixel
-  IROF_blur:
-    type: IROF
+  sens_n_blur:
+    type: SensitivityN
     masker:
       type: BlurringMasker
       feature_level: pixel
       kernel_size: 0.5
-  IIOF_blur:
-    type: IIOF
+  seg_sens_n_blur:
+    type: SegSensN
     masker:
       type: BlurringMasker
       feature_level: pixel
       kernel_size: 0.5
+  sens_n_cst:
+    type: SensitivityN
+    masker:
+      type: ConstantMasker
+      feature_level: pixel
+      mask_value: 0.
+  seg_sens_n_cst:
+    type: SegSensN
+    masker:
+      type: ConstantMasker
+      feature_level: pixel
+      mask_value: 0.
+  sens_n_rand:
+    type: SensitivityN
+    masker:
+      type: RandomMasker
+      feature_level: pixel
+  seg_sens_n_rand:
+    type: SegSensN
+    masker:
+      type: RandomMasker
+      feature_level: pixel
