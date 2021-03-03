@@ -5,7 +5,7 @@ import numpy as np
 from torch.utils.data import Dataset, DataLoader
 
 
-class IterativeMaskingDataset(Dataset):
+class InsertionDeletionDataset(Dataset):
     def __init__(self, mode, num_steps, samples: np.ndarray, attrs: np.ndarray, masker):
         if mode not in ["insertion", "deletion"]:
             raise ValueError("Mode must be insertion or deletion")
@@ -35,8 +35,8 @@ class IterativeMaskingDataset(Dataset):
 
 def insertion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
               num_steps: int, masker: Masker, writer=None):
-    masking_dataset = IterativeMaskingDataset("insertion", num_steps, samples.cpu().numpy(), attrs, masker)
-    orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, masking_dataset, writer)
+    ds = InsertionDeletionDataset("insertion", num_steps, samples.cpu().numpy(), attrs, masker)
+    orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, ds, writer)
     result = [neutral_preds] + inter_preds + [orig_preds]
     result = torch.cat(result, dim=1)  # [batch_size, len(mask_range)]
     return (result / orig_preds).cpu()
@@ -44,24 +44,24 @@ def insertion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attr
 
 def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
              num_steps: int, masker: Masker, writer=None):
-    masking_dataset = IterativeMaskingDataset("deletion", num_steps, samples.cpu().numpy(), attrs, masker)
-    orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, masking_dataset, writer)
+    ds = InsertionDeletionDataset("deletion", num_steps, samples.cpu().numpy(), attrs, masker)
+    orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, ds, writer)
     result = [orig_preds] + inter_preds + [neutral_preds]
     result = torch.cat(result, dim=1)  # [batch_size, len(mask_range)]
     return (result / orig_preds).cpu()
 
 
 def _get_predictions(samples: torch.Tensor, labels: torch.Tensor,
-                     model: Callable, masking_dataset: IterativeMaskingDataset, writer=None):
+                     model: Callable, ds: InsertionDeletionDataset, writer=None):
     device = samples.device
     with torch.no_grad():
         orig_preds = model(samples).gather(dim=1, index=labels.unsqueeze(-1))
-        fully_masked = torch.tensor(masking_dataset.masker.baseline, device=device, dtype=torch.float)
+        fully_masked = torch.tensor(ds.masker.baseline, device=device, dtype=torch.float)
         neutral_preds = model(fully_masked.to(device)).gather(dim=1, index=labels.unsqueeze(-1))
-    masking_dl = DataLoader(masking_dataset, shuffle=False, num_workers=4, pin_memory=True, batch_size=1)
+    dl = DataLoader(ds, shuffle=False, num_workers=4, pin_memory=True, batch_size=1)
 
     inter_preds = []
-    for i, batch in enumerate(masking_dl):
+    for i, batch in enumerate(dl):
         batch = batch[0].to(device).float()
         with torch.no_grad():
             predictions = model(batch).gather(dim=1, index=labels.unsqueeze(-1))
