@@ -20,6 +20,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output", type=str, required=True)
     parser.add_argument("--log-dir", type=str, default=None)
     parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--multi_label",action="store_true")
     # Parse arguments
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
@@ -41,7 +42,8 @@ if __name__ == "__main__":
                      save_attrs=args.save_attrs,
                      seed=args.seed,
                      patch_folder=patch_folder,
-                     log_dir=args.log_dir)
+                     log_dir=args.log_dir,
+                     multi_label=args.multi_label)
     bm_suite.load_config(args.suite_config)
     bm_suite.run(args.num_samples, verbose=True)
     bm_suite.save_result(args.output)
