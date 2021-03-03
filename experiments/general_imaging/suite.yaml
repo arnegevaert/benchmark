@@ -4,37 +4,18 @@ default:
   num_steps: 5
   num_subsets: 100
 metrics:
-  sens_n_blur:
-    type: SensitivityN
-    masker:
-      type: BlurringMasker
-      feature_level: pixel
-      kernel_size: 0.5
-  seg_sens_n_blur:
-    type: SegSensN
-    masker:
-      type: BlurringMasker
-      feature_level: pixel
-      kernel_size: 0.5
-  sens_n_cst:
-    type: SensitivityN
-    masker:
-      type: ConstantMasker
-      feature_level: pixel
-      mask_value: 0.
-  seg_sens_n_cst:
-    type: SegSensN
-    masker:
-      type: ConstantMasker
-      feature_level: pixel
-      mask_value: 0.
-  sens_n_rand:
-    type: SensitivityN
-    masker:
-      type: RandomMasker
-      feature_level: pixel
-  seg_sens_n_rand:
-    type: SegSensN
-    masker:
-      type: RandomMasker
-      feature_level: pixel
+  infid_segment:
+    type: Infidelity
+    perturbation_mode: segment
+    perturbation_size: 10
+    num_perturbations: 1000
+  infid_gauss:
+    type: Infidelity
+    perturbation_mode: gaussian
+    perturbation_size: 0.2
+    num_perturbations: 1000
+  infid_square:
+    type: Infidelity
+    perturbation_mode: square
+    perturbation_size: 0.2
+    num_perturbations: 1000

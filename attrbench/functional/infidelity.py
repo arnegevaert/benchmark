@@ -78,7 +78,7 @@ _PERTURBATION_CLASSES = {
 }
 
 
-def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: torch.Tensor,
+def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
                perturbation_mode: str, perturbation_size: float, num_perturbations: int,
                writer=None):
     device = samples.device
@@ -92,7 +92,7 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, att
     # Get original model output
     with torch.no_grad():
         orig_output = (model(samples)).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
-    attrs = attrs.to(samples.device)
+    attrs = torch.tensor(attrs).float()
     # Replicate attributions along channel dimension if necessary (if explanation has fewer channels than image)
     if attrs.shape[1] != samples.shape[1]:
         shape = [1 for _ in range(len(attrs.shape))]
@@ -100,13 +100,12 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, att
         attrs = attrs.repeat(*tuple(shape))
     attrs_flattened = attrs.flatten(1)
 
-    infid = []
+    dot_prods = []
+    pred_diffs = []
     for i_pert, (perturbed_samples, perturbation_vector) in enumerate(perturbation_dl):
         # Get perturbation vector I and perturbed samples (x - I)
-        #perturbed_samples = torch.tensor(perturbed_samples[0], dtype=torch.float, device=device)
-        #perturbation_vector = torch.tensor(perturbation_vector[0], dtype=torch.float, device=device)
         perturbed_samples = perturbed_samples[0].float().to(device)
-        perturbation_vector = perturbation_vector[0].float().to(device)
+        perturbation_vector = perturbation_vector[0].float()
         if writer:
             writer.add_images("perturbation_vector", perturbation_vector, global_step=i_pert)
             writer.add_images("perturbed_samples", perturbed_samples, global_step=i_pert)
@@ -116,10 +115,8 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, att
         # Calculate dot product between each sample and its corresponding perturbation vector
         # This is equivalent to diagonal of matmul
         dot_product = (attrs_flattened * perturbation_vector.flatten(1)).sum(dim=1, keepdim=True)  # [batch_size, 1]
-        pred_diff = orig_output - perturbed_output
-        infid.append(((dot_product - pred_diff)**2).detach())
-    # Take average across all perturbations
-    infid = torch.cat(infid, dim=1).mean(dim=1)  # [batch_size]
-    infid = infid.unsqueeze(1)  # [batch_size, 1]
-
-    return infid.cpu()
+        dot_prods.append(dot_product)
+        pred_diffs.append((orig_output - perturbed_output))
+    dot_prods = torch.cat(dot_prods, dim=1)  # [batch_size, num_perturbations]
+    pred_diffs = torch.cat(pred_diffs, dim=1).cpu()  # [batch_size, num_perturbations]
+    return ((dot_prods - pred_diffs)**2).mean(dim=1, keepdim=True)  # [batch_size, 1]
