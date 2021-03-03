@@ -5,6 +5,7 @@ import torch
 from os import path, listdir
 from itertools import cycle
 import re
+import numpy as np
 
 
 def apply_patches(samples, labels, model, patch_folder):
@@ -86,18 +87,18 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
     to_mask = sorted_indices[:, -nr_top_attributions:]
     masker = ConstantMasker(feature_level="pixel" if attrs.shape[1] == 1 else "channel", mask_value=1.)
     # Initialize as constant zeros, "mask" the most important features with 1
-    critical_factor_mask = torch.zeros(attrs.shape)
+    critical_factor_mask = np.zeros(attrs.shape)
     masker.initialize_baselines(critical_factor_mask)
     critical_factor_mask = masker.mask(critical_factor_mask, to_mask)
+    critical_factor_mask = critical_factor_mask.reshape(critical_factor_mask.shape[0], -1).astype(np.bool)
 
     # Calculate IoU of critical factors (top n attributions) with adversarial patch
-    patch_mask_flattened = patch_mask.flatten(1).bool()
-    critical_factor_mask_flattened = critical_factor_mask.flatten(1).bool()
-    intersection = (patch_mask_flattened & critical_factor_mask_flattened).sum(dim=1)
-    union = (patch_mask_flattened | critical_factor_mask_flattened).sum(dim=1)
-    iou = intersection.float() / union.float()
+    patch_mask_flattened = patch_mask.flatten(1).bool().numpy()
+    intersection = (patch_mask_flattened & critical_factor_mask).sum(axis=1)
+    union = (patch_mask_flattened | critical_factor_mask).sum(axis=1)
+    iou = intersection.astype(np.float) / union.astype(np.float)
     if writer:
         writer.add_images('Attacked samples', samples)
         writer.add_images('Attacked attributions', attrs)
     # [batch_size]
-    return iou
+    return torch.tensor(iou)

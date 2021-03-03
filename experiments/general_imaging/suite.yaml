@@ -4,18 +4,6 @@ default:
   num_steps: 5
   num_subsets: 100
 metrics:
-  infid_segment:
-    type: Infidelity
-    perturbation_mode: segment
-    perturbation_size: 10
-    num_perturbations: 1000
-  infid_gauss:
-    type: Infidelity
-    perturbation_mode: gaussian
-    perturbation_size: 0.2
-    num_perturbations: 1000
-  infid_square:
-    type: Infidelity
-    perturbation_mode: square
-    perturbation_size: 0.2
-    num_perturbations: 1000
+  impact_coverage:
+    type: ImpactCoverage
+
