@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from experiments.general_imaging.lib.models import Resnet20, Resnet18, Resnet56, Resnet50
-from experiments.general_imaging.lib.datasets import Imagenet_dataset
+from experiments.general_imaging.lib.datasets import Imagenet_dataset, VOC_dataset
 
 
 _DATA_LOC = os.environ["BM_DATA_LOC"] if "BM_DATA_LOC" in os.environ else path.join(path.dirname(__file__), "../../data")
@@ -119,7 +119,20 @@ def get_dataset_model(name, model=None, train=False):
         else:
             raise ValueError(f"Invalid model for this dataset: {model}")
         patch_folder = path.join(_DATA_LOC, "patches/Caltech256")
-
+    elif name=="VOC2012":
+        transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize([0.4568, 0.4386, 0.4063], [0.2666, 0.2641, 0.2783])
+        ])
+        ds = VOC_dataset(os.path.join(_DATA_LOC, 'VOC2012'), train=train, transform=transform)
+        if model.lower() == 'resnet18':
+            model = Resnet18(20, params_loc=path.join(_DATA_LOC, "models/VOC2012/resnet18.pt"))
+        elif model.lower() == 'resnet50':
+            model = Resnet50(20, params_loc=path.join(_DATA_LOC, "models/VOC2012/resnet50.pt"))
+        else:
+            raise ValueError(f"Invalid model for this dataset: {model}")
+        patch_folder = path.join(_DATA_LOC, "patches/VOC2012")
     else:
         raise ValueError(f"Invalid dataset: {name}")
 
