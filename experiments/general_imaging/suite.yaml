@@ -5,18 +5,18 @@ default:
   num_subsets: 100
 metrics:
   sensitivity_n_cst:
-    type: SensitivityN
+    type: SegSensN
     masker:
       type: ConstantMasker
       feature_level: pixel
       mask_value: 0.
   sensitivity_n_rand:
-    type: SensitivityN
+    type: SegSensN
     masker:
       type: RandomMasker
       feature_level: pixel
   sensitivity_n_blur:
-    type: SensitivityN
+    type: SegSensN
     masker:
       type: BlurringMasker
       feature_level: pixel

@@ -233,25 +233,33 @@ class SegSensN(Metric):
         self.max_subset_size = max_subset_size
         self.num_steps = num_steps
         self.num_subsets = num_subsets
+        # Total number of segments is fixed 100
+        self.n_range = (np.linspace(self.min_subset_size, self.max_subset_size, self.num_steps) * 100).astype(np.int)
         self.masker = masker
         self.metadata = {
             "col_index": np.linspace(min_subset_size, max_subset_size, num_steps)
         }
 
     def run_batch(self, samples, labels, attrs_dict: dict):
-        """
-        Runs the metric for a given batch, for all methods, and saves result internally
-        """
+        # Create pseudo-dataset
+        ds = functional.SegSensNDataset(self.n_range, self.num_subsets, samples.cpu().numpy(), self.masker)
+        # Calculate output diffs and removed indices (we will re-use this for each method)
+        output_diffs, indices = functional.sens_n_perturbations(samples, labels, ds, self.model, self.n_range)
+
         for method_name in attrs_dict:
             if method_name not in self.results:
                 self.results[method_name] = []
-            self.results[method_name].append(self._run_single_method(samples, labels, attrs_dict[method_name],
-                                                                     writer=self._get_writer(method_name)))
 
-    def _run_single_method(self, samples, labels, attrs, writer=None):
-        return functional.seg_sensitivity_n(samples, labels, self.model, attrs, self.min_subset_size,
-                                            self.max_subset_size, self.num_steps, self.num_subsets,
-                                            self.masker, writer)
+            attrs = attrs_dict[method_name]
+            attrs = attrs.reshape(attrs.shape[0], 1, -1)  # [batch_size, 1, -1]
+            method_result = []
+            for n in self.n_range:
+                # Calculate sums of attributions
+                mask_attrs = np.take_along_axis(attrs, axis=-1, indices=indices[n])  # [batch_size, num_subsets, n]
+                sum_of_attrs = mask_attrs.sum(axis=-1)  # [batch_size, num_subsets]
+                method_result.append(functional.sens_n_correlations(sum_of_attrs, output_diffs[n]))
+            method_result = torch.tensor(np.stack(method_result, axis=1))
+            self.results[method_name].append(method_result)
 
 
 class IROF(Metric):

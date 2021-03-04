@@ -1,6 +1,6 @@
 from typing import Callable
 import numpy as np
-from attrbench.lib import mask_segments, segment_samples_attributions
+from attrbench.lib import mask_segments, segment_samples, segment_attributions
 from attrbench.lib.masking import Masker
 import torch
 import warnings
@@ -21,7 +21,7 @@ def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callab
                       masker: Masker, writer=None):
     # Total number of segments is fixed 100
     n_range = (np.linspace(min_subset_size, max_subset_size, num_steps) * 100).astype(np.int)
-    ds = SegSensNDataset(n_range, num_subsets, samples.cpu().numpy(), attrs, masker, writer)
+    ds = SegSensNDataset(n_range, num_subsets, samples.cpu().numpy(), masker, writer)
     return _sens_n(samples, labels, attrs, ds, model, n_range, writer)
 
 
@@ -44,15 +44,14 @@ class SensitivityNDataset(Dataset):
 
 
 class SegSensNDataset(Dataset):
-    def __init__(self, n_range: np.ndarray, num_subsets: int, samples: np.ndarray, attrs: np.ndarray,
+    def __init__(self, n_range: np.ndarray, num_subsets: int, samples: np.ndarray,
                  masker: Masker, writer=None):
         self.n_range = n_range
         self.num_subsets = num_subsets
         self.samples = samples
-        self.attrs = attrs
         self.masker = masker
         self.masker.initialize_baselines(samples)
-        self.segmented_images, self.avg_attrs = segment_samples_attributions(samples, attrs)
+        self.segmented_images = segment_samples(samples)
         if writer is not None:
             writer.add_images("segmented samples", self.segmented_images)
 
@@ -61,8 +60,7 @@ class SegSensNDataset(Dataset):
 
     def __getitem__(self, item):
         n = self.n_range[item // self.num_subsets]
-        valid_indices = [np.where(~np.isinf(self.avg_attrs[i, ...]))[0] for i in range(self.samples.shape[0])]
-        indices = np.stack([np.random.choice(valid_indices[i], size=n, replace=False)
+        indices = np.stack([np.random.choice(np.unique(self.segmented_images[i, ...]), size=n, replace=False)
                             for i in range(self.samples.shape[0])])
         return mask_segments(self.samples, self.segmented_images, indices, self.masker), indices, n
 

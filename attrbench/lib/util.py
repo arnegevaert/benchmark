@@ -18,13 +18,16 @@ def mask_segments(images: np.ndarray, seg_images: np.ndarray, segments: np.ndarr
     return masker.mask_boolean(images, bool_masks)
 
 
-def segment_samples_attributions(samples: np.ndarray, attrs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def segment_samples(samples: np.ndarray) -> np.ndarray:
     # Segment images using SLIC
     seg_images = np.stack([slic(np.transpose(samples[i, ...], (1, 2, 0)),
                                 start_label=0, slic_zero=True)
                            for i in range(samples.shape[0])])
     seg_images = np.expand_dims(seg_images, axis=1)
+    return seg_images
 
+
+def segment_attributions(seg_images: np.ndarray, attrs: np.ndarray) -> np.ndarray:
     segments = np.unique(seg_images)
     seg_img_flat = seg_images.reshape(seg_images.shape[0], -1)
     attrs_flat = attrs.reshape(attrs.shape[0], -1)
@@ -35,4 +38,10 @@ def segment_samples_attributions(samples: np.ndarray, attrs: np.ndarray) -> Tupl
         mean_attrs = np.sum(masked_attrs, axis=1) / np.sum(mask, axis=1)
         # If seg does not exist for image, mean_attrs will be nan. Replace with -inf.
         avg_attrs[:, i] = np.nan_to_num(mean_attrs, nan=-np.inf)
+    return avg_attrs
+
+
+def segment_samples_attributions(samples: np.ndarray, attrs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    seg_images = segment_samples(samples)
+    avg_attrs = segment_attributions(seg_images, attrs)
     return seg_images, avg_attrs
