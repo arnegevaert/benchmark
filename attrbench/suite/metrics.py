@@ -18,10 +18,8 @@ class Metric:
         Runs the metric for a given batch, for all methods, and saves result internally
         """
         for method_name in attrs_dict:
-
             if method_name not in self.results:
                 self.results[method_name] = []
-
             self.results[method_name].append(self._run_single_method(samples, labels, attrs_dict[method_name],
                                                                      writer=self._get_writer(method_name)))
 
@@ -153,6 +151,19 @@ class Infidelity(Metric):
         self.perturbation_size = perturbation_size
         self.num_perturbations = num_perturbations
 
+    def run_batch(self, samples, labels, attrs_dict: dict):
+        # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
+        print("Calculating perturbation vectors and prediction differences")
+        pert_vectors, pred_diffs = functional.infid_perturbations(samples, labels, self.model,
+                                                                  self.perturbation_mode, self.perturbation_size,
+                                                                  self.num_perturbations)
+        print("Done.")
+        for method_name in attrs_dict:
+            print(f"Calculating infid for {method_name}")
+            if method_name not in self.results:
+                self.results[method_name] = []
+            self.results[method_name].append(functional.infid_mse(pert_vectors, pred_diffs, attrs_dict[method_name]))
+
     def _run_single_method(self, samples, labels, attrs, writer=None):
         return functional.infidelity(samples, labels, self.model, attrs,
                                      self.perturbation_mode, self.perturbation_size, self.num_perturbations,
@@ -195,6 +206,16 @@ class SensitivityN(Metric):
             "col_index": np.linspace(min_subset_size, max_subset_size, num_steps)
         }
 
+    def run_batch(self, samples, labels, attrs_dict: dict):
+        """
+        Runs the metric for a given batch, for all methods, and saves result internally
+        """
+        for method_name in attrs_dict:
+            if method_name not in self.results:
+                self.results[method_name] = []
+            self.results[method_name].append(self._run_single_method(samples, labels, attrs_dict[method_name],
+                                                                     writer=self._get_writer(method_name)))
+
     def _run_single_method(self, samples, labels, attrs, writer=None):
         return functional.sensitivity_n(samples, labels, self.model, attrs,
                                         self.min_subset_size, self.max_subset_size, self.num_steps,
@@ -231,6 +252,16 @@ class SegSensN(Metric):
         self.metadata = {
             "col_index": np.linspace(min_subset_size, max_subset_size, num_steps)
         }
+
+    def run_batch(self, samples, labels, attrs_dict: dict):
+        """
+        Runs the metric for a given batch, for all methods, and saves result internally
+        """
+        for method_name in attrs_dict:
+            if method_name not in self.results:
+                self.results[method_name] = []
+            self.results[method_name].append(self._run_single_method(samples, labels, attrs_dict[method_name],
+                                                                     writer=self._get_writer(method_name)))
 
     def _run_single_method(self, samples, labels, attrs, writer=None):
         return functional.seg_sensitivity_n(samples, labels, self.model, attrs, self.min_subset_size,

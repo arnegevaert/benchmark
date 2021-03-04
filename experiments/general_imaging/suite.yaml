@@ -1,46 +1,15 @@
 default:
-  num_steps: 100  # Used by deletion_until_flip, (strict_)impact_score, insertion, deletion
+  num_perturbations: 1000
 metrics:
-  impact_score_cst:
-    type: ImpactScore
-    strict: false
-    tau: 0.5
-    masker:
-      type: ConstantMasker
-      feature_level: pixel
-      mask_value: 0.
-  strict_impact_score_cst:
-    type: ImpactScore
-    strict: true
-    masker:
-      type: ConstantMasker
-      feature_level: pixel
-      mask_value: 0.
-  impact_score_rand:
-    type: ImpactScore
-    strict: false
-    tau: 0.5
-    masker:
-      type: RandomMasker
-      feature_level: pixel
-  strict_impact_score_rand:
-    type: ImpactScore
-    strict: true
-    masker:
-      type: RandomMasker
-      feature_level: pixel
-  impact_score_blur:
-    type: ImpactScore
-    strict: false
-    tau: 0.5
-    masker:
-      type: BlurringMasker
-      feature_level: pixel
-      kernel_size: 0.5
-  strict_impact_score_blur:
-    type: ImpactScore
-    strict: true
-    masker:
-      type: BlurringMasker
-      feature_level: pixel
-      kernel_size: 0.5
+  infidelity_gaussian:
+    type: Infidelity
+    perturbation_mode: gaussian
+    perturbation_size: 0.2
+  infidelity_sq:
+    type: Infidelity
+    perturbation_mode: square
+    perturbation_size: 0.2
+  infidelity_seg:
+    type: Infidelity
+    perturbation_mode: segment
+    perturbation_size: 10

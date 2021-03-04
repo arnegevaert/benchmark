@@ -118,25 +118,31 @@ class Suite:
                 # We need the attributions, to save them or to check their shapes
                 attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach().numpy()
                          for method_name in self.methods.keys()}
+
                 if self.writer is not None:
                     self.writer.add_image_sample(samples, batch_nr)
                     for name in attrs.keys():
                         self.writer.add_attribution(attrs[name], batch_nr, name)
+
+                # Save attributions if necessary
                 if self.save_attrs:
-                    # Save attributions if necessary
                     for method_name in self.methods:
                         self.attrs[method_name].append(attrs[method_name])
+
+                # Metric loop
                 for i, metric in enumerate(self.metrics.keys()):
                     if verbose:
                         prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
+                    # Check shapes of attributions if necessary
                     if not checked_shapes and hasattr(self.metrics[metric], "masker"):
-                        # Check shapes of attributions if necessary
                         for method_name in self.methods:
                             if not self.metrics[metric].masker.check_attribution_shape(samples, attrs[method_name]):
                                 raise ValueError(f"Attributions for method {method_name} "
                                                  f"are not compatible with masker")
                         checked_shapes = True
+                    # Run the metric on this batch
                     self.metrics[metric].run_batch(samples, labels, attrs)
+
                 if verbose:
                     prog.update(samples.size(0))
                 samples_done += samples.size(0)
