@@ -153,21 +153,13 @@ class Infidelity(Metric):
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
-        print("Calculating perturbation vectors and prediction differences")
         pert_vectors, pred_diffs = functional.infid_perturbations(samples, labels, self.model,
                                                                   self.perturbation_mode, self.perturbation_size,
                                                                   self.num_perturbations)
-        print("Done.")
         for method_name in attrs_dict:
-            print(f"Calculating infid for {method_name}")
             if method_name not in self.results:
                 self.results[method_name] = []
             self.results[method_name].append(functional.infid_mse(pert_vectors, pred_diffs, attrs_dict[method_name]))
-
-    def _run_single_method(self, samples, labels, attrs, writer=None):
-        return functional.infidelity(samples, labels, self.model, attrs,
-                                     self.perturbation_mode, self.perturbation_size, self.num_perturbations,
-                                     writer=writer)
 
 
 class MaxSensitivity(Metric):
@@ -207,38 +199,31 @@ class SensitivityN(Metric):
         }
 
     def run_batch(self, samples, labels, attrs_dict: dict):
-        """
-        Runs the metric for a given batch, for all methods, and saves result internally
-        """
+        # Get total number of features from attributions dict
+        attrs = attrs_dict[next(iter(attrs_dict))]
+        num_features = attrs.reshape(attrs.shape[0], -1).shape[1]
+        # Calculate n_range
+        # TODO it should be possible to do this in the constructor
+        n_range = (np.linspace(self.min_subset_size, self.max_subset_size, self.num_steps) * num_features).astype(np.int)
+        # Create pseudo-dataset
+        ds = functional.SensitivityNDataset(n_range, self.num_subsets, samples.cpu().numpy(), num_features, self.masker)
+        # Calculate output diffs and removed indices (we will re-use this for each method)
+        output_diffs, indices = functional.sens_n_perturbations(samples, labels, ds, self.model, n_range)
+
         for method_name in attrs_dict:
             if method_name not in self.results:
                 self.results[method_name] = []
-            self.results[method_name].append(self._run_single_method(samples, labels, attrs_dict[method_name],
-                                                                     writer=self._get_writer(method_name)))
 
-    def _run_single_method(self, samples, labels, attrs, writer=None):
-        return functional.sensitivity_n(samples, labels, self.model, attrs,
-                                        self.min_subset_size, self.max_subset_size, self.num_steps,
-                                        self.num_subsets, self.masker,
-                                        writer=writer)
-
-
-class IROF(Metric):
-    def __init__(self, model, masker, writer_dir=None):
-        super().__init__(model, writer_dir)
-        self.masker = masker
-
-    def _run_single_method(self, samples, labels, attrs, writer=None):
-        return functional.irof(samples, labels, self.model, attrs, self.masker, writer)
-
-
-class IIOF(Metric):
-    def __init__(self, model, masker, writer_dir=None):
-        super().__init__(model, writer_dir)
-        self.masker = masker
-
-    def _run_single_method(self, samples, labels, attrs, writer=None):
-        return functional.iiof(samples, labels, self.model, attrs, self.masker, writer)
+            attrs = attrs_dict[method_name]
+            attrs = attrs.reshape(attrs.shape[0], 1, -1)  # [batch_size, 1, -1]
+            method_result = []
+            for n in n_range:
+                # Calculate sums of attributions
+                mask_attrs = np.take_along_axis(attrs, axis=-1, indices=indices[n])  # [batch_size, num_subsets, n]
+                sum_of_attrs = mask_attrs.sum(axis=-1)  # [batch_size, num_subsets]
+                method_result.append(functional.sens_n_correlations(sum_of_attrs, output_diffs[n]))
+            method_result = torch.tensor(np.stack(method_result, axis=1))
+            self.results[method_name].append(method_result)
 
 
 class SegSensN(Metric):
@@ -267,3 +252,21 @@ class SegSensN(Metric):
         return functional.seg_sensitivity_n(samples, labels, self.model, attrs, self.min_subset_size,
                                             self.max_subset_size, self.num_steps, self.num_subsets,
                                             self.masker, writer)
+
+
+class IROF(Metric):
+    def __init__(self, model, masker, writer_dir=None):
+        super().__init__(model, writer_dir)
+        self.masker = masker
+
+    def _run_single_method(self, samples, labels, attrs, writer=None):
+        return functional.irof(samples, labels, self.model, attrs, self.masker, writer)
+
+
+class IIOF(Metric):
+    def __init__(self, model, masker, writer_dir=None):
+        super().__init__(model, writer_dir)
+        self.masker = masker
+
+    def _run_single_method(self, samples, labels, attrs, writer=None):
+        return functional.iiof(samples, labels, self.model, attrs, self.masker, writer)
