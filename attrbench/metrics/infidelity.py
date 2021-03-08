@@ -167,8 +167,3 @@ class Infidelity(Metric):
             if method_name not in self.results:
                 self.results[method_name] = []
             self.results[method_name].append(_compute_result(pert_vectors, pred_diffs, attrs_dict[method_name]))
-
-    def _run_single_method(self, samples: torch.Tensor, labels: torch.Tensor,
-                           attrs: np.ndarray, writer: AttributionWriter = None):
-        """The run_batch method is overridden and doesn't use _run_single_method"""
-        raise NotImplementedError

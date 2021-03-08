@@ -55,6 +55,3 @@ class MaxSensitivity(Metric):
             max_sens = max_sensitivity(samples, labels, method, attrs_dict[method_name], self.radius,
                                        self.num_perturbations, writer=self._get_writer(method_name))
             self.results[method_name].append(max_sens)
-
-    def _run_single_method(self, samples, labels, attrs, writer=None):
-        raise NotImplementedError

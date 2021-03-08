@@ -72,7 +72,7 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarra
     if writer is not None:
         writer.add_images('Flipped samples', torch.stack(
             [s if s is not None else torch.zeros(samples.shape[1:]) for s in flipped_samples]))
-    return result
+    return result.reshape(-1, 1)
 
 
 class DeletionUntilFlip(Metric):
@@ -81,6 +81,11 @@ class DeletionUntilFlip(Metric):
         self.num_steps = num_steps
         self.masker = masker
 
-    def _run_single_method(self, samples, labels, attrs, writer=None):
-        return deletion_until_flip(samples, self.model, attrs, self.num_steps,
-                                   self.masker, writer=writer).reshape(-1, 1)
+    def run_batch(self, samples, labels, attrs_dict: dict):
+        for method_name in attrs_dict:
+            if method_name not in self.results:
+                raise ValueError(f"Invalid method name: {method_name}")
+            self.results[method_name].append(
+                deletion_until_flip(samples, self.model, attrs_dict[method_name], self.num_steps,
+                                    self.masker, writer=self._get_writer(method_name))
+            )

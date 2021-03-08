@@ -121,8 +121,3 @@ class ImpactCoverage(Metric):
             iou = _compute_coverage(attacked_samples, method, patch_mask,
                                     targets, writer=self._get_writer(method_name)).reshape(-1, 1)
             self.results[method_name].append(iou)
-
-    def _run_single_method(self, samples: torch.Tensor, labels: torch.Tensor,
-                           attrs: np.ndarray, writer: AttributionWriter = None):
-        """The run_batch method is overridden and doesn't use _run_single_method"""
-        raise NotImplementedError

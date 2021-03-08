@@ -60,8 +60,14 @@ class IROF(Metric):
         self.masker = masker
         self.reverse_order = reverse_order
 
-    def _run_single_method(self, samples, labels, attrs, writer=None):
-        return irof(samples, labels, self.model, attrs, self.masker, self.reverse_order, writer)
+    def run_batch(self, samples, labels, attrs_dict: dict):
+        for method_name in attrs_dict:
+            if method_name not in self.results:
+                raise ValueError(f"Invalid method name: {method_name}")
+            self.results[method_name].append(
+                irof(samples, labels, self.model, attrs_dict[method_name], self.masker, self.reverse_order,
+                     writer=self._get_writer(method_name))
+            )
 
 
 class IIOF(Metric):
@@ -71,8 +77,14 @@ class IIOF(Metric):
         self.masker = masker
         self.reverse_order = reverse_order
 
-    def _run_single_method(self, samples, labels, attrs, writer=None):
-        return iiof(samples, labels, self.model, attrs, self.masker, self.reverse_order, writer)
+    def run_batch(self, samples, labels, attrs_dict: dict):
+        for method_name in attrs_dict:
+            if method_name not in self.results:
+                raise ValueError(f"Invalid method name: {method_name}")
+            self.results[method_name].append(
+                iiof(samples, labels, self.model, attrs_dict[method_name], self.masker, self.reverse_order,
+                     writer=self._get_writer(method_name))
+            )
 
 
 def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,

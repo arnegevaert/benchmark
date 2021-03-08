@@ -124,11 +124,6 @@ class SensitivityN(Metric):
             attrs = attrs.reshape((attrs.shape[0], 1, -1))  # [batch_size, 1, -1]
             self.results[method_name].append(_compute_correlations(attrs, n_range, output_diffs, indices))
 
-    def _run_single_method(self, samples: torch.Tensor, labels: torch.Tensor,
-                           attrs: np.ndarray, writer: AttributionWriter = None):
-        """The run_batch method is overridden and doesn't use _run_single_method"""
-        raise NotImplementedError
-
 
 class SegSensitivityN(Metric):
     def __init__(self, model: Callable, method_names: List[str], min_subset_size: float, max_subset_size: float,
@@ -162,11 +157,6 @@ class SegSensitivityN(Metric):
             if self.writers is not None:
                 self.writers[method_name].add_images("segmented_attributions", attrs)
             self.results[method_name].append(_compute_correlations(attrs, self.n_range, output_diffs, indices))
-
-    def _run_single_method(self, samples: torch.Tensor, labels: torch.Tensor,
-                           attrs: np.ndarray, writer: AttributionWriter = None):
-        """The run_batch method is overridden and doesn't use _run_single_method"""
-        raise NotImplementedError
 
 
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,

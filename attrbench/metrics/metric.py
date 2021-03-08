@@ -16,14 +16,7 @@ class Metric:
             if self.writer_dir is not None else None
 
     def run_batch(self, samples, labels, attrs_dict: dict):
-        """
-        Runs the metric for a given batch, for all methods, and saves result internally
-        """
-        for method_name in attrs_dict:
-            if method_name not in self.results:
-                raise ValueError(f"Invalid method name: {method_name}")
-            self.results[method_name].append(self._run_single_method(samples, labels, attrs_dict[method_name],
-                                                                     writer=self._get_writer(method_name)))
+        raise NotImplementedError
 
     def _get_writer(self, method_name):
         if self.writer_dir is not None:
@@ -48,6 +41,3 @@ class Metric:
                 raise ValueError(f"Inconsistent shapes for results: "
                                  f"{method_name} had {result[method_name].shape} instead of {shape}")
         return result, shape
-
-    def _run_single_method(self, samples: torch.Tensor, labels: torch.Tensor, attrs: np.ndarray, writer=None):
-        raise NotImplementedError

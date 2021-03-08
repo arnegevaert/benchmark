@@ -71,6 +71,16 @@ class ImpactScore(Metric):
                             self.strict, self.masker, self.tau,
                             writer=writer)
 
+    def run_batch(self, samples, labels, attrs_dict: dict):
+        for method_name in attrs_dict:
+            if method_name not in self.results:
+                raise ValueError(f"Invalid method name: {method_name}")
+            self.results[method_name].append(
+                impact_score(samples, labels, self.model, attrs_dict[method_name], self.num_steps,
+                             self.strict, self.masker, self.tau,
+                             writer=self._get_writer(method_name))
+            )
+
     def get_results(self):
         result = {}
         shape = None

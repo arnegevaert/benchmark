@@ -84,9 +84,14 @@ class Insertion(Metric):
         self.masker = masker
         self.reverse_order = reverse_order
 
-    def _run_single_method(self, samples, labels, attrs: np.ndarray, writer=None):
-        return insertion(samples, labels, self.model, attrs, self.num_steps, self.masker,
-                         writer=writer, reverse_order=self.reverse_order)
+    def run_batch(self, samples, labels, attrs_dict: dict):
+        for method_name in attrs_dict:
+            if method_name not in self.results:
+                raise ValueError(f"Invalid method name: {method_name}")
+            self.results[method_name].append(
+                insertion(samples, labels, self.model, attrs_dict[method_name], self.num_steps, self.masker,
+                          writer=self._get_writer(method_name), reverse_order=self.reverse_order)
+            )
 
 
 class Deletion(Metric):
@@ -97,7 +102,12 @@ class Deletion(Metric):
         self.masker = masker
         self.reverse_order = reverse_order
 
-    def _run_single_method(self, samples, labels, attrs: np.ndarray, writer=None):
-        return deletion(samples, labels, self.model, attrs, self.num_steps, self.masker,
-                        writer=writer, reverse_order=self.reverse_order)
+    def run_batch(self, samples, labels, attrs_dict: dict):
+        for method_name in attrs_dict:
+            if method_name not in self.results:
+                raise ValueError(f"Invalid method name: {method_name}")
+            self.results[method_name].append(
+                deletion(samples, labels, self.model, attrs_dict[method_name], self.num_steps, self.masker,
+                         writer=self._get_writer(method_name), reverse_order=self.reverse_order)
+            )
 
