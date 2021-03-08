@@ -81,7 +81,7 @@ _PERTURBATION_CLASSES = {
 
 
 def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: Callable, perturbation_mode: str,
-                           perturbation_size: float, num_perturbations: int, writer=None):
+                           perturbation_size: float, num_perturbations: int, writer: AttributionWriter = None):
     device = samples.device
     if perturbation_mode not in _PERTURBATION_CLASSES.keys():
         raise ValueError(f"Invalid perturbation mode {perturbation_mode}. "
@@ -100,7 +100,6 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
         # Get perturbation vector I and perturbed samples (x - I)
         perturbed_samples = perturbed_samples[0].float().to(device)
         perturbation_vector = perturbation_vector[0].float()
-        # TODO this is going to conflict with the per-method writers in Suite
         if writer:
             writer.add_images("perturbation_vector", perturbation_vector, global_step=i_pert)
             writer.add_images("perturbed_samples", perturbed_samples, global_step=i_pert)
@@ -136,7 +135,7 @@ def _compute_mse(pert_vectors: torch.Tensor, pred_diffs: torch.Tensor, attrs: np
 
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
                perturbation_mode: str, perturbation_size: float, num_perturbations: int,
-               writer=None):
+               writer: AttributionWriter = None):
     pert_vectors, pred_diffs = _compute_perturbations(samples, labels, model, perturbation_mode,
                                                       perturbation_size, num_perturbations, writer)
     return _compute_mse(pert_vectors, pred_diffs, attrs)
@@ -149,12 +148,15 @@ class Infidelity(Metric):
         self.perturbation_mode = perturbation_mode
         self.perturbation_size = perturbation_size
         self.num_perturbations = num_perturbations
+        if self.writer_dir is not None:
+            self.writers["general"] = AttributionWriter(self.writer_dir)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
+        writer = self.writers["general"] if self.writers is not None else None
         pert_vectors, pred_diffs = _compute_perturbations(samples, labels, self.model,
                                                           self.perturbation_mode, self.perturbation_size,
-                                                          self.num_perturbations)
+                                                          self.num_perturbations, writer)
         for method_name in attrs_dict:
             if method_name not in self.results:
                 self.results[method_name] = []

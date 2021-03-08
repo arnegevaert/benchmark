@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-from attrbench import metrics
 from attrbench.lib import AttributionWriter
 from os import path
 from typing import List, Callable
@@ -51,7 +50,3 @@ class Metric:
 
     def _run_single_method(self, samples: torch.Tensor, labels: torch.Tensor, attrs: np.ndarray, writer=None):
         raise NotImplementedError
-
-
-
-
