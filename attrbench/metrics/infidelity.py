@@ -1,11 +1,11 @@
 import torch
 from typing import Callable, List
-import random
 from skimage.segmentation import slic
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from attrbench.metrics import Metric
 from attrbench.lib import AttributionWriter
+from attrbench.lib.util import corrcoef
 
 
 class _PerturbationDataset(Dataset):
@@ -118,7 +118,7 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
     return pert_vectors, pred_diffs
 
 
-def _compute_mse(pert_vectors: torch.Tensor, pred_diffs: torch.Tensor, attrs: np.ndarray):
+def _compute_result(pert_vectors: torch.Tensor, pred_diffs: torch.Tensor, attrs: np.ndarray):
     # Replicate attributions along channel dimension if necessary (if explanation has fewer channels than image)
     attrs = torch.tensor(attrs).float()
     if attrs.shape[1] != pert_vectors.shape[-3]:
@@ -132,8 +132,11 @@ def _compute_mse(pert_vectors: torch.Tensor, pred_diffs: torch.Tensor, attrs: np
     pert_vectors = pert_vectors.flatten(2)  # [batch_size, num_perturbations, -1]
     dot_product = (attrs * pert_vectors).sum(dim=-1)  # [batch_size, num_perturbations]
 
-    # Return MSE between dot products and prediction differences
-    return ((dot_product - pred_diffs) ** 2).mean(dim=1, keepdim=True)  # [batch_size, 1]
+    # MSE between dot products and prediction differences
+    mse = ((dot_product - pred_diffs) ** 2).mean(dim=1, keepdim=True)  # [batch_size, 1]
+    # Correlations between dot products and prediction differences
+    corr = torch.tensor(corrcoef(dot_product.numpy(), pred_diffs.numpy()))
+    return mse  # TODO add corr
 
 
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
@@ -141,7 +144,7 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, att
                writer: AttributionWriter = None):
     pert_vectors, pred_diffs = _compute_perturbations(samples, labels, model, perturbation_mode,
                                                       perturbation_size, num_perturbations, writer)
-    return _compute_mse(pert_vectors, pred_diffs, attrs)
+    return _compute_result(pert_vectors, pred_diffs, attrs)
 
 
 class Infidelity(Metric):
@@ -163,7 +166,7 @@ class Infidelity(Metric):
         for method_name in attrs_dict:
             if method_name not in self.results:
                 self.results[method_name] = []
-            self.results[method_name].append(_compute_mse(pert_vectors, pred_diffs, attrs_dict[method_name]))
+            self.results[method_name].append(_compute_result(pert_vectors, pred_diffs, attrs_dict[method_name]))
 
     def _run_single_method(self, samples: torch.Tensor, labels: torch.Tensor,
                            attrs: np.ndarray, writer: AttributionWriter = None):

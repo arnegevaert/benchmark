@@ -2,6 +2,7 @@ from typing import Callable, List, Dict
 import numpy as np
 from attrbench.lib import mask_segments, segment_samples, segment_attributions, AttributionWriter
 from attrbench.lib.masking import Masker
+from attrbench.lib.util import corrcoef
 from attrbench.metrics import Metric
 import torch
 import warnings
@@ -56,20 +57,7 @@ def _compute_correlations(attrs: np.ndarray, n_range: List[int], output_diffs: D
         n_sum_of_attrs = n_mask_attrs.sum(axis=-1)  # [batch_size, num_subsets]
         n_output_diffs = output_diffs[n]
         # Calculate correlation between output difference and sum of attribution values
-        # Subtract mean
-        n_sum_of_attrs -= n_sum_of_attrs.mean(axis=1, keepdims=True)
-        n_output_diffs -= n_output_diffs.mean(axis=1, keepdims=True)
-        # Calculate covariances
-        cov = (n_sum_of_attrs * n_output_diffs).sum(axis=1) / (n_sum_of_attrs.shape[1] - 1)
-        # Divide by product of standard deviations
-        # [batch_size]
-        denom = n_sum_of_attrs.std(axis=1) * n_output_diffs.std(axis=1)
-        denom_zero = (denom == 0.)
-        if np.any(denom_zero):
-            warnings.warn("Zero standard deviation detected.")
-        corrcoefs = cov / (n_sum_of_attrs.std(axis=1) * n_output_diffs.std(axis=1))
-        corrcoefs[denom_zero] = 0.
-        result.append(corrcoefs)
+        result.append(corrcoef(n_sum_of_attrs, n_output_diffs))
 
     # [batch_size, len(n_range)]
     result = np.stack(result, axis=1)
