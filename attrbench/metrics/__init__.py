@@ -1,4 +1,5 @@
 from .metric import Metric
+from .metric_result import MetricResult
 from .impact_coverage import impact_coverage, ImpactCoverage
 from .impact_score import impact_score, ImpactScore
 from .infidelity import infidelity, Infidelity

@@ -1,5 +1,6 @@
-from attrbench.suite import Result
+from attrbench.suite import Result, SuiteResult
 from attrbench import metrics
+from attrbench.metrics import Metric
 from attrbench.lib import AttributionWriter, masking
 from tqdm import tqdm
 import torch
@@ -9,6 +10,7 @@ from inspect import Parameter
 import yaml
 from os import path
 import warnings
+from typing import Dict
 
 
 def _parse_masker(d):
@@ -30,7 +32,7 @@ class Suite:
     def __init__(self, model, methods, dataloader, device="cpu",
                  save_images=False, save_attrs=False, seed=None, patch_folder=None,
                  log_dir=None):
-        self.metrics = {}
+        self.metrics: Dict[str, Metric] = {}
         self.model = model.to(device)
         self.model.eval()
         self.methods = methods
@@ -151,22 +153,12 @@ class Suite:
         self.samples_done += num_samples
 
     def save_result(self, loc):
-        data = {
-            k: v.get_results()[0]
-            for k, v in self.metrics.items()
-        }
-
-        meta_data = {}
-        for metric_name, metric in self.metrics.items():
-            meta_data[metric_name] = metric.metadata
-            meta_data[metric_name]["shape"] = metric.get_results()[1]
-            meta_data[metric_name]["type"] = type(metric).__name__
-
+        metric_results = {metric_name: self.metrics[metric_name].get_result() for metric_name in self.metrics}
         attrs = None
         if self.save_attrs:
             attrs = {}
             for method_name in self.methods:
                 attrs[method_name] = np.concatenate(self.attrs[method_name])
         images = np.concatenate(self.images) if self.save_images else None
-        res = Result(data, meta_data, num_samples=self.samples_done, seed=self.seed, images=images, attributions=attrs)
-        res.save_hdf(loc)
+        result = SuiteResult(metric_results, self.samples_done, self.seed, images, attrs)
+        result.save_hdf(loc)

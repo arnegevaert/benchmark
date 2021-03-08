@@ -1,6 +1,9 @@
-from typing import Callable
+from typing import Callable, List
+
+import h5py
+
 from attrbench.lib.masking import Masker
-from attrbench.metrics import Metric
+from attrbench.metrics import Metric, MetricResult
 import torch
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
@@ -80,12 +83,36 @@ class DeletionUntilFlip(Metric):
         super().__init__(model, method_names, writer_dir)
         self.num_steps = num_steps
         self.masker = masker
+        self.result = DeletionUntilFlipResult(method_names)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         for method_name in attrs_dict:
-            if method_name not in self.results:
+            if method_name not in self.result.method_names:
                 raise ValueError(f"Invalid method name: {method_name}")
-            self.results[method_name].append(
-                deletion_until_flip(samples, self.model, attrs_dict[method_name], self.num_steps,
-                                    self.masker, writer=self._get_writer(method_name))
-            )
+            self.result.append(method_name,
+                               deletion_until_flip(samples, self.model, attrs_dict[method_name], self.num_steps,
+                                                   self.masker, writer=self._get_writer(method_name))
+                               )
+
+    def get_result(self) -> MetricResult:
+        return self.result
+
+
+class DeletionUntilFlipResult(MetricResult):
+    def __init__(self, method_names: List[str]):
+        super().__init__(method_names)
+        self.data = {m_name: [] for m_name in self.method_names}
+
+    def add_to_hdf(self, group: h5py.Group):
+        group.attrs["type"] = "DeletionUntilFlipResult"
+        for method_name in self.method_names:
+            group.create_dataset(method_name, data=torch.cat(self.data[method_name]).numpy())
+
+    def append(self, method_name, batch):
+        self.data[method_name].append(batch)
+
+    @staticmethod
+    def load_from_hdf(self, group: h5py.Group):
+        method_names = list(group.keys())
+        result = DeletionUntilFlipResult(method_names)
+        result.data = {m_name: [group[m_name]] for m_name in method_names}
