@@ -1,5 +1,6 @@
 from typing import Callable, List
 from attrbench.lib.masking import Masker
+from attrbench.lib import AttributionWriter
 import torch
 import numpy as np
 from attrbench.lib import mask_segments, segment_samples_attributions
@@ -8,7 +9,8 @@ from attrbench.metrics import Metric
 
 
 class _SegmentedIterativeMaskingDataset(Dataset):
-    def __init__(self, mode, samples: np.ndarray, attrs: np.ndarray, masker, writer=None):
+    def __init__(self, mode: str, samples: np.ndarray, attrs: np.ndarray, masker: Masker,
+                 reverse_order: bool = False, writer: AttributionWriter = None):
         if mode not in ["insertion", "deletion"]:
             raise ValueError("Mode must be insertion or deletion")
         self.mode = mode
@@ -17,6 +19,8 @@ class _SegmentedIterativeMaskingDataset(Dataset):
         self.masker.initialize_baselines(samples)
         self.segmented_images, avg_attrs = segment_samples_attributions(samples, attrs)
         self.sorted_indices = avg_attrs.argsort()  # [batch_size, num_segments]
+        if reverse_order:
+            self.sorted_indices = np.flip(self.sorted_indices, axis=1)
         if writer is not None:
             writer.add_images("segmented samples", self.segmented_images)
 
@@ -50,26 +54,31 @@ def _get_predictions(samples: torch.Tensor, labels: torch.Tensor, model: Callabl
 
 
 class IROF(Metric):
-    def __init__(self, model: Callable, method_names: List[str], masker: Masker, writer_dir: str = None):
+    def __init__(self, model: Callable, method_names: List[str], masker: Masker,
+                 reverse_order: bool = False, writer_dir: str = None):
         super().__init__(model, method_names, writer_dir)
         self.masker = masker
+        self.reverse_order = reverse_order
 
     def _run_single_method(self, samples, labels, attrs, writer=None):
-        return irof(samples, labels, self.model, attrs, self.masker, writer)
+        return irof(samples, labels, self.model, attrs, self.masker, self.reverse_order, writer)
 
 
 class IIOF(Metric):
-    def __init__(self, model: Callable, method_names: List[str], masker: Masker, writer_dir: str = None):
+    def __init__(self, model: Callable, method_names: List[str], masker: Masker,
+                 reverse_order: bool = False, writer_dir: str = None):
         super().__init__(model, method_names, writer_dir)
         self.masker = masker
+        self.reverse_order = reverse_order
 
     def _run_single_method(self, samples, labels, attrs, writer=None):
-        return iiof(samples, labels, self.model, attrs, self.masker, writer)
+        return iiof(samples, labels, self.model, attrs, self.masker, self.reverse_order, writer)
 
 
 def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
-         masker: Masker, writer=None):
-    masking_dataset = _SegmentedIterativeMaskingDataset("deletion", samples.cpu().numpy(), attrs, masker, writer)
+         masker: Masker, reverse_order: bool = False, writer=None):
+    masking_dataset = _SegmentedIterativeMaskingDataset("deletion", samples.cpu().numpy(), attrs, masker,
+                                                        reverse_order, writer)
     orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, masking_dataset, writer)
     preds = [orig_preds] + inter_preds + [neutral_preds]
     preds = (torch.cat(preds, dim=1) / orig_preds).cpu()  # [batch_size, len(mask_range)]
@@ -83,8 +92,9 @@ def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np
 
 
 def iiof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
-         masker: Masker, writer=None):
-    masking_dataset = _SegmentedIterativeMaskingDataset("insertion", samples.cpu().numpy(), attrs, masker, writer)
+         masker: Masker, reverse_order: bool = False, writer=None):
+    masking_dataset = _SegmentedIterativeMaskingDataset("insertion", samples.cpu().numpy(), attrs, masker,
+                                                        reverse_order, writer)
     orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, masking_dataset, writer)
     preds = [neutral_preds] + inter_preds + [orig_preds]
     preds = (torch.cat(preds, dim=1) / orig_preds).cpu()  # [batch_size, len(mask_range)]

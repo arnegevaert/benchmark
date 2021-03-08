@@ -1,5 +1,6 @@
 from typing import Callable, List
 from attrbench.lib.masking import Masker
+from attrbench.lib import AttributionWriter
 from attrbench.metrics import Metric
 import torch
 import numpy as np
@@ -7,7 +8,8 @@ from torch.utils.data import Dataset, DataLoader
 
 
 class _InsertionDeletionDataset(Dataset):
-    def __init__(self, mode, num_steps, samples: np.ndarray, attrs: np.ndarray, masker):
+    def __init__(self, mode: str, num_steps: int, samples: np.ndarray, attrs: np.ndarray, masker: Masker,
+                 reverse_order: bool = False):
         if mode not in ["insertion", "deletion"]:
             raise ValueError("Mode must be insertion or deletion")
         self.mode = mode
@@ -19,6 +21,8 @@ class _InsertionDeletionDataset(Dataset):
         attrs = attrs.reshape(attrs.shape[0], -1)  # [batch_size, -1]
         # Sort indices of attrs in ascending order
         self.sorted_indices = np.argsort(attrs)
+        if reverse_order:
+            self.sorted_indices = np.flip(self.sorted_indices, axis=1)
 
         total_features = attrs.shape[1]
         self.mask_range = list((np.linspace(0, 1, num_steps) * total_features)[1:-1].astype(np.int))
@@ -55,8 +59,8 @@ def _get_predictions(samples: torch.Tensor, labels: torch.Tensor,
 
 
 def insertion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
-              num_steps: int, masker: Masker, writer=None):
-    ds = _InsertionDeletionDataset("insertion", num_steps, samples.cpu().numpy(), attrs, masker)
+              num_steps: int, masker: Masker, reverse_order: bool = False, writer: AttributionWriter = None):
+    ds = _InsertionDeletionDataset("insertion", num_steps, samples.cpu().numpy(), attrs, masker, reverse_order)
     orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, ds, writer)
     result = [neutral_preds] + inter_preds + [orig_preds]
     result = torch.cat(result, dim=1)  # [batch_size, len(mask_range)]
@@ -64,8 +68,8 @@ def insertion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attr
 
 
 def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
-             num_steps: int, masker: Masker, writer=None):
-    ds = _InsertionDeletionDataset("deletion", num_steps, samples.cpu().numpy(), attrs, masker)
+             num_steps: int, masker: Masker, reverse_order: bool = False, writer: AttributionWriter = None):
+    ds = _InsertionDeletionDataset("deletion", num_steps, samples.cpu().numpy(), attrs, masker, reverse_order)
     orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, ds, writer)
     result = [orig_preds] + inter_preds + [neutral_preds]
     result = torch.cat(result, dim=1)  # [batch_size, len(mask_range)]
@@ -73,23 +77,27 @@ def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs
 
 
 class Insertion(Metric):
-    def __init__(self, model: Callable, method_names: List[str], num_steps: int, masker: Masker, writer_dir: str = None):
+    def __init__(self, model: Callable, method_names: List[str], num_steps: int, masker: Masker,
+                 reverse_order: bool = False, writer_dir: str = None):
         super().__init__(model, method_names, writer_dir)
         self.num_steps = num_steps
         self.masker = masker
+        self.reverse_order = reverse_order
 
     def _run_single_method(self, samples, labels, attrs: np.ndarray, writer=None):
         return insertion(samples, labels, self.model, attrs, self.num_steps, self.masker,
-                         writer=writer)
+                         writer=writer, reverse_order=self.reverse_order)
 
 
 class Deletion(Metric):
-    def __init__(self, model: Callable, method_names: List[str], num_steps: int, masker: Masker, writer_dir: str = None):
+    def __init__(self, model: Callable, method_names: List[str], num_steps: int, masker: Masker,
+                 reverse_order: bool = False, writer_dir: str = None):
         super().__init__(model, method_names, writer_dir)
         self.num_steps = num_steps
         self.masker = masker
+        self.reverse_order = reverse_order
 
     def _run_single_method(self, samples, labels, attrs: np.ndarray, writer=None):
         return deletion(samples, labels, self.model, attrs, self.num_steps, self.masker,
-                        writer=writer)
+                        writer=writer, reverse_order=self.reverse_order)
 
