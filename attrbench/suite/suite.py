@@ -1,5 +1,5 @@
 from attrbench.suite import Result
-from attrbench.metrics import metric
+from attrbench import metrics
 from attrbench.lib import AttributionWriter, masking
 from tqdm import tqdm
 import torch
@@ -63,7 +63,7 @@ class Suite:
                 # Parse args from config file
                 args_dict = _parse_args({key: metric_dict[key] for key in metric_dict if key != "type"})
                 # Get constructor
-                constructor = getattr(metric, metric_dict["type"])
+                constructor = getattr(metrics, metric_dict["type"])
                 # Add model, methods, and (optional) writer args
                 args_dict["model"] = self.model
                 if self.log_dir:

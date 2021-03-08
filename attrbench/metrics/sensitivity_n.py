@@ -1,13 +1,12 @@
-from typing import Callable, List
+from typing import Callable, List, Dict
 import numpy as np
-from attrbench.lib import mask_segments, segment_samples, AttributionWriter
+from attrbench.lib import mask_segments, segment_samples, segment_attributions, AttributionWriter
 from attrbench.lib.masking import Masker
 from attrbench.metrics import Metric
 import torch
 import warnings
 from torch.utils.data import Dataset, DataLoader
 
-# TODO check if segmented sensitivity-n actually uses segment attributions and not original attributions
 
 class _SensitivityNDataset(Dataset):
     def __init__(self, n_range: np.ndarray, num_subsets: int, samples: np.ndarray, num_features: int, masker: Masker):
@@ -23,7 +22,8 @@ class _SensitivityNDataset(Dataset):
 
     def __getitem__(self, item):
         n = self.n_range[item // self.num_subsets]
-        indices = np.tile(np.random.choice(self.num_features, size=n, replace=False), (self.samples.shape[0], 1))
+        rng = np.random.default_rng(item)  # Unique seed for each item ensures no duplicate indices
+        indices = np.tile(rng.choice(self.num_features, size=n, replace=False), (self.samples.shape[0], 1))
         return self.masker.mask(self.samples, indices), indices, n
 
 
@@ -40,7 +40,8 @@ class _SegSensNDataset(_SensitivityNDataset):
 
     def __getitem__(self, item):
         n = self.n_range[item // self.num_subsets]
-        indices = np.stack([np.random.choice(np.unique(self.segmented_images[i, ...]), size=n, replace=False)
+        rng = np.random.default_rng(item)  # Unique seed for each item ensures no duplicate indices
+        indices = np.stack([rng.choice(np.unique(self.segmented_images[i, ...]), size=n, replace=False)
                             for i in range(self.samples.shape[0])])
         return mask_segments(self.samples, self.segmented_images, indices, self.masker), indices, n
 
@@ -121,7 +122,7 @@ class SensitivityN(Metric):
         if self.writer_dir is not None:
             self.writers["general"] = AttributionWriter(self.writer_dir)
 
-    def run_batch(self, samples, labels, attrs_dict: dict):
+    def run_batch(self, samples, labels, attrs_dict: Dict[str, np.ndarray]):
         # Get total number of features from attributions dict
         attrs = attrs_dict[next(iter(attrs_dict))]
         num_features = attrs.reshape(attrs.shape[0], -1).shape[1]
@@ -136,9 +137,8 @@ class SensitivityN(Metric):
         for method_name in attrs_dict:
             if method_name not in self.results:
                 self.results[method_name] = []
-
             attrs = attrs_dict[method_name]
-            attrs = attrs.reshape(attrs.shape[0], 1, -1)  # [batch_size, 1, -1]
+            attrs = attrs.reshape((attrs.shape[0], 1, -1))  # [batch_size, 1, -1]
             method_result = []
             for n in n_range:
                 # Calculate sums of attributions
@@ -176,13 +176,14 @@ class SegSensitivityN(Metric):
         ds = _SegSensNDataset(self.n_range, self.num_subsets, samples.cpu().numpy(), self.masker)
         # Calculate output diffs and removed indices (we will re-use this for each method)
         writer = self.writers["general"] if self.writers is not None else None
-        output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, self.n_range)
+        output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, self.n_range, writer)
 
         for method_name in attrs_dict:
             if method_name not in self.results:
                 self.results[method_name] = []
             attrs = attrs_dict[method_name]
-            attrs = attrs.reshape(attrs.shape[0], 1, -1)  # [batch_size, 1, -1]
+            attrs = segment_attributions(ds.segmented_images, attrs)
+            attrs = attrs.reshape((attrs.shape[0], 1, -1))  # [batch_size, 1, -1]
             method_result = []
             for n in self.n_range:
                 # Calculate sums of attributions
@@ -213,4 +214,5 @@ def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callab
     # Total number of segments is fixed 100
     n_range = (np.linspace(min_subset_size, max_subset_size, num_steps) * 100).astype(np.int)
     ds = _SegSensNDataset(n_range, num_subsets, samples.cpu().numpy(), masker, writer)
+    attrs = segment_attributions(ds.segmented_images, attrs)
     return _sens_n(samples, labels, attrs, ds, model, n_range, writer)
