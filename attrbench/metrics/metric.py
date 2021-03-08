@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from attrbench.lib import AttributionWriter
 from os import path
-from typing import List, Callable
+from typing import List, Callable, Dict, Optional
 
 
 class Metric:
@@ -11,8 +11,9 @@ class Metric:
         self.results = {method_name: [] for method_name in method_names}
         self.metadata = {}
         self.writer_dir = writer_dir
-        self.writers = {method_name: AttributionWriter(path.join(self.writer_dir, method_name))
-                        for method_name in method_names} if self.writer_dir is not None else None
+        self.writers: Optional[Dict[str, AttributionWriter]] = \
+            {method_name: AttributionWriter(path.join(self.writer_dir, method_name)) for method_name in method_names} \
+            if self.writer_dir is not None else None
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         """

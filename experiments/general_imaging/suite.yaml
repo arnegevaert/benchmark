@@ -4,19 +4,36 @@ default:
   num_steps: 5
   num_subsets: 100
 metrics:
-  sensitivity_n_cst:
+  seg_sensitivity_n_cst:
     type: SegSensitivityN
     masker:
       type: ConstantMasker
       feature_level: pixel
       mask_value: 0.
-  sensitivity_n_rand:
+  seg_sensitivity_n_rand:
     type: SegSensitivityN
     masker:
       type: RandomMasker
       feature_level: pixel
-  sensitivity_n_blur:
+  seg_sensitivity_n_blur:
     type: SegSensitivityN
+    masker:
+      type: BlurringMasker
+      feature_level: pixel
+      kernel_size: .5
+  sensitivity_n_cst:
+    type: SensitivityN
+    masker:
+      type: ConstantMasker
+      feature_level: pixel
+      mask_value: 0.
+  sensitivity_n_rand:
+    type: SensitivityN
+    masker:
+      type: RandomMasker
+      feature_level: pixel
+  sensitivity_n_blur:
+    type: SensitivityN
     masker:
       type: BlurringMasker
       feature_level: pixel

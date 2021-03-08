@@ -46,22 +46,34 @@ class _SegSensNDataset(_SensitivityNDataset):
         return mask_segments(self.samples, self.segmented_images, indices, self.masker), indices, n
 
 
-def _compute_correlations(sum_of_attrs: np.ndarray, output_diffs: np.ndarray):
-    # Calculate correlation between output difference and sum of attribution values
-    # Subtract mean
-    sum_of_attrs -= sum_of_attrs.mean(axis=1, keepdims=True)
-    output_diffs -= output_diffs.mean(axis=1, keepdims=True)
-    # Calculate covariances
-    cov = (sum_of_attrs * output_diffs).sum(axis=1) / (sum_of_attrs.shape[1] - 1)
-    # Divide by product of standard deviations
-    # [batch_size]
-    denom = sum_of_attrs.std(axis=1) * output_diffs.std(axis=1)
-    denom_zero = (denom == 0.)
-    if np.any(denom_zero):
-        warnings.warn("Zero standard deviation detected.")
-    corrcoefs = cov / (sum_of_attrs.std(axis=1) * output_diffs.std(axis=1))
-    corrcoefs[denom_zero] = 0.
-    return corrcoefs
+def _compute_correlations(attrs: np.ndarray, n_range: List[int], output_diffs: Dict[int, np.ndarray],
+                          indices: Dict[int, np.ndarray]):
+    attrs = attrs.reshape((attrs.shape[0], 1, -1))  # [batch_size, 1, -1]
+    result = []
+    for n in n_range:
+        # Calculate sums of attributions
+        n_mask_attrs = np.take_along_axis(attrs, axis=-1, indices=indices[n])  # [batch_size, num_subsets, n]
+        n_sum_of_attrs = n_mask_attrs.sum(axis=-1)  # [batch_size, num_subsets]
+        n_output_diffs = output_diffs[n]
+        # Calculate correlation between output difference and sum of attribution values
+        # Subtract mean
+        n_sum_of_attrs -= n_sum_of_attrs.mean(axis=1, keepdims=True)
+        n_output_diffs -= n_output_diffs.mean(axis=1, keepdims=True)
+        # Calculate covariances
+        cov = (n_sum_of_attrs * n_output_diffs).sum(axis=1) / (n_sum_of_attrs.shape[1] - 1)
+        # Divide by product of standard deviations
+        # [batch_size]
+        denom = n_sum_of_attrs.std(axis=1) * n_output_diffs.std(axis=1)
+        denom_zero = (denom == 0.)
+        if np.any(denom_zero):
+            warnings.warn("Zero standard deviation detected.")
+        corrcoefs = cov / (n_sum_of_attrs.std(axis=1) * n_output_diffs.std(axis=1))
+        corrcoefs[denom_zero] = 0.
+        result.append(corrcoefs)
+
+    # [batch_size, len(n_range)]
+    result = np.stack(result, axis=1)
+    return torch.tensor(result)
 
 
 def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, ds: Dataset,
@@ -88,23 +100,6 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, ds: Data
         output_diffs[n] = torch.cat(output_diffs[n], dim=1).detach().cpu().numpy()  # [batch_size, num_subsets]
         removed_indices[n] = np.stack(removed_indices[n], axis=1)  # [batch_size, num_subsets, n]
     return output_diffs, removed_indices
-
-
-def _sens_n(samples: torch.Tensor, labels: torch.Tensor, attrs: np.ndarray, ds: _SensitivityNDataset,
-            model: Callable, n_range: List[int], writer: AttributionWriter = None):
-    output_diffs, indices = _compute_perturbations(samples, labels, ds, model, n_range, writer)
-
-    attrs = attrs.reshape((attrs.shape[0], 1, -1))  # [batch_size, 1, -1]
-    result = []
-    for n in n_range:
-        # Calculate sums of attributions
-        mask_attrs = np.take_along_axis(attrs, axis=-1, indices=indices[n])  # [batch_size, num_subsets, n]
-        sum_of_attrs = mask_attrs.sum(axis=-1)  # [batch_size, num_subsets]
-        result.append(_compute_correlations(sum_of_attrs, output_diffs[n]))
-
-    # [batch_size, len(n_range)]
-    result = np.stack(result, axis=1)
-    return torch.tensor(result)
 
 
 class SensitivityN(Metric):
@@ -136,17 +131,10 @@ class SensitivityN(Metric):
 
         for method_name in attrs_dict:
             if method_name not in self.results:
-                self.results[method_name] = []
+                raise ValueError(f"Invalid method name: {method_name}")
             attrs = attrs_dict[method_name]
             attrs = attrs.reshape((attrs.shape[0], 1, -1))  # [batch_size, 1, -1]
-            method_result = []
-            for n in n_range:
-                # Calculate sums of attributions
-                mask_attrs = np.take_along_axis(attrs, axis=-1, indices=indices[n])  # [batch_size, num_subsets, n]
-                sum_of_attrs = mask_attrs.sum(axis=-1)  # [batch_size, num_subsets]
-                method_result.append(_compute_correlations(sum_of_attrs, output_diffs[n]))
-            method_result = torch.tensor(np.stack(method_result, axis=1))
-            self.results[method_name].append(method_result)
+            self.results[method_name].append(_compute_correlations(attrs, n_range, output_diffs, indices))
 
     def _run_single_method(self, samples: torch.Tensor, labels: torch.Tensor,
                            attrs: np.ndarray, writer: AttributionWriter = None):
@@ -180,18 +168,12 @@ class SegSensitivityN(Metric):
 
         for method_name in attrs_dict:
             if method_name not in self.results:
-                self.results[method_name] = []
+                raise ValueError(f"Invalid method name: {method_name}")
             attrs = attrs_dict[method_name]
             attrs = segment_attributions(ds.segmented_images, attrs)
-            attrs = attrs.reshape((attrs.shape[0], 1, -1))  # [batch_size, 1, -1]
-            method_result = []
-            for n in self.n_range:
-                # Calculate sums of attributions
-                mask_attrs = np.take_along_axis(attrs, axis=-1, indices=indices[n])  # [batch_size, num_subsets, n]
-                sum_of_attrs = mask_attrs.sum(axis=-1)  # [batch_size, num_subsets]
-                method_result.append(_compute_correlations(sum_of_attrs, output_diffs[n]))
-            method_result = torch.tensor(np.stack(method_result, axis=1))
-            self.results[method_name].append(method_result)
+            if self.writers is not None:
+                self.writers[method_name].add_images("segmented_attributions", attrs)
+            self.results[method_name].append(_compute_correlations(attrs, self.n_range, output_diffs, indices))
 
     def _run_single_method(self, samples: torch.Tensor, labels: torch.Tensor,
                            attrs: np.ndarray, writer: AttributionWriter = None):
@@ -205,7 +187,8 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
     num_features = attrs.reshape(attrs.shape[0], -1).shape[1]
     n_range = (np.linspace(min_subset_size, max_subset_size, num_steps) * num_features).astype(np.int)
     ds = _SensitivityNDataset(n_range, num_subsets, samples.cpu().numpy(), num_features, masker)
-    return _sens_n(samples, labels, attrs, ds, model, n_range, writer)
+    output_diffs, indices = _compute_perturbations(samples, labels, ds, model, n_range, writer)
+    return _compute_correlations(attrs, n_range, output_diffs, indices)
 
 
 def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
@@ -215,4 +198,5 @@ def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callab
     n_range = (np.linspace(min_subset_size, max_subset_size, num_steps) * 100).astype(np.int)
     ds = _SegSensNDataset(n_range, num_subsets, samples.cpu().numpy(), masker, writer)
     attrs = segment_attributions(ds.segmented_images, attrs)
-    return _sens_n(samples, labels, attrs, ds, model, n_range, writer)
+    output_diffs, indices = _compute_perturbations(samples, labels, ds, model, n_range, writer)
+    return _compute_correlations(attrs, n_range, output_diffs, indices)
