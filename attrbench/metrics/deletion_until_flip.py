@@ -1,11 +1,12 @@
 from typing import Callable
 from attrbench.lib.masking import Masker
+from attrbench.metrics import Metric
 import torch
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 
 
-class DeletionUntilFlipDataset(Dataset):
+class _DeletionUntilFlipDataset(Dataset):
     def __init__(self, num_steps, samples: np.ndarray, attrs: np.ndarray, masker):
         self.num_steps = num_steps
         self.samples = samples
@@ -36,7 +37,7 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarra
                         num_steps: float, masker: Masker, writer=None):
     if writer is not None:
         flipped_samples = [None for _ in range(samples.shape[0])]
-    ds = DeletionUntilFlipDataset(num_steps, samples.cpu().numpy(), attrs, masker)
+    ds = _DeletionUntilFlipDataset(num_steps, samples.cpu().numpy(), attrs, masker)
     dl = DataLoader(ds, shuffle=False, num_workers=4, pin_memory=True, batch_size=1)
     result = torch.tensor([-1 for _ in range(samples.shape[0])]).int()
     flipped = torch.tensor([False for _ in range(samples.shape[0])]).bool()
@@ -72,3 +73,14 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarra
         writer.add_images('Flipped samples', torch.stack(
             [s if s is not None else torch.zeros(samples.shape[1:]) for s in flipped_samples]))
     return result
+
+
+class DeletionUntilFlip(Metric):
+    def __init__(self, model, method_names, num_steps, masker, writer_dir=None):
+        super().__init__(model, method_names, writer_dir)
+        self.num_steps = num_steps
+        self.masker = masker
+
+    def _run_single_method(self, samples, labels, attrs, writer=None):
+        return deletion_until_flip(samples, self.model, attrs, self.num_steps,
+                                   self.masker, writer=writer).reshape(-1, 1)

@@ -1,4 +1,5 @@
-from attrbench.suite import metrics, Result
+from attrbench.suite import Result
+from attrbench.metrics import metric
 from attrbench.lib import AttributionWriter, masking
 from tqdm import tqdm
 import torch
@@ -35,7 +36,8 @@ class Suite:
         self.methods = methods
         self.dataloader = dataloader
         self.device = device
-        self.default_args = {"patch_folder": patch_folder, "methods": self.methods}
+        self.default_args = {"patch_folder": patch_folder, "methods": self.methods,
+                             "method_names": list(self.methods.keys())}
         self.save_images = save_images
         self.save_attrs = save_attrs
         self.images = []
@@ -61,7 +63,7 @@ class Suite:
                 # Parse args from config file
                 args_dict = _parse_args({key: metric_dict[key] for key in metric_dict if key != "type"})
                 # Get constructor
-                constructor = getattr(metrics, metric_dict["type"])
+                constructor = getattr(metric, metric_dict["type"])
                 # Add model, methods, and (optional) writer args
                 args_dict["model"] = self.model
                 if self.log_dir:

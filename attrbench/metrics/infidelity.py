@@ -1,12 +1,14 @@
 import torch
-from typing import Callable
+from typing import Callable, List
 import random
 from skimage.segmentation import slic
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
+from attrbench.metrics import Metric
+from attrbench.lib import AttributionWriter
 
 
-class PerturbationDataset(Dataset):
+class _PerturbationDataset(Dataset):
     def __init__(self, samples: np.ndarray, perturbation_size, num_perturbations):
         self.samples = samples
         self.perturbation_size = perturbation_size
@@ -19,7 +21,7 @@ class PerturbationDataset(Dataset):
         raise NotImplementedError
 
 
-class GaussianPerturbation(PerturbationDataset):
+class _GaussianPerturbation(_PerturbationDataset):
     # perturbation_size is stdev of noise
     def __getitem__(self, item):
         perturbation_vector = np.random.normal(0, self.perturbation_size, self.samples.shape)
@@ -27,7 +29,7 @@ class GaussianPerturbation(PerturbationDataset):
         return perturbed_samples, perturbation_vector
 
 
-class SquareRemovalPerturbation(PerturbationDataset):
+class _SquareRemovalPerturbation(_PerturbationDataset):
     # perturbation_size is (square height)/(image height)
     def __getitem__(self, item):
         height = self.samples.shape[2]
@@ -42,13 +44,13 @@ class SquareRemovalPerturbation(PerturbationDataset):
         return perturbed_samples, perturbation_vector
 
 
-class SegmentRemovalPerturbation(PerturbationDataset):
+class _SegmentRemovalPerturbation(_PerturbationDataset):
     # perturbation size is number of segments
     def __init__(self, samples, perturbation_size, num_perturbations):
         super().__init__(samples, perturbation_size, num_perturbations)
         seg_samples = np.stack([slic(np.transpose(samples[i, ...], (1, 2, 0)),
                                      start_label=0, slic_zero=True)
-                               for i in range(samples.shape[0])])
+                                for i in range(samples.shape[0])])
         self.seg_samples = np.expand_dims(seg_samples, axis=1)
 
     def __getitem__(self, item):
@@ -72,14 +74,14 @@ class SegmentRemovalPerturbation(PerturbationDataset):
 
 
 _PERTURBATION_CLASSES = {
-    "gaussian": GaussianPerturbation,
-    "square": SquareRemovalPerturbation,
-    "segment": SegmentRemovalPerturbation
+    "gaussian": _GaussianPerturbation,
+    "square": _SquareRemovalPerturbation,
+    "segment": _SegmentRemovalPerturbation
 }
 
 
-def infid_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: Callable, perturbation_mode: str,
-                        perturbation_size: float, num_perturbations: int, writer=None):
+def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: Callable, perturbation_mode: str,
+                           perturbation_size: float, num_perturbations: int, writer=None):
     device = samples.device
     if perturbation_mode not in _PERTURBATION_CLASSES.keys():
         raise ValueError(f"Invalid perturbation mode {perturbation_mode}. "
@@ -114,7 +116,7 @@ def infid_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: Call
     return pert_vectors, pred_diffs
 
 
-def infid_mse(pert_vectors: torch.Tensor, pred_diffs: torch.Tensor, attrs: np.ndarray):
+def _compute_mse(pert_vectors: torch.Tensor, pred_diffs: torch.Tensor, attrs: np.ndarray):
     # Replicate attributions along channel dimension if necessary (if explanation has fewer channels than image)
     attrs = torch.tensor(attrs).float()
     if attrs.shape[1] != pert_vectors.shape[-3]:
@@ -129,12 +131,36 @@ def infid_mse(pert_vectors: torch.Tensor, pred_diffs: torch.Tensor, attrs: np.nd
     dot_product = (attrs * pert_vectors).sum(dim=-1)  # [batch_size, num_perturbations]
 
     # Return MSE between dot products and prediction differences
-    return ((dot_product - pred_diffs)**2).mean(dim=1, keepdim=True)  # [batch_size, 1]
+    return ((dot_product - pred_diffs) ** 2).mean(dim=1, keepdim=True)  # [batch_size, 1]
 
 
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
                perturbation_mode: str, perturbation_size: float, num_perturbations: int,
                writer=None):
-    pert_vectors, pred_diffs = infid_perturbations(samples, labels, model, perturbation_mode,
-                                                   perturbation_size, num_perturbations, writer)
-    return infid_mse(pert_vectors, pred_diffs, attrs)
+    pert_vectors, pred_diffs = _compute_perturbations(samples, labels, model, perturbation_mode,
+                                                      perturbation_size, num_perturbations, writer)
+    return _compute_mse(pert_vectors, pred_diffs, attrs)
+
+
+class Infidelity(Metric):
+    def __init__(self, model: Callable, method_names: List[str], perturbation_mode: str,
+                 perturbation_size: float, num_perturbations: int, writer_dir: str = None):
+        super().__init__(model, method_names, writer_dir)
+        self.perturbation_mode = perturbation_mode
+        self.perturbation_size = perturbation_size
+        self.num_perturbations = num_perturbations
+
+    def run_batch(self, samples, labels, attrs_dict: dict):
+        # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
+        pert_vectors, pred_diffs = _compute_perturbations(samples, labels, self.model,
+                                                          self.perturbation_mode, self.perturbation_size,
+                                                          self.num_perturbations)
+        for method_name in attrs_dict:
+            if method_name not in self.results:
+                self.results[method_name] = []
+            self.results[method_name].append(_compute_mse(pert_vectors, pred_diffs, attrs_dict[method_name]))
+
+    def _run_single_method(self, samples: torch.Tensor, labels: torch.Tensor,
+                           attrs: np.ndarray, writer: AttributionWriter = None):
+        """The run_batch method is overridden and doesn't use _run_single_method"""
+        raise NotImplementedError

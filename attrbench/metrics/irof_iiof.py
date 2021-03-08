@@ -1,12 +1,13 @@
-from typing import Callable
+from typing import Callable, List
 from attrbench.lib.masking import Masker
 import torch
 import numpy as np
 from attrbench.lib import mask_segments, segment_samples_attributions
 from torch.utils.data import Dataset, DataLoader
+from attrbench.metrics import Metric
 
 
-class SegmentedIterativeMaskingDataset(Dataset):
+class _SegmentedIterativeMaskingDataset(Dataset):
     def __init__(self, mode, samples: np.ndarray, attrs: np.ndarray, masker, writer=None):
         if mode not in ["insertion", "deletion"]:
             raise ValueError("Mode must be insertion or deletion")
@@ -28,38 +29,8 @@ class SegmentedIterativeMaskingDataset(Dataset):
         return mask_segments(self.samples, self.segmented_images, indices, self.masker)
 
 
-def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
-         masker: Masker, writer=None):
-    masking_dataset = SegmentedIterativeMaskingDataset("deletion", samples.cpu().numpy(), attrs, masker, writer)
-    orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, masking_dataset, writer)
-    preds = [orig_preds] + inter_preds + [neutral_preds]
-    preds = (torch.cat(preds, dim=1) / orig_preds).cpu()  # [batch_size, len(mask_range)]
-
-    # Calculate AOC for each sample (depends on how many segments each sample had)
-    aoc = []
-    for i in range(samples.shape[0]):
-        num_segments = len(np.unique(masking_dataset.segmented_images[i, ...]))
-        aoc.append(1 - np.trapz(preds[i, :num_segments+1], x=np.linspace(0, 1, num_segments+1)))
-    return torch.tensor(aoc).unsqueeze(-1)  # [batch_size, 1]
-
-
-def iiof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
-         masker: Masker, writer=None):
-    masking_dataset = SegmentedIterativeMaskingDataset("insertion", samples.cpu().numpy(), attrs, masker, writer)
-    orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, masking_dataset, writer)
-    preds = [neutral_preds] + inter_preds + [orig_preds]
-    preds = (torch.cat(preds, dim=1) / orig_preds).cpu()  # [batch_size, len(mask_range)]
-
-    # Calculate AUC for each sample (depends on how many segments each sample had)
-    auc = []
-    for i in range(samples.shape[0]):
-        num_segments = len(np.unique(masking_dataset.segmented_images[i, ...]))
-        auc.append(np.trapz(preds[i, :num_segments+1], x=np.linspace(0, 1, num_segments+1)))
-    return torch.tensor(auc).unsqueeze(-1)  # [batch_size, 1]
-
-
 def _get_predictions(samples: torch.Tensor, labels: torch.Tensor, model: Callable,
-                     masking_dataset: SegmentedIterativeMaskingDataset, writer=None):
+                     masking_dataset: _SegmentedIterativeMaskingDataset, writer=None):
     device = samples.device
     with torch.no_grad():
         orig_preds = model(samples).gather(dim=1, index=labels.unsqueeze(-1))
@@ -77,3 +48,50 @@ def _get_predictions(samples: torch.Tensor, labels: torch.Tensor, model: Callabl
         inter_preds.append(predictions)
     return orig_preds, neutral_preds, inter_preds
 
+
+class IROF(Metric):
+    def __init__(self, model: Callable, method_names: List[str], masker: Masker, writer_dir: str = None):
+        super().__init__(model, method_names, writer_dir)
+        self.masker = masker
+
+    def _run_single_method(self, samples, labels, attrs, writer=None):
+        return irof(samples, labels, self.model, attrs, self.masker, writer)
+
+
+class IIOF(Metric):
+    def __init__(self, model: Callable, method_names: List[str], masker: Masker, writer_dir: str = None):
+        super().__init__(model, method_names, writer_dir)
+        self.masker = masker
+
+    def _run_single_method(self, samples, labels, attrs, writer=None):
+        return iiof(samples, labels, self.model, attrs, self.masker, writer)
+
+
+def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
+         masker: Masker, writer=None):
+    masking_dataset = _SegmentedIterativeMaskingDataset("deletion", samples.cpu().numpy(), attrs, masker, writer)
+    orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, masking_dataset, writer)
+    preds = [orig_preds] + inter_preds + [neutral_preds]
+    preds = (torch.cat(preds, dim=1) / orig_preds).cpu()  # [batch_size, len(mask_range)]
+
+    # Calculate AOC for each sample (depends on how many segments each sample had)
+    aoc = []
+    for i in range(samples.shape[0]):
+        num_segments = len(np.unique(masking_dataset.segmented_images[i, ...]))
+        aoc.append(1 - np.trapz(preds[i, :num_segments+1], x=np.linspace(0, 1, num_segments+1)))
+    return torch.tensor(aoc).unsqueeze(-1)  # [batch_size, 1]
+
+
+def iiof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
+         masker: Masker, writer=None):
+    masking_dataset = _SegmentedIterativeMaskingDataset("insertion", samples.cpu().numpy(), attrs, masker, writer)
+    orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, masking_dataset, writer)
+    preds = [neutral_preds] + inter_preds + [orig_preds]
+    preds = (torch.cat(preds, dim=1) / orig_preds).cpu()  # [batch_size, len(mask_range)]
+
+    # Calculate AUC for each sample (depends on how many segments each sample had)
+    auc = []
+    for i in range(samples.shape[0]):
+        num_segments = len(np.unique(masking_dataset.segmented_images[i, ...]))
+        auc.append(np.trapz(preds[i, :num_segments+1], x=np.linspace(0, 1, num_segments+1)))
+    return torch.tensor(auc).unsqueeze(-1)  # [batch_size, 1]

@@ -1,5 +1,7 @@
-from typing import Callable
+from typing import Callable, Tuple, Dict
 from attrbench.lib.masking import ConstantMasker
+from attrbench.lib import AttributionWriter
+from attrbench.metrics import Metric
 import random
 import torch
 from os import path, listdir
@@ -8,7 +10,8 @@ import re
 import numpy as np
 
 
-def apply_patches(samples, labels, model, patch_folder):
+def _apply_patches(samples: torch.Tensor, labels: torch.Tensor, model: Callable,
+                   patch_folder: str) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     target_expr = re.compile(r".*_([0-9]*)\.pt")
     patch_names = cycle([filename for filename in listdir(patch_folder) if filename.endswith(".pt")])
     with torch.no_grad():
@@ -48,27 +51,13 @@ def apply_patches(samples, labels, model, patch_folder):
         if num_tries > max_tries:
             print(f"Not all samples could be attacked: {torch.sum(successful)}/{samples.size(0)} were successful.")
             break
-
     return attacked_samples, patch_mask, targets.to(samples.device)
 
 
-def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                    patch_folder=None, attacked_samples=None, patch_mask=None, targets=None,
-                    writer=None):
-    if len(samples.shape) != 4:
-        raise ValueError("Impact Coverage can only be computed for image data and expects 4 input dimensions")
-
-    # Argument validation: either provide patch folder, or provide attacked samples, patch mask, and targets.
-    if patch_folder is None and (attacked_samples is None or patch_mask is None or targets is None):
-        raise ValueError(f"If no patch folder is given, you must supply attacked_samples, patch_mask and targets.")
-    if patch_folder is not None and not (attacked_samples is None and patch_mask is None and targets is None):
-        print("patch_folder was provided, attacked_samples, patch_mask, targets will be ignored.")
-
-    if patch_folder is not None:
-        attacked_samples, patch_mask, targets = apply_patches(samples, labels, model, patch_folder)
-
+def _compute_coverage(attacked_samples: torch.Tensor, method: Callable, patch_mask: torch.Tensor,
+                      targets: torch.Tensor, writer: AttributionWriter = None) -> torch.Tensor:
     # Get attributions
-    attrs = method(samples, target=targets).detach()
+    attrs = method(attacked_samples, target=targets).detach()
     # Check attributions shape
     if attrs.shape[1] not in (1, 3):
         raise ValueError(f"Impact Coverage only works on image data. Attributions must have 1 or 3 color channels."
@@ -98,7 +87,42 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
     union = (patch_mask_flattened | critical_factor_mask).sum(axis=1)
     iou = intersection.astype(np.float) / union.astype(np.float)
     if writer:
-        writer.add_images('Attacked samples', samples)
+        writer.add_images('Attacked samples', attacked_samples)
         writer.add_images('Attacked attributions', attrs)
     # [batch_size]
     return torch.tensor(iou)
+
+
+def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
+                    patch_folder: str, writer=None):
+    if len(samples.shape) != 4:
+        raise ValueError("Impact Coverage can only be computed for image data and expects 4 input dimensions")
+    attacked_samples, patch_mask, targets = _apply_patches(samples, labels, model, patch_folder)
+    return _compute_coverage(attacked_samples, method, patch_mask, targets, writer)
+
+
+class ImpactCoverage(Metric):
+    def __init__(self, model, methods: Dict[str, Callable], patch_folder: str, writer_dir: str = None):
+        self.methods = methods
+        super().__init__(model, list(methods.keys()), writer_dir)
+        self.results = {method_name: [] for method_name in methods}
+        self.patch_folder = patch_folder
+        self.writers = {method_name: path.join(writer_dir, method_name) if writer_dir else None
+                        for method_name in methods}
+
+    def run_batch(self, samples, labels, attrs_dict=None):
+        """
+        Runs the metric for a given batch, for all methods, and saves result internally
+        """
+        attacked_samples, patch_mask, targets = _apply_patches(samples, labels,
+                                                               self.model, self.patch_folder)
+        for method_name in self.methods:
+            method = self.methods[method_name]
+            iou = _compute_coverage(attacked_samples, method, patch_mask,
+                                    targets, writer=self._get_writer(method_name)).reshape(-1, 1)
+            self.results[method_name].append(iou)
+
+    def _run_single_method(self, samples: torch.Tensor, labels: torch.Tensor,
+                           attrs: np.ndarray, writer: AttributionWriter = None):
+        """The run_batch method is overridden and doesn't use _run_single_method"""
+        raise NotImplementedError
