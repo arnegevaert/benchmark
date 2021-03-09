@@ -1,13 +1,20 @@
-from typing import Callable
+from typing import Callable, Tuple, Dict, List
+
+import h5py
+
 from attrbench.lib.masking import ConstantMasker
+from attrbench.lib import AttributionWriter
+from attrbench.metrics import Metric, MetricResult
 import random
 import torch
 from os import path, listdir
 from itertools import cycle
 import re
+import numpy as np
 
 
-def apply_patches(samples, labels, model, patch_folder):
+def _apply_patches(samples: torch.Tensor, labels: torch.Tensor, model: Callable,
+                   patch_folder: str) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     target_expr = re.compile(r".*_([0-9]*)\.pt")
     patch_names = cycle([filename for filename in listdir(patch_folder) if filename.endswith(".pt")])
     with torch.no_grad():
@@ -47,27 +54,13 @@ def apply_patches(samples, labels, model, patch_folder):
         if num_tries > max_tries:
             print(f"Not all samples could be attacked: {torch.sum(successful)}/{samples.size(0)} were successful.")
             break
-
     return attacked_samples, patch_mask, targets.to(samples.device)
 
 
-def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
-                    patch_folder=None, attacked_samples=None, patch_mask=None, targets=None,
-                    writer=None):
-    if len(samples.shape) != 4:
-        raise ValueError("Impact Coverage can only be computed for image data and expects 4 input dimensions")
-
-    # Argument validation: either provide patch folder, or provide attacked samples, patch mask, and targets.
-    if patch_folder is None and (attacked_samples is None or patch_mask is None or targets is None):
-        raise ValueError(f"If no patch folder is given, you must supply attacked_samples, patch_mask and targets.")
-    if patch_folder is not None and not (attacked_samples is None and patch_mask is None and targets is None):
-        print("patch_folder was provided, attacked_samples, patch_mask, targets will be ignored.")
-
-    if patch_folder is not None:
-        attacked_samples, patch_mask, targets = apply_patches(samples, labels, model, patch_folder)
-
+def _compute_coverage(attacked_samples: torch.Tensor, method: Callable, patch_mask: torch.Tensor,
+                      targets: torch.Tensor, writer: AttributionWriter = None) -> torch.Tensor:
     # Get attributions
-    attrs = method(samples, target=targets).detach()
+    attrs = method(attacked_samples, target=targets).detach()
     # Check attributions shape
     if attrs.shape[1] not in (1, 3):
         raise ValueError(f"Impact Coverage only works on image data. Attributions must have 1 or 3 color channels."
@@ -84,20 +77,52 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
 
     # Create mask of critical factors (most important pixels/features according to attributions)
     to_mask = sorted_indices[:, -nr_top_attributions:]
+    # TODO don't use a masker for this
     masker = ConstantMasker(feature_level="pixel" if attrs.shape[1] == 1 else "channel", mask_value=1.)
     # Initialize as constant zeros, "mask" the most important features with 1
-    critical_factor_mask = torch.zeros(attrs.shape)
+    critical_factor_mask = np.zeros(attrs.shape)
     masker.initialize_baselines(critical_factor_mask)
     critical_factor_mask = masker.mask(critical_factor_mask, to_mask)
+    critical_factor_mask = critical_factor_mask.reshape(critical_factor_mask.shape[0], -1).astype(np.bool)
 
     # Calculate IoU of critical factors (top n attributions) with adversarial patch
-    patch_mask_flattened = patch_mask.flatten(1).bool()
-    critical_factor_mask_flattened = critical_factor_mask.flatten(1).bool()
-    intersection = (patch_mask_flattened & critical_factor_mask_flattened).sum(dim=1)
-    union = (patch_mask_flattened | critical_factor_mask_flattened).sum(dim=1)
-    iou = intersection.float() / union.float()
+    patch_mask_flattened = patch_mask.flatten(1).bool().numpy()
+    intersection = (patch_mask_flattened & critical_factor_mask).sum(axis=1)
+    union = (patch_mask_flattened | critical_factor_mask).sum(axis=1)
+    iou = intersection.astype(np.float) / union.astype(np.float)
     if writer:
-        writer.add_images('Attacked samples', samples)
+        writer.add_images('Attacked samples', attacked_samples)
         writer.add_images('Attacked attributions', attrs)
     # [batch_size]
-    return iou
+    return torch.tensor(iou)
+
+
+def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
+                    patch_folder: str, writer=None):
+    if len(samples.shape) != 4:
+        raise ValueError("Impact Coverage can only be computed for image data and expects 4 input dimensions")
+    attacked_samples, patch_mask, targets = _apply_patches(samples, labels, model, patch_folder)
+    return _compute_coverage(attacked_samples, method, patch_mask, targets, writer)
+
+
+class ImpactCoverage(Metric):
+    def __init__(self, model, methods: Dict[str, Callable], patch_folder: str, writer_dir: str = None):
+        self.methods = methods
+        super().__init__(model, list(methods.keys()), writer_dir)
+        self.patch_folder = patch_folder
+        self.writers = {method_name: path.join(writer_dir, method_name) if writer_dir else None
+                        for method_name in methods}
+        self.result = ImpactCoverageResult(list(methods.keys()))
+
+    def run_batch(self, samples, labels, attrs_dict=None):
+        attacked_samples, patch_mask, targets = _apply_patches(samples, labels,
+                                                               self.model, self.patch_folder)
+        for method_name in self.methods:
+            method = self.methods[method_name]
+            iou = _compute_coverage(attacked_samples, method, patch_mask,
+                                    targets, writer=self._get_writer(method_name)).reshape(-1, 1)
+            self.result.append(method_name, iou)
+
+
+class ImpactCoverageResult(MetricResult):
+    pass

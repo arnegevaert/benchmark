@@ -1,6 +1,6 @@
 from attrbench.lib.masking import Masker
 from cv2 import blur
-import torch
+import numpy as np
 
 
 class BlurringMasker(Masker):
@@ -16,10 +16,11 @@ class BlurringMasker(Masker):
         baseline = []
         for i in range(samples.shape[0]):
             sample = samples[i, ...]
-            cv_sample = sample.permute(1, 2, 0).cpu().numpy()
-            blurred_sample = torch.tensor(blur(cv_sample, (kernel_size, kernel_size)))
+            cv_sample = np.transpose(sample, (1, 2, 0))
+            blurred_sample = blur(cv_sample, (kernel_size, kernel_size))
             if len(blurred_sample.shape) == 2:
+                blurred_sample = blurred_sample[..., np.newaxis]
                 blurred_sample = blurred_sample.unsqueeze(-1)
-            baseline.append(blurred_sample.permute(2, 0, 1).to(samples.device))
-        self.baseline = torch.stack(baseline, dim=0)
+            baseline.append(np.transpose(blurred_sample, (2, 0, 1)))
+        self.baseline = np.stack(baseline, axis=0)
 
