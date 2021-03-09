@@ -1,12 +1,11 @@
 from typing import Callable, List
-import h5py
 from attrbench.lib.masking import Masker
 from attrbench.lib import AttributionWriter
 import torch
 import numpy as np
 from attrbench.lib import mask_segments, segment_samples_attributions
 from torch.utils.data import Dataset, DataLoader
-from attrbench.metrics import Metric, MetricResult, InsertionDeletionResult
+from attrbench.metrics import Metric, InsertionDeletionResult
 
 
 class _SegmentedIterativeMaskingDataset(Dataset):

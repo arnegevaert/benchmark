@@ -17,7 +17,6 @@ class MetricResult:
     def append(self, method_name, batch):
         raise self.data[method_name].append(batch)
 
-    # TODO make sure there is a return statement everywhere
     @classmethod
     def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
         method_names = list(group.keys())

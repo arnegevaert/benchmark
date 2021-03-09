@@ -157,7 +157,7 @@ class Infidelity(Metric):
         self.num_perturbations = num_perturbations
         if self.writer_dir is not None:
             self.writers["general"] = AttributionWriter(self.writer_dir)
-        self.result = InfidelityResult(method_names)
+        self.result = InfidelityResult(method_names, perturbation_mode, perturbation_size)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
@@ -169,7 +169,22 @@ class Infidelity(Metric):
             self.result.append(method_name, _compute_result(pert_vectors, pred_diffs, attrs_dict[method_name]))
 
 
-# TODO set inverted: bool everywhere
-# TODO Add extra arguments where necessary
 class InfidelityResult(MetricResult):
-    pass
+    def __init__(self, method_names: List[str], perturbation_mode: str, perturbation_size: float):
+        super().__init__(method_names)
+        self.inverted = True
+        self.perturbation_mode = perturbation_mode
+        self.perturbation_size = perturbation_size
+
+    def add_to_hdf(self, group: h5py.Group):
+        super().add_to_hdf(group)
+        group.attrs["perturbation_mode"] = self.perturbation_mode
+        group.attrs["perturbation_size"] = self.perturbation_size
+
+    @classmethod
+    def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
+        method_names = list(group.keys())
+        result = cls(method_names, group.attrs["perturbation_mode"], group.attrs["perturbation_size"])
+        result.data = {m_name: [group[m_name]] for m_name in method_names}
+        return result
+

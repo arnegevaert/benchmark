@@ -96,4 +96,6 @@ class DeletionUntilFlip(Metric):
 
 
 class DeletionUntilFlipResult(MetricResult):
-    pass
+    def __init__(self, method_names: List[str]):
+        super().__init__(method_names)
+        self.inverted = True

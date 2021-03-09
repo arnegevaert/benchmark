@@ -66,7 +66,7 @@ class ImpactScore(Metric):
         self.strict = strict
         self.masker = masker
         self.tau = tau
-        self.result = ImpactScoreResult(method_names)
+        self.result = ImpactScoreResult(method_names, strict, tau)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         for method_name in attrs_dict:
@@ -78,12 +78,14 @@ class ImpactScore(Metric):
 
 
 class ImpactScoreResult(MetricResult):
-    def __init__(self, method_names: List[str]):
+    def __init__(self, method_names: List[str], strict: bool, tau: float = None):
         super().__init__(method_names)
         self.data = {
             "flipped": {m_name: [] for m_name in self.method_names},
             "totals": {m_name: [] for m_name in self.method_names}
         }
+        self.strict = strict
+        self.tau = tau
 
     def add_to_hdf(self, group: h5py.Group):
         for method_name in self.method_names:
@@ -92,6 +94,8 @@ class ImpactScoreResult(MetricResult):
             method_group = group.create_group(method_name)
             method_group.create_dataset("flipped", flipped.numpy())
             method_group.create_dataset("totals", totals.numpy())
+        group.attrs["strict"] = self.strict
+        group.attrs["tau"] = self.tau
 
     def append(self, method_name, batch):
         flipped, total = batch
@@ -101,7 +105,7 @@ class ImpactScoreResult(MetricResult):
     @classmethod
     def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
         method_names = list(group.keys())
-        result = ImpactScoreResult(method_names)
+        result = ImpactScoreResult(method_names, group.attrs["strict"], group.attrs["tau"])
         for m_name in method_names:
             result.data["flipped"][m_name] = group[m_name]["flipped"]
             result.data["totals"][m_name] = group[m_name]["totals"]
