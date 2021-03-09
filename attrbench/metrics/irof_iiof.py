@@ -1,11 +1,12 @@
 from typing import Callable, List
+import h5py
 from attrbench.lib.masking import Masker
 from attrbench.lib import AttributionWriter
 import torch
 import numpy as np
 from attrbench.lib import mask_segments, segment_samples_attributions
 from torch.utils.data import Dataset, DataLoader
-from attrbench.metrics import Metric
+from attrbench.metrics import Metric, MetricResult
 
 
 class _SegmentedIterativeMaskingDataset(Dataset):
@@ -53,40 +54,6 @@ def _get_predictions(samples: torch.Tensor, labels: torch.Tensor, model: Callabl
     return orig_preds, neutral_preds, inter_preds
 
 
-class IROF(Metric):
-    def __init__(self, model: Callable, method_names: List[str], masker: Masker,
-                 reverse_order: bool = False, writer_dir: str = None):
-        super().__init__(model, method_names, writer_dir)
-        self.masker = masker
-        self.reverse_order = reverse_order
-
-    def run_batch(self, samples, labels, attrs_dict: dict):
-        for method_name in attrs_dict:
-            if method_name not in self.results:
-                raise ValueError(f"Invalid method name: {method_name}")
-            self.results[method_name].append(
-                irof(samples, labels, self.model, attrs_dict[method_name], self.masker, self.reverse_order,
-                     writer=self._get_writer(method_name))
-            )
-
-
-class IIOF(Metric):
-    def __init__(self, model: Callable, method_names: List[str], masker: Masker,
-                 reverse_order: bool = False, writer_dir: str = None):
-        super().__init__(model, method_names, writer_dir)
-        self.masker = masker
-        self.reverse_order = reverse_order
-
-    def run_batch(self, samples, labels, attrs_dict: dict):
-        for method_name in attrs_dict:
-            if method_name not in self.results:
-                raise ValueError(f"Invalid method name: {method_name}")
-            self.results[method_name].append(
-                iiof(samples, labels, self.model, attrs_dict[method_name], self.masker, self.reverse_order,
-                     writer=self._get_writer(method_name))
-            )
-
-
 def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
          masker: Masker, reverse_order: bool = False, writer=None):
     masking_dataset = _SegmentedIterativeMaskingDataset("deletion", samples.cpu().numpy(), attrs, masker,
@@ -99,7 +66,7 @@ def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np
     aoc = []
     for i in range(samples.shape[0]):
         num_segments = len(np.unique(masking_dataset.segmented_images[i, ...]))
-        aoc.append(1 - np.trapz(preds[i, :num_segments+1], x=np.linspace(0, 1, num_segments+1)))
+        aoc.append(1 - np.trapz(preds[i, :num_segments + 1], x=np.linspace(0, 1, num_segments + 1)))
     return torch.tensor(aoc).unsqueeze(-1)  # [batch_size, 1]
 
 
@@ -115,5 +82,63 @@ def iiof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np
     auc = []
     for i in range(samples.shape[0]):
         num_segments = len(np.unique(masking_dataset.segmented_images[i, ...]))
-        auc.append(np.trapz(preds[i, :num_segments+1], x=np.linspace(0, 1, num_segments+1)))
+        auc.append(np.trapz(preds[i, :num_segments + 1], x=np.linspace(0, 1, num_segments + 1)))
     return torch.tensor(auc).unsqueeze(-1)  # [batch_size, 1]
+
+
+class Irof(Metric):
+    def __init__(self, model: Callable, method_names: List[str], masker: Masker,
+                 reverse_order: bool = False, writer_dir: str = None):
+        super().__init__(model, method_names, writer_dir)
+        self.masker = masker
+        self.reverse_order = reverse_order
+        self.result = IrofIiofResult(method_names, "irof", reverse_order)
+
+    def run_batch(self, samples, labels, attrs_dict: dict):
+        for method_name in attrs_dict:
+            method_result = irof(samples, labels, self.model, attrs_dict[method_name], self.masker, self.reverse_order,
+                                 writer=self._get_writer(method_name))
+            self.result.append(method_name, method_result)
+
+
+class Iiof(Metric):
+    def __init__(self, model: Callable, method_names: List[str], masker: Masker,
+                 reverse_order: bool = False, writer_dir: str = None):
+        super().__init__(model, method_names, writer_dir)
+        self.masker = masker
+        self.reverse_order = reverse_order
+        self.result = IrofIiofResult(method_names, "iiof", reverse_order)
+
+    def run_batch(self, samples, labels, attrs_dict: dict):
+        for method_name in attrs_dict:
+            method_result = iiof(samples, labels, self.model, attrs_dict[method_name], self.masker, self.reverse_order,
+                                 writer=self._get_writer(method_name))
+            self.result.append(method_name, method_result)
+
+
+class IrofIiofResult(MetricResult):
+    def __init__(self, method_names: List[str], mode: str, reverse_order: bool):
+        super().__init__(method_names)
+        if mode not in ("irof", "iiof"):
+            raise ValueError(f"mode must be either irof or iiof, got {mode}")
+        self.data = {m_name: [] for m_name in self.method_names}
+        self.mode = mode
+        self.reverse_order = reverse_order
+        self.inverted = (self.mode == "irof" and not self.reverse_order) or \
+                        (self.mode == "iiof" and self.reverse_order)
+
+    def add_to_hdf(self, group: h5py.Group):
+        group.attrs["type"] = "IrofIiofResult"
+        group.attrs["mode"] = self.mode
+        group.attrs["reverse_order"] = self.reverse_order
+        for method_name in self.method_names:
+            group.create_dataset(method_name, data=torch.cat(self.data[method_name]).numpy())
+
+    def append(self, method_name, batch):
+        self.data[method_name].append(batch)
+
+    @staticmethod
+    def load_from_hdf(self, group: h5py.Group):
+        method_names = list(group.keys())
+        result = IrofIiofResult(method_names, group.attrs["mode"], group.attrs["reverse_order"])
+        result.data = {m_name: [group[m_name]] for m_name in method_names}

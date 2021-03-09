@@ -1,7 +1,10 @@
-from typing import Callable, Tuple, Dict
+from typing import Callable, Tuple, Dict, List
+
+import h5py
+
 from attrbench.lib.masking import ConstantMasker
 from attrbench.lib import AttributionWriter
-from attrbench.metrics import Metric
+from attrbench.metrics import Metric, MetricResult
 import random
 import torch
 from os import path, listdir
@@ -74,6 +77,7 @@ def _compute_coverage(attacked_samples: torch.Tensor, method: Callable, patch_ma
 
     # Create mask of critical factors (most important pixels/features according to attributions)
     to_mask = sorted_indices[:, -nr_top_attributions:]
+    # TODO don't use a masker for this
     masker = ConstantMasker(feature_level="pixel" if attrs.shape[1] == 1 else "channel", mask_value=1.)
     # Initialize as constant zeros, "mask" the most important features with 1
     critical_factor_mask = np.zeros(attrs.shape)
@@ -105,19 +109,36 @@ class ImpactCoverage(Metric):
     def __init__(self, model, methods: Dict[str, Callable], patch_folder: str, writer_dir: str = None):
         self.methods = methods
         super().__init__(model, list(methods.keys()), writer_dir)
-        self.results = {method_name: [] for method_name in methods}
         self.patch_folder = patch_folder
         self.writers = {method_name: path.join(writer_dir, method_name) if writer_dir else None
                         for method_name in methods}
+        self.result = ImpactCoverageResult(list(methods.keys()))
 
     def run_batch(self, samples, labels, attrs_dict=None):
-        """
-        Runs the metric for a given batch, for all methods, and saves result internally
-        """
         attacked_samples, patch_mask, targets = _apply_patches(samples, labels,
                                                                self.model, self.patch_folder)
         for method_name in self.methods:
             method = self.methods[method_name]
             iou = _compute_coverage(attacked_samples, method, patch_mask,
                                     targets, writer=self._get_writer(method_name)).reshape(-1, 1)
-            self.results[method_name].append(iou)
+            self.result.append(method_name, iou)
+
+
+class ImpactCoverageResult(MetricResult):
+    def __init__(self, method_names: List[str]):
+        super().__init__(method_names)
+        self.data = {m_name: [] for m_name in self.method_names}
+
+    def add_to_hdf(self, group: h5py.Group):
+        group.attrs["type"] = "ImpactCoverageResult"
+        for method_name in self.method_names:
+            group.create_dataset(method_name, data=torch.cat(self.data[method_name]).numpy())
+
+    def append(self, method_name, batch):
+        self.data[method_name].append(batch)
+
+    @staticmethod
+    def load_from_hdf(self, group: h5py.Group):
+        method_names = list(group.keys())
+        result = ImpactCoverageResult(method_names)
+        result.data = {m_name: [group[m_name]] for m_name in method_names}

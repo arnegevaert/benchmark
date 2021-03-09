@@ -7,4 +7,4 @@ from .insertion_deletion import insertion, deletion, Insertion, Deletion
 from .max_sensitivity import max_sensitivity, MaxSensitivity
 from .sensitivity_n import sensitivity_n, SensitivityN, seg_sensitivity_n, SegSensitivityN
 from .deletion_until_flip import deletion_until_flip, DeletionUntilFlip
-from .irof_iiof import irof, iiof, IROF, IIOF
+from .irof_iiof import irof, iiof, Irof, Iiof

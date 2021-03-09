@@ -1,7 +1,8 @@
-from typing import Callable, Dict
+from typing import Callable, Dict, List
+import h5py
 import torch
 import math
-from attrbench.metrics import Metric
+from attrbench.metrics import Metric, MetricResult
 
 
 def _normalize_attrs(attrs):
@@ -42,9 +43,9 @@ class MaxSensitivity(Metric):
                  num_perturbations: int, writer_dir: str = None):
         super().__init__(model, list(methods.keys()), writer_dir)
         self.methods = methods
-        self.results = {method_name: [] for method_name in methods}
         self.radius = radius
         self.num_perturbations = num_perturbations
+        self.result = MaxSensitivityResult(method_names=list(methods.keys()))
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         """
@@ -54,4 +55,25 @@ class MaxSensitivity(Metric):
             method = self.methods[method_name]
             max_sens = max_sensitivity(samples, labels, method, attrs_dict[method_name], self.radius,
                                        self.num_perturbations, writer=self._get_writer(method_name))
-            self.results[method_name].append(max_sens)
+            self.result.append(method_name, max_sens)
+
+
+class MaxSensitivityResult(MetricResult):
+    def __init__(self, method_names: List[str]):
+        super().__init__(method_names)
+        self.data = {m_name: [] for m_name in self.method_names}
+
+    def add_to_hdf(self, group: h5py.Group):
+        group.attrs["type"] = "MaxSensitivityResult"
+        for method_name in self.method_names:
+            group.create_dataset(method_name, data=torch.cat(self.data[method_name]).numpy())
+
+    def append(self, method_name, batch):
+        self.data[method_name].append(batch)
+
+    @staticmethod
+    def load_from_hdf(self, group: h5py.Group):
+        method_names = list(group.keys())
+        result = MaxSensitivityResult(method_names)
+        result.data = {m_name: [group[m_name]] for m_name in method_names}
+

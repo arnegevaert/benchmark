@@ -1,9 +1,10 @@
 import torch
+import h5py
 from typing import Callable, List
 from skimage.segmentation import slic
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
-from attrbench.metrics import Metric
+from attrbench.metrics import Metric, MetricResult
 from attrbench.lib import AttributionWriter
 from attrbench.lib.util import corrcoef
 
@@ -156,6 +157,7 @@ class Infidelity(Metric):
         self.num_perturbations = num_perturbations
         if self.writer_dir is not None:
             self.writers["general"] = AttributionWriter(self.writer_dir)
+        self.result = InfidelityResult(method_names)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
@@ -164,6 +166,25 @@ class Infidelity(Metric):
                                                           self.perturbation_mode, self.perturbation_size,
                                                           self.num_perturbations, writer)
         for method_name in attrs_dict:
-            if method_name not in self.results:
-                self.results[method_name] = []
-            self.results[method_name].append(_compute_result(pert_vectors, pred_diffs, attrs_dict[method_name]))
+            self.result.append(method_name, _compute_result(pert_vectors, pred_diffs, attrs_dict[method_name]))
+
+# TODO set inverted: bool everywhere
+# TODO Add extra arguments where necessary
+class InfidelityResult(MetricResult):
+    def __init__(self, method_names: List[str]):
+        super().__init__(method_names)
+        self.data = {m_name: [] for m_name in self.method_names}
+
+    def add_to_hdf(self, group: h5py.Group):
+        group.attrs["type"] = "InfidelityResult"
+        for method_name in self.method_names:
+            group.create_dataset(method_name, data=torch.cat(self.data[method_name]).numpy())
+
+    def append(self, method_name, batch):
+        self.data[method_name].append(batch)
+
+    @staticmethod
+    def load_from_hdf(self, group: h5py.Group):
+        method_names = list(group.keys())
+        result = InfidelityResult(method_names)
+        result.data = {m_name: [group[m_name]] for m_name in method_names}

@@ -1,4 +1,4 @@
-from attrbench.suite import Result, SuiteResult
+from attrbench.suite import SuiteResult
 from attrbench import metrics
 from attrbench.metrics import Metric
 from attrbench.lib import AttributionWriter, masking
@@ -83,7 +83,7 @@ class Suite:
                             raise ValueError(
                                 f"Invalid configuration: required argument {e_arg} not found for metric {metric_name}")
                 if metric_dict["type"] == "ImpactCoverage" and self.default_args["patch_folder"] is None:
-                    warnings.warning("No patch folder provided, skipping impact coverage.")
+                    warnings.warn("No patch folder provided, skipping impact coverage.")
                 else:
                     # Create metric object using args_dict
                     self.metrics[metric_name] = constructor(**args_dict)
@@ -144,6 +144,7 @@ class Suite:
                                 raise ValueError(f"Attributions for method {method_name} "
                                                  f"are not compatible with masker")
                         checked_shapes = True
+
                     # Run the metric on this batch
                     self.metrics[metric].run_batch(samples, labels, attrs)
 

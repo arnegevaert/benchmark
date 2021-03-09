@@ -1,7 +1,8 @@
 from attrbench.lib.masking import Masker
-from attrbench.metrics import Metric
+from attrbench.metrics import Metric, MetricResult
 from typing import Callable, List
 import torch
+import h5py
 import numpy as np
 from torch.nn.functional import softmax
 from torch.utils.data import Dataset, DataLoader
@@ -65,33 +66,40 @@ class ImpactScore(Metric):
         self.strict = strict
         self.masker = masker
         self.tau = tau
-
-    def _run_single_method(self, samples, labels, attrs, writer=None):
-        return impact_score(samples, labels, self.model, attrs, self.num_steps,
-                            self.strict, self.masker, self.tau,
-                            writer=writer)
+        self.result = ImpactScoreResult(method_names)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         for method_name in attrs_dict:
-            if method_name not in self.results:
+            if method_name not in self.result.method_names:
                 raise ValueError(f"Invalid method name: {method_name}")
-            self.results[method_name].append(
-                impact_score(samples, labels, self.model, attrs_dict[method_name], self.num_steps,
-                             self.strict, self.masker, self.tau,
-                             writer=self._get_writer(method_name))
-            )
+            flipped, total = impact_score(samples, labels, self.model, attrs_dict[method_name], self.num_steps,
+                                          self.strict, self.masker, self.tau, writer=self._get_writer(method_name))
+            self.result.append(method_name, flipped, total)
 
-    def get_results(self):
-        result = {}
-        shape = None
-        for method_name in self.results:
-            flipped = torch.stack([item[0] for item in self.results[method_name]], dim=0).float()
-            totals = torch.tensor([item[1] for item in self.results[method_name]]).reshape(-1, 1).float()
-            ratios = flipped / totals
-            result[method_name] = ratios.mean(dim=0).numpy().reshape(1, -1)
-            if shape is None:
-                shape = result[method_name].shape
-            elif result[method_name].shape != shape:
-                raise ValueError(f"Inconsistent shapes for results: "
-                                 f"{method_name} had {result[method_name].shape} instead of {shape}")
-        return result, shape
+
+class ImpactScoreResult(MetricResult):
+    def __init__(self, method_names: List[str]):
+        super().__init__(method_names)
+        self.flipped = {m_name: [] for m_name in self.method_names}
+        self.totals = {m_name: [] for m_name in self.method_names}
+
+    def add_to_hdf(self, group: h5py.Group):
+        group.attrs["type"] = "ImpactScoreResult"
+        for method_name in self.method_names:
+            flipped = torch.stack(self.flipped[method_name], dim=0).float()
+            totals = torch.tensor(self.totals[method_name]).reshape(-1, 1).float()
+            method_group = group.create_group(method_name)
+            method_group.create_dataset("flipped", flipped.numpy())
+            method_group.create_dataset("totals", totals.numpy())
+
+    def append(self, method_name, flipped, total):
+        self.flipped[method_name].append(flipped)
+        self.totals[method_name].append(total)
+
+    @staticmethod
+    def load_from_hdf(self, group: h5py.Group):
+        method_names = list(group.keys())
+        result = ImpactScoreResult(method_names)
+        for m_name in method_names:
+            result.flipped[m_name] = group[m_name]["flipped"]
+            result.totals[m_name] = group[m_name]["totals"]

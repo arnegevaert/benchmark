@@ -1,4 +1,3 @@
-import torch
 from attrbench.lib import AttributionWriter
 from attrbench.metrics import MetricResult
 from os import path
@@ -6,6 +5,8 @@ from typing import List, Callable, Dict, Optional
 
 
 class Metric:
+    result: MetricResult
+
     def __init__(self, model: Callable, method_names: List[str], writer_dir: str = None):
         self.model = model
         self.metadata = {}
@@ -13,6 +14,13 @@ class Metric:
         self.writers: Optional[Dict[str, AttributionWriter]] = \
             {method_name: AttributionWriter(path.join(self.writer_dir, method_name)) for method_name in method_names} \
             if self.writer_dir is not None else None
+
+        # This code checks that any subclass of Metric instantiates the result: MetricResult property defined above
+        annotations = self.__class__.__dict__.get('__annotations__', {})
+        for name, type_ in annotations.items():
+            if not hasattr(self, name):
+                raise AttributeError(f'required attribute {name} not present '
+                                     f'in {self.__class__}')
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         raise NotImplementedError
@@ -27,22 +35,4 @@ class Metric:
         return None
 
     def get_result(self) -> MetricResult:
-        raise NotImplementedError
-
-    # TODO DEPRECATED, REMOVE
-    def get_results(self):
-        """
-        Returns the complete results for all batches and all methods in a dictionary
-        """
-        result = {}
-        shape = None
-        for method_name in self.results:
-            result[method_name] = torch.cat(self.results[method_name], dim=0).numpy()
-            if shape is None:
-                shape = result[method_name].shape
-            elif result[method_name].shape != shape:
-                raise ValueError(f"Inconsistent shapes for results: "
-                                 f"{method_name} had {result[method_name].shape} instead of {shape}")
-        return result, shape
-
-
+        return self.result

@@ -1,7 +1,8 @@
-import torch
 import numpy as np
 
 
+# TODO masker should take attributions as constructor argument and then implement the necessary
+#      functions (mask_highest, keep_highest, mask_lowest, keep_lowest, mask_random, mask_all)
 class Masker:
     def __init__(self, feature_level):
         if feature_level not in ("channel", "pixel"):

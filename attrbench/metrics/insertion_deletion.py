@@ -1,7 +1,8 @@
 from typing import Callable, List
+import h5py
 from attrbench.lib.masking import Masker
 from attrbench.lib import AttributionWriter
-from attrbench.metrics import Metric
+from attrbench.metrics import Metric, MetricResult
 import torch
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
@@ -83,15 +84,13 @@ class Insertion(Metric):
         self.num_steps = num_steps
         self.masker = masker
         self.reverse_order = reverse_order
+        self.result = InsertionDeletionResult(method_names, "insertion", reverse_order)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         for method_name in attrs_dict:
-            if method_name not in self.results:
-                raise ValueError(f"Invalid method name: {method_name}")
-            self.results[method_name].append(
-                insertion(samples, labels, self.model, attrs_dict[method_name], self.num_steps, self.masker,
-                          writer=self._get_writer(method_name), reverse_order=self.reverse_order)
-            )
+            method_result = insertion(samples, labels, self.model, attrs_dict[method_name], self.num_steps, self.masker,
+                                      writer=self._get_writer(method_name), reverse_order=self.reverse_order)
+            self.result.append(method_name, method_result)
 
 
 class Deletion(Metric):
@@ -101,13 +100,38 @@ class Deletion(Metric):
         self.num_steps = num_steps
         self.masker = masker
         self.reverse_order = reverse_order
+        self.result = InsertionDeletionResult(method_names, "deletion", reverse_order)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         for method_name in attrs_dict:
-            if method_name not in self.results:
-                raise ValueError(f"Invalid method name: {method_name}")
-            self.results[method_name].append(
-                deletion(samples, labels, self.model, attrs_dict[method_name], self.num_steps, self.masker,
-                         writer=self._get_writer(method_name), reverse_order=self.reverse_order)
-            )
+            method_result = deletion(samples, labels, self.model, attrs_dict[method_name], self.num_steps, self.masker,
+                                     writer=self._get_writer(method_name), reverse_order=self.reverse_order)
+            self.result.append(method_name, method_result)
 
+
+class InsertionDeletionResult(MetricResult):
+    def __init__(self, method_names: List[str], mode: str, reverse_order: bool):
+        super().__init__(method_names)
+        if mode not in ("insertion", "deletion"):
+            raise ValueError(f"mode must be either insertion or deletion, got {mode}")
+        self.data = {m_name: [] for m_name in self.method_names}
+        self.mode = mode
+        self.reverse_order = reverse_order
+        self.inverted = (self.mode == "deletion" and not self.reverse_order) or \
+                        (self.mode == "insertion" and self.reverse_order)
+
+    def add_to_hdf(self, group: h5py.Group):
+        group.attrs["type"] = "InsertionDeletionResult"
+        group.attrs["mode"] = self.mode
+        group.attrs["reverse_order"] = self.reverse_order
+        for method_name in self.method_names:
+            group.create_dataset(method_name, data=torch.cat(self.data[method_name]).numpy())
+
+    def append(self, method_name, batch):
+        self.data[method_name].append(batch)
+
+    @staticmethod
+    def load_from_hdf(self, group: h5py.Group):
+        method_names = list(group.keys())
+        result = InsertionDeletionResult(method_names, group.attrs["mode"], group.attrs["reverse_order"])
+        result.data = {m_name: [group[m_name]] for m_name in method_names}

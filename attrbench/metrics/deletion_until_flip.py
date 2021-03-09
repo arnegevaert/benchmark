@@ -94,9 +94,6 @@ class DeletionUntilFlip(Metric):
                                                    self.masker, writer=self._get_writer(method_name))
                                )
 
-    def get_result(self) -> MetricResult:
-        return self.result
-
 
 class DeletionUntilFlipResult(MetricResult):
     def __init__(self, method_names: List[str]):

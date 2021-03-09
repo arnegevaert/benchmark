@@ -3,9 +3,9 @@ import numpy as np
 from attrbench.lib import mask_segments, segment_samples, segment_attributions, AttributionWriter
 from attrbench.lib.masking import Masker
 from attrbench.lib.util import corrcoef
-from attrbench.metrics import Metric
+from attrbench.metrics import Metric, MetricResult
+import h5py
 import torch
-import warnings
 from torch.utils.data import Dataset, DataLoader
 
 
@@ -90,75 +90,6 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, ds: Data
     return output_diffs, removed_indices
 
 
-class SensitivityN(Metric):
-    def __init__(self, model: Callable, method_names: List[str], min_subset_size: float, max_subset_size: float,
-                 num_steps: int, num_subsets: int, masker: Masker, writer_dir: str = None):
-        super().__init__(model, method_names, writer_dir)
-        self.min_subset_size = min_subset_size
-        self.max_subset_size = max_subset_size
-        self.num_steps = num_steps
-        self.num_subsets = num_subsets
-        self.masker = masker
-        self.metadata = {
-            "col_index": np.linspace(min_subset_size, max_subset_size, num_steps)
-        }
-        if self.writer_dir is not None:
-            self.writers["general"] = AttributionWriter(self.writer_dir)
-
-    def run_batch(self, samples, labels, attrs_dict: Dict[str, np.ndarray]):
-        # Get total number of features from attributions dict
-        attrs = attrs_dict[next(iter(attrs_dict))]
-        num_features = attrs.reshape(attrs.shape[0], -1).shape[1]
-        # Calculate n_range
-        n_range = (np.linspace(self.min_subset_size, self.max_subset_size, self.num_steps) * num_features).astype(np.int)
-        # Create pseudo-dataset
-        ds = _SensitivityNDataset(n_range, self.num_subsets, samples.cpu().numpy(), num_features, self.masker)
-        # Calculate output diffs and removed indices (we will re-use this for each method)
-        writer = self.writers["general"] if self.writers is not None else None
-        output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, n_range, writer)
-
-        for method_name in attrs_dict:
-            if method_name not in self.results:
-                raise ValueError(f"Invalid method name: {method_name}")
-            attrs = attrs_dict[method_name]
-            attrs = attrs.reshape((attrs.shape[0], 1, -1))  # [batch_size, 1, -1]
-            self.results[method_name].append(_compute_correlations(attrs, n_range, output_diffs, indices))
-
-
-class SegSensitivityN(Metric):
-    def __init__(self, model: Callable, method_names: List[str], min_subset_size: float, max_subset_size: float,
-                 num_steps: int, num_subsets: int, masker: Masker, writer_dir: str = None):
-        super().__init__(model, method_names, writer_dir)
-        self.min_subset_size = min_subset_size
-        self.max_subset_size = max_subset_size
-        self.num_steps = num_steps
-        self.num_subsets = num_subsets
-        # Total number of segments is fixed 100
-        self.n_range = (np.linspace(self.min_subset_size, self.max_subset_size, self.num_steps) * 100).astype(np.int)
-        self.masker = masker
-        self.metadata = {
-            "col_index": np.linspace(min_subset_size, max_subset_size, num_steps)
-        }
-        if self.writer_dir is not None:
-            self.writers["general"] = AttributionWriter(self.writer_dir)
-
-    def run_batch(self, samples, labels, attrs_dict: dict):
-        # Create pseudo-dataset
-        ds = _SegSensNDataset(self.n_range, self.num_subsets, samples.cpu().numpy(), self.masker)
-        # Calculate output diffs and removed indices (we will re-use this for each method)
-        writer = self.writers["general"] if self.writers is not None else None
-        output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, self.n_range, writer)
-
-        for method_name in attrs_dict:
-            if method_name not in self.results:
-                raise ValueError(f"Invalid method name: {method_name}")
-            attrs = attrs_dict[method_name]
-            attrs = segment_attributions(ds.segmented_images, attrs)
-            if self.writers is not None:
-                self.writers[method_name].add_images("segmented_attributions", attrs)
-            self.results[method_name].append(_compute_correlations(attrs, self.n_range, output_diffs, indices))
-
-
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
                   min_subset_size: float, max_subset_size: float, num_steps: int, num_subsets: int,
                   masker: Masker, writer: AttributionWriter = None):
@@ -178,3 +109,99 @@ def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callab
     attrs = segment_attributions(ds.segmented_images, attrs)
     output_diffs, indices = _compute_perturbations(samples, labels, ds, model, n_range, writer)
     return _compute_correlations(attrs, n_range, output_diffs, indices)
+
+
+class SensitivityN(Metric):
+    def __init__(self, model: Callable, method_names: List[str], min_subset_size: float, max_subset_size: float,
+                 num_steps: int, num_subsets: int, masker: Masker, writer_dir: str = None):
+        super().__init__(model, method_names, writer_dir)
+        self.min_subset_size = min_subset_size
+        self.max_subset_size = max_subset_size
+        self.num_steps = num_steps
+        self.num_subsets = num_subsets
+        self.masker = masker
+        self.result = SensitivityNResult(method_names, index=np.linspace(min_subset_size, max_subset_size, num_steps))
+        if self.writer_dir is not None:
+            self.writers["general"] = AttributionWriter(self.writer_dir)
+
+    def run_batch(self, samples, labels, attrs_dict: Dict[str, np.ndarray]):
+        # Get total number of features from attributions dict
+        attrs = attrs_dict[next(iter(attrs_dict))]
+        num_features = attrs.reshape(attrs.shape[0], -1).shape[1]
+        # Calculate n_range
+        n_range = (np.linspace(self.min_subset_size, self.max_subset_size, self.num_steps) * num_features).astype(np.int)
+        # Create pseudo-dataset
+        ds = _SensitivityNDataset(n_range, self.num_subsets, samples.cpu().numpy(), num_features, self.masker)
+        # Calculate output diffs and removed indices (we will re-use this for each method)
+        writer = self.writers["general"] if self.writers is not None else None
+        output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, n_range, writer)
+
+        for method_name in attrs_dict:
+            attrs = attrs_dict[method_name]
+            attrs = attrs.reshape((attrs.shape[0], 1, -1))  # [batch_size, 1, -1]
+            self.result.append(method_name, _compute_correlations(attrs, n_range, output_diffs, indices))
+
+
+class SegSensitivityN(Metric):
+    def __init__(self, model: Callable, method_names: List[str], min_subset_size: float, max_subset_size: float,
+                 num_steps: int, num_subsets: int, masker: Masker, writer_dir: str = None):
+        super().__init__(model, method_names, writer_dir)
+        self.min_subset_size = min_subset_size
+        self.max_subset_size = max_subset_size
+        self.num_steps = num_steps
+        self.num_subsets = num_subsets
+        # Total number of segments is fixed 100
+        self.n_range = (np.linspace(self.min_subset_size, self.max_subset_size, self.num_steps) * 100).astype(np.int)
+        self.masker = masker
+        self.result = SegSensitivityNResult(method_names, index=np.linspace(min_subset_size, max_subset_size, num_steps))
+        if self.writer_dir is not None:
+            self.writers["general"] = AttributionWriter(self.writer_dir)
+
+    def run_batch(self, samples, labels, attrs_dict: dict):
+        # Create pseudo-dataset
+        ds = _SegSensNDataset(self.n_range, self.num_subsets, samples.cpu().numpy(), self.masker)
+        # Calculate output diffs and removed indices (we will re-use this for each method)
+        writer = self.writers["general"] if self.writers is not None else None
+        output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, self.n_range, writer)
+
+        for method_name in attrs_dict:
+            attrs = attrs_dict[method_name]
+            attrs = segment_attributions(ds.segmented_images, attrs)
+            if self.writers is not None:
+                self.writers[method_name].add_images("segmented_attributions", attrs)
+            self.result.append(method_name, _compute_correlations(attrs, self.n_range, output_diffs, indices))
+
+
+class SensitivityNResult(MetricResult):
+    def __init__(self, method_names: List[str], index: np.ndarray):
+        super().__init__(method_names)
+        self.data = {m_name: [] for m_name in self.method_names}
+        self.index = index
+
+    def add_to_hdf(self, group: h5py.Group):
+        group.attrs["type"] = "SensitivityNResult"
+        group.attrs["index"] = self.index
+        for method_name in self.method_names:
+            group.create_dataset(method_name, data=torch.cat(self.data[method_name]).numpy())
+
+    def append(self, method_name, batch):
+        self.data[method_name].append(batch)
+
+    @staticmethod
+    def load_from_hdf(self, group: h5py.Group):
+        method_names = list(group.keys())
+        result = SensitivityNResult(method_names, group.attrs["index"])
+        result.data = {m_name: [group[m_name]] for m_name in method_names}
+
+
+class SegSensitivityNResult(SensitivityNResult):
+    def add_to_hdf(self, group: h5py.Group):
+        super().add_to_hdf(group)
+        group.attrs["type"] = "SegSensitivityNResult"
+
+    def load_from_hdf(self, group: h5py.Group):
+        method_names = list(group.keys())
+        result = SegSensitivityNResult(method_names, group.attrs["index"])
+        result.data = {m_name: [group[m_name]] for m_name in method_names}
+        return result
+
