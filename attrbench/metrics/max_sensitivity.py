@@ -2,6 +2,7 @@ from typing import Callable, Dict, List
 import h5py
 import torch
 import math
+import numpy as np
 from attrbench.metrics import Metric, MetricResult
 
 
@@ -10,12 +11,10 @@ def _normalize_attrs(attrs):
     return flattened / torch.norm(flattened, dim=1, p=math.inf, keepdim=True)
 
 
-def max_sensitivity(samples: torch.Tensor, labels: torch.Tensor, method: Callable, attrs: torch.Tensor, radius: float,
+def max_sensitivity(samples: torch.Tensor, labels: torch.Tensor, method: Callable, attrs: np.ndarray, radius: float,
                     num_perturbations: int, writer=None):
     device = samples.device
-    if attrs is None:
-        attrs = method(samples, labels).detach()  # [batch_size, *sample_shape]
-    attrs = _normalize_attrs(attrs)  # [batch_size, -1]
+    attrs = _normalize_attrs(torch.tensor(attrs).float())  # [batch_size, -1]
 
     diffs = []
     for n_p in range(num_perturbations):
@@ -45,7 +44,7 @@ class MaxSensitivity(Metric):
         self.methods = methods
         self.radius = radius
         self.num_perturbations = num_perturbations
-        self.result = MaxSensitivityResult(method_names=list(methods.keys()))
+        self.result = MaxSensitivityResult(method_names=list(methods.keys()), radius=radius)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         """
@@ -72,5 +71,5 @@ class MaxSensitivityResult(MetricResult):
     def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
         method_names = list(group.keys())
         result = cls(method_names, radius=group.attrs["radius"])
-        result.data = {m_name: [group[m_name]] for m_name in method_names}
+        result.data = {m_name: np.array(group[m_name]) for m_name in method_names}
         return result

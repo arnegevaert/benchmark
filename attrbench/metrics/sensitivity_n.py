@@ -186,7 +186,7 @@ class SensitivityNResult(MetricResult):
     def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
         method_names = list(group.keys())
         result = cls(method_names, group.attrs["index"])
-        result.data = {m_name: [group[m_name]] for m_name in method_names}
+        result.data = {m_name: np.array(group[m_name]) for m_name in method_names}
         return result
 
 

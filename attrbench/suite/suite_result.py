@@ -40,7 +40,7 @@ class SuiteResult:
             result_group = fp.create_group("results")
             for metric_name in self.metric_results:
                 metric_group = result_group.create_group(metric_name)
-                metric_group.attrs["type"] = self.metric_results[metric_name].__class__
+                metric_group.attrs["type"] = str(self.metric_results[metric_name].__class__.__name__)
                 self.metric_results[metric_name].add_to_hdf(metric_group)
 
     @staticmethod

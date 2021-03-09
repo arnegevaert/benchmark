@@ -185,6 +185,6 @@ class InfidelityResult(MetricResult):
     def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
         method_names = list(group.keys())
         result = cls(method_names, group.attrs["perturbation_mode"], group.attrs["perturbation_size"])
-        result.data = {m_name: [group[m_name]] for m_name in method_names}
+        result.data = {m_name: np.array(group[m_name]) for m_name in method_names}
         return result
 
