@@ -179,29 +179,16 @@ class SensitivityNResult(MetricResult):
         self.index = index
 
     def add_to_hdf(self, group: h5py.Group):
-        group.attrs["type"] = "SensitivityNResult"
         group.attrs["index"] = self.index
-        for method_name in self.method_names:
-            group.create_dataset(method_name, data=torch.cat(self.data[method_name]).numpy())
-
-    def append(self, method_name, batch):
-        self.data[method_name].append(batch)
-
-    @staticmethod
-    def load_from_hdf(self, group: h5py.Group):
-        method_names = list(group.keys())
-        result = SensitivityNResult(method_names, group.attrs["index"])
-        result.data = {m_name: [group[m_name]] for m_name in method_names}
-
-
-class SegSensitivityNResult(SensitivityNResult):
-    def add_to_hdf(self, group: h5py.Group):
         super().add_to_hdf(group)
-        group.attrs["type"] = "SegSensitivityNResult"
 
-    def load_from_hdf(self, group: h5py.Group):
+    @classmethod
+    def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
         method_names = list(group.keys())
-        result = SegSensitivityNResult(method_names, group.attrs["index"])
+        result = cls(method_names, group.attrs["index"])
         result.data = {m_name: [group[m_name]] for m_name in method_names}
         return result
 
+
+class SegSensitivityNResult(SensitivityNResult):
+    pass

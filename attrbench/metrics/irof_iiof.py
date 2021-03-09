@@ -6,7 +6,7 @@ import torch
 import numpy as np
 from attrbench.lib import mask_segments, segment_samples_attributions
 from torch.utils.data import Dataset, DataLoader
-from attrbench.metrics import Metric, MetricResult
+from attrbench.metrics import Metric, MetricResult, InsertionDeletionResult
 
 
 class _SegmentedIterativeMaskingDataset(Dataset):
@@ -92,7 +92,7 @@ class Irof(Metric):
         super().__init__(model, method_names, writer_dir)
         self.masker = masker
         self.reverse_order = reverse_order
-        self.result = IrofIiofResult(method_names, "irof", reverse_order)
+        self.result = IrofResult(method_names, reverse_order)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         for method_name in attrs_dict:
@@ -107,7 +107,7 @@ class Iiof(Metric):
         super().__init__(model, method_names, writer_dir)
         self.masker = masker
         self.reverse_order = reverse_order
-        self.result = IrofIiofResult(method_names, "iiof", reverse_order)
+        self.result = IiofResult(method_names, reverse_order)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         for method_name in attrs_dict:
@@ -116,29 +116,13 @@ class Iiof(Metric):
             self.result.append(method_name, method_result)
 
 
-class IrofIiofResult(MetricResult):
-    def __init__(self, method_names: List[str], mode: str, reverse_order: bool):
-        super().__init__(method_names)
-        if mode not in ("irof", "iiof"):
-            raise ValueError(f"mode must be either irof or iiof, got {mode}")
-        self.data = {m_name: [] for m_name in self.method_names}
-        self.mode = mode
-        self.reverse_order = reverse_order
-        self.inverted = (self.mode == "irof" and not self.reverse_order) or \
-                        (self.mode == "iiof" and self.reverse_order)
+class IrofResult(InsertionDeletionResult):
+    def __init__(self, method_names: List[str], reverse_order: bool):
+        super().__init__(method_names, reverse_order)
+        self.inverted = not reverse_order
 
-    def add_to_hdf(self, group: h5py.Group):
-        group.attrs["type"] = "IrofIiofResult"
-        group.attrs["mode"] = self.mode
-        group.attrs["reverse_order"] = self.reverse_order
-        for method_name in self.method_names:
-            group.create_dataset(method_name, data=torch.cat(self.data[method_name]).numpy())
 
-    def append(self, method_name, batch):
-        self.data[method_name].append(batch)
-
-    @staticmethod
-    def load_from_hdf(self, group: h5py.Group):
-        method_names = list(group.keys())
-        result = IrofIiofResult(method_names, group.attrs["mode"], group.attrs["reverse_order"])
-        result.data = {m_name: [group[m_name]] for m_name in method_names}
+class IiofResult(InsertionDeletionResult):
+    def __init__(self, method_names: List[str], reverse_order: bool):
+        super().__init__(method_names, reverse_order)
+        self.inverted = reverse_order

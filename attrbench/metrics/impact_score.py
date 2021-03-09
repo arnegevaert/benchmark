@@ -74,32 +74,35 @@ class ImpactScore(Metric):
                 raise ValueError(f"Invalid method name: {method_name}")
             flipped, total = impact_score(samples, labels, self.model, attrs_dict[method_name], self.num_steps,
                                           self.strict, self.masker, self.tau, writer=self._get_writer(method_name))
-            self.result.append(method_name, flipped, total)
+            self.result.append(method_name, (flipped, total))
 
 
 class ImpactScoreResult(MetricResult):
     def __init__(self, method_names: List[str]):
         super().__init__(method_names)
-        self.flipped = {m_name: [] for m_name in self.method_names}
-        self.totals = {m_name: [] for m_name in self.method_names}
+        self.data = {
+            "flipped": {m_name: [] for m_name in self.method_names},
+            "totals": {m_name: [] for m_name in self.method_names}
+        }
 
     def add_to_hdf(self, group: h5py.Group):
-        group.attrs["type"] = "ImpactScoreResult"
         for method_name in self.method_names:
-            flipped = torch.stack(self.flipped[method_name], dim=0).float()
-            totals = torch.tensor(self.totals[method_name]).reshape(-1, 1).float()
+            flipped = torch.stack(self.data["flipped"][method_name], dim=0).float()
+            totals = torch.tensor(self.data["totals"][method_name]).reshape(-1, 1).float()
             method_group = group.create_group(method_name)
             method_group.create_dataset("flipped", flipped.numpy())
             method_group.create_dataset("totals", totals.numpy())
 
-    def append(self, method_name, flipped, total):
-        self.flipped[method_name].append(flipped)
-        self.totals[method_name].append(total)
+    def append(self, method_name, batch):
+        flipped, total = batch
+        self.data["flipped"][method_name].append(flipped)
+        self.data["totals"][method_name].append(total)
 
-    @staticmethod
-    def load_from_hdf(self, group: h5py.Group):
+    @classmethod
+    def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
         method_names = list(group.keys())
         result = ImpactScoreResult(method_names)
         for m_name in method_names:
-            result.flipped[m_name] = group[m_name]["flipped"]
-            result.totals[m_name] = group[m_name]["totals"]
+            result.data["flipped"][m_name] = group[m_name]["flipped"]
+            result.data["totals"][m_name] = group[m_name]["totals"]
+        return result

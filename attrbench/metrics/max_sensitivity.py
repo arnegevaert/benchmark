@@ -59,21 +59,4 @@ class MaxSensitivity(Metric):
 
 
 class MaxSensitivityResult(MetricResult):
-    def __init__(self, method_names: List[str]):
-        super().__init__(method_names)
-        self.data = {m_name: [] for m_name in self.method_names}
-
-    def add_to_hdf(self, group: h5py.Group):
-        group.attrs["type"] = "MaxSensitivityResult"
-        for method_name in self.method_names:
-            group.create_dataset(method_name, data=torch.cat(self.data[method_name]).numpy())
-
-    def append(self, method_name, batch):
-        self.data[method_name].append(batch)
-
-    @staticmethod
-    def load_from_hdf(self, group: h5py.Group):
-        method_names = list(group.keys())
-        result = MaxSensitivityResult(method_names)
-        result.data = {m_name: [group[m_name]] for m_name in method_names}
-
+    pass

@@ -84,7 +84,7 @@ class Insertion(Metric):
         self.num_steps = num_steps
         self.masker = masker
         self.reverse_order = reverse_order
-        self.result = InsertionDeletionResult(method_names, "insertion", reverse_order)
+        self.result = InsertionResult(method_names, reverse_order)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         for method_name in attrs_dict:
@@ -100,7 +100,7 @@ class Deletion(Metric):
         self.num_steps = num_steps
         self.masker = masker
         self.reverse_order = reverse_order
-        self.result = InsertionDeletionResult(method_names, "deletion", reverse_order)
+        self.result = DeletionResult(method_names, reverse_order)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         for method_name in attrs_dict:
@@ -110,28 +110,30 @@ class Deletion(Metric):
 
 
 class InsertionDeletionResult(MetricResult):
-    def __init__(self, method_names: List[str], mode: str, reverse_order: bool):
+    def __init__(self, method_names: List[str], reverse_order: bool):
         super().__init__(method_names)
-        if mode not in ("insertion", "deletion"):
-            raise ValueError(f"mode must be either insertion or deletion, got {mode}")
         self.data = {m_name: [] for m_name in self.method_names}
-        self.mode = mode
         self.reverse_order = reverse_order
-        self.inverted = (self.mode == "deletion" and not self.reverse_order) or \
-                        (self.mode == "insertion" and self.reverse_order)
 
     def add_to_hdf(self, group: h5py.Group):
-        group.attrs["type"] = "InsertionDeletionResult"
-        group.attrs["mode"] = self.mode
         group.attrs["reverse_order"] = self.reverse_order
-        for method_name in self.method_names:
-            group.create_dataset(method_name, data=torch.cat(self.data[method_name]).numpy())
+        super().add_to_hdf(group)
 
-    def append(self, method_name, batch):
-        self.data[method_name].append(batch)
-
-    @staticmethod
-    def load_from_hdf(self, group: h5py.Group):
+    @classmethod
+    def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
         method_names = list(group.keys())
-        result = InsertionDeletionResult(method_names, group.attrs["mode"], group.attrs["reverse_order"])
+        result = cls(method_names, group.attrs["reverse_order"])
         result.data = {m_name: [group[m_name]] for m_name in method_names}
+        return result
+
+
+class InsertionResult(InsertionDeletionResult):
+    def __init__(self, method_names: List[str], reverse_order: bool):
+        super().__init__(method_names, reverse_order)
+        self.inverted = reverse_order
+
+
+class DeletionResult(InsertionDeletionResult):
+    def __init__(self, method_names: List[str], reverse_order: bool):
+        super().__init__(method_names, reverse_order)
+        self.inverted = not reverse_order

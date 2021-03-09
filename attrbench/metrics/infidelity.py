@@ -168,23 +168,8 @@ class Infidelity(Metric):
         for method_name in attrs_dict:
             self.result.append(method_name, _compute_result(pert_vectors, pred_diffs, attrs_dict[method_name]))
 
+
 # TODO set inverted: bool everywhere
 # TODO Add extra arguments where necessary
 class InfidelityResult(MetricResult):
-    def __init__(self, method_names: List[str]):
-        super().__init__(method_names)
-        self.data = {m_name: [] for m_name in self.method_names}
-
-    def add_to_hdf(self, group: h5py.Group):
-        group.attrs["type"] = "InfidelityResult"
-        for method_name in self.method_names:
-            group.create_dataset(method_name, data=torch.cat(self.data[method_name]).numpy())
-
-    def append(self, method_name, batch):
-        self.data[method_name].append(batch)
-
-    @staticmethod
-    def load_from_hdf(self, group: h5py.Group):
-        method_names = list(group.keys())
-        result = InfidelityResult(method_names)
-        result.data = {m_name: [group[m_name]] for m_name in method_names}
+    pass
