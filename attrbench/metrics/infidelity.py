@@ -1,12 +1,12 @@
 import torch
 import h5py
-from typing import Callable, List
+from typing import Callable, List, Union, Tuple, Dict
 from skimage.segmentation import slic
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from attrbench.metrics import Metric, MetricResult
 from attrbench.lib import AttributionWriter
-from attrbench.lib.util import corrcoef
+from attrbench.lib.util import corrcoef, ACTIVATION_FNS
 
 
 class _PerturbationDataset(Dataset):
@@ -83,9 +83,15 @@ _PERTURBATION_CLASSES = {
     "segment": _SegmentRemovalPerturbation
 }
 
+_OUT_FNS = {
+    "mse": lambda a, b: ((a - b) ** 2).mean(dim=1, keepdim=True),
+    "corr": lambda a, b: torch.tensor(corrcoef(a.numpy(), b.numpy()))
+}
+
 
 def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: Callable, perturbation_mode: str,
-                           perturbation_size: float, num_perturbations: int, writer: AttributionWriter = None):
+                           perturbation_size: float, num_perturbations: int, activation_fn: Tuple[str],
+                           writer: AttributionWriter = None) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
     device = samples.device
     if perturbation_mode not in _PERTURBATION_CLASSES.keys():
         raise ValueError(f"Invalid perturbation mode {perturbation_mode}. "
@@ -95,11 +101,13 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
     perturbation_dl = DataLoader(perturbation_ds, batch_size=1, num_workers=4, pin_memory=True)
 
     # Get original model output
+    orig_output = {}
     with torch.no_grad():
-        orig_output = (model(samples)).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
+        for fn in activation_fn:
+            orig_output[fn] = ACTIVATION_FNS[fn](model(samples)).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
 
     pert_vectors = []
-    pred_diffs = []
+    pred_diffs: Dict[str, list] = {fn: [] for fn in activation_fn}
     for i_pert, (perturbed_samples, perturbation_vector) in enumerate(perturbation_dl):
         # Get perturbation vector I and perturbed samples (x - I)
         perturbed_samples = perturbed_samples[0].float().to(device)
@@ -110,16 +118,21 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
 
         # Get output of model on perturbed sample
         with torch.no_grad():
-            perturbed_output = model(perturbed_samples).gather(dim=1, index=labels.unsqueeze(-1))
+            perturbed_output = model(perturbed_samples)
         # Save the prediction difference and perturbation vector
-        pred_diffs.append(orig_output - perturbed_output)  # [batch_size, 1]
+        for fn in activation_fn:
+            act_pert_out = ACTIVATION_FNS[fn](perturbed_output).gather(dim=1, index=labels.unsqueeze(-1))
+            pred_diffs[fn].append(orig_output[fn] - act_pert_out)
         pert_vectors.append(perturbation_vector)  # [batch_size, *sample_shape]
     pert_vectors = torch.stack(pert_vectors, dim=1)  # [batch_size, num_perturbations, *sample_shape]
-    pred_diffs = torch.cat(pred_diffs, dim=1).cpu()  # [batch_size, num_perturbations]
-    return pert_vectors, pred_diffs
+    res_pred_diffs: Dict[str, torch.Tensor] = {}
+    for fn in activation_fn:
+        res_pred_diffs[fn] = torch.cat(pred_diffs[fn], dim=1).cpu()  # [batch_size, num_perturbations]
+    return pert_vectors, res_pred_diffs
 
 
-def _compute_result(pert_vectors: torch.Tensor, pred_diffs: torch.Tensor, attrs: np.ndarray):
+def _compute_result(pert_vectors: torch.Tensor, pred_diffs: Dict[str, torch.Tensor], attrs: np.ndarray,
+                    mode: Tuple[str]) -> Dict[str, Dict[str, torch.Tensor]]:
     # Replicate attributions along channel dimension if necessary (if explanation has fewer channels than image)
     attrs = torch.tensor(attrs).float()
     if attrs.shape[1] != pert_vectors.shape[-3]:
@@ -133,58 +146,99 @@ def _compute_result(pert_vectors: torch.Tensor, pred_diffs: torch.Tensor, attrs:
     pert_vectors = pert_vectors.flatten(2)  # [batch_size, num_perturbations, -1]
     dot_product = (attrs * pert_vectors).sum(dim=-1)  # [batch_size, num_perturbations]
 
-    # MSE between dot products and prediction differences
-    mse = ((dot_product - pred_diffs) ** 2).mean(dim=1, keepdim=True)  # [batch_size, 1]
-    # Correlations between dot products and prediction differences
-    corr = torch.tensor(corrcoef(dot_product.numpy(), pred_diffs.numpy()))
-    return mse  # TODO add corr
+    result = {}
+    for mode in mode:
+        result[mode] = {}
+        for afn in pred_diffs.keys():
+            result[mode][afn] = _OUT_FNS[mode](dot_product, pred_diffs[afn])
+    return result
 
 
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
                perturbation_mode: str, perturbation_size: float, num_perturbations: int,
-               writer: AttributionWriter = None):
+               mode: Union[Tuple[str], str] = "mse", activation_fn: Union[Tuple[str], str] = "linear",
+               writer: AttributionWriter = None) -> Dict:
+    if type(activation_fn) == str:
+        activation_fn = (activation_fn,)
     pert_vectors, pred_diffs = _compute_perturbations(samples, labels, model, perturbation_mode,
-                                                      perturbation_size, num_perturbations, writer)
-    return _compute_result(pert_vectors, pred_diffs, attrs)
+                                                      perturbation_size, num_perturbations, activation_fn, writer)
+    if type(mode) == str:
+        mode = (mode,)
+    for m in mode:
+        if m not in ("mse", "corr"):
+            raise ValueError(f"Invalid mode: {m}")
+    return _compute_result(pert_vectors, pred_diffs, attrs, mode)
 
 
 class Infidelity(Metric):
     def __init__(self, model: Callable, method_names: List[str], perturbation_mode: str,
-                 perturbation_size: float, num_perturbations: int, writer_dir: str = None):
+                 perturbation_size: float, num_perturbations: int, mode: Union[Tuple[str], str] = "mse",
+                 activation_fn: Union[Tuple[str], str] = "linear", writer_dir: str = None):
         super().__init__(model, method_names, writer_dir)
         self.perturbation_mode = perturbation_mode
         self.perturbation_size = perturbation_size
         self.num_perturbations = num_perturbations
+        self.mode = (mode,) if type(mode) == str else mode
+        self.activation_fn = (activation_fn,) if type(activation_fn) == str else activation_fn
         if self.writer_dir is not None:
             self.writers["general"] = AttributionWriter(self.writer_dir)
-        self.result = InfidelityResult(method_names, perturbation_mode, perturbation_size)
+        self.result = InfidelityResult(method_names, perturbation_mode, perturbation_size,
+                                       self.mode, self.activation_fn)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
         writer = self.writers["general"] if self.writers is not None else None
         pert_vectors, pred_diffs = _compute_perturbations(samples, labels, self.model,
                                                           self.perturbation_mode, self.perturbation_size,
-                                                          self.num_perturbations, writer)
+                                                          self.num_perturbations, self.activation_fn, writer)
         for method_name in attrs_dict:
-            self.result.append(method_name, _compute_result(pert_vectors, pred_diffs, attrs_dict[method_name]))
+            self.result.append(method_name, _compute_result(pert_vectors, pred_diffs, attrs_dict[method_name],
+                                                            self.mode))
 
 
 class InfidelityResult(MetricResult):
-    def __init__(self, method_names: List[str], perturbation_mode: str, perturbation_size: float):
+    def __init__(self, method_names: List[str], perturbation_mode: str, perturbation_size: float,
+                 mode: Tuple[str], activation_fn: Tuple[str]):
         super().__init__(method_names)
         self.inverted = True
         self.perturbation_mode = perturbation_mode
         self.perturbation_size = perturbation_size
+        self.mode = mode
+        self.activation_fn = activation_fn
+        self.data = {
+            m_name: {ofn: {afn: [] for afn in activation_fn} for ofn in mode} for m_name in method_names
+        }
+
+    def append(self, method_name: str, batch: Dict):
+        for ofn in batch.keys():
+            for afn in batch[ofn].keys():
+                self.data[method_name][ofn][afn].append(batch[ofn][afn])
 
     def add_to_hdf(self, group: h5py.Group):
-        super().add_to_hdf(group)
+        for method_name in self.method_names:
+            method_group = group.create_group(method_name)
+            for mode in self.mode:
+                mode_group = method_group.create_group(mode)
+                for afn in self.activation_fn:
+                    if type(self.data[method_name][mode][afn]) == list:
+                        mode_group.create_dataset(afn, data=torch.cat(self.data[method_name][mode][afn]).numpy())
+                    else:
+                        mode_group.create_dataset(afn, data=self.data[method_name][mode][afn])
         group.attrs["perturbation_mode"] = self.perturbation_mode
         group.attrs["perturbation_size"] = self.perturbation_size
 
     @classmethod
     def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
         method_names = list(group.keys())
-        result = cls(method_names, group.attrs["perturbation_mode"], group.attrs["perturbation_size"])
-        result.data = {m_name: np.array(group[m_name]) for m_name in method_names}
+        mode = tuple(group[method_names[0]].keys())
+        activation_fn = tuple(group[method_names[0]][mode[0]].keys())
+        result = cls(method_names, group.attrs["perturbation_mode"], group.attrs["perturbation_size"],
+                     mode, activation_fn)
+        result.data = {
+            m_name:
+                {mode:
+                    {afn: np.array(group[m_name][mode][afn]) for afn in activation_fn}
+                 for mode in mode}
+            for m_name in method_names
+        }
         return result
-

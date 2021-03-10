@@ -1,4 +1,6 @@
 import numpy as np
+from torch.nn.functional import softmax
+from torch import sigmoid
 import warnings
 
 
@@ -23,3 +25,10 @@ def corrcoef(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     corrcoefs = cov / (a.std(axis=1) * b.std(axis=1))
     corrcoefs[denom_zero] = 0.
     return corrcoefs
+
+
+ACTIVATION_FNS = {
+    "linear": lambda x: x,
+    "softmax": lambda x: softmax(x, dim=1),
+    "sigmoid": lambda x: sigmoid(x)
+}
