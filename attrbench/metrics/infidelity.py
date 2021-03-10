@@ -1,12 +1,12 @@
 import torch
 import h5py
-from typing import Callable, List, Union, Tuple
+from typing import Callable, List, Union, Tuple, Dict
 from skimage.segmentation import slic
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from attrbench.metrics import Metric, MetricResult
 from attrbench.lib import AttributionWriter
-from attrbench.lib.util import corrcoef
+from attrbench.lib.util import corrcoef, ACTIVATION_FNS
 
 
 class _PerturbationDataset(Dataset):
@@ -83,7 +83,6 @@ _PERTURBATION_CLASSES = {
     "segment": _SegmentRemovalPerturbation
 }
 
-
 _OUT_FNS = {
     "mse": lambda a, b: ((a - b) ** 2).mean(dim=1, keepdim=True),
     "corr": lambda a, b: torch.tensor(corrcoef(a.numpy(), b.numpy()))
@@ -91,7 +90,8 @@ _OUT_FNS = {
 
 
 def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: Callable, perturbation_mode: str,
-                           perturbation_size: float, num_perturbations: int, writer: AttributionWriter = None):
+                           perturbation_size: float, num_perturbations: int, activation_fn: Tuple[str],
+                           writer: AttributionWriter = None) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
     device = samples.device
     if perturbation_mode not in _PERTURBATION_CLASSES.keys():
         raise ValueError(f"Invalid perturbation mode {perturbation_mode}. "
@@ -101,11 +101,14 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
     perturbation_dl = DataLoader(perturbation_ds, batch_size=1, num_workers=4, pin_memory=True)
 
     # Get original model output
+    orig_output = {}
     with torch.no_grad():
-        orig_output = (model(samples)).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
+        for fn in activation_fn:
+            out = (model(samples)).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
+            orig_output[fn] = ACTIVATION_FNS[fn](out)
 
     pert_vectors = []
-    pred_diffs = []
+    pred_diffs: Dict[str, list] = {fn: [] for fn in activation_fn}
     for i_pert, (perturbed_samples, perturbation_vector) in enumerate(perturbation_dl):
         # Get perturbation vector I and perturbed samples (x - I)
         perturbed_samples = perturbed_samples[0].float().to(device)
@@ -118,15 +121,18 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
         with torch.no_grad():
             perturbed_output = model(perturbed_samples).gather(dim=1, index=labels.unsqueeze(-1))
         # Save the prediction difference and perturbation vector
-        pred_diffs.append(orig_output - perturbed_output)  # [batch_size, 1]
+        for fn in activation_fn:
+            pred_diffs[fn].append(orig_output[fn] - ACTIVATION_FNS[fn](perturbed_output))
         pert_vectors.append(perturbation_vector)  # [batch_size, *sample_shape]
     pert_vectors = torch.stack(pert_vectors, dim=1)  # [batch_size, num_perturbations, *sample_shape]
-    pred_diffs = torch.cat(pred_diffs, dim=1).cpu()  # [batch_size, num_perturbations]
-    return pert_vectors, pred_diffs
+    res_pred_diffs: Dict[str, torch.Tensor] = {}
+    for fn in activation_fn:
+        res_pred_diffs[fn] = torch.cat(pred_diffs[fn], dim=1).cpu()  # [batch_size, num_perturbations]
+    return pert_vectors, res_pred_diffs
 
 
-def _compute_result(pert_vectors: torch.Tensor, pred_diffs: torch.Tensor, attrs: np.ndarray,
-                    out_fn: Tuple[str]):
+def _compute_result(pert_vectors: torch.Tensor, pred_diffs: Dict[str, torch.Tensor], attrs: np.ndarray,
+                    out_fn: Tuple[str]) -> Dict[str, Dict[str, torch.Tensor]]:
     # Replicate attributions along channel dimension if necessary (if explanation has fewer channels than image)
     attrs = torch.tensor(attrs).float()
     if attrs.shape[1] != pert_vectors.shape[-3]:
@@ -140,18 +146,22 @@ def _compute_result(pert_vectors: torch.Tensor, pred_diffs: torch.Tensor, attrs:
     pert_vectors = pert_vectors.flatten(2)  # [batch_size, num_perturbations, -1]
     dot_product = (attrs * pert_vectors).sum(dim=-1)  # [batch_size, num_perturbations]
 
-    result = []
-    for fn in out_fn:
-        result.append(_OUT_FNS[fn](dot_product, pred_diffs))
-    return tuple(result)
+    result = {}
+    for ofn in out_fn:
+        result[ofn] = {}
+        for afn in pred_diffs.keys():
+            result[ofn][afn] = _OUT_FNS[ofn](dot_product, pred_diffs[afn])
+    return result
 
 
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
                perturbation_mode: str, perturbation_size: float, num_perturbations: int,
-               out_fn: Union[Tuple[str], str] = "mse",
-               writer: AttributionWriter = None):
+               out_fn: Union[Tuple[str], str] = "mse", activation_fn: Union[Tuple[str], str] = "linear",
+               writer: AttributionWriter = None) -> Dict:
+    if type(activation_fn) == str:
+        activation_fn = (activation_fn,)
     pert_vectors, pred_diffs = _compute_perturbations(samples, labels, model, perturbation_mode,
-                                                      perturbation_size, num_perturbations, writer)
+                                                      perturbation_size, num_perturbations, activation_fn, writer)
     if type(out_fn) == str:
         out_fn = (out_fn,)
     return _compute_result(pert_vectors, pred_diffs, attrs, out_fn)
@@ -160,22 +170,24 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, att
 class Infidelity(Metric):
     def __init__(self, model: Callable, method_names: List[str], perturbation_mode: str,
                  perturbation_size: float, num_perturbations: int, out_fn: Union[Tuple[str], str] = "mse",
-                 writer_dir: str = None):
+                 activation_fn: Union[Tuple[str], str] = "linear", writer_dir: str = None):
         super().__init__(model, method_names, writer_dir)
         self.perturbation_mode = perturbation_mode
         self.perturbation_size = perturbation_size
         self.num_perturbations = num_perturbations
         self.out_fn = (out_fn,) if type(out_fn) == str else out_fn
+        self.activation_fn = (activation_fn,) if type(activation_fn) == str else activation_fn
         if self.writer_dir is not None:
             self.writers["general"] = AttributionWriter(self.writer_dir)
-        self.result = InfidelityResult(method_names, perturbation_mode, perturbation_size, self.out_fn)
+        self.result = InfidelityResult(method_names, perturbation_mode, perturbation_size,
+                                       self.out_fn, self.activation_fn)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
         writer = self.writers["general"] if self.writers is not None else None
         pert_vectors, pred_diffs = _compute_perturbations(samples, labels, self.model,
                                                           self.perturbation_mode, self.perturbation_size,
-                                                          self.num_perturbations, writer)
+                                                          self.num_perturbations, self.activation_fn, writer)
         for method_name in attrs_dict:
             self.result.append(method_name, _compute_result(pert_vectors, pred_diffs, attrs_dict[method_name],
                                                             self.out_fn))
@@ -183,31 +195,32 @@ class Infidelity(Metric):
 
 class InfidelityResult(MetricResult):
     def __init__(self, method_names: List[str], perturbation_mode: str, perturbation_size: float,
-                 out_fn: Tuple[str]):
+                 out_fn: Tuple[str], activation_fn: Tuple[str]):
         super().__init__(method_names)
         self.inverted = True
         self.perturbation_mode = perturbation_mode
         self.perturbation_size = perturbation_size
         self.out_fn = out_fn
+        self.activation_fn = activation_fn
         self.data = {
-            m_name: {fn: [] for fn in out_fn} for m_name in method_names
+            m_name: {ofn: {afn: [] for afn in activation_fn} for ofn in out_fn} for m_name in method_names
         }
 
-    def append(self, method_name, batch):
-        batch = tuple(batch)
-        if len(self.out_fn) != len(batch):
-            raise ValueError(f"Invalid number of results: expected {len(self.out_fn)}, got {len(batch)}.")
-        for i, fn in enumerate(self.out_fn):
-            self.data[method_name][fn].append(batch[i])
+    def append(self, method_name: str, batch: Dict):
+        for ofn in batch.keys():
+            for afn in batch[ofn].keys():
+                self.data[method_name][ofn][afn].append(batch[ofn][afn])
 
     def add_to_hdf(self, group: h5py.Group):
         for method_name in self.method_names:
             method_group = group.create_group(method_name)
-            for fn in self.out_fn:
-                if type(self.data[method_name][fn]) == list:
-                    method_group.create_dataset(fn, data=torch.cat(self.data[method_name][fn]).numpy())
-                else:
-                    method_group.create_dataset(fn, data=self.data[method_name][fn])
+            for ofn in self.out_fn:
+                out_group = method_group.create_group(ofn)
+                for afn in self.activation_fn:
+                    if type(self.data[method_name][ofn][afn]) == list:
+                        out_group.create_dataset(afn, data=torch.cat(self.data[method_name][ofn][afn]).numpy())
+                    else:
+                        out_group.create_dataset(afn, data=self.data[method_name][ofn][afn])
         group.attrs["perturbation_mode"] = self.perturbation_mode
         group.attrs["perturbation_size"] = self.perturbation_size
 
@@ -215,9 +228,14 @@ class InfidelityResult(MetricResult):
     def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
         method_names = list(group.keys())
         out_fn = tuple(group[method_names[0]].keys())
-        result = cls(method_names, group.attrs["perturbation_mode"], group.attrs["perturbation_size"], out_fn)
+        activation_fn = tuple(group[method_names[0]][out_fn[0]].keys())
+        result = cls(method_names, group.attrs["perturbation_mode"], group.attrs["perturbation_size"],
+                     out_fn, activation_fn)
         result.data = {
-            m_name: {fn: np.array(group[m_name][fn]) for fn in out_fn} for m_name in method_names
+            m_name:
+                {ofn:
+                    {afn: np.array(group[m_name][ofn][afn]) for afn in activation_fn}
+                 for ofn in out_fn}
+            for m_name in method_names
         }
         return result
-

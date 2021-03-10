@@ -1,11 +1,14 @@
 metrics:
-  deletion_cst:
-    type: Deletion
-    num_steps: 50
-    mode:
-      - morf
-      - lerf
-    masker:
-      type: ConstantMasker
-      feature_level: pixel
-      mask_value: 0.
+  infidelity:
+    type: Infidelity
+    num_perturbations: 1000
+    perturbation_mode: gaussian
+    perturbation_size: 0.2
+    out_fn:
+      - mse
+      - corr
+    activation_fn:
+      - linear
+      - softmax
+      - sigmoid
+
