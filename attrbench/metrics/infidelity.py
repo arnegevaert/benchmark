@@ -104,8 +104,7 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
     orig_output = {}
     with torch.no_grad():
         for fn in activation_fn:
-            out = (model(samples)).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
-            orig_output[fn] = ACTIVATION_FNS[fn](out)
+            orig_output[fn] = ACTIVATION_FNS[fn](model(samples)).gather(dim=1, index=labels.unsqueeze(-1))  # [batch_size, 1]
 
     pert_vectors = []
     pred_diffs: Dict[str, list] = {fn: [] for fn in activation_fn}
@@ -119,10 +118,11 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
 
         # Get output of model on perturbed sample
         with torch.no_grad():
-            perturbed_output = model(perturbed_samples).gather(dim=1, index=labels.unsqueeze(-1))
+            perturbed_output = model(perturbed_samples)
         # Save the prediction difference and perturbation vector
         for fn in activation_fn:
-            pred_diffs[fn].append(orig_output[fn] - ACTIVATION_FNS[fn](perturbed_output))
+            act_pert_out = ACTIVATION_FNS[fn](perturbed_output).gather(dim=1, index=labels.unsqueeze(-1))
+            pred_diffs[fn].append(orig_output[fn] - act_pert_out)
         pert_vectors.append(perturbation_vector)  # [batch_size, *sample_shape]
     pert_vectors = torch.stack(pert_vectors, dim=1)  # [batch_size, num_perturbations, *sample_shape]
     res_pred_diffs: Dict[str, torch.Tensor] = {}
