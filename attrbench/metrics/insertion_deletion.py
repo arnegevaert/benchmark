@@ -86,6 +86,8 @@ def insertion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attr
 def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
              num_steps: int, masker: Masker, reverse_order: bool = False,
              activation_fn: Union[Tuple[str], str] = "linear", writer: AttributionWriter = None) -> Dict:
+    if type(activation_fn) == str:
+        activation_fn = (activation_fn,)
     ds = _InsertionDeletionDataset("deletion", num_steps, samples.cpu().numpy(), attrs, masker, reverse_order)
     orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, ds, activation_fn, writer)
     result = {}
@@ -104,6 +106,9 @@ class _InsertionDeletion(Metric):
         self.num_steps = num_steps
         self.masker = masker
         self.modes = (mode,) if type(mode) == str else mode
+        for m in self.modes:
+            if m not in ("morf", "lerf"):
+                raise ValueError(f"Invalid mode: {m}")
         self.activation_fn = (activation_fn,) if type(activation_fn) == str else activation_fn
         self.result = result_class(method_names, self.modes, self.activation_fn)
         self.method_fn = method_fn
@@ -175,10 +180,8 @@ class InsertionDeletionResult(MetricResult):
 
 
 class InsertionResult(InsertionDeletionResult):
-    def __init__(self, method_names: List[str], modes: Tuple[str], activation_fn: Tuple[str]):
-        super().__init__(method_names, modes, activation_fn)
+    pass
 
 
 class DeletionResult(InsertionDeletionResult):
-    def __init__(self, method_names: List[str], modes: Tuple[str], activation_fn: Tuple[str]):
-        super().__init__(method_names, modes, activation_fn)
+    pass

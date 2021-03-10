@@ -164,6 +164,9 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, att
                                                       perturbation_size, num_perturbations, activation_fn, writer)
     if type(mode) == str:
         mode = (mode,)
+    for m in mode:
+        if m not in ("mse", "corr"):
+            raise ValueError(f"Invalid mode: {m}")
     return _compute_result(pert_vectors, pred_diffs, attrs, mode)
 
 
