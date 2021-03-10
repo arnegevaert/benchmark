@@ -1,25 +1,12 @@
 from attrbench.suite import SuiteResult
-from attrbench import metrics
 from attrbench.metrics import Metric
-from attrbench.lib import AttributionWriter, masking
+from attrbench.lib import AttributionWriter
+from .config import Config
 from tqdm import tqdm
 import torch
 import numpy as np
-import inspect
-from inspect import Parameter
-import yaml
 from os import path
-import warnings
 from typing import Dict
-
-
-def _parse_masker(d):
-    constructor = getattr(masking, d["type"])
-    return constructor(**{key: d[key] for key in d if key != "type"})
-
-
-def _parse_args(args):
-    return {key: _parse_masker(args[key]) if key == "masker" else args[key] for key in args}
 
 
 class Suite:
@@ -38,8 +25,7 @@ class Suite:
         self.methods = methods
         self.dataloader = dataloader
         self.device = device
-        self.default_args = {"patch_folder": patch_folder, "methods": self.methods,
-                             "method_names": list(self.methods.keys())}
+        self.patch_folder = patch_folder
         self.save_images = save_images
         self.save_attrs = save_attrs
         self.images = []
@@ -49,44 +35,13 @@ class Suite:
         self.log_dir = log_dir
         if self.log_dir is not None:
             print(f"Logging TensorBoard to {self.log_dir}")
-        self.writer = None
+        self.writer = AttributionWriter(path.join(self.log_dir, "images_and_attributions")) \
+            if self.log_dir is not None else None
 
     def load_config(self, loc):
-        with open(loc) as fp:
-            data = yaml.full_load(fp)
-            # Parse default arguments if present
-            default_args = _parse_args(data.get("default", {}))
-            self.default_args = {**self.default_args, **default_args}
-            # Build metric objects
-            for metric_name in data["metrics"]:
-                if metric_name in self.metrics.keys():
-                    raise ValueError(f"Invalid configuration: duplicate entry {metric_name}")
-                metric_dict = data["metrics"][metric_name]
-                # Parse args from config file
-                args_dict = _parse_args({key: metric_dict[key] for key in metric_dict if key != "type"})
-                # Get constructor
-                constructor = getattr(metrics, metric_dict["type"])
-                # Add model, methods, and (optional) writer args
-                args_dict["model"] = self.model
-                if self.log_dir:
-                    self.writer = AttributionWriter(path.join(self.log_dir, "images_and_attributions"))
-                    subdir = path.join(self.log_dir, metric_name)
-                    args_dict["writer_dir"] = subdir
-                # Compare to required args, add missing ones from default args
-                signature = inspect.signature(constructor).parameters
-                expected_arg_names = [arg for arg in signature if signature[arg].default == Parameter.empty]
-                for e_arg in expected_arg_names:
-                    if e_arg not in args_dict:
-                        if e_arg in self.default_args:
-                            args_dict[e_arg] = self.default_args[e_arg]
-                        else:
-                            raise ValueError(
-                                f"Invalid configuration: required argument {e_arg} not found for metric {metric_name}")
-                if metric_dict["type"] == "ImpactCoverage" and self.default_args["patch_folder"] is None:
-                    warnings.warn("No patch folder provided, skipping impact coverage.")
-                else:
-                    # Create metric object using args_dict
-                    self.metrics[metric_name] = constructor(**args_dict)
+        cfg = Config(loc, self.model, self.log_dir, patch_folder=self.patch_folder, methods=self.methods,
+                     method_names=list(self.methods.keys()))
+        self.metrics = cfg.load()
 
     def run(self, num_samples, verbose=True):
         samples_done = 0
@@ -137,6 +92,8 @@ class Suite:
                 for i, metric in enumerate(self.metrics.keys()):
                     if verbose:
                         prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
+                    # TODO when masker is refactored (see masker.py), this will no longer be necessary,
+                    #      and checks can happen upon masking calls, which is much safer
                     # Check shapes of attributions if necessary
                     if not checked_shapes and hasattr(self.metrics[metric], "masker"):
                         for method_name in self.methods:
