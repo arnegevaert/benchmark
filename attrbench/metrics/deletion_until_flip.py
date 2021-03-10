@@ -1,12 +1,11 @@
 from typing import Callable, List
 
-import h5py
+import numpy as np
+import torch
+from torch.utils.data import Dataset, DataLoader
 
 from attrbench.lib.masking import Masker
 from attrbench.metrics import Metric, MetricResult
-import torch
-import numpy as np
-from torch.utils.data import Dataset, DataLoader
 
 
 class _DeletionUntilFlipDataset(Dataset):

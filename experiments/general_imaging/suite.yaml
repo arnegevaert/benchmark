@@ -1,9 +1,11 @@
 metrics:
-  infidelity_gaussian:
-    type: Infidelity
-    num_perturbations: 10
-    perturbation_mode: gaussian
-    perturbation_size: 0.2
-    out_fn:
-      - mse
-      - corr
+  deletion_cst:
+    type: Deletion
+    num_steps: 50
+    mode:
+      - morf
+      - lerf
+    masker:
+      type: ConstantMasker
+      feature_level: pixel
+      mask_value: 0.

@@ -1,11 +1,13 @@
-from typing import Callable, List
+from typing import Callable, List, Union, Tuple
+
 import h5py
-from attrbench.lib.masking import Masker
-from attrbench.lib import AttributionWriter
-from attrbench.metrics import Metric, MetricResult
-import torch
 import numpy as np
+import torch
 from torch.utils.data import Dataset, DataLoader
+
+from attrbench.lib import AttributionWriter
+from attrbench.lib.masking import Masker
+from attrbench.metrics import Metric, MetricResult
 
 
 class _InsertionDeletionDataset(Dataset):
@@ -77,63 +79,75 @@ def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs
     return (result / orig_preds).cpu()
 
 
-class Insertion(Metric):
+class _InsertionDeletion(Metric):
     def __init__(self, model: Callable, method_names: List[str], num_steps: int, masker: Masker,
-                 reverse_order: bool = False, writer_dir: str = None):
+                 mode: Union[Tuple[str], str], result_class: Callable, method_fn: Callable, writer_dir: str = None):
         super().__init__(model, method_names, writer_dir)
         self.num_steps = num_steps
         self.masker = masker
-        self.reverse_order = reverse_order
-        self.result = InsertionResult(method_names, reverse_order)
+        self.modes = (mode,) if type(mode) == str else mode
+        self.result = result_class(method_names, self.modes)
+        self.method_fn = method_fn
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         for method_name in attrs_dict:
-            method_result = insertion(samples, labels, self.model, attrs_dict[method_name], self.num_steps, self.masker,
-                                      writer=self._get_writer(method_name), reverse_order=self.reverse_order)
-            self.result.append(method_name, method_result)
+            method_result = []
+            for mode in self.modes:
+                reverse_order = mode == "lerf"
+                method_result.append(self.method_fn(samples, labels, self.model,
+                                                    attrs_dict[method_name], self.num_steps, self.masker,
+                                                    writer=self._get_writer(method_name), reverse_order=reverse_order))
+            self.result.append(method_name, tuple(method_result))
 
 
-class Deletion(Metric):
+class Insertion(_InsertionDeletion):
     def __init__(self, model: Callable, method_names: List[str], num_steps: int, masker: Masker,
-                 reverse_order: bool = False, writer_dir: str = None):
-        super().__init__(model, method_names, writer_dir)
-        self.num_steps = num_steps
-        self.masker = masker
-        self.reverse_order = reverse_order
-        self.result = DeletionResult(method_names, reverse_order)
+                 mode: Union[Tuple[str], str], writer_dir: str = None):
+        super().__init__(model, method_names, num_steps, masker, mode, InsertionResult, insertion, writer_dir)
 
-    def run_batch(self, samples, labels, attrs_dict: dict):
-        for method_name in attrs_dict:
-            method_result = deletion(samples, labels, self.model, attrs_dict[method_name], self.num_steps, self.masker,
-                                     writer=self._get_writer(method_name), reverse_order=self.reverse_order)
-            self.result.append(method_name, method_result)
+
+class Deletion(_InsertionDeletion):
+    def __init__(self, model: Callable, method_names: List[str], num_steps: int, masker: Masker,
+                 mode: Union[Tuple[str], str], writer_dir: str = None):
+        super().__init__(model, method_names, num_steps, masker, mode, DeletionResult, deletion, writer_dir)
 
 
 class InsertionDeletionResult(MetricResult):
-    def __init__(self, method_names: List[str], reverse_order: bool):
+    def __init__(self, method_names: List[str], modes: Tuple[str]):
         super().__init__(method_names)
-        self.data = {m_name: [] for m_name in self.method_names}
-        self.reverse_order = reverse_order
+        self.modes = modes
+        self.data = {m_name: {mode: [] for mode in modes} for m_name in self.method_names}
+
+    def append(self, method_name, batch):
+        batch = tuple(batch)
+        if len(self.modes) != len(batch):
+            raise ValueError(f"Invalid number of results: expected {len(self.modes)}, got {len(batch)}.")
+        for i, mode in enumerate(self.modes):
+            self.data[method_name][mode].append(batch[i])
 
     def add_to_hdf(self, group: h5py.Group):
-        group.attrs["reverse_order"] = self.reverse_order
-        super().add_to_hdf(group)
+        for method_name in self.method_names:
+            method_group = group.create_group(method_name)
+            for mode in self.modes:
+                if type(self.data[method_name][mode]) == list:
+                    method_group.create_dataset(mode, data=torch.cat(self.data[method_name][mode]).numpy())
+                else:
+                    method_group.create_dataset(mode, data=self.data[method_name][mode])
 
     @classmethod
     def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
         method_names = list(group.keys())
-        result = cls(method_names, group.attrs["reverse_order"])
+        modes = tuple(group[method_names[0]].keys())
+        result = cls(method_names, modes)
         result.data = {m_name: np.array(group[m_name]) for m_name in method_names}
         return result
 
 
 class InsertionResult(InsertionDeletionResult):
-    def __init__(self, method_names: List[str], reverse_order: bool):
-        super().__init__(method_names, reverse_order)
-        self.inverted = reverse_order
+    def __init__(self, method_names: List[str], modes: Tuple[str]):
+        super().__init__(method_names, modes)
 
 
 class DeletionResult(InsertionDeletionResult):
-    def __init__(self, method_names: List[str], reverse_order: bool):
-        super().__init__(method_names, reverse_order)
-        self.inverted = not reverse_order
+    def __init__(self, method_names: List[str], modes: Tuple[str]):
+        super().__init__(method_names, modes)

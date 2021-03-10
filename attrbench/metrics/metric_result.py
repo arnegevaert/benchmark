@@ -7,7 +7,6 @@ from typing import List, Union, Dict
 
 class MetricResult:
     def __init__(self, method_names: List[str]):
-        self.inverted = False
         self.method_names = method_names
         # Data contains either a list of batches or a single numpy array (if the result was loaded from HDF)
         self.data: Dict[str, Union[List, np.ndarray]] = {m_name: [] for m_name in method_names}
