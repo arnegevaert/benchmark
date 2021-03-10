@@ -1,10 +1,12 @@
-from typing import Callable, List
-from attrbench.lib.masking import Masker
-from attrbench.lib import AttributionWriter
-import torch
+from typing import Callable, List, Tuple, Union
+
 import numpy as np
-from attrbench.lib import mask_segments, segment_samples_attributions
+import torch
 from torch.utils.data import Dataset, DataLoader
+
+from attrbench.lib import AttributionWriter
+from attrbench.lib import mask_segments, segment_samples_attributions
+from attrbench.lib.masking import Masker
 from attrbench.metrics import Metric, InsertionDeletionResult
 
 
@@ -85,43 +87,43 @@ def iiof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np
     return torch.tensor(auc).unsqueeze(-1)  # [batch_size, 1]
 
 
-class Irof(Metric):
+class _IrofIiof(Metric):
     def __init__(self, model: Callable, method_names: List[str], masker: Masker,
-                 reverse_order: bool = False, writer_dir: str = None):
+                 mode: Union[Tuple[str], str], result_class: Callable, method_fn: Callable, writer_dir: str = None):
         super().__init__(model, method_names, writer_dir)
         self.masker = masker
-        self.reverse_order = reverse_order
-        self.result = IrofResult(method_names, reverse_order)
+        self.modes = (mode,) if type(mode) == str else mode
+        self.method_fn = method_fn
+        self.result = result_class(method_names, self.modes)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         for method_name in attrs_dict:
-            method_result = irof(samples, labels, self.model, attrs_dict[method_name], self.masker, self.reverse_order,
-                                 writer=self._get_writer(method_name))
-            self.result.append(method_name, method_result)
+            method_result = []
+            for mode in self.modes:
+                reverse_order = mode == "lerf"
+                method_result.append(self.method_fn(samples, labels, self.model, attrs_dict[method_name],
+                                                    self.masker, reverse_order,
+                                                    writer=self._get_writer(method_name)))
+            self.result.append(method_name, tuple(method_result))
 
 
-class Iiof(Metric):
+class Irof(_IrofIiof):
     def __init__(self, model: Callable, method_names: List[str], masker: Masker,
-                 reverse_order: bool = False, writer_dir: str = None):
-        super().__init__(model, method_names, writer_dir)
-        self.masker = masker
-        self.reverse_order = reverse_order
-        self.result = IiofResult(method_names, reverse_order)
+                 mode: Union[Tuple[str], str], writer_dir: str = None):
+        super().__init__(model, method_names, masker, mode, IrofResult, irof, writer_dir)
 
-    def run_batch(self, samples, labels, attrs_dict: dict):
-        for method_name in attrs_dict:
-            method_result = iiof(samples, labels, self.model, attrs_dict[method_name], self.masker, self.reverse_order,
-                                 writer=self._get_writer(method_name))
-            self.result.append(method_name, method_result)
+
+class Iiof(_IrofIiof):
+    def __init__(self, model: Callable, method_names: List[str], masker: Masker,
+                 mode: Union[Tuple[str], str], writer_dir: str = None):
+        super().__init__(model, method_names, masker, mode, IiofResult, iiof, writer_dir)
 
 
 class IrofResult(InsertionDeletionResult):
-    def __init__(self, method_names: List[str], reverse_order: bool):
-        super().__init__(method_names, reverse_order)
-        self.inverted = not reverse_order
+    def __init__(self, method_names: List[str], modes: Tuple[str]):
+        super().__init__(method_names, modes)
 
 
 class IiofResult(InsertionDeletionResult):
-    def __init__(self, method_names: List[str], reverse_order: bool):
-        super().__init__(method_names, reverse_order)
-        self.inverted = reverse_order
+    def __init__(self, method_names: List[str], modes: Tuple[str]):
+        super().__init__(method_names, modes)

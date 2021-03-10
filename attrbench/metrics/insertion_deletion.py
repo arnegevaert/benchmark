@@ -139,7 +139,9 @@ class InsertionDeletionResult(MetricResult):
         method_names = list(group.keys())
         modes = tuple(group[method_names[0]].keys())
         result = cls(method_names, modes)
-        result.data = {m_name: np.array(group[m_name]) for m_name in method_names}
+        result.data = {
+            m_name: {mode: np.array(group[m_name][mode]) for mode in modes} for m_name in method_names
+        }
         return result
 
 
