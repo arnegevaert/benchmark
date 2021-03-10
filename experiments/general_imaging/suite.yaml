@@ -1,9 +1,6 @@
 metrics:
-  deletion:
-    type: Irof
-    mode:
-      - morf
-      - lerf
+  sens-n:
+    type: SensitivityN
     activation_fn:
       - linear
       - softmax
@@ -12,3 +9,21 @@ metrics:
       type: ConstantMasker
       mask_value: 0
       feature_level: pixel
+    min_subset_size: 0.1
+    max_subset_size: 0.5
+    num_steps: 5
+    num_subsets: 10
+  seg-sens-n:
+    type: SegSensitivityN
+    activation_fn:
+      - linear
+      - softmax
+      - sigmoid
+    masker:
+      type: ConstantMasker
+      mask_value: 0
+      feature_level: pixel
+    min_subset_size: 0.1
+    max_subset_size: 0.5
+    num_steps: 5
+    num_subsets: 10
