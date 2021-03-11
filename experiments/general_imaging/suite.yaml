@@ -3,12 +3,11 @@ default:
     type: ConstantMasker
     feature_level: pixel
     mask_value: 0.
+  num_steps: 100
+  mode: lerf
+  activation_fn: softmax
 metrics:
-  irof:
-    mode: morf
-    activation_fn: linear
-    type: Irof
-  iiof:
-    mode: morf
-    activation_fn: linear
-    type: Iiof
+  insertion:
+    type: Insertion
+  deletion:
+    type: Deletion

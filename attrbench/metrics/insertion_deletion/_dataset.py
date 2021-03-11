@@ -50,7 +50,7 @@ class _IrofIiofDataset(_InsertionDeletionDataset):
             writer.add_images("segmented samples", self.segmented_images)
 
     def __len__(self):
-        # Exclude fully masked image
+        # Exclude fully masked/inserted image
         return self.sorted_indices.shape[1] - 1
 
     def __getitem__(self, item):
