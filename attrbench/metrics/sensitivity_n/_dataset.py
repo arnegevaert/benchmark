@@ -1,7 +1,7 @@
 import numpy as np
 from torch.utils.data import Dataset
 
-from attrbench.lib import mask_segments, segment_samples
+from attrbench.lib import mask_segments, segment_samples, AttributionWriter
 from attrbench.lib.masking import Masker
 
 
@@ -26,7 +26,7 @@ class _SensitivityNDataset(Dataset):
 
 class _SegSensNDataset(_SensitivityNDataset):
     def __init__(self, n_range: np.ndarray, num_subsets: int, samples: np.ndarray,
-                 masker: Masker, writer=None):
+                 masker: Masker, writer: AttributionWriter = None):
         super().__init__(n_range, num_subsets, samples, num_features=100, masker=masker)
         self.segmented_images = segment_samples(samples)
         if writer is not None:

@@ -12,8 +12,8 @@ class Metric:
         self.metadata = {}
         self.writer_dir = writer_dir
         self.writers: Optional[Dict[str, AttributionWriter]] = \
-            {method_name: AttributionWriter(path.join(self.writer_dir, method_name)) for method_name in method_names} \
-            if self.writer_dir is not None else None
+            {method_name: AttributionWriter(path.join(self.writer_dir, method_name), method_name)
+             for method_name in method_names} if self.writer_dir is not None else None
 
         # This code checks that any subclass of Metric instantiates the result: MetricResult property defined above
         annotations = self.__class__.__dict__.get('__annotations__', {})
@@ -29,7 +29,6 @@ class Metric:
         if self.writer_dir is not None:
             writer = self.writers[method_name]
             if writer:
-                writer.set_method_name(method_name)
                 writer.increment_batch()
             return writer
         return None

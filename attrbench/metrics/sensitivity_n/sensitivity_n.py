@@ -1,4 +1,5 @@
 from typing import Callable, List, Dict, Union, Tuple
+from os import path
 
 import numpy as np
 import torch
@@ -91,7 +92,7 @@ class SegSensitivityN(Metric):
         self.result = SegSensitivityNResult(method_names, self.activation_fn,
                                             index=np.linspace(min_subset_size, max_subset_size, num_steps))
         if self.writer_dir is not None:
-            self.writers["general"] = AttributionWriter(self.writer_dir)
+            self.writers["general"] = AttributionWriter(path.join(self.writer_dir, "general"))
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         # Create pseudo-dataset
@@ -102,8 +103,5 @@ class SegSensitivityN(Metric):
                                                        self.activation_fn, writer)
 
         for method_name in attrs_dict:
-            attrs = attrs_dict[method_name]
-            attrs = segment_attributions(ds.segmented_images, attrs)
-            if self.writers is not None:
-                self.writers[method_name].add_images("segmented_attributions", attrs)
+            attrs = segment_attributions(ds.segmented_images, attrs_dict[method_name])
             self.result.append(method_name, _compute_correlations(attrs, self.n_range, output_diffs, indices))

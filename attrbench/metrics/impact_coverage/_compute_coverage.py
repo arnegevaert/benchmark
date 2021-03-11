@@ -41,7 +41,7 @@ def _compute_coverage(attacked_samples: torch.Tensor, method: Callable, patch_ma
     union = (patch_mask_flattened | critical_factor_mask).sum(axis=1)
     iou = intersection.astype(np.float) / union.astype(np.float)
     if writer:
-        writer.add_images('Attacked samples', attacked_samples)
-        writer.add_images('Attacked attributions', attrs)
+        writer.add_images("Attacked samples", attacked_samples)
+        writer.add_attribution('Attacked attributions', attrs)
     # [batch_size]
     return torch.tensor(iou)

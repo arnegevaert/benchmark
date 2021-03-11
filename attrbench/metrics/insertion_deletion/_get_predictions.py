@@ -27,7 +27,7 @@ def _get_predictions(samples: torch.Tensor, labels: torch.Tensor,
         with torch.no_grad():
             predictions = model(batch)
         if writer is not None:
-            writer.add_images('masked samples', batch, global_step=i)
+            writer.add_images("masked_samples", batch, global_step=i)
         for fn in activation_fns:
             inter_preds[fn].append(ACTIVATION_FNS[fn](predictions).gather(dim=1, index=labels.unsqueeze(-1)))
     return orig_preds, neutral_preds, inter_preds

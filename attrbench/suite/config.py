@@ -86,8 +86,3 @@ class Config:
                         # Otherwise, just parse the section without prefix
                         result = {**result, **self._parse_section(data[section], section_name=section)}
                 return result
-
-
-if __name__ == "__main__":
-    cfg = Config("../../experiments/general_imaging/config/suite.yaml", model=lambda x: x)
-    d = cfg.load()

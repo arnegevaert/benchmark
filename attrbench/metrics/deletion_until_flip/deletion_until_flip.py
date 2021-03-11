@@ -49,8 +49,9 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarra
     num_inputs = attrs.reshape(attrs.shape[0], -1).shape[1]
     result[result == -1] = num_inputs
     if writer is not None:
-        writer.add_images('Flipped samples', torch.stack(
-            [s if s is not None else torch.zeros(samples.shape[1:]) for s in flipped_samples]))
+        writer.add_images("flipped samples",
+                          torch.stack([s if s is not None else torch.zeros(samples.shape[1:])
+                                       for s in flipped_samples]))
     return result.reshape(-1, 1)
 
 

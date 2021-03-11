@@ -28,7 +28,7 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, a
         with torch.no_grad():
             masked_out = model(masked_samples)
         if writer:
-            writer.add_images('masked samples', masked_samples, global_step=i)
+            writer.add_images("masked samples", masked_samples, global_step=i)
         confidence = softmax(masked_out, dim=1).gather(dim=1, index=labels.view(-1, 1))
         flipped = torch.argmax(masked_out, dim=1) != labels
         if not strict:

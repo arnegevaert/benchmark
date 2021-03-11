@@ -79,9 +79,9 @@ class Suite:
                          for method_name in self.methods.keys()}
 
                 if self.writer is not None:
-                    self.writer.add_image_sample(samples, batch_nr)
+                    self.writer.add_images("Samples", samples, global_step=batch_nr)
                     for name in attrs.keys():
-                        self.writer.add_attribution(attrs[name], batch_nr, name)
+                        self.writer.add_attribution(name, attrs[name], batch_nr)
 
                 # Save attributions if necessary
                 if self.save_attrs:

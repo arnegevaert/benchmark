@@ -5,10 +5,11 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 
 from attrbench.lib.util import ACTIVATION_FNS
+from attrbench.lib import AttributionWriter
 
 
 def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, ds: Dataset,
-                           model: Callable, n_range, activation_fns: Tuple[str], writer=None) \
+                           model: Callable, n_range, activation_fns: Tuple[str], writer: AttributionWriter = None) \
         -> Tuple[Dict[str, Dict[int, np.ndarray]], Dict[int, np.ndarray]]:
     dl = DataLoader(ds, shuffle=False, num_workers=4, pin_memory=True, batch_size=1)
     device = samples.device

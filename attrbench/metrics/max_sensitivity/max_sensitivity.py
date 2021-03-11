@@ -25,8 +25,8 @@ def max_sensitivity(samples: torch.Tensor, labels: torch.Tensor, method: Callabl
         noise = torch.rand(samples.shape, device=device) * 2 * radius - radius
         noisy_samples = samples + noise
         if writer:
-            writer.add_images('perturbations', noise, global_step=n_p)
-            writer.add_images('perturbed_samples', noisy_samples, global_step=n_p)
+            writer.add_images("perturbations", noise, global_step=n_p)
+            writer.add_images("perturbed_samples", noisy_samples, global_step=n_p)
         # Get new attributions from noisy samples
         noisy_attrs = _normalize_attrs(method(noisy_samples, labels).detach())
         # Get relative norm of attribution difference

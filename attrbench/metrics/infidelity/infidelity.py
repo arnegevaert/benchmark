@@ -1,4 +1,5 @@
 from typing import Callable, List, Union, Tuple, Dict
+from os import path
 
 import numpy as np
 import torch
@@ -37,7 +38,7 @@ class Infidelity(Metric):
         self.mode = (mode,) if type(mode) == str else mode
         self.activation_fn = (activation_fn,) if type(activation_fn) == str else activation_fn
         if self.writer_dir is not None:
-            self.writers["general"] = AttributionWriter(self.writer_dir)
+            self.writers["general"] = AttributionWriter(path.join(self.writer_dir, "general"))
         self.result = InfidelityResult(method_names, perturbation_mode, perturbation_size,
                                        self.mode, self.activation_fn)
 
