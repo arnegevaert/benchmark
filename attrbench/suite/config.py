@@ -23,17 +23,15 @@ class Config:
         self.default_args = kwargs
         self.log_dir = log_dir
 
-    def _parse_section(self, section: Dict, prefix: str = None, section_args: Dict = None) -> Dict[str, Metric]:
+    def _parse_section(self, section: Dict, section_name: str, prefix: str = None, section_args: Dict = None) -> Dict[str, Metric]:
         # Only keywords "metrics", "default" and "foreach" are allowed in section root
         for key in section.keys():
             if key not in ("metrics", "default", "foreach"):
-                sec_name = prefix if prefix is not None else "root"
-                raise ValueError(f"Invalid configuration file: illegal key {key} in section {sec_name}")
+                raise ValueError(f"Invalid configuration file: illegal key {key} in section {section_name}")
         # Parse section default arguments
         default_args = {**self.default_args, **_parse_args(section.get("default", {}))}
         if section_args is not None:
             default_args = {**default_args, **section_args}
-        # TODO add foreach functionality
         # Parse section metrics
         result = {}
         for metric_name in section["metrics"]:
@@ -65,7 +63,7 @@ class Config:
             data = yaml.full_load(fp)
             if "metrics" in data.keys():
                 # If root contains a key "metrics", there are no subsections
-                return self._parse_section(data)
+                return self._parse_section(data, section_name="root")
             else:
                 # Otherwise, parse each subsection
                 result = {}
@@ -82,14 +80,9 @@ class Config:
                             if arg == "masker":
                                 value = _parse_masker(foreach["values"][value])
                             result = {**result,
-                                      **self._parse_section(data[section],
+                                      **self._parse_section(data[section], section_name=section,
                                                             prefix=f"{arg}_{prefix}", section_args={arg: value})}
                     else:
                         # Otherwise, just parse the section without prefix
-                        result = {**result, **self._parse_section(data[section])}
+                        result = {**result, **self._parse_section(data[section], section_name=section)}
                 return result
-
-
-if __name__ == "__main__":
-    cfg = Config("../../experiments/general_imaging/config/suite.yaml", model=lambda x: x)
-    d = cfg.load()

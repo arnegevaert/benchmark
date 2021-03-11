@@ -1,0 +1,13 @@
+default:
+  masker:
+    type: ConstantMasker
+    feature_level: pixel
+    mask_value: 0.
+  num_steps: 100
+  mode: lerf
+  activation_fn: softmax
+metrics:
+  insertion:
+    type: Insertion
+  deletion:
+    type: Deletion
