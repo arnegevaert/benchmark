@@ -54,5 +54,5 @@ class _IrofIiofDataset(_InsertionDeletionDataset):
         return self.sorted_indices.shape[1] - 1
 
     def __getitem__(self, item):
-        indices = self.sorted_indices[:, :-item] if self.mode == "insertion" else self.sorted_indices[:, -item:]
+        indices = self.sorted_indices[:, :-(item+1)] if self.mode == "insertion" else self.sorted_indices[:, -(item+1):]
         return mask_segments(self.samples, self.segmented_images, indices, self.masker)

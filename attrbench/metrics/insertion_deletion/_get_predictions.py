@@ -19,6 +19,9 @@ def _get_predictions(samples: torch.Tensor, labels: torch.Tensor,
         _neutral_preds = model(fully_masked.to(device))
         neutral_preds = {fn: ACTIVATION_FNS[fn](_neutral_preds).gather(dim=1, index=labels.unsqueeze(-1))
                          for fn in activation_fns}
+        if writer is not None:
+            writer.add_images("orig_samples", samples)
+            writer.add_images("neutral_samples", fully_masked)
     dl = DataLoader(ds, shuffle=False, num_workers=4, pin_memory=True, batch_size=1)
 
     inter_preds = {fn: [] for fn in activation_fns}
