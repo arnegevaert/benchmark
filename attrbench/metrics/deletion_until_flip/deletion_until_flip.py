@@ -1,36 +1,13 @@
-from typing import Callable, List
+from typing import Callable
 
 import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 
 from attrbench.lib.masking import Masker
-from attrbench.metrics import Metric, MetricResult
-
-
-class _DeletionUntilFlipDataset(Dataset):
-    def __init__(self, num_steps, samples: np.ndarray, attrs: np.ndarray, masker):
-        self.num_steps = num_steps
-        self.samples = samples
-        self.masker = masker
-        self.masker.initialize_baselines(samples)
-        # Flatten each sample in order to sort indices per sample
-        attrs = attrs.reshape(attrs.shape[0], -1)  # [batch_size, -1]
-        # Sort indices of attrs in ascending order
-        self.sorted_indices = np.argsort(attrs)
-        total_features = attrs.shape[1]
-        self.step_size = int(total_features / num_steps)
-        if num_steps > total_features or num_steps < 2:
-            raise ValueError(f"Number of steps must be between 2 and {total_features} (got {num_steps})")
-
-    def __len__(self):
-        return self.num_steps
-
-    def __getitem__(self, item):
-        num_to_mask = self.step_size * (item + 1)
-        indices = self.sorted_indices[:, -num_to_mask:]
-        masked_samples = self.masker.mask(self.samples, indices)
-        return masked_samples, num_to_mask
+from attrbench.metrics import Metric
+from ._deletion_until_flip_dataset import _DeletionUntilFlipDataset
+from .deletion_until_flip_result import DeletionUntilFlipResult
 
 
 # We assume none of the samples has the same label as the output of the network when given
@@ -92,9 +69,3 @@ class DeletionUntilFlip(Metric):
                                deletion_until_flip(samples, self.model, attrs_dict[method_name], self.num_steps,
                                                    self.masker, writer=self._get_writer(method_name))
                                )
-
-
-class DeletionUntilFlipResult(MetricResult):
-    def __init__(self, method_names: List[str]):
-        super().__init__(method_names)
-        self.inverted = True
