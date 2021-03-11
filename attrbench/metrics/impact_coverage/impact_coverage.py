@@ -6,7 +6,7 @@ import torch
 from attrbench.metrics import Metric
 from ._compute_coverage import _compute_coverage
 from ._apply_patches import _apply_patches
-from .impact_coverage_result import ImpactCoverageResult
+from .result import ImpactCoverageResult
 
 
 def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,

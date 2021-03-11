@@ -1,2 +1,2 @@
-from .impact_coverage_result import ImpactCoverageResult
+from .result import ImpactCoverageResult
 from .impact_coverage import ImpactCoverage, impact_coverage

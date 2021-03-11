@@ -81,7 +81,7 @@ other:
   metrics:
     impact_coverage:
       type: ImpactCoverage
-#  max_sensitivity:
-#    type: MaxSensitivity
-#    num_perturbations: 50
-#    radius: 0.1
+    max_sensitivity:
+      type: MaxSensitivity
+      num_perturbations: 2
+      radius: 0.1

@@ -6,8 +6,8 @@ from torch.utils.data import DataLoader
 
 from attrbench.lib.masking import Masker
 from attrbench.metrics import Metric
-from ._deletion_until_flip_dataset import _DeletionUntilFlipDataset
-from .deletion_until_flip_result import DeletionUntilFlipResult
+from ._dataset import _DeletionUntilFlipDataset
+from .result import DeletionUntilFlipResult
 
 
 # We assume none of the samples has the same label as the output of the network when given
