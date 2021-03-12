@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 import time
 
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("suite_config", type=str)
@@ -24,6 +25,8 @@ if __name__ == "__main__":
     # Parse arguments
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
+
+    torch.multiprocessing.set_sharing_strategy("file_system")
 
     print("Saving images" if args.save_images else "Not saving images")
     print("Saving attributions" if args.save_images else "Not saving attributions")
