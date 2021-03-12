@@ -48,7 +48,7 @@ if __name__ == "__main__":
                      save_attrs=args.save_attrs,
                      seed=args.seed,
                      patch_folder=patch_folder,
-                     num_threads=args.num_threads,
+                     num_threads=num_threads,
                      log_dir=args.log_dir)
     bm_suite.load_config(args.suite_config)
 

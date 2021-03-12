@@ -32,14 +32,14 @@ methods:
       type: VarGrad
       stdev: 0.15
       num_samples: 50
-#  - DeepShap:
-#      type: DeepShap
-#      n_baseline_samples: 100
-#  - KernelShap:
-#      type: KernelShap
-#      n_segments: 32
-#      n_samples: 300
-#      super_pixels: True
-#  - ExpectedGradients:
-#      type: ExpectedGradients
-#      num_samples: 100
+  - DeepShap:
+      type: DeepShap
+      n_baseline_samples: 100
+  - KernelShap:
+      type: KernelShap
+      n_segments: 32
+      n_samples: 300
+      super_pixels: True
+  - ExpectedGradients:
+      type: ExpectedGradients
+      num_samples: 100
