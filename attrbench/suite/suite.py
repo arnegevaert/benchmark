@@ -103,7 +103,7 @@ class Suite:
                     run_metric_partial = partial(_run_metric, metrics=self.metrics, samples=samples, labels=labels,
                                                  attrs=attrs)
                     pool.map(run_metric_partial, self.metrics.keys())
-                    pool.join()
+                #pool.join()
                 end_t = time.time()
                 print(f"Finished batch in {end_t - start_t:.2f}s.")
                 """

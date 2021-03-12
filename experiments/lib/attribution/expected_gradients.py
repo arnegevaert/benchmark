@@ -40,7 +40,8 @@ class ExpectedGradients:
     def _get_grads(self, samples_input, labels, device):
         self.model.eval()
         grad_tensor = torch.zeros_like(samples_input)
-        samples_input.requires_grad = True
+        if not samples_input.requires_grad:
+            samples_input.requires_grad = True
         labels = [torch.arange(labels.shape[0]), labels]
 
         for i in range(self.num_samples):

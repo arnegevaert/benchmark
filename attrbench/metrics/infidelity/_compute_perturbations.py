@@ -23,7 +23,7 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
                          f"Valid options are {', '.join(list(_PERTURBATION_CLASSES.keys()))}")
     perturbation_ds = _PERTURBATION_CLASSES[perturbation_mode](samples.cpu().numpy(),
                                                                perturbation_size, num_perturbations)
-    perturbation_dl = DataLoader(perturbation_ds, batch_size=1, num_workers=4)
+    perturbation_dl = DataLoader(perturbation_ds, batch_size=1, num_workers=0)
 
     # Get original model output
     orig_output = {}
