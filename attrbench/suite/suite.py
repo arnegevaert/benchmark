@@ -13,11 +13,7 @@ import multiprocessing
 
 
 def _run_metric(metric_name, metrics, samples, labels, attrs):
-    print(f"Starting {metric_name}...")
-    start_t = time.time()
     metrics[metric_name].run_batch(samples, labels, attrs)
-    end_t = time.time()
-    print(f"{metric_name} done in {end_t - start_t:.2f}s.")
 
 
 class Suite:
@@ -29,8 +25,9 @@ class Suite:
 
     def __init__(self, model, methods, dataloader, device="cpu",
                  save_images=False, save_attrs=False, seed=None, patch_folder=None,
-                 log_dir=None):
+                 log_dir=None, num_threads=1):
         self.metrics: Dict[str, Metric] = {}
+        self.num_threads = num_threads
         self.model = model.to(device)
         self.model.eval()
         self.methods = methods
@@ -101,7 +98,7 @@ class Suite:
 
                 # Metric loop
                 start_t = time.time()
-                with multiprocessing.pool.ThreadPool(4) as pool:
+                with multiprocessing.pool.ThreadPool(self.num_threads) as pool:
                     run_metric_partial = partial(_run_metric, metrics=self.metrics, samples=samples, labels=labels,
                                                  attrs=attrs)
                     pool.map(run_metric_partial, self.metrics.keys())
