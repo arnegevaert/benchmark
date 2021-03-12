@@ -7,6 +7,17 @@ import torch
 import numpy as np
 from os import path
 from typing import Dict
+import time
+from functools import partial
+import multiprocessing
+
+
+def _run_metric(metric_name, metrics, samples, labels, attrs):
+    print(f"Starting {metric_name}...")
+    start_t = time.time()
+    metrics[metric_name].run_batch(samples, labels, attrs)
+    end_t = time.time()
+    print(f"{metric_name} done in {end_t - start_t:.2f}s.")
 
 
 class Suite:
@@ -89,6 +100,15 @@ class Suite:
                         self.attrs[method_name].append(attrs[method_name])
 
                 # Metric loop
+                start_t = time.time()
+                with multiprocessing.pool.ThreadPool(4) as pool:
+                    run_metric_partial = partial(_run_metric, metrics=self.metrics, samples=samples, labels=labels,
+                                                 attrs=attrs)
+                    pool.map(run_metric_partial, self.metrics.keys())
+                    pool.join()
+                end_t = time.time()
+                print(f"Finished batch in {end_t - start_t:.2f}s.")
+                """
                 for i, metric in enumerate(self.metrics.keys()):
                     if verbose:
                         prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
@@ -101,9 +121,9 @@ class Suite:
                                 raise ValueError(f"Attributions for method {method_name} "
                                                  f"are not compatible with masker")
                         checked_shapes = True
-
                     # Run the metric on this batch
                     self.metrics[metric].run_batch(samples, labels, attrs)
+                """
 
                 if verbose:
                     prog.update(samples.size(0))
