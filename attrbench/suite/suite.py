@@ -98,30 +98,18 @@ class Suite:
                         self.attrs[method_name].append(attrs[method_name])
 
                 # Metric loop
-                start_t = time.time()
-                with multiprocessing.pool.ThreadPool(self.num_threads) as pool:
-                    run_metric_partial = partial(_run_metric, metrics=self.metrics, samples=samples, labels=labels,
-                                                 attrs=attrs)
-                    pool.map(run_metric_partial, self.metrics.keys())
-                #pool.join()
-                end_t = time.time()
-                print(f"Finished batch in {end_t - start_t:.2f}s.")
-                """
-                for i, metric in enumerate(self.metrics.keys()):
-                    if verbose:
-                        prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
-                    # TODO when masker is refactored (see masker.py), this will no longer be necessary,
-                    #      and checks can happen upon masking calls, which is much safer
-                    # Check shapes of attributions if necessary
-                    if not checked_shapes and hasattr(self.metrics[metric], "masker"):
-                        for method_name in self.methods:
-                            if not self.metrics[metric].masker.check_attribution_shape(samples, attrs[method_name]):
-                                raise ValueError(f"Attributions for method {method_name} "
-                                                 f"are not compatible with masker")
-                        checked_shapes = True
-                    # Run the metric on this batch
-                    self.metrics[metric].run_batch(samples, labels, attrs)
-                """
+                if self.num_threads != 1:
+                    # Use multiprocessing when num_threads > 1
+                    with multiprocessing.pool.ThreadPool(self.num_threads) as pool:
+                        run_metric_partial = partial(_run_metric, metrics=self.metrics, samples=samples, labels=labels,
+                                                     attrs=attrs)
+                        pool.map(run_metric_partial, self.metrics.keys())
+                else:
+                    # If num_threads = 1, no multiprocessing is necessary
+                    for i, metric in enumerate(self.metrics.keys()):
+                        if verbose:
+                            prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
+                        self.metrics[metric].run_batch(samples, labels, attrs)
 
                 if verbose:
                     prog.update(samples.size(0))
