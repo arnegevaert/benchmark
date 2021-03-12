@@ -14,6 +14,7 @@ import multiprocessing
 
 def _run_metric(metric_name, metrics, samples, labels, attrs):
     metrics[metric_name].run_batch(samples, labels, attrs)
+    print(f"{metric_name} done.")
 
 
 class Suite:
