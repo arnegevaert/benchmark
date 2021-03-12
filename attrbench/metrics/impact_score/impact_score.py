@@ -16,7 +16,7 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, a
         raise ValueError("Provide value for tau when calculating non-strict impact score")
     counts = []
     ds = _ImpactScoreDataset(num_steps, samples.cpu().numpy(), attrs, masker)
-    dl = DataLoader(ds, shuffle=False, batch_size=1, num_workers=4, pin_memory=True)
+    dl = DataLoader(ds, shuffle=False, batch_size=1, num_workers=4)
     with torch.no_grad():
         orig_out = model(samples)
     batch_size = samples.size(0)

@@ -22,7 +22,7 @@ def _get_predictions(samples: torch.Tensor, labels: torch.Tensor,
         if writer is not None:
             writer.add_images("orig_samples", samples)
             writer.add_images("neutral_samples", fully_masked)
-    dl = DataLoader(ds, shuffle=False, num_workers=4, pin_memory=True, batch_size=1)
+    dl = DataLoader(ds, shuffle=False, num_workers=4, batch_size=1)
 
     inter_preds = {fn: [] for fn in activation_fns}
     for i, batch in enumerate(dl):
