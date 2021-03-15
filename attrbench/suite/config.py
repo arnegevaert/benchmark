@@ -52,7 +52,7 @@ class Config:
             args = {key: all_args[key] for key in all_args if key in signature}
             # Check if all necessary arguments are present
             for arg in signature:
-                if signature[arg].default == inspect.Parameter.empty and arg not in args:
+                if signature[arg].default == inspect.Parameter.empty and (arg not in args or args[arg] is None):
                     raise ValueError(f"Invalid configuration: required argument {arg} "
                                      f"not found for metric {metric_name}")
             # Construct metric
