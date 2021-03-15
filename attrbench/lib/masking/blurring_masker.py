@@ -20,7 +20,6 @@ class BlurringMasker(Masker):
             blurred_sample = blur(cv_sample, (kernel_size, kernel_size))
             if len(blurred_sample.shape) == 2:
                 blurred_sample = blurred_sample[..., np.newaxis]
-                blurred_sample = blurred_sample.unsqueeze(-1)
             baseline.append(np.transpose(blurred_sample, (2, 0, 1)))
         self.baseline = np.stack(baseline, axis=0)
 

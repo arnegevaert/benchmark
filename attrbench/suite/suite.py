@@ -7,6 +7,18 @@ import torch
 import numpy as np
 from os import path
 from typing import Dict
+from functools import partial
+import multiprocessing
+
+
+def _run_metric(metric_name, metrics, samples, labels, attrs):
+    metrics[metric_name].run_batch(samples, labels, attrs)
+    print(f"{metric_name} done.")
+
+
+_NO_MULTITHREADING = {
+    "ImpactCoverage", "MaxSensitivity"
+}
 
 
 class Suite:
@@ -18,8 +30,11 @@ class Suite:
 
     def __init__(self, model, methods, dataloader, device="cpu",
                  save_images=False, save_attrs=False, seed=None, patch_folder=None,
-                 log_dir=None):
+                 log_dir=None, num_threads=1):
         self.metrics: Dict[str, Metric] = {}
+        self.num_threads = num_threads
+        if num_threads > 1:
+            torch.multiprocessing.set_sharing_strategy("file_system")
         self.model = model.to(device)
         self.model.eval()
         self.methods = methods
@@ -39,7 +54,7 @@ class Suite:
             if self.log_dir is not None else None
 
     def load_config(self, loc):
-        cfg = Config(loc, self.model, self.log_dir, patch_folder=self.patch_folder, methods=self.methods,
+        cfg = Config(loc, self.log_dir, model=self.model, patch_folder=self.patch_folder, methods=self.methods,
                      method_names=list(self.methods.keys()))
         self.metrics = cfg.load()
 
@@ -48,6 +63,7 @@ class Suite:
         prog = tqdm(total=num_samples) if verbose else None
         if self.seed:
             torch.manual_seed(self.seed)
+            np.random.seed(self.seed)
         it = iter(self.dataloader)
         # We will check the output shapes of methods on the first batch
         # to make sure they are compatible with the masking policy
@@ -89,21 +105,27 @@ class Suite:
                         self.attrs[method_name].append(attrs[method_name])
 
                 # Metric loop
-                for i, metric in enumerate(self.metrics.keys()):
-                    if verbose:
-                        prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
-                    # TODO when masker is refactored (see masker.py), this will no longer be necessary,
-                    #      and checks can happen upon masking calls, which is much safer
-                    # Check shapes of attributions if necessary
-                    if not checked_shapes and hasattr(self.metrics[metric], "masker"):
-                        for method_name in self.methods:
-                            if not self.metrics[metric].masker.check_attribution_shape(samples, attrs[method_name]):
-                                raise ValueError(f"Attributions for method {method_name} "
-                                                 f"are not compatible with masker")
-                        checked_shapes = True
-
-                    # Run the metric on this batch
-                    self.metrics[metric].run_batch(samples, labels, attrs)
+                if self.num_threads != 1:
+                    # Check which metrics can be run in parallel
+                    parallel_metrics = {m: self.metrics[m] for m in self.metrics
+                                        if type(self.metrics[m]).__name__ not in _NO_MULTITHREADING}
+                    # Use multiprocessing when num_threads > 1
+                    with multiprocessing.pool.ThreadPool(self.num_threads) as pool:
+                        run_metric_partial = partial(_run_metric, metrics=parallel_metrics, samples=samples,
+                                                     labels=labels, attrs=attrs)
+                        pool.map(run_metric_partial, parallel_metrics.keys())
+                    # Run the metrics that can't be run in parallel
+                    non_parallel_metrics = {m: self.metrics[m] for m in self.metrics
+                                            if type(self.metrics[m]).__name__ in _NO_MULTITHREADING}
+                    for m in non_parallel_metrics.keys():
+                        self.metrics[m].run_batch(samples, labels, attrs)
+                        print(f"{m} done, not in parallel")
+                else:
+                    # If num_threads = 1, no multiprocessing is necessary
+                    for i, metric in enumerate(self.metrics.keys()):
+                        if verbose:
+                            prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
+                        self.metrics[metric].run_batch(samples, labels, attrs)
 
                 if verbose:
                     prog.update(samples.size(0))

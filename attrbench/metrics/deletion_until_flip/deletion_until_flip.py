@@ -17,7 +17,7 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarra
     if writer is not None:
         flipped_samples = [None for _ in range(samples.shape[0])]
     ds = _DeletionUntilFlipDataset(num_steps, samples.cpu().numpy(), attrs, masker)
-    dl = DataLoader(ds, shuffle=False, num_workers=4, pin_memory=True, batch_size=1)
+    dl = DataLoader(ds, shuffle=False, num_workers=0, batch_size=1)
     result = torch.tensor([-1 for _ in range(samples.shape[0])]).int()
     flipped = torch.tensor([False for _ in range(samples.shape[0])]).bool()
     device = samples.device

@@ -1,7 +1,7 @@
 absl-py==0.11.0
 appdirs==1.4.3
 astroid==2.4.2
--e git+git@github.com:zoeparman/benchmark.git@c16341f0f4458e19648c4380575e92ad66fba534#egg=attrbench
+-e git+git@github.com:zoeparman/benchmark.git@60cfff1fc0c9a020e2eecfac7d8d48773e12be6a#egg=attrbench
 attrs==19.3.0
 backcall==0.1.0
 bandit==1.6.2
@@ -10,7 +10,7 @@ bokeh==2.2.1
 Brotli==1.0.9
 CacheControl==0.12.6
 cachetools==4.2.0
--e git+git@github.com:pytorch/captum.git@6851f4cad523624025303b4f378bc388327c039e#egg=captum
+captum==0.3.1
 certifi==2020.4.5.1
 chardet==3.0.4
 click==7.1.2
@@ -69,6 +69,7 @@ kiwisolver==1.2.0
 lazy-object-proxy==1.4.3
 lime==0.2.0.0
 livereload==2.6.3
+llvmlite==0.35.0
 lockfile==0.12.2
 lunr==0.5.8
 Markdown==3.2.2
@@ -83,6 +84,7 @@ nbformat==5.0.6
 networkx==2.4
 nltk==3.5
 notebook==6.0.3
+numba==0.52.0
 numexpr==2.7.1
 numpy==1.18.2
 oauthlib==3.1.0
@@ -149,6 +151,7 @@ threadpoolctl==2.1.0
 tifffile==2021.1.14
 toml==0.10.1
 torch==1.5.1
+torchaudio==0.7.2
 torchvision==0.6.1
 tornado==6.0.4
 tqdm==4.46.1
