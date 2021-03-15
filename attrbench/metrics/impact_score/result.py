@@ -8,6 +8,8 @@ from attrbench.metrics import MetricResult
 
 
 class ImpactScoreResult(MetricResult):
+    inverted = False
+
     def __init__(self, method_names: List[str], strict: bool, tau: float = None):
         super().__init__(method_names)
         self.data = {
