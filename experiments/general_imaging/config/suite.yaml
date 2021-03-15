@@ -49,13 +49,13 @@ masking:
   metrics:
     deletion_until_flip:
       type: DeletionUntilFlip
-    impact_score:
-      type: ImpactScore
-      strict: false
-      tau: 0.5
-    strict_impact_score:
-      type: ImpactScore
-      strict: true
+#    impact_score:
+#      type: ImpactScore
+#      strict: false
+#      tau: 0.5
+#    strict_impact_score:
+#      type: ImpactScore
+#      strict: true
     insertion:
       type: Insertion
     deletion:
