@@ -57,6 +57,7 @@ class Suite:
         prog = tqdm(total=num_samples) if verbose else None
         if self.seed:
             torch.manual_seed(self.seed)
+            np.random.seed(self.seed)
         it = iter(self.dataloader)
         # We will check the output shapes of methods on the first batch
         # to make sure they are compatible with the masking policy
