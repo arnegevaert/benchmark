@@ -56,11 +56,12 @@ def get_dataset_model(name, model=None, train=False):
         patch_folder = path.join(_DATA_LOC, "patches/CIFAR100")
 
     elif name == "SVHN":
+        split = "train" if train else "test"
         transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970)),
         ])
-        ds = datasets.CIFAR100(path.join(_DATA_LOC, "SVHN"), train=train, transform=transform, download=True)
+        ds = datasets.SVHN(path.join(_DATA_LOC, "SVHN"), split=split, transform=transform, download=True)
         if model.lower() == 'resnet20':
             model = Resnet20(10, path.join(_DATA_LOC, "models/SVHN/resnet20.pt"))
         elif model.lower() == 'resnet56':

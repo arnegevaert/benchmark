@@ -4,11 +4,13 @@ from experiments.general_imaging.dataset_models import get_dataset_model
 from attrbench.lib import make_patch
 from torch.utils.data import DataLoader
 from os import path
+import os
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dataset", type=str, required=True)
+    parser.add_argument("-m", "--model", type=str, required=True)
     parser.add_argument("-b", "--batch-size", type=int, required=True)
     parser.add_argument("-c", "--cuda", action="store_true")
     parser.add_argument("--lr", type=float, default=0.05)
@@ -16,9 +18,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
 
-    dataset, model, patch_folder = get_dataset_model(args.dataset)
+    dataset, model, patch_folder = get_dataset_model(args.dataset, model=args.model)
     model.to(device)
     model.eval()
+
+    if not path.isdir(patch_folder):
+        os.makedirs(patch_folder)
 
     dl = DataLoader(dataset, batch_size=args.batch_size, num_workers=4)
     for target in range(10):
