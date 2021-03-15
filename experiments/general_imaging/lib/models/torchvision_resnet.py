@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.models.resnet import resnet18
 from torchvision.models.utils import load_state_dict_from_url
+
 model_urls = {
     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
     'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
@@ -23,6 +24,7 @@ class LambdaLayer(nn.Module):
 
     def forward(self, x):
         return self.lambd(x)
+
 
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
     """3x3 convolution with padding"""
@@ -129,7 +131,7 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, block, layers, num_classes=1000, small_model=False,zero_init_residual=False,
+    def __init__(self, block, layers, num_classes=1000, small_model=False, zero_init_residual=False,
                  groups=1, width_per_group=64, replace_stride_with_dilation=None,
                  norm_layer=None):
         super(ResNet, self).__init__()
@@ -150,7 +152,7 @@ class ResNet(nn.Module):
                              "or a 3-element tuple, got {}".format(replace_stride_with_dilation))
         self.groups = groups
         self.base_width = width_per_group
-        k,s,p = (7,2,3) if not small_model else (3,1,1)
+        k, s, p = (7, 2, 3) if not small_model else (3, 1, 1)
         self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=k, stride=s, padding=p,
                                bias=False)
         self.bn1 = norm_layer(self.inplanes)
@@ -162,7 +164,7 @@ class ResNet(nn.Module):
             self.layer2 = self._make_layer(block, 32, layers[1], stride=2,
                                            dilate=replace_stride_with_dilation[0], option='A')
             self.layer3 = self._make_layer(block, 64, layers[2], stride=2,
-                                           dilate=replace_stride_with_dilation[1],option='A')
+                                           dilate=replace_stride_with_dilation[1], option='A')
             self.fc = nn.Linear(64 * block.expansion, num_classes)
         else:
             self.layer1 = self._make_layer(block, 64, layers[0])
@@ -174,7 +176,6 @@ class ResNet(nn.Module):
                                            dilate=replace_stride_with_dilation[2])
             self.fc = nn.Linear(512 * block.expansion, num_classes)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -201,9 +202,10 @@ class ResNet(nn.Module):
             self.dilation *= stride
             stride = 1
         if stride != 1 or self.inplanes != planes * block.expansion:
-            if option =='A':
+            if option == 'A':
                 downsample = LambdaLayer(lambda x:
-                                           F.pad(x[:, :, ::2, ::2], (0, 0, 0, 0, planes // 4, planes // 4), "constant", 0))
+                                         F.pad(x[:, :, ::2, ::2], (0, 0, 0, 0, planes // 4, planes // 4), "constant",
+                                               0))
             else:
                 downsample = nn.Sequential(
                     conv1x1(self.inplanes, planes * block.expansion, stride),
@@ -243,42 +245,44 @@ class ResNet(nn.Module):
         return self._forward_impl(x)
 
 
-
 class Resnet20(ResNet):
     def __init__(self, num_classes, params_loc=None):
-        super().__init__(BasicBlock, [3,3,3], num_classes=num_classes, small_model=True)
+        super().__init__(BasicBlock, [3, 3, 3], num_classes=num_classes, small_model=True)
         if params_loc:
-            state_dict = torch.load(params_loc, map_location = lambda storage, loc: storage)
+            state_dict = torch.load(params_loc, map_location=lambda storage, loc: storage)
             self.load_state_dict(state_dict)
 
     def get_last_conv_layer(self) -> nn.Module:
         return self.layer3[-1]
+
 
 class Resnet32(ResNet):
     def __init__(self, num_classes, params_loc=None):
         super().__init__(BasicBlock, [5, 5, 5], num_classes=num_classes, small_model=True)
         if params_loc:
-            state_dict = torch.load(params_loc, map_location = lambda storage, loc: storage)
+            state_dict = torch.load(params_loc, map_location=lambda storage, loc: storage)
             self.load_state_dict(state_dict)
 
     def get_last_conv_layer(self) -> nn.Module:
         return self.layer3[-1]
+
 
 class Resnet44(ResNet):
     def __init__(self, num_classes, params_loc=None):
         super().__init__(BasicBlock, [7, 7, 7], num_classes=num_classes, small_model=True)
         if params_loc:
-            state_dict = torch.load(params_loc, map_location = lambda storage, loc: storage)
+            state_dict = torch.load(params_loc, map_location=lambda storage, loc: storage)
             self.load_state_dict(state_dict)
 
     def get_last_conv_layer(self) -> nn.Module:
         return self.layer3[-1]
 
+
 class Resnet56(ResNet):
     def __init__(self, num_classes, params_loc=None):
         super().__init__(BasicBlock, [9, 9, 9], num_classes=num_classes, small_model=True)
         if params_loc:
-            state_dict = torch.load(params_loc, map_location = lambda storage, loc: storage)
+            state_dict = torch.load(params_loc, map_location=lambda storage, loc: storage)
             self.load_state_dict(state_dict)
 
     def get_last_conv_layer(self) -> nn.Module:
@@ -290,7 +294,8 @@ class Resnet18_old(nn.Module):
     Wrapper class around torchvision Resnet18 model,
     with 10 output classes and function to get the last convolutional layer
     """
-    def __init__(self,num_classes=10, params_loc=None):
+
+    def __init__(self, num_classes=10, params_loc=None):
         super().__init__()
         self.model = ResNet(BasicBlock, [2, 2, 2, 2])
         self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
@@ -307,7 +312,7 @@ class Resnet18_old(nn.Module):
 
 
 class Resnet50(ResNet):
-    def __init__(self,num_classes = 1000,params_loc=None,pretrained=False):
+    def __init__(self, num_classes=1000, params_loc=None, pretrained=False):
         if pretrained:
             super().__init__(Bottleneck, [3, 4, 6, 3])
             state_dict = load_state_dict_from_url(model_urls['resnet50'])
@@ -316,15 +321,17 @@ class Resnet50(ResNet):
                 num_ftrs = self.fc.in_features
                 self.fc = nn.Linear(num_ftrs, num_classes)
         else:
-            super().__init__(Bottleneck,[3, 4, 6, 3], num_classes=num_classes)
+            super().__init__(Bottleneck, [3, 4, 6, 3], num_classes=num_classes)
         if params_loc:
             self.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
+
     def get_last_conv_layer(self):
         last_block = self.layer4[-1]  # Last BasicBlock of layer 3
         return last_block.conv2
 
+
 class Resnet18(ResNet):
-    def __init__(self,num_classes = 1000,params_loc=None,pretrained=False):
+    def __init__(self, num_classes=1000, params_loc=None, pretrained=False):
         if pretrained:
             super().__init__(BasicBlock, [2, 2, 2, 2])
             state_dict = load_state_dict_from_url(model_urls['resnet18'])
@@ -336,7 +343,7 @@ class Resnet18(ResNet):
             super().__init__(BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
         if params_loc:
             self.load_state_dict(torch.load(params_loc, map_location=lambda storage, loc: storage))
+
     def get_last_conv_layer(self):
         last_block = self.layer4[-1]  # Last BasicBlock of layer 3
         return last_block.conv2
-

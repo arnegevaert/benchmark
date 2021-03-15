@@ -7,16 +7,17 @@ from typing import List, Union, Dict, Tuple
 
 class MetricResult:
     def __init__(self, method_names: List[str]):
+        self.inverted = False
         self.method_names = method_names
         # Data contains either a list of batches or a single numpy array (if the result was loaded from HDF)
         self.data: Dict[str, Union[List, np.ndarray]] = {m_name: [] for m_name in method_names}
 
     def add_to_hdf(self, group: h5py.Group):
         for method_name in self.method_names:
-            if type(self.data[method_name]) == list:
-                group.create_dataset(method_name, data=torch.cat(self.data[method_name]).numpy())
-            else:
-                group.create_dataset(method_name, data=self.data[method_name])
+            data = torch.cat(self.data[method_name]).numpy() if type(self.data[method_name]) == list \
+                else self.data[method_name]
+            ds = group.create_dataset(method_name, data=data)
+            ds.attrs["inverted"] = self.inverted
 
     def append(self, method_name, batch):
         self.data[method_name].append(batch)
