@@ -8,6 +8,8 @@ from attrbench.metrics import MetricResult
 
 
 class SensitivityNResult(MetricResult):
+    inverted = False
+
     def __init__(self, method_names: List[str], activation_fns: Tuple[str], index: np.ndarray):
         super().__init__(method_names)
         self.data = {m_name: {afn: [] for afn in activation_fns} for m_name in self.method_names}
@@ -23,10 +25,10 @@ class SensitivityNResult(MetricResult):
         for method_name in self.method_names:
             method_group = group.create_group(method_name)
             for afn in self.activation_fns:
-                if type(self.data[method_name][afn]) == list:
-                    method_group.create_dataset(afn, data=torch.cat(self.data[method_name][afn]).numpy())
-                else:
-                    method_group.create_dataset(afn, data=self.data[method_name][afn])
+                data = torch.cat(self.data[method_name][afn]).numpy() if type(self.data[method_name][afn]) == list \
+                    else self.data[method_name][afn]
+                ds = method_group.create_dataset(afn, data=data)
+                ds.attrs["inverted"] = self.inverted
 
     @classmethod
     def load_from_hdf(cls, group: h5py.Group) -> MetricResult:

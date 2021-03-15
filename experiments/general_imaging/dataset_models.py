@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from experiments.general_imaging.lib.models import Resnet20, Resnet18, Resnet56, Resnet50
-from experiments.general_imaging.lib.datasets import Imagenet_dataset, VOC_dataset
+from experiments.general_imaging.lib.datasets import ImagenetDataset, VOCDataset
 
 
 _DATA_LOC = os.environ["BM_DATA_LOC"] if "BM_DATA_LOC" in os.environ else path.join(path.dirname(__file__), "../../data")
@@ -79,7 +79,7 @@ def get_dataset_model(name, model=None, train=False):
                                  std=[0.229, 0.224, 0.225])
         ])
         dir = "train" if train else "val"
-        ds = Imagenet_dataset(path.join(_DATA_LOC, "imagenette2", dir), transform=transform)
+        ds = ImagenetDataset(path.join(_DATA_LOC, "imagenette2", dir), transform=transform)
         if model.lower() == 'resnet18':
             model = Resnet18(1000, pretrained=True)
         elif model.lower() == 'resnet50':
@@ -96,7 +96,7 @@ def get_dataset_model(name, model=None, train=False):
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
         dir = "train" if train else "val"
-        ds = datasets.Places365(path.join(_DATA_LOC, 'Places365'), split='val', transform=transform, small=True,
+        ds = datasets.Places365(path.join(_DATA_LOC, 'Places365'), split=dir, transform=transform, small=True,
                                 download=False)
         if model.lower() == 'resnet18':
             model = Resnet18(365,params_loc = path.join(_DATA_LOC, "models/Places365/resnet18.pt"),pretrained=False)
@@ -126,7 +126,7 @@ def get_dataset_model(name, model=None, train=False):
             transforms.ToTensor(),
             transforms.Normalize([0.4568, 0.4386, 0.4063], [0.2666, 0.2641, 0.2783])
         ])
-        ds = VOC_dataset(os.path.join(_DATA_LOC, 'VOC2012'), train=train, transform=transform)
+        ds = VOCDataset(os.path.join(_DATA_LOC, 'VOC2012'), train=train, transform=transform)
         if model.lower() == 'resnet18':
             model = Resnet18(20, params_loc=path.join(_DATA_LOC, "models/VOC2012/resnet18.pt"))
         elif model.lower() == 'resnet50':
