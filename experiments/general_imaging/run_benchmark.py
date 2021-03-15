@@ -13,6 +13,7 @@ if __name__ == "__main__":
     parser.add_argument("suite_config", type=str)
     parser.add_argument("method_config", nargs="?", type=str, default="config/methods/channel.yaml")
     parser.add_argument("-d", "--dataset", type=str, required=True)
+    parser.add_argument("-m", "--model", type=str)
     parser.add_argument("-b", "--batch-size", type=int, required=True)
     parser.add_argument("-n", "--num-samples", type=int, required=True)
     parser.add_argument("-c", "--cuda", action="store_true")
@@ -22,6 +23,7 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--num_threads", type=int, default=1)
     parser.add_argument("--log-dir", type=str, default=None)
     parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--multi_label",action="store_true")
     # Parse arguments
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
@@ -34,7 +36,7 @@ if __name__ == "__main__":
     print("Saving attributions" if args.save_images else "Not saving attributions")
 
     # Get dataset, model, methods
-    ds, model, patch_folder = get_dataset_model(args.dataset)
+    ds, model, patch_folder = get_dataset_model(args.dataset, args.model)
     ml = MethodLoader(model=model, last_conv_layer=model.get_last_conv_layer(),
                       reference_dataset=ds)
     methods = ml.load_config(args.method_config)
@@ -47,6 +49,7 @@ if __name__ == "__main__":
                      save_attrs=args.save_attrs,
                      seed=args.seed,
                      patch_folder=patch_folder,
+                     multi_label=args.multi_label)
                      num_threads=num_threads,
                      log_dir=args.log_dir)
     bm_suite.load_config(args.suite_config)

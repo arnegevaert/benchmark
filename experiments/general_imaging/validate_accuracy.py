@@ -32,6 +32,7 @@ def test_epoch(model, dl):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dataset", type=str, required=True)
+    parser.add_argument("-m","--model", type=str, required=True)
     parser.add_argument("-b", "--batch-size", type=int, required=True)
     parser.add_argument("-c", "--cuda", action="store_true")
 
@@ -40,7 +41,7 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
 
     # Get dataset, model, methods
-    ds, model, sample_shape = get_dataset_model(args.dataset)
+    ds, model, sample_shape = get_dataset_model(args.dataset, args.model)
     dl = DataLoader(ds, batch_size=args.batch_size, shuffle=False, num_workers=1)
     acc,balanced_acc, auc = test_epoch(model, dl)
     print("validation set results:\n"

@@ -1,0 +1,41 @@
+default:
+  masking_policy:
+    policy: pixel
+    value: 0.
+  mask_range: [0, 16, 31, 47, 63, 78, 94, 110, 125, 141, 157, 172, 188,
+               204, 220, 235, 251, 267, 282, 298, 314, 329, 345, 361, 376, 392,
+               408, 423, 439, 455, 470, 486, 502, 517, 533, 549, 564, 580, 596,
+               612, 627, 643, 659, 674, 690, 706, 721, 737, 753, 768, 784]
+  perturbation_range: [.1, .2, .3, .4, .5, .6, .7, .8, .9, 1., 1.1,
+                       1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
+metrics:
+  deletion_until_flip:
+    type: DeletionUntilFlip
+    args:
+      step_size: .01
+  impact_score:
+    type: ImpactScore
+    args:
+      strict: false
+      tau: 0.5
+  strict_impact_score:
+    type: ImpactScore
+    args:
+      strict: true
+  insertion:
+    type: Insertion
+  deletion:
+    type: Deletion
+  infidelity:
+    type: Infidelity
+    args:
+      num_perturbations: 16
+  max_sensitivity:
+    type: MaxSensitivity
+    args:
+      num_perturbations: 16
+  sensitivity_n:
+    type: SensitivityN
+    args:
+      n_range: [25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350]
+      num_subsets: 16

@@ -30,7 +30,7 @@ class Suite:
 
     def __init__(self, model, methods, dataloader, device="cpu",
                  save_images=False, save_attrs=False, seed=None, patch_folder=None,
-                 log_dir=None, num_threads=1):
+                 log_dir=None, explain_label=None, multi_label=False, num_threads=1):
         self.metrics: Dict[str, Metric] = {}
         self.num_threads = num_threads
         if num_threads > 1:
@@ -48,6 +48,8 @@ class Suite:
         self.attrs = {method_name: [] for method_name in self.methods}
         self.seed = seed
         self.log_dir = log_dir
+        self.explain_label = explain_label
+        self.multi_label = multi_label
         if self.log_dir is not None:
             print(f"Logging TensorBoard to {self.log_dir}")
         self.writer = AttributionWriter(path.join(self.log_dir, "images_and_attributions")) \
@@ -65,21 +67,13 @@ class Suite:
             torch.manual_seed(self.seed)
             np.random.seed(self.seed)
         it = iter(self.dataloader)
+        batch_size = self.dataloader.batch_size
         # We will check the output shapes of methods on the first batch
         # to make sure they are compatible with the masking policy
         checked_shapes = False
         batch_nr = 0
         while samples_done < num_samples:
-            full_batch_cpu, full_labels_cpu = next(it)
-            full_batch = full_batch_cpu.to(self.device)
-            full_labels = full_labels_cpu.to(self.device)
-
-            # Only use correctly classified samples
-            with torch.no_grad():
-                pred = torch.argmax(self.model(full_batch), dim=1)
-                samples = full_batch[pred == full_labels]
-                labels = full_labels[pred == full_labels]
-
+            labels, samples = self.get_batch(it, batch_size)
             if samples.size(0) > 0:
                 batch_nr += 1
                 if samples_done + samples.size(0) > num_samples:
@@ -131,6 +125,36 @@ class Suite:
                     prog.update(samples.size(0))
                 samples_done += samples.size(0)
         self.samples_done += num_samples
+
+    def get_batch(self, it, batch_size):
+        out_samples, out_labels =[],[]
+        out_size =0
+        # collect a full batch
+        while out_size < batch_size:
+            full_batch, full_labels = next(it)
+            full_batch = full_batch.to(self.device)
+            full_labels = full_labels.to(self.device)
+            # Only use correctly classified samples
+            with torch.no_grad():
+                out = self.model(full_batch)
+                pred = torch.argmax(out, dim=1)
+                if self.multi_label:
+                    pred_labels = full_labels[torch.arange(len(pred)), pred]
+                    samples = full_batch[pred_labels == 1]
+                    labels = pred[pred_labels == 1]
+                else:
+                    samples = full_batch[pred == full_labels]
+                    labels = full_labels[pred == full_labels]
+                    if self.explain_label is not None:
+                        samples = samples[labels == self.explain_label]
+                        labels = labels[labels == self.explain_label]
+
+            out_labels.append(labels.detach().cpu())
+            out_samples.append(samples.detach().cpu())
+            out_size += samples.size(0)
+        labels = torch.cat(out_labels,dim=0)
+        samples = torch.cat(out_samples,dim=0)
+        return labels[:batch_size].to(self.device), samples[:batch_size].to(self.device)
 
     def save_result(self, loc):
         metric_results = {metric_name: self.metrics[metric_name].get_result() for metric_name in self.metrics}
