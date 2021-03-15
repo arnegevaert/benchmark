@@ -17,9 +17,8 @@ def _parse_args(args):
 
 
 class Config:
-    def __init__(self, filename: str, model: Callable, log_dir: str = None, **kwargs):
+    def __init__(self, filename: str, log_dir: str = None, **kwargs):
         self.filename = filename
-        self.model = model
         self.default_args = kwargs
         self.log_dir = log_dir
 
@@ -39,23 +38,25 @@ class Config:
             # Add prefix if necessary
             if prefix is not None:
                 metric_name = f"{prefix}.{metric_name}"
-            # Get constructor and parse arguments
+            # Get metric constructor
             constructor = getattr(metrics, m_dict["type"])
-            args_dict = _parse_args({key: m_dict[key] for key in m_dict if key != "type"})
-            args_dict["model"] = self.model
+            # metric_args contains specific args for this single metric
+            metric_args = _parse_args({key: m_dict[key] for key in m_dict if key != "type"})
             if self.log_dir is not None:
-                args_dict["writer_dir"] = path.join(self.log_dir, metric_name)
-            # Compare to required args, add missing ones from default args
+                metric_args["writer_dir"] = path.join(self.log_dir, metric_name)
+            # Fill in all expected args (default_args may contain args that are not applicable to this metric)
             signature = inspect.signature(constructor).parameters
-            expected_args = [arg for arg in signature if signature[arg].default == inspect.Parameter.empty]
-            for e_arg in expected_args:
-                if e_arg not in args_dict:
-                    if e_arg in default_args and default_args[e_arg] is not None:
-                        args_dict[e_arg] = default_args[e_arg]
-                    else:
-                        raise ValueError(f"Invalid configuration: required argument {e_arg} "
-                                         f"not found for metric {metric_name}")
-            result[metric_name] = constructor(**args_dict)
+            # all_args contains union(default_args, section_args, metric_args)
+            all_args = {**default_args, **metric_args}
+            # args contains the arguments in all_args that are applicable to this metric
+            args = {key: all_args[key] for key in all_args if key in signature}
+            # Check if all necessary arguments are present
+            for arg in signature:
+                if signature[arg].default == inspect.Parameter.empty and arg not in args:
+                    raise ValueError(f"Invalid configuration: required argument {arg} "
+                                     f"not found for metric {metric_name}")
+            # Construct metric
+            result[metric_name] = constructor(**args)
         return result
 
     def load(self) -> Dict[str, Metric]:

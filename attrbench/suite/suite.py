@@ -48,7 +48,7 @@ class Suite:
             if self.log_dir is not None else None
 
     def load_config(self, loc):
-        cfg = Config(loc, self.model, self.log_dir, patch_folder=self.patch_folder, methods=self.methods,
+        cfg = Config(loc, self.log_dir, model=self.model, patch_folder=self.patch_folder, methods=self.methods,
                      method_names=list(self.methods.keys()))
         self.metrics = cfg.load()
 
