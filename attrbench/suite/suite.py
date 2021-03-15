@@ -1,22 +1,24 @@
-from attrbench.suite import metrics, Result
-from attrbench.lib import AttributionWriter, masking
+from attrbench.suite import SuiteResult
+from attrbench.metrics import Metric
+from attrbench.lib import AttributionWriter
+from .config import Config
 from tqdm import tqdm
 import torch
 import numpy as np
-import inspect
-from inspect import Parameter
-import yaml
 from os import path
-import warnings
+from typing import Dict
+from functools import partial
+import multiprocessing
 
 
-def _parse_masker(d):
-    constructor = getattr(masking, d["type"])
-    return constructor(**{key: d[key] for key in d if key != "type"})
+def _run_metric(metric_name, metrics, samples, labels, attrs):
+    metrics[metric_name].run_batch(samples, labels, attrs)
+    print(f"{metric_name} done.")
 
 
-def _parse_args(args):
-    return {key: _parse_masker(args[key]) if key == "masker" else args[key] for key in args}
+_NO_MULTITHREADING = {
+    "ImpactCoverage", "MaxSensitivity"
+}
 
 
 class Suite:
@@ -28,14 +30,17 @@ class Suite:
 
     def __init__(self, model, methods, dataloader, device="cpu",
                  save_images=False, save_attrs=False, seed=None, patch_folder=None,
-                 log_dir=None, explain_label=None, multi_label=False):
-        self.metrics = {}
+                 log_dir=None, explain_label=None, multi_label=False, num_threads=1):
+        self.metrics: Dict[str, Metric] = {}
+        self.num_threads = num_threads
+        if num_threads > 1:
+            torch.multiprocessing.set_sharing_strategy("file_system")
         self.model = model.to(device)
         self.model.eval()
         self.methods = methods
         self.dataloader = dataloader
         self.device = device
-        self.default_args = {"patch_folder": patch_folder, "methods": self.methods}
+        self.patch_folder = patch_folder
         self.save_images = save_images
         self.save_attrs = save_attrs
         self.images = []
@@ -45,49 +50,22 @@ class Suite:
         self.log_dir = log_dir
         self.explain_label = explain_label
         self.multi_label = multi_label
+        if self.log_dir is not None:
+            print(f"Logging TensorBoard to {self.log_dir}")
+        self.writer = AttributionWriter(path.join(self.log_dir, "images_and_attributions")) \
+            if self.log_dir is not None else None
 
     def load_config(self, loc):
-        with open(loc) as fp:
-            data = yaml.full_load(fp)
-            # Parse default arguments if present
-            default_args = _parse_args(data.get("default", {}))
-            self.default_args = {**self.default_args, **default_args}
-            # Build metric objects
-            for metric_name in data["metrics"]:
-                if metric_name in self.metrics.keys():
-                    raise ValueError(f"Invalid configuration: duplicate entry {metric_name}")
-                metric_dict = data["metrics"][metric_name]
-                # Parse args from config file
-                args_dict = _parse_args({key: metric_dict[key] for key in metric_dict if key != "type"})
-                # Get constructor
-                constructor = getattr(metrics, metric_dict["type"])
-                # Add model, methods, and (optional) writer args
-                args_dict["model"] = self.model
-                if self.log_dir:
-                    self.writer = AttributionWriter(path.join(self.log_dir, "images_and_attributions"))
-                    subdir = path.join(self.log_dir, metric_name)
-                    args_dict["writer_dir"] = subdir
-                # Compare to required args, add missing ones from default args
-                signature = inspect.signature(constructor).parameters
-                expected_arg_names = [arg for arg in signature if signature[arg].default == Parameter.empty]
-                for e_arg in expected_arg_names:
-                    if e_arg not in args_dict:
-                        if e_arg in self.default_args:
-                            args_dict[e_arg] = self.default_args[e_arg]
-                        else:
-                            raise ValueError(
-                                f"Invalid configuration: required argument {e_arg} not found for metric {metric_name}")
-                if metric_dict["type"] == "ImpactCoverage" and self.default_args["patch_folder"] is None:
-                    warnings.warn("No patch folder provided, skipping impact coverage.")
-                else:
-                    # Create metric object using args_dict
-                    self.metrics[metric_name] = constructor(**args_dict)
+        cfg = Config(loc, self.log_dir, model=self.model, patch_folder=self.patch_folder, methods=self.methods,
+                     method_names=list(self.methods.keys()))
+        self.metrics = cfg.load()
 
     def run(self, num_samples, verbose=True):
         samples_done = 0
         prog = tqdm(total=num_samples) if verbose else None
         if self.seed:
             torch.manual_seed(self.seed)
+            np.random.seed(self.seed)
         it = iter(self.dataloader)
         batch_size = self.dataloader.batch_size
         # We will check the output shapes of methods on the first batch
@@ -96,9 +74,8 @@ class Suite:
         batch_nr = 0
         while samples_done < num_samples:
             labels, samples = self.get_batch(it, batch_size)
-
             if samples.size(0) > 0:
-                batch_nr +=1
+                batch_nr += 1
                 if samples_done + samples.size(0) > num_samples:
                     diff = num_samples - samples_done
                     samples = samples[:diff]
@@ -108,27 +85,42 @@ class Suite:
                     self.images.append(samples.cpu().detach().numpy())
 
                 # We need the attributions, to save them or to check their shapes
-                attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach()
+                attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach().numpy()
                          for method_name in self.methods.keys()}
+
                 if self.writer is not None:
-                    self.writer.add_image_sample(samples,batch_nr)
+                    self.writer.add_images("Samples", samples, global_step=batch_nr)
                     for name in attrs.keys():
-                        self.writer.add_attribution(attrs[name],batch_nr,name)
+                        self.writer.add_attribution(name, attrs[name], batch_nr)
+
+                # Save attributions if necessary
                 if self.save_attrs:
-                    # Save attributions if necessary
                     for method_name in self.methods:
-                        self.attrs[method_name].append(attrs[method_name].numpy())
-                for i, metric in enumerate(self.metrics.keys()):
-                    if verbose:
-                        prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
-                    if not checked_shapes and hasattr(self.metrics[metric], "masker"):
-                        # Check shapes of attributions if necessary
-                        for method_name in self.methods:
-                            if not self.metrics[metric].masker.check_attribution_shape(samples, attrs[method_name]):
-                                raise ValueError(f"Attributions for method {method_name} "
-                                                 f"are not compatible with masker")
-                        checked_shapes = True
-                    self.metrics[metric].run_batch(samples, labels, attrs)
+                        self.attrs[method_name].append(attrs[method_name])
+
+                # Metric loop
+                if self.num_threads != 1:
+                    # Check which metrics can be run in parallel
+                    parallel_metrics = {m: self.metrics[m] for m in self.metrics
+                                        if type(self.metrics[m]).__name__ not in _NO_MULTITHREADING}
+                    # Use multiprocessing when num_threads > 1
+                    with multiprocessing.pool.ThreadPool(self.num_threads) as pool:
+                        run_metric_partial = partial(_run_metric, metrics=parallel_metrics, samples=samples,
+                                                     labels=labels, attrs=attrs)
+                        pool.map(run_metric_partial, parallel_metrics.keys())
+                    # Run the metrics that can't be run in parallel
+                    non_parallel_metrics = {m: self.metrics[m] for m in self.metrics
+                                            if type(self.metrics[m]).__name__ in _NO_MULTITHREADING}
+                    for m in non_parallel_metrics.keys():
+                        self.metrics[m].run_batch(samples, labels, attrs)
+                        print(f"{m} done, not in parallel")
+                else:
+                    # If num_threads = 1, no multiprocessing is necessary
+                    for i, metric in enumerate(self.metrics.keys()):
+                        if verbose:
+                            prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
+                        self.metrics[metric].run_batch(samples, labels, attrs)
+
                 if verbose:
                     prog.update(samples.size(0))
                 samples_done += samples.size(0)
@@ -165,22 +157,12 @@ class Suite:
         return labels[:batch_size].to(self.device), samples[:batch_size].to(self.device)
 
     def save_result(self, loc):
-        data = {
-            k: v.get_results()[0]
-            for k, v in self.metrics.items()
-        }
-
-        meta_data = {}
-        for metric_name, metric in self.metrics.items():
-            meta_data[metric_name] = metric.metadata
-            meta_data[metric_name]["shape"] = metric.get_results()[1]
-            meta_data[metric_name]["type"] = type(metric).__name__
-
+        metric_results = {metric_name: self.metrics[metric_name].get_result() for metric_name in self.metrics}
         attrs = None
         if self.save_attrs:
             attrs = {}
             for method_name in self.methods:
                 attrs[method_name] = np.concatenate(self.attrs[method_name])
         images = np.concatenate(self.images) if self.save_images else None
-        res = Result(data, meta_data, num_samples=self.samples_done, seed=self.seed, images=images, attributions=attrs)
-        res.save_hdf(loc)
+        result = SuiteResult(metric_results, self.samples_done, self.seed, images, attrs)
+        result.save_hdf(loc)

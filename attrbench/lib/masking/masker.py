@@ -1,7 +1,8 @@
-import torch
 import numpy as np
 
 
+# TODO masker should take attributions as constructor argument and then implement the necessary
+#      functions (mask_highest, keep_highest, mask_lowest, keep_lowest, mask_random, mask_all)
 class Masker:
     def __init__(self, feature_level):
         if feature_level not in ("channel", "pixel"):
@@ -9,15 +10,7 @@ class Masker:
         self.feature_level = feature_level
         self.baseline = None
 
-    def predict_masked(self, samples, indices, model, return_masked_samples=False):
-        masked = self.mask(samples, indices)
-        with torch.no_grad():
-            pred = model(masked)
-        if return_masked_samples:
-            return pred, masked
-        return pred
-
-    def check_attribution_shape(self, samples, attributions):
+    def check_attribution_shape(self, samples, attributions: np.ndarray):
         if self.feature_level == "channel":
             # Attributions should be same shape as samples
             return list(samples.shape) == list(attributions.shape)
@@ -28,14 +21,19 @@ class Masker:
             aggregated_shape[1] = 1
             return aggregated_shape == list(attributions.shape)
 
-    def mask(self, samples, indices):
+    def mask(self, samples: np.ndarray, indices: np.ndarray):
         if self.baseline is None:
             raise ValueError("Masker was not initialized.")
         batch_size, num_channels, rows, cols = samples.shape
         num_indices = indices.shape[1]
         batch_dim = np.tile(range(batch_size), (num_indices, 1)).transpose()
 
-        to_mask = torch.zeros(samples.shape, device=samples.device).flatten(1 if self.feature_level == "channel" else 2)
+        #to_mask = torch.zeros(samples.shape).flatten(1 if self.feature_level == "channel" else 2)
+        to_mask = np.zeros(samples.shape)
+        if self.feature_level == "channel":
+            to_mask = to_mask.reshape((to_mask.shape[0], -1))
+        else:
+            to_mask = to_mask.reshape((to_mask.shape[0], to_mask.shape[1], -1))
         if self.feature_level == "channel":
             to_mask[batch_dim, indices] = 1.
         else:
@@ -48,8 +46,8 @@ class Masker:
         return self.mask_boolean(samples, to_mask)
 
     def mask_boolean(self, samples, bool_mask):
-        bool_mask = bool_mask.to(samples.device)
-        return samples - (bool_mask * samples) + (bool_mask * self.baseline.to(samples.device))
+        bool_mask = bool_mask
+        return samples - (bool_mask * samples) + (bool_mask * self.baseline)
 
     def initialize_baselines(self, samples):
         raise NotImplementedError

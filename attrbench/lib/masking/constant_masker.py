@@ -1,5 +1,5 @@
 from attrbench.lib.masking import Masker
-import torch
+import numpy as np
 
 
 class ConstantMasker(Masker):
@@ -8,4 +8,4 @@ class ConstantMasker(Masker):
         self.mask_value = mask_value
 
     def initialize_baselines(self, samples):
-        self.baseline = torch.ones(samples.shape) * self.mask_value
+        self.baseline = np.ones(samples.shape) * self.mask_value

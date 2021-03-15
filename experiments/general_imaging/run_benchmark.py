@@ -4,6 +4,8 @@ from experiments.general_imaging.dataset_models import get_dataset_model
 from experiments.lib import MethodLoader
 from attrbench.suite import Suite
 from torch.utils.data import DataLoader
+import time
+import multiprocessing
 
 
 if __name__ == "__main__":
@@ -18,6 +20,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--save-images", action="store_true")
     parser.add_argument("-a", "--save-attrs", action="store_true")
     parser.add_argument("-o", "--output", type=str, required=True)
+    parser.add_argument("-t", "--num_threads", type=int, default=1)
     parser.add_argument("--log-dir", type=str, default=None)
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--multi_label",action="store_true")
@@ -25,8 +28,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
 
+    num_threads = args.num_threads
+    if num_threads == -1:
+        num_threads = multiprocessing.cpu_count()
+
     print("Saving images" if args.save_images else "Not saving images")
-    print("Saving attributions" if args.save_attrs else "Not saving attributions")
+    print("Saving attributions" if args.save_images else "Not saving attributions")
 
     # Get dataset, model, methods
     ds, model, patch_folder = get_dataset_model(args.dataset, args.model)
@@ -42,8 +49,13 @@ if __name__ == "__main__":
                      save_attrs=args.save_attrs,
                      seed=args.seed,
                      patch_folder=patch_folder,
-                     log_dir=args.log_dir,
                      multi_label=args.multi_label)
+                     num_threads=num_threads,
+                     log_dir=args.log_dir)
     bm_suite.load_config(args.suite_config)
+
+    start_t = time.time()
     bm_suite.run(args.num_samples, verbose=True)
+    end_t = time.time()
+
     bm_suite.save_result(args.output)
