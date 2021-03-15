@@ -6,8 +6,9 @@ from typing import List, Union, Dict, Tuple
 
 
 class MetricResult:
+    inverted: bool
+
     def __init__(self, method_names: List[str]):
-        self.inverted = False
         self.method_names = method_names
         # Data contains either a list of batches or a single numpy array (if the result was loaded from HDF)
         self.data: Dict[str, Union[List, np.ndarray]] = {m_name: [] for m_name in method_names}
@@ -31,7 +32,10 @@ class MetricResult:
 
 
 class ModeActivationMetricResult(MetricResult):
-    def __init__(self, method_names: List[str], modes: Tuple[str], activation_fn: Tuple[str]):
+    inverted: Dict[str, bool]
+
+    def __init__(self, method_names: List[str], modes: Tuple[str], activation_fn: Tuple[str],
+                 ):
         super().__init__(method_names)
         self.modes = modes
         self.activation_fn = activation_fn
@@ -49,10 +53,10 @@ class ModeActivationMetricResult(MetricResult):
             for mode in self.modes:
                 mode_group = method_group.create_group(mode)
                 for afn in self.activation_fn:
-                    if type(self.data[method_name][mode][afn]) == list:
-                        mode_group.create_dataset(afn, data=torch.cat(self.data[method_name][mode][afn]).numpy())
-                    else:
-                        mode_group.create_dataset(afn, data=self.data[method_name][mode][afn])
+                    data = torch.cat(self.data[method_name][mode][afn]).numpy() \
+                        if type(self.data[method_name][mode][afn]) == list else self.data[method_name][mode][afn]
+                    ds = mode_group.create_dataset(afn, data=data)
+                    ds.attrs["inverted"] = self.inverted[mode]
 
     @classmethod
     def load_from_hdf(cls, group: h5py.Group) -> MetricResult:

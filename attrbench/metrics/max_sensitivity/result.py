@@ -7,6 +7,8 @@ from attrbench.metrics import MetricResult
 
 
 class MaxSensitivityResult(MetricResult):
+    inverted = True
+
     def __init__(self, method_names: List[str], radius: float):
         super().__init__(method_names)
         self.inverted = True

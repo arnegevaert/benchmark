@@ -7,6 +7,11 @@ from attrbench.metrics import MetricResult, ModeActivationMetricResult
 
 
 class InfidelityResult(ModeActivationMetricResult):
+    inverted = {
+        "mse": True,
+        "corr": True
+    }
+
     def __init__(self, method_names: List[str], perturbation_mode: str, perturbation_size: float,
                  modes: Tuple[str], activation_fn: Tuple[str]):
         super().__init__(method_names, modes, activation_fn)
