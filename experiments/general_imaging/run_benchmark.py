@@ -26,7 +26,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
 
-    torch.multiprocessing.set_sharing_strategy("file_system")
     num_threads = args.num_threads
     if num_threads == -1:
         num_threads = multiprocessing.cpu_count()

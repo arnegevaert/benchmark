@@ -7,7 +7,6 @@ import torch
 import numpy as np
 from os import path
 from typing import Dict
-import time
 from functools import partial
 import multiprocessing
 
@@ -15,6 +14,11 @@ import multiprocessing
 def _run_metric(metric_name, metrics, samples, labels, attrs):
     metrics[metric_name].run_batch(samples, labels, attrs)
     print(f"{metric_name} done.")
+
+
+_NO_MULTITHREADING = {
+    "ImpactCoverage", "MaxSensitivity"
+}
 
 
 class Suite:
@@ -29,6 +33,8 @@ class Suite:
                  log_dir=None, num_threads=1):
         self.metrics: Dict[str, Metric] = {}
         self.num_threads = num_threads
+        if num_threads > 1:
+            torch.multiprocessing.set_sharing_strategy("file_system")
         self.model = model.to(device)
         self.model.eval()
         self.methods = methods
@@ -100,11 +106,20 @@ class Suite:
 
                 # Metric loop
                 if self.num_threads != 1:
+                    # Check which metrics can be run in parallel
+                    parallel_metrics = {m: self.metrics[m] for m in self.metrics
+                                        if type(self.metrics[m]).__name__ not in _NO_MULTITHREADING}
                     # Use multiprocessing when num_threads > 1
                     with multiprocessing.pool.ThreadPool(self.num_threads) as pool:
-                        run_metric_partial = partial(_run_metric, metrics=self.metrics, samples=samples, labels=labels,
-                                                     attrs=attrs)
-                        pool.map(run_metric_partial, self.metrics.keys())
+                        run_metric_partial = partial(_run_metric, metrics=parallel_metrics, samples=samples,
+                                                     labels=labels, attrs=attrs)
+                        pool.map(run_metric_partial, parallel_metrics.keys())
+                    # Run the metrics that can't be run in parallel
+                    non_parallel_metrics = {m: self.metrics[m] for m in self.metrics
+                                            if type(self.metrics[m]).__name__ in _NO_MULTITHREADING}
+                    for m in non_parallel_metrics.keys():
+                        self.metrics[m].run_batch(samples, labels, attrs)
+                        print(f"{m} done, not in parallel")
                 else:
                     # If num_threads = 1, no multiprocessing is necessary
                     for i, metric in enumerate(self.metrics.keys()):
