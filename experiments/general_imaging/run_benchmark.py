@@ -12,7 +12,7 @@ import logging
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("suite_config", type=str)
-    parser.add_argument("method_config", nargs="?", type=str, default="config/methods/channel.yaml")
+    parser.add_argument("method_config", type=str)
     parser.add_argument("-d", "--dataset", type=str, required=True)
     parser.add_argument("-m", "--model", type=str)
     parser.add_argument("-b", "--batch-size", type=int, required=True)
