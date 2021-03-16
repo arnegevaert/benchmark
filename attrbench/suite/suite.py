@@ -7,7 +7,6 @@ import torch
 import numpy as np
 from os import path
 from typing import Dict
-from functools import partial
 import logging
 
 
@@ -81,8 +80,10 @@ class Suite:
 
                 # We need the attributions, to save them or to check their shapes
                 logging.info("Computing attributions...")
-                attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach().numpy()
-                         for method_name in self.methods.keys()}
+                attrs = {}
+                for method_name in self.methods.keys():
+                    logging.info(method_name)
+                    attrs[method_name] = self.methods[method_name](samples, labels).cpu().detach().numpy()
                 logging.info("Finished.")
 
                 if self.writer is not None:
