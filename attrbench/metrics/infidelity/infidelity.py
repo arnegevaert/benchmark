@@ -30,8 +30,8 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, att
 class Infidelity(Metric):
     def __init__(self, model: Callable, method_names: List[str], perturbation_mode: str,
                  perturbation_size: float, num_perturbations: int, mode: Union[Tuple[str], str] = "mse",
-                 activation_fn: Union[Tuple[str], str] = "linear", writer_dir: str = None, num_workers=0):
-        super().__init__(model, method_names, writer_dir, num_workers)
+                 activation_fn: Union[Tuple[str], str] = "linear", writer_dir: str = None):
+        super().__init__(model, method_names, writer_dir)
         self.perturbation_mode = perturbation_mode
         self.perturbation_size = perturbation_size
         self.num_perturbations = num_perturbations
@@ -47,8 +47,7 @@ class Infidelity(Metric):
         writer = self.writers["general"] if self.writers is not None else None
         pert_vectors, pred_diffs = _compute_perturbations(samples, labels, self.model,
                                                           self.perturbation_mode, self.perturbation_size,
-                                                          self.num_perturbations, self.activation_fn, writer,
-                                                          self.num_workers)
+                                                          self.num_perturbations, self.activation_fn, writer)
         for method_name in attrs_dict:
             self.result.append(method_name, _compute_result(pert_vectors, pred_diffs, attrs_dict[method_name],
                                                             self.mode))

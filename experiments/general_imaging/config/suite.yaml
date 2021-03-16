@@ -9,6 +9,10 @@ infidelity:
       - sigmoid
       - softmax
   metrics:
+    infidelity_seg:
+      type: Infidelity
+      perturbation_mode: segment
+      perturbation_size: 10
     infidelity_gaussian:
       type: Infidelity
       perturbation_mode: gaussian
@@ -17,10 +21,6 @@ infidelity:
       type: Infidelity
       perturbation_mode: square
       perturbation_size: 0.2
-    infidelity_seg:
-      type: Infidelity
-      perturbation_mode: segment
-      perturbation_size: 10
 
 masking:
   foreach:

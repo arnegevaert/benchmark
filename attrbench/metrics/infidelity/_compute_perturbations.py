@@ -16,14 +16,12 @@ _PERTURBATION_CLASSES = {
 
 def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: Callable, perturbation_mode: str,
                            perturbation_size: float, num_perturbations: int, activation_fn: Tuple[str],
-                           writer: AttributionWriter = None, num_workers=0) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
+                           writer: AttributionWriter = None) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
     device = samples.device
     if perturbation_mode not in _PERTURBATION_CLASSES.keys():
         raise ValueError(f"Invalid perturbation mode {perturbation_mode}. "
                          f"Valid options are {', '.join(list(_PERTURBATION_CLASSES.keys()))}")
-    perturbation_ds = _PERTURBATION_CLASSES[perturbation_mode](samples.cpu().numpy(),
-                                                               perturbation_size, num_perturbations)
-    perturbation_dl = DataLoader(perturbation_ds, batch_size=1, num_workers=num_workers)
+    perturbation_fn = _PERTURBATION_CLASSES[perturbation_mode](samples, perturbation_size, num_perturbations)
 
     # Get original model output
     orig_output = {}
@@ -34,10 +32,10 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
 
     pert_vectors = []
     pred_diffs: Dict[str, list] = {fn: [] for fn in activation_fn}
-    for i_pert, (perturbed_samples, perturbation_vector) in enumerate(perturbation_dl):
+    for i_pert in range(num_perturbations):
         # Get perturbation vector I and perturbed samples (x - I)
-        perturbed_samples = perturbed_samples[0].float().to(device)
-        perturbation_vector = perturbation_vector[0].float()
+        perturbation_vector = perturbation_fn()
+        perturbed_samples = samples - perturbation_vector
         if writer:
             writer.add_images("perturbation_vector", perturbation_vector, global_step=i_pert)
             writer.add_images("perturbed_samples", perturbed_samples, global_step=i_pert)
@@ -49,7 +47,7 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
         for fn in activation_fn:
             act_pert_out = ACTIVATION_FNS[fn](perturbed_output).gather(dim=1, index=labels.unsqueeze(-1))
             pred_diffs[fn].append(orig_output[fn] - act_pert_out)
-        pert_vectors.append(perturbation_vector)  # [batch_size, *sample_shape]
+        pert_vectors.append(perturbation_vector.cpu())  # [batch_size, *sample_shape]
     pert_vectors = torch.stack(pert_vectors, dim=1)  # [batch_size, num_perturbations, *sample_shape]
     res_pred_diffs: Dict[str, torch.Tensor] = {}
     for fn in activation_fn:
