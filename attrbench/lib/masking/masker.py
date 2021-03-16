@@ -46,7 +46,6 @@ class Masker:
         return self.mask_boolean(samples, to_mask)
 
     def mask_boolean(self, samples, bool_mask):
-        bool_mask = bool_mask
         return samples - (bool_mask * samples) + (bool_mask * self.baseline)
 
     def initialize_baselines(self, samples):
