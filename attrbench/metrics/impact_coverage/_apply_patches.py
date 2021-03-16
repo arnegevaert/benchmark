@@ -3,6 +3,7 @@ import re
 from itertools import cycle
 from os import path, listdir
 from typing import Callable, Tuple
+import logging
 
 import torch
 
@@ -46,7 +47,7 @@ def _apply_patches(samples: torch.Tensor, labels: torch.Tensor, model: Callable,
         successful = successful | successful_now
 
         if num_tries > max_tries:
-            print(f"Not all samples could be attacked: {torch.sum(successful)}/{samples.size(0)} were successful.")
+            logging.info(f"Not all samples could be attacked: {torch.sum(successful)}/{samples.size(0)} were successful.")
             break
     return attacked_samples, patch_mask, targets.to(samples.device)
 
