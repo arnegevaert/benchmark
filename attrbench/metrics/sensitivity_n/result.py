@@ -43,7 +43,7 @@ class SensitivityNResult(MetricResult):
     def to_df(self) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
         result = {}
         for afn in self.activation_fns:
-            data = {m_name: self.data[m_name][afn].tolist() for m_name in self.method_names}
+            data = {m_name: self.data[m_name][afn].squeeze().tolist() for m_name in self.method_names}
             df = pd.DataFrame.from_dict(data)
             result[afn] = df
         return result

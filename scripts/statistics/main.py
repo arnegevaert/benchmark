@@ -12,4 +12,5 @@ if __name__ == "__main__":
     # 1) summarize distributions of metric scores and perform Wilcoxon signed rank tests
     dfs = {}
     for metric_name in res.metric_results:
-        dfs[metric_name] = res.metric_results[metric_name].to_df()
+        mr = res.metric_results[metric_name]
+        dfs[metric_name] = mr.to_df()
