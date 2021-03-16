@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from tqdm import tqdm
+from tqdm import trange
 
 
 class PatchCheckpointCb:
@@ -11,7 +11,6 @@ class PatchCheckpointCb:
 
     def step(self, loss, patch):
         if loss < self.best_loss:
-            print("saving best patch")
             self.best_loss = loss
             torch.save(patch, self.save_path)
 
@@ -35,7 +34,7 @@ def train_patch(model, patch, train_dl, loss_function, optimizer, target_label, 
     patch_size = patch.shape[-1]
     train_loss = []
     nr_not_successfull = []
-    for x, y in tqdm(train_dl):
+    for x, y in train_dl:
         # x, y = torch.tensor(x), torch.tensor(y)
         optimizer.zero_grad()
         y = torch.tensor(np.full(y.shape[0], target_label), dtype=torch.long).to(device)
@@ -122,15 +121,13 @@ def make_patch(dataloader, model, target_label, patch_path, device, patch_percen
     cb = PatchCheckpointCb(patch_path)
     loss = torch.nn.CrossEntropyLoss()
 
-    for e in range(epochs):
+    prog = trange(epochs)
+    for e in prog:
         epoch_loss = train_patch(model, patch, dataloader, loss, optim, target_label=target_label, data_min=data_min,
                                  data_max=data_max, device=device,
                                  schedule=schedule, cb=cb)
-        print(" epoch {} done. train_loss: {}".format(e, epoch_loss))
-        #                                   model, patch, data_loader, loss_function,  target_label, device
         val_loss, percent_successfull = validate(model, patch, dataloader, loss, target_label, device)
-        print("val_loss: {}".format(val_loss))
-        print("{} % of images successfully attacked ".format(percent_successfull * 100))
+        prog.set_postfix({"train_loss": epoch_loss, "val_loss": val_loss, "success_rate": percent_successfull * 100})
 
         if schedule is not None:
             schedule.step(val_loss)

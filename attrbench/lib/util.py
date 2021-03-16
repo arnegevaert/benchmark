@@ -22,8 +22,7 @@ def corrcoef(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     denom_zero = (denom == 0.)
     if np.any(denom_zero):
         warnings.warn("Zero standard deviation detected.")
-    corrcoefs = cov / (a.std(axis=1) * b.std(axis=1))
-    corrcoefs[denom_zero] = 0.
+    corrcoefs = np.divide(cov, denom, out=np.zeros_like(cov), where=denom!=0)
     return corrcoefs
 
 

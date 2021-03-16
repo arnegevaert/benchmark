@@ -42,7 +42,7 @@ if __name__ == "__main__":
     logging.info("Saving attributions" if args.save_images else "Not saving attributions")
 
     # Get dataset, model, methods
-    ds, model, patch_folder = get_dataset_model(args.dataset, args.model)
+    ds, model, patch_folder = get_dataset_model(args.dataset, model_name=args.model)
     ml = MethodLoader(model=model, last_conv_layer=model.get_last_conv_layer(),
                       reference_dataset=ds)
     methods = ml.load_config(args.method_config)
