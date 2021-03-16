@@ -11,7 +11,7 @@ from experiments.general_imaging.lib.datasets import ImagenetDataset, VOCDataset
 _DATA_LOC = os.environ["BM_DATA_LOC"] if "BM_DATA_LOC" in os.environ else path.join(path.dirname(__file__), "../../data")
 
 
-def get_dataset_model(name, model=None, train=False):
+def get_dataset_model(name, model_name=None, train=False):
     if name == "MNIST":
         transform = transforms.Compose([
             transforms.ToTensor(),
@@ -34,26 +34,26 @@ def get_dataset_model(name, model=None, train=False):
             transforms.Normalize(mean=(0.4913, 0.4821, 0.4464), std=(0.247,0.2434, 0.2615))
         ])
         ds = datasets.CIFAR10(path.join(_DATA_LOC, "CIFAR10"), train=train, transform=transform, download=True)
-        if model.lower() == 'resnet20':
+        if model_name.lower() == 'resnet20':
             model = Resnet20(10,path.join(_DATA_LOC, "models/CIFAR10/resnet20.pt"))
-        elif model.lower() == 'resnet56':
+        elif model_name.lower() == 'resnet56':
             model = Resnet56(10, path.join(_DATA_LOC, "models/CIFAR10/resnet56.pt"))
         else:
-            raise ValueError(f"Invalid model for this dataset: {model}")
-        patch_folder = path.join(_DATA_LOC, "patches/CIFAR10")
+            raise ValueError(f"Invalid model for this dataset: {model_name}")
+        patch_folder = path.join(_DATA_LOC, "patches/CIFAR10", model_name.lower())
     elif name == "CIFAR100":
         transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize(mean=(0.5072, 0.4867, 0.441), std=[0.2673, 0.2565, 0.2762])
         ])
         ds = datasets.CIFAR100(path.join(_DATA_LOC, "CIFAR100"), train=train, transform=transform, download=True)
-        if model.lower() == 'resnet20':
-            model = Resnet20(10, path.join(_DATA_LOC, "models/CIFAR100/resnet20.pt"))
-        elif model.lower() == 'resnet56':
-            model = Resnet56(10, path.join(_DATA_LOC, "models/CIFAR100/resnet56.pt"))
+        if model_name.lower() == 'resnet20':
+            model = Resnet20(100, path.join(_DATA_LOC, "models/CIFAR100/resnet20.pt"))
+        elif model_name.lower() == 'resnet56':
+            model = Resnet56(100, path.join(_DATA_LOC, "models/CIFAR100/resnet56.pt"))
         else:
-            raise ValueError(f"Invalid model for this dataset: {model}")
-        patch_folder = path.join(_DATA_LOC, "patches/CIFAR100")
+            raise ValueError(f"Invalid model for this dataset: {model_name}")
+        patch_folder = path.join(_DATA_LOC, "patches/CIFAR100", model_name)
 
     elif name == "SVHN":
         split = "train" if train else "test"
@@ -62,13 +62,13 @@ def get_dataset_model(name, model=None, train=False):
             transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970)),
         ])
         ds = datasets.SVHN(path.join(_DATA_LOC, "SVHN"), split=split, transform=transform, download=True)
-        if model.lower() == 'resnet20':
+        if model_name.lower() == 'resnet20':
             model = Resnet20(10, path.join(_DATA_LOC, "models/SVHN/resnet20.pt"))
-        elif model.lower() == 'resnet56':
+        elif model_name.lower() == 'resnet56':
             model = Resnet56(10, path.join(_DATA_LOC, "models/SVHN/resnet56.pt"))
         else:
-            raise ValueError(f"Invalid model for this dataset: {model}")
-        patch_folder = path.join(_DATA_LOC, "patches/SVHN")
+            raise ValueError(f"Invalid model for this dataset: {model_name}")
+        patch_folder = path.join(_DATA_LOC, "patches/SVHN", model_name.lower())
 
     elif name == "ImageNet":
         transform = transforms.Compose([
@@ -80,13 +80,13 @@ def get_dataset_model(name, model=None, train=False):
         ])
         dir = "train" if train else "val"
         ds = ImagenetDataset(path.join(_DATA_LOC, "imagenette2", dir), transform=transform)
-        if model.lower() == 'resnet18':
+        if model_name.lower() == 'resnet18':
             model = Resnet18(1000, pretrained=True)
-        elif model.lower() == 'resnet50':
+        elif model_name.lower() == 'resnet50':
             model = Resnet50(1000, pretrained=True)
         else:
-            raise ValueError(f"Invalid model for this dataset: {model}")
-        patch_folder = path.join(_DATA_LOC, "patches/ImageNet")
+            raise ValueError(f"Invalid model for this dataset: {model_name}")
+        patch_folder = path.join(_DATA_LOC, "patches/ImageNet", model_name.lower())
 
     elif name=="Places365":
         transform = transforms.Compose([
@@ -98,13 +98,13 @@ def get_dataset_model(name, model=None, train=False):
         dir = "train" if train else "val"
         ds = datasets.Places365(path.join(_DATA_LOC, 'Places365'), split=dir, transform=transform, small=True,
                                 download=False)
-        if model.lower() == 'resnet18':
+        if model_name.lower() == 'resnet18':
             model = Resnet18(365,params_loc = path.join(_DATA_LOC, "models/Places365/resnet18.pt"),pretrained=False)
-        elif model.lower() == 'resnet50':
+        elif model_name.lower() == 'resnet50':
             model = Resnet50(365,params_loc = path.join(_DATA_LOC, "models/Places365/resnet50.pt"),pretrained=False)
         else:
-            raise ValueError(f"Invalid model for this dataset: {model}")
-        patch_folder = path.join(_DATA_LOC, "patches/Places365")
+            raise ValueError(f"Invalid model for this dataset: {model_name}")
+        patch_folder = path.join(_DATA_LOC, "patches/Places365", model_name.lower())
     elif name=="Caltech256":
         transform = transforms.Compose([
         transforms.Resize((224, 224)),
@@ -113,13 +113,13 @@ def get_dataset_model(name, model=None, train=False):
         ])
         dir = "Train" if train else "Test"
         ds = datasets.ImageFolder(path.join(_DATA_LOC,'Caltech256',dir), transform=transform)
-        if model.lower() == 'resnet18':
+        if model_name.lower() == 'resnet18':
             model = Resnet18(267, params_loc=path.join(_DATA_LOC, "models/Caltech256/resnet18.pt"))
-        elif model.lower() == 'resnet50':
+        elif model_name.lower() == 'resnet50':
             model = Resnet50(267, params_loc=path.join(_DATA_LOC, "models/Caltech256/resnet50.pt"))
         else:
-            raise ValueError(f"Invalid model for this dataset: {model}")
-        patch_folder = path.join(_DATA_LOC, "patches/Caltech256")
+            raise ValueError(f"Invalid model for this dataset: {model_name}")
+        patch_folder = path.join(_DATA_LOC, "patches/Caltech256", model_name.lower())
     elif name=="VOC2012":
         transform = transforms.Compose([
             transforms.Resize((224, 224)),
@@ -127,13 +127,13 @@ def get_dataset_model(name, model=None, train=False):
             transforms.Normalize([0.4568, 0.4386, 0.4063], [0.2666, 0.2641, 0.2783])
         ])
         ds = VOCDataset(os.path.join(_DATA_LOC, 'VOC2012'), train=train, transform=transform)
-        if model.lower() == 'resnet18':
+        if model_name.lower() == 'resnet18':
             model = Resnet18(20, params_loc=path.join(_DATA_LOC, "models/VOC2012/resnet18.pt"))
-        elif model.lower() == 'resnet50':
+        elif model_name.lower() == 'resnet50':
             model = Resnet50(20, params_loc=path.join(_DATA_LOC, "models/VOC2012/resnet50.pt"))
         else:
-            raise ValueError(f"Invalid model for this dataset: {model}")
-        patch_folder = path.join(_DATA_LOC, "patches/VOC2012")
+            raise ValueError(f"Invalid model for this dataset: {model_name}")
+        patch_folder = path.join(_DATA_LOC, "patches/VOC2012", model_name.lower())
     else:
         raise ValueError(f"Invalid dataset: {name}")
 

@@ -9,16 +9,12 @@ from os import path
 from typing import Dict
 from functools import partial
 import multiprocessing
+import logging
 
 
 def _run_metric(metric_name, metrics, samples, labels, attrs):
     metrics[metric_name].run_batch(samples, labels, attrs)
-    print(f"{metric_name} done.")
-
-
-_NO_MULTITHREADING = {
-    "ImpactCoverage", "MaxSensitivity"
-}
+    logging.info(f"{metric_name} done.")
 
 
 class Suite:
@@ -51,12 +47,13 @@ class Suite:
         self.explain_label = explain_label
         self.multi_label = multi_label
         if self.log_dir is not None:
-            print(f"Logging TensorBoard to {self.log_dir}")
+            logging.info(f"Logging TensorBoard to {self.log_dir}")
         self.writer = AttributionWriter(path.join(self.log_dir, "images_and_attributions")) \
             if self.log_dir is not None else None
 
     def load_config(self, loc):
-        cfg = Config(loc, self.log_dir, model=self.model, patch_folder=self.patch_folder, methods=self.methods,
+        multithreaded = self.num_threads > 1
+        cfg = Config(loc, self.model, multithreaded, self.log_dir, patch_folder=self.patch_folder, methods=self.methods,
                      method_names=list(self.methods.keys()))
         self.metrics = cfg.load()
 
@@ -85,8 +82,10 @@ class Suite:
                     self.images.append(samples.cpu().detach().numpy())
 
                 # We need the attributions, to save them or to check their shapes
+                logging.info("Computing attributions...")
                 attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach().numpy()
                          for method_name in self.methods.keys()}
+                logging.info("Finished.")
 
                 if self.writer is not None:
                     self.writer.add_images("Samples", samples, global_step=batch_nr)
@@ -99,21 +98,13 @@ class Suite:
                         self.attrs[method_name].append(attrs[method_name])
 
                 # Metric loop
+                logging.info("Starting metrics...")
                 if self.num_threads != 1:
-                    # Check which metrics can be run in parallel
-                    parallel_metrics = {m: self.metrics[m] for m in self.metrics
-                                        if type(self.metrics[m]).__name__ not in _NO_MULTITHREADING}
                     # Use multiprocessing when num_threads > 1
                     with multiprocessing.pool.ThreadPool(self.num_threads) as pool:
-                        run_metric_partial = partial(_run_metric, metrics=parallel_metrics, samples=samples,
+                        run_metric_partial = partial(_run_metric, metrics=self.metrics, samples=samples,
                                                      labels=labels, attrs=attrs)
-                        pool.map(run_metric_partial, parallel_metrics.keys())
-                    # Run the metrics that can't be run in parallel
-                    non_parallel_metrics = {m: self.metrics[m] for m in self.metrics
-                                            if type(self.metrics[m]).__name__ in _NO_MULTITHREADING}
-                    for m in non_parallel_metrics.keys():
-                        self.metrics[m].run_batch(samples, labels, attrs)
-                        print(f"{m} done, not in parallel")
+                        pool.map(run_metric_partial, self.metrics.keys())
                 else:
                     # If num_threads = 1, no multiprocessing is necessary
                     for i, metric in enumerate(self.metrics.keys()):
