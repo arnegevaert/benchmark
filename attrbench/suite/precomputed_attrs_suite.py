@@ -47,15 +47,14 @@ class PrecomputedAttrsSuite:
         cfg = Config(loc, global_args, log_dir=self.log_dir)
         self.metrics = cfg.load()
 
-    def run(self, num_samples, verbose=True):
-        samples_done = 0
-        prog = tqdm(total=num_samples) if verbose else None
+    def run(self, verbose=True):
+        prog = tqdm(total=self.samples.shape[0]) if verbose else None
         if self.seed:
             torch.manual_seed(self.seed)
             np.random.seed(self.seed)
-        while samples_done < num_samples:
-            samples = self.samples[samples_done:samples_done + self.batch_size, ...].to(self.device)
-            attrs = {method: self.attrs[method][samples_done:samples_done + self.batch_size, ...]
+        for i in range(0, self.samples.shape[0], step=self.batch_size):
+            samples = self.samples[i:i + self.batch_size, ...].to(self.device)
+            attrs = {method: self.attrs[method][i:i + self.batch_size, ...]
                      for method in self.attrs.keys()}
             with torch.no_grad():
                 out = self.model(samples)
@@ -69,8 +68,6 @@ class PrecomputedAttrsSuite:
 
             if verbose:
                 prog.update(samples.size(0))
-            samples_done += samples.size(0)
-        self.samples_done += num_samples
 
     def save_result(self, loc):
         metric_results = {metric_name: self.metrics[metric_name].get_result() for metric_name in self.metrics}
