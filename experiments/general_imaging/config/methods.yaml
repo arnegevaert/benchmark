@@ -43,4 +43,3 @@ methods:
   - ExpectedGradients:
       type: ExpectedGradients
       num_samples: 100
-

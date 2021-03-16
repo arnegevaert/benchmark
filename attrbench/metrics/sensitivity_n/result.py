@@ -1,8 +1,9 @@
-from typing import List, Tuple
+from typing import List, Tuple, Union, Dict
 
 import h5py
 import numpy as np
 import torch
+import pandas as pd
 
 from attrbench.metrics import MetricResult
 
@@ -37,6 +38,14 @@ class SensitivityNResult(MetricResult):
         result = cls(method_names, activation_fns, group.attrs["index"])
         result.data = {m_name: {fn: np.array(group[m_name][fn]) for fn in activation_fns}
                        for m_name in method_names}
+        return result
+
+    def to_df(self) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
+        result = {}
+        for afn in self.activation_fns:
+            data = {m_name: self.data[m_name][afn].squeeze().tolist() for m_name in self.method_names}
+            df = pd.DataFrame.from_dict(data)
+            result[afn] = df
         return result
 
 

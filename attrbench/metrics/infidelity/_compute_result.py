@@ -9,8 +9,8 @@ from attrbench.lib.util import corrcoef
 from attrbench.metrics import Metric, MetricResult
 
 _OUT_FNS = {
-    "mse": lambda a, b: ((a - b) ** 2).mean(dim=1, keepdim=True),
-    "corr": lambda a, b: torch.tensor(corrcoef(a.numpy(), b.numpy()))
+    "mse": lambda a, b: ((a - b) ** 2).mean(dim=1, keepdims=True),
+    "corr": lambda a, b: torch.tensor(corrcoef(a.numpy(), b.numpy())).unsqueeze(-1)
 }
 
 def _compute_result(pert_vectors: torch.Tensor, pred_diffs: Dict[str, torch.Tensor], attrs: np.ndarray,
