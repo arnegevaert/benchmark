@@ -48,9 +48,9 @@ def get_dataset_model(name, model=None, train=False):
         ])
         ds = datasets.CIFAR100(path.join(_DATA_LOC, "CIFAR100"), train=train, transform=transform, download=True)
         if model.lower() == 'resnet20':
-            model = Resnet20(10, path.join(_DATA_LOC, "models/CIFAR100/resnet20.pt"))
+            model = Resnet20(100, path.join(_DATA_LOC, "models/CIFAR100/resnet20.pt"))
         elif model.lower() == 'resnet56':
-            model = Resnet56(10, path.join(_DATA_LOC, "models/CIFAR100/resnet56.pt"))
+            model = Resnet56(100, path.join(_DATA_LOC, "models/CIFAR100/resnet56.pt"))
         else:
             raise ValueError(f"Invalid model for this dataset: {model}")
         patch_folder = path.join(_DATA_LOC, "patches/CIFAR100")

@@ -6,6 +6,7 @@ from attrbench.suite import Suite
 from torch.utils.data import DataLoader
 import time
 import multiprocessing
+import logging
 
 
 if __name__ == "__main__":
@@ -32,8 +33,13 @@ if __name__ == "__main__":
     if num_threads == -1:
         num_threads = multiprocessing.cpu_count()
 
-    print("Saving images" if args.save_images else "Not saving images")
-    print("Saving attributions" if args.save_images else "Not saving attributions")
+    logging.basicConfig(
+        format='[%(asctime)s %(levelname)s] %(message)s',
+        level=logging.INFO,
+        datefmt="%Y-%m-%d %H:%M:%S")
+
+    logging.info("Saving images" if args.save_images else "Not saving images")
+    logging.info("Saving attributions" if args.save_images else "Not saving attributions")
 
     # Get dataset, model, methods
     ds, model, patch_folder = get_dataset_model(args.dataset, args.model)
