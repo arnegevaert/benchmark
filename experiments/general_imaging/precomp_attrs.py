@@ -23,6 +23,7 @@ if __name__ == "__main__":
     parser.add_argument("--log-dir", type=str, default=None)
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--multi_label", action="store_true")
+    parser.add_argument("--explain_label", type=int, default=None)
     # Parse arguments
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"

@@ -52,8 +52,8 @@ class PrecomputedAttrsSuite:
         if self.seed:
             torch.manual_seed(self.seed)
             np.random.seed(self.seed)
-        for i in range(0, self.samples.shape[0], step=self.batch_size):
-            samples = self.samples[i:i + self.batch_size, ...].to(self.device)
+        for i in range(0, self.samples.shape[0], self.batch_size):
+            samples = torch.tensor(self.samples[i:i + self.batch_size, ...]).float().to(self.device)
             attrs = {method: self.attrs[method][i:i + self.batch_size, ...]
                      for method in self.attrs.keys()}
             with torch.no_grad():
@@ -61,7 +61,7 @@ class PrecomputedAttrsSuite:
                 labels = torch.argmax(out, dim=1)
 
             # Metric loop
-            for i, metric in enumerate(self.attrs.keys()):
+            for i, metric in enumerate(self.metrics.keys()):
                 if verbose:
                     prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
                 self.metrics[metric].run_batch(samples, labels, attrs)

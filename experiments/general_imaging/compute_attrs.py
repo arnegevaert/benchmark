@@ -71,7 +71,8 @@ if __name__ == "__main__":
                 batch = batch[:diff]
                 labels = labels[:diff]
         all_samples.append(batch.cpu().detach().numpy())
-        for method in methods:
+        for i, method in enumerate(methods.keys()):
+            prog.set_postfix({"method": f"{method} ({i+1}/{len(methods.keys())}"})
             attrs[method].append(methods[method](batch, labels).cpu().detach().numpy())
         done += batch.shape[0]
         prog.update(batch.shape[0])

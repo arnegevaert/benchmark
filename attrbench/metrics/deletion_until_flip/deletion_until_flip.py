@@ -30,7 +30,8 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarra
         masked_samples = masked_samples[0].to(device).float()
         mask_size = mask_size.item()
 
-        masked_output = model(masked_samples)
+        with torch.no_grad():
+            masked_output = model(masked_samples)
         predictions = torch.argmax(masked_output, dim=1)
         criterion = (predictions != orig_predictions)
         new_flipped = torch.logical_or(flipped, criterion.cpu())
