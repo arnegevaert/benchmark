@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import h5py
 from typing import List, Union, Dict, Tuple
+import pandas as pd
 
 
 class MetricResult:
@@ -29,6 +30,14 @@ class MetricResult:
         result = cls(method_names)
         result.data = {m_name: np.array(group[m_name]) for m_name in method_names}
         return result
+
+    def to_df(self) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
+        data = self.data
+        for method_name in self.method_names:
+            if type(data[method_name]) == list:
+                data[method_name] = torch.cat(data[method_name]).numpy()
+            data[method_name] = data[method_name].tolist()
+        return pd.DataFrame.from_dict(data)
 
 
 class ModeActivationMetricResult(MetricResult):
@@ -71,4 +80,13 @@ class ModeActivationMetricResult(MetricResult):
                  for mode in modes}
             for m_name in method_names
         }
+        return result
+
+    def to_df(self) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
+        result = {}
+        for mode in self.modes:
+            for afn in self.activation_fn:
+                data = {m_name: self.data[m_name][mode][afn].tolist() for m_name in self.method_names}
+                df = pd.DataFrame.from_dict(data)
+                result[f"{mode}_{afn}"] = df
         return result
