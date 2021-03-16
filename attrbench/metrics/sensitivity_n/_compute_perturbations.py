@@ -9,9 +9,10 @@ from attrbench.lib import AttributionWriter
 
 
 def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, ds: Dataset,
-                           model: Callable, n_range, activation_fns: Tuple[str], writer: AttributionWriter = None) \
+                           model: Callable, n_range, activation_fns: Tuple[str], writer: AttributionWriter = None,
+                           num_workers=0) \
         -> Tuple[Dict[str, Dict[int, np.ndarray]], Dict[int, np.ndarray]]:
-    dl = DataLoader(ds, shuffle=False, num_workers=0, batch_size=1)
+    dl = DataLoader(ds, shuffle=False, num_workers=num_workers, batch_size=1)
     device = samples.device
     with torch.no_grad():
         orig_output = model(samples)

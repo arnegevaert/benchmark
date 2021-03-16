@@ -16,14 +16,15 @@ _PERTURBATION_CLASSES = {
 
 def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: Callable, perturbation_mode: str,
                            perturbation_size: float, num_perturbations: int, activation_fn: Tuple[str],
-                           writer: AttributionWriter = None) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
+                           writer: AttributionWriter = None, num_workers=0) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
     device = samples.device
     if perturbation_mode not in _PERTURBATION_CLASSES.keys():
         raise ValueError(f"Invalid perturbation mode {perturbation_mode}. "
                          f"Valid options are {', '.join(list(_PERTURBATION_CLASSES.keys()))}")
     perturbation_ds = _PERTURBATION_CLASSES[perturbation_mode](samples.cpu().numpy(),
                                                                perturbation_size, num_perturbations)
-    perturbation_dl = DataLoader(perturbation_ds, batch_size=1, num_workers=4)
+    perturbation_dl = DataLoader(perturbation_ds, batch_size=1, num_workers=num_workers)
+    print(num_workers)
 
     # Get original model output
     orig_output = {}

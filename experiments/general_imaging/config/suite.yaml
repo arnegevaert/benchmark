@@ -1,52 +1,52 @@
-#infidelity:
-#  default:
-#    num_perturbations: 1000
-#    mode:
-#      - mse
-#      - corr
-#    activation_fn:
-#      - linear
-#      - sigmoid
-#      - softmax
-#  metrics:
-#    infidelity_gaussian:
-#      type: Infidelity
-#      perturbation_mode: gaussian
-#      perturbation_size: 0.2
-#    infidelity_sq:
-#      type: Infidelity
-#      perturbation_mode: square
-#      perturbation_size: 0.2
-#    infidelity_seg:
-#      type: Infidelity
-#      perturbation_mode: segment
-#      perturbation_size: 10
-
-masking:
-  foreach:
-    arg: masker
-    values:
-      constant:
-        type: ConstantMasker
-        feature_level: pixel
-        mask_value: 0.
-      random:
-        type: RandomMasker
-        feature_level: pixel
-      blur:
-        type: BlurringMasker
-        feature_level: pixel
-        kernel_size: 0.5
+infidelity:
   default:
+    num_perturbations: 1000
     mode:
-      - morf
-      - lerf
+      - mse
+      - corr
     activation_fn:
       - linear
       - sigmoid
       - softmax
-    num_steps: 100
   metrics:
+    infidelity_gaussian:
+      type: Infidelity
+      perturbation_mode: gaussian
+      perturbation_size: 0.2
+    infidelity_sq:
+      type: Infidelity
+      perturbation_mode: square
+      perturbation_size: 0.2
+    infidelity_seg:
+      type: Infidelity
+      perturbation_mode: segment
+      perturbation_size: 10
+
+#masking:
+#  foreach:
+#    arg: masker
+#    values:
+#      constant:
+#        type: ConstantMasker
+#        feature_level: pixel
+#        mask_value: 0.
+#      random:
+#        type: RandomMasker
+#        feature_level: pixel
+#      blur:
+#        type: BlurringMasker
+#        feature_level: pixel
+#        kernel_size: 0.5
+#  default:
+#    mode:
+#      - morf
+#      - lerf
+#    activation_fn:
+#      - linear
+#      - sigmoid
+#      - softmax
+#    num_steps: 100
+#  metrics:
 #    deletion_until_flip:
 #      type: DeletionUntilFlip
 #    impact_score:
@@ -72,10 +72,10 @@ masking:
 #      max_subset_size: 0.5
 #      num_steps: 10
 #      num_subsets: 100
-    irof:
-      type: Irof
-    iiof:
-      type: Iiof
+#    irof:
+#      type: Irof
+#    iiof:
+#      type: Iiof
 
 #other:
 #  metrics:
