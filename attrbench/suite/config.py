@@ -10,7 +10,7 @@ import copy
 
 def _parse_masker(d):
     constructor = getattr(masking, d["type"])
-    return constructor(**{key: d[key] for key in d if key != "type"})
+    return (constructor,{key: d[key] for key in d if key != "type"})
 
 
 def _parse_args(args):

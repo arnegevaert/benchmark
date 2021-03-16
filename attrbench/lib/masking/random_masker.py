@@ -4,10 +4,11 @@ import numpy as np
 
 
 class RandomMasker(Masker):
-    def __init__(self, feature_level, std=1, num_samples=1):
-        super().__init__(feature_level)
+    def __init__(self,samples, attributions, feature_level, std=1, num_samples=1):
+        super().__init__(samples, attributions,feature_level)
         self.std = std
         self.num_samples = num_samples
+        self.initialize_baselines(samples)
 
     def initialize_baselines(self, samples):
         self.baseline = np.random.normal(loc=0, scale=self.std, size=samples.shape)

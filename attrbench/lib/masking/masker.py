@@ -4,15 +4,18 @@ import numpy as np
 # TODO masker should take attributions as constructor argument and then implement the necessary
 #      functions (mask_highest, keep_highest, mask_lowest, keep_lowest, mask_random, mask_all)
 class Masker:
-    def __init__(self, feature_level):
+    def __init__(self,samples: np.ndarray, attributions: np.ndarray, feature_level, segmentation: np.ndarray =None):
         if feature_level not in ("channel", "pixel"):
             raise ValueError(f"feature_level must be 'channel' or 'pixel'. Found {feature_level}.")
         self.feature_level = feature_level
         self.baseline = None
-        self.samples = None
-        self.attributions = None
-        self.segments = None
+        self.samples=samples
+        self.attributions=attributions
+        self.segments=segmentation
+        self.sorted_indices = attributions.reshape(attributions.shape[0], -1).argsort()
 
+
+    #### can be deleted later
     def initialize_samples(self, samples, attributions, segmentation = None):
         if not self.check_attribution_shape(samples,attributions):
             raise ValueError("Attributions are not compatible with masker")
@@ -45,6 +48,7 @@ class Masker:
         return self.mask(self.samples, indices[:,:k])
     def mask_all(self):
         return self.mask(self.samples, self.sorted_indices)
+
     def predict_masked(self, samples, indices, model, return_masked_samples=False):
         masked = self.mask(samples, indices)
         with torch.no_grad():
@@ -63,7 +67,7 @@ class Masker:
             aggregated_shape = list(samples.shape)
             aggregated_shape[1] = 1
             return aggregated_shape == list(attributions.shape)
-
+    #TODO: private
     def mask(self, samples: np.ndarray, indices: np.ndarray):
         if self.baseline is None:
             raise ValueError("Masker was not initialized.")

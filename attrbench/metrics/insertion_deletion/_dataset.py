@@ -14,15 +14,18 @@ class _InsertionDeletionDataset(Dataset):
         self.mode = mode
         self.num_steps = num_steps
         self.samples = samples
-        self.masker = masker
-        self.masker.initialize_baselines(samples)
+        masker_constructor, masker_kwargs=masker
+        self.masker = masker_constructor(samples, attrs,**masker_kwargs)
+        self.reverse_order = reverse_order
+        #### TODO: Remove
         # Flatten each sample in order to sort indices per sample
         attrs = attrs.reshape(attrs.shape[0], -1)  # [batch_size, -1]
         # Sort indices of attrs in ascending order
         self.sorted_indices = np.argsort(attrs)
+
         if reverse_order:
             self.sorted_indices = np.flip(self.sorted_indices, axis=1)
-
+        #######/////
         total_features = attrs.shape[1]
         self.mask_range = list((np.linspace(0, 1, num_steps) * total_features)[1:-1].astype(np.int))
 
@@ -31,9 +34,19 @@ class _InsertionDeletionDataset(Dataset):
 
     def __getitem__(self, item):
         num_to_mask = self.mask_range[item]
+        #///// remove this
         indices = self.sorted_indices[:, :-num_to_mask] if self.mode == "insertion" \
             else self.sorted_indices[:, -num_to_mask:]
         masked_samples = self.masker.mask(self.samples, indices)
+        #/////
+        #TODO: keep this
+        if not self.reverse_order:
+            masked_samples2 = self.masker.keep_top(num_to_mask) if self.mode == "insertion" else self.masker.mask_top(num_to_mask)
+        else:
+            masked_samples2 = self.masker.keep_bot(num_to_mask) if self.mode == "insertion" else self.masker.mask_bot(
+                num_to_mask)
+        assert((masked_samples==masked_samples2).all())
+
         return masked_samples
 
 
