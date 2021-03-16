@@ -21,6 +21,7 @@ class Suite:
     def __init__(self, model, methods, dataloader, device="cpu",
                  save_images=False, save_attrs=False, seed=None, patch_folder=None,
                  log_dir=None, explain_label=None, multi_label=False, num_workers=1):
+        torch.multiprocessing.set_sharing_strategy("file_system")
         self.metrics: Dict[str, Metric] = {}
         self.num_workers = num_workers
         self.model = model.to(device)

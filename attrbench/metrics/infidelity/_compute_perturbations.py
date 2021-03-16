@@ -24,7 +24,6 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
     perturbation_ds = _PERTURBATION_CLASSES[perturbation_mode](samples.cpu().numpy(),
                                                                perturbation_size, num_perturbations)
     perturbation_dl = DataLoader(perturbation_ds, batch_size=1, num_workers=num_workers)
-    print(num_workers)
 
     # Get original model output
     orig_output = {}
