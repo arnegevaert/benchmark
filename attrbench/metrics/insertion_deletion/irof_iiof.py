@@ -12,13 +12,14 @@ from .result import IrofResult, IiofResult
 
 
 def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
-         masker: Masker, reverse_order: bool = False, activation_fn: Union[Tuple[str], str] = "linear", writer=None):
+         masker: Masker, reverse_order: bool = False, activation_fn: Union[Tuple[str], str] = "linear",
+         writer=None, num_workers=0):
     if type(activation_fn) == str:
         activation_fn = (activation_fn,)
     masking_dataset = _IrofIiofDataset("deletion", samples.cpu().numpy(), attrs, masker,
                                        reverse_order, writer)
     orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, masking_dataset, activation_fn,
-                                                              writer)
+                                                              writer, num_workers)
     preds = _concat_results(orig_preds, inter_preds, neutral_preds, orig_preds)
 
     # Calculate AOC for each sample (depends on how many segments each sample had)
@@ -33,13 +34,14 @@ def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np
 
 
 def iiof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
-         masker: Masker, reverse_order: bool = False, activation_fn: Union[Tuple[str], str] = "linear", writer=None):
+         masker: Masker, reverse_order: bool = False, activation_fn: Union[Tuple[str], str] = "linear",
+         writer=None, num_workers=0):
     if type(activation_fn) == str:
         activation_fn = (activation_fn,)
     masking_dataset = _IrofIiofDataset("insertion", samples.cpu().numpy(), attrs, masker,
                                        reverse_order, writer)
     orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, masking_dataset, activation_fn,
-                                                              writer)
+                                                              writer, num_workers)
     preds = _concat_results(neutral_preds, inter_preds, orig_preds, orig_preds)
 
     # Calculate AUC for each sample (depends on how many segments each sample had)
@@ -56,8 +58,9 @@ def iiof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np
 class _IrofIiof(Metric):
     def __init__(self, model: Callable, method_names: List[str], masker: Masker,
                  mode: Union[Tuple[str], str], activation_fn: Union[Tuple[str], str],
-                 result_class: Callable, method_fn: Callable, writer_dir: str = None):
-        super().__init__(model, method_names, writer_dir)
+                 result_class: Callable, method_fn: Callable, writer_dir: str = None,
+                 num_workers=0):
+        super().__init__(model, method_names, writer_dir, num_workers)
         self.masker = masker
         self.modes = (mode,) if type(mode) == str else mode
         for m in self.modes:
@@ -74,19 +77,19 @@ class _IrofIiof(Metric):
                 reverse_order = mode == "lerf"
                 method_result[mode] = self.method_fn(samples, labels, self.model, attrs_dict[method_name],
                                                      self.masker, reverse_order, self.activation_fns,
-                                                     writer=self._get_writer(method_name))
+                                                     writer=self._get_writer(method_name), num_workers=self.num_workers)
             self.result.append(method_name, method_result)
 
 
 class Irof(_IrofIiof):
     def __init__(self, model: Callable, method_names: List[str], masker: Masker,
                  mode: Union[Tuple[str], str], activation_fn: Union[Tuple[str], str],
-                 writer_dir: str = None):
-        super().__init__(model, method_names, masker, mode, activation_fn, IrofResult, irof, writer_dir)
+                 writer_dir: str = None, num_workers=0):
+        super().__init__(model, method_names, masker, mode, activation_fn, IrofResult, irof, writer_dir, num_workers)
 
 
 class Iiof(_IrofIiof):
     def __init__(self, model: Callable, method_names: List[str], masker: Masker,
                  mode: Union[Tuple[str], str], activation_fn: Union[Tuple[str], str],
-                 writer_dir: str = None):
-        super().__init__(model, method_names, masker, mode, activation_fn, IiofResult, iiof, writer_dir)
+                 writer_dir: str = None, num_workers=0):
+        super().__init__(model, method_names, masker, mode, activation_fn, IiofResult, iiof, writer_dir, num_workers)

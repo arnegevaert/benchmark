@@ -13,11 +13,11 @@ from .result import DeletionUntilFlipResult
 # We assume none of the samples has the same label as the output of the network when given
 # a fully masked image (in which case we might not see a flip)
 def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarray,
-                        num_steps: float, masker: Masker, writer=None):
+                        num_steps: float, masker: Masker, writer=None, num_workers=0):
     if writer is not None:
         flipped_samples = [None for _ in range(samples.shape[0])]
     ds = _DeletionUntilFlipDataset(num_steps, samples.cpu().numpy(), attrs, masker)
-    dl = DataLoader(ds, shuffle=False, num_workers=0, batch_size=1)
+    dl = DataLoader(ds, shuffle=False, num_workers=num_workers, batch_size=1)
     result = torch.tensor([-1 for _ in range(samples.shape[0])]).int()
     flipped = torch.tensor([False for _ in range(samples.shape[0])]).bool()
     device = samples.device
@@ -56,8 +56,8 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarra
 
 
 class DeletionUntilFlip(Metric):
-    def __init__(self, model, method_names, num_steps, masker, writer_dir=None):
-        super().__init__(model, method_names, writer_dir)
+    def __init__(self, model, method_names, num_steps, masker, num_workers=0, writer_dir=None):
+        super().__init__(model, method_names, writer_dir, num_workers)
         self.num_steps = num_steps
         self.masker = masker
         self.result = DeletionUntilFlipResult(method_names)
@@ -68,5 +68,6 @@ class DeletionUntilFlip(Metric):
                 raise ValueError(f"Invalid method name: {method_name}")
             self.result.append(method_name,
                                deletion_until_flip(samples, self.model, attrs_dict[method_name], self.num_steps,
-                                                   self.masker, writer=self._get_writer(method_name))
+                                                   self.masker, writer=self._get_writer(method_name),
+                                                   num_workers=self.num_workers)
                                )

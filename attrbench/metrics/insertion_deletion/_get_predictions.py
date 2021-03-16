@@ -9,7 +9,7 @@ from ._dataset import _InsertionDeletionDataset
 
 def _get_predictions(samples: torch.Tensor, labels: torch.Tensor,
                      model: Callable, ds: _InsertionDeletionDataset,
-                     activation_fns: Tuple[str], writer=None) -> Tuple[Dict, Dict, Dict]:
+                     activation_fns: Tuple[str], writer=None, num_workers=0) -> Tuple[Dict, Dict, Dict]:
     device = samples.device
     with torch.no_grad():
         _orig_preds = model(samples)
@@ -22,7 +22,8 @@ def _get_predictions(samples: torch.Tensor, labels: torch.Tensor,
         if writer is not None:
             writer.add_images("orig_samples", samples)
             writer.add_images("neutral_samples", fully_masked)
-    dl = DataLoader(ds, shuffle=False, num_workers=0, batch_size=1)
+    dl = DataLoader(ds, shuffle=False, num_workers=num_workers, batch_size=1)
+    print(num_workers)
 
     inter_preds = {fn: [] for fn in activation_fns}
     for i, batch in enumerate(dl):
