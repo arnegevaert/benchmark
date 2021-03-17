@@ -48,6 +48,7 @@ class _SegmentRemovalPerturbation(_Perturbation):
         perturbed_samples, perturbation_vectors = [], []
         # This needs to happen per sample, since samples don't necessarily have
         # the same number of segments
+        # TODO check if this can happen better on GPU (look at segsensn)
         for i in range(self.samples.shape[0]):
             seg_sample = self.seg_samples[i, ...]
             sample = self.samples[i, ...]

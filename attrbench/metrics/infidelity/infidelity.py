@@ -48,6 +48,7 @@ class Infidelity(Metric):
         pert_vectors, pred_diffs = _compute_perturbations(samples, labels, self.model,
                                                           self.perturbation_mode, self.perturbation_size,
                                                           self.num_perturbations, self.activation_fn, writer)
+        # TODO multiprocessing here
         for method_name in attrs_dict:
             self.result.append(method_name, _compute_result(pert_vectors, pred_diffs, attrs_dict[method_name],
                                                             self.mode))
