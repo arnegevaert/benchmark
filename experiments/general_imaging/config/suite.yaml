@@ -1,26 +1,26 @@
-#infidelity:
-#  default:
-#    num_perturbations: 1000
-#    mode:
-#      - mse
-#      - corr
-#    activation_fn:
-#      - linear
-#      - sigmoid
-#      - softmax
-#  metrics:
-#    infidelity_gaussian:
-#      type: Infidelity
-#      perturbation_mode: gaussian
-#      perturbation_size: 0.2
-#    infidelity_sq:
-#      type: Infidelity
-#      perturbation_mode: square
-#      perturbation_size: 0.2
-#    infidelity_seg:
-#      type: Infidelity
-#      perturbation_mode: segment
-#      perturbation_size: 10
+infidelity:
+  default:
+    num_perturbations: 1000
+    mode:
+      - mse
+      - corr
+    activation_fn:
+      - linear
+      - sigmoid
+      - softmax
+  metrics:
+    infidelity_gaussian:
+      type: Infidelity
+      perturbation_mode: gaussian
+      perturbation_size: 0.2
+    infidelity_sq:
+      type: Infidelity
+      perturbation_mode: square
+      perturbation_size: 0.2
+    infidelity_seg:
+      type: Infidelity
+      perturbation_mode: segment
+      perturbation_size: 10
 
 masking:
   foreach:
@@ -47,8 +47,8 @@ masking:
       - softmax
     num_steps: 100
   metrics:
-#    deletion_until_flip:
-#      type: DeletionUntilFlip
+    deletion_until_flip:
+      type: DeletionUntilFlip
 #    impact_score:
 #      type: ImpactScore
 #      strict: false
