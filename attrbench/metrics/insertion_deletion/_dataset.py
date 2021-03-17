@@ -51,10 +51,10 @@ class _IrofIiofDataset:
             writer.add_images("segmented samples", self.segmented_images)
 
     def set_attrs(self, attrs: np.ndarray, reverse_order: bool = False):
-        avg_attrs = segment_attributions(self.segmented_images.cpu().numpy(), attrs)
+        avg_attrs = segment_attributions(self.segmented_images, torch.tensor(attrs, device=self.samples.device))
         self.sorted_indices = avg_attrs.argsort()  # [batch_size, num_segments]
         if reverse_order:
-            self.sorted_indices = np.flip(self.sorted_indices, axis=1)
+            self.sorted_indices = torch.flip(self.sorted_indices, dims=[1])
 
     def __len__(self):
         # Exclude fully masked/inserted image
