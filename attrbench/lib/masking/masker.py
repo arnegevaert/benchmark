@@ -38,9 +38,10 @@ class Masker:
             except IndexError:
                 raise ValueError("Masking index was out of bounds. "
                                  "Make sure the masking policy is compatible with method output.")
+        to_mask = to_mask.reshape(samples.shape)
         return self.mask_boolean(samples, to_mask)
 
-    def mask_boolean(self, samples, bool_mask):
+    def mask_boolean(self, samples: torch.tensor, bool_mask: torch.tensor):
         return samples - (bool_mask * samples) + (bool_mask * self.baseline)
 
     def initialize_baselines(self, samples):

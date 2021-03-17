@@ -1,9 +1,9 @@
-from torch.utils.data import Dataset
 import numpy as np
+import torch
 
 
-class _DeletionUntilFlipDataset(Dataset):
-    def __init__(self, num_steps, samples: np.ndarray, attrs: np.ndarray, masker):
+class _DeletionUntilFlipDataset:
+    def __init__(self, num_steps, samples: torch.tensor, attrs: np.ndarray, masker):
         self.num_steps = num_steps
         self.samples = samples
         self.masker = masker

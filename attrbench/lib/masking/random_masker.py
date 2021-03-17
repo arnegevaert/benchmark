@@ -1,6 +1,5 @@
 from attrbench.lib.masking import Masker
 import torch
-import numpy as np
 
 
 class RandomMasker(Masker):
@@ -9,5 +8,5 @@ class RandomMasker(Masker):
         self.std = std
         self.num_samples = num_samples
 
-    def initialize_baselines(self, samples):
-        self.baseline = np.random.normal(loc=0, scale=self.std, size=samples.shape)
+    def initialize_baselines(self, samples: torch.tensor):
+        self.baseline = torch.randn(*samples.shape, device=samples.device) * self.std

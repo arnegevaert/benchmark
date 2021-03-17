@@ -16,19 +16,16 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarra
                         num_steps: float, masker: Masker, writer=None, num_workers=0):
     if writer is not None:
         flipped_samples = [None for _ in range(samples.shape[0])]
-    ds = _DeletionUntilFlipDataset(num_steps, samples.cpu().numpy(), attrs, masker)
-    dl = DataLoader(ds, shuffle=False, num_workers=num_workers, batch_size=1)
+    ds = _DeletionUntilFlipDataset(num_steps, samples, attrs, masker)
     result = torch.tensor([-1 for _ in range(samples.shape[0])]).int()
     flipped = torch.tensor([False for _ in range(samples.shape[0])]).bool()
     device = samples.device
 
     orig_predictions = torch.argmax(model(samples), dim=1)
-    it = iter(dl)
+    it = iter(ds)
     batch = next(it)
     while not torch.all(flipped) and batch is not None:
         masked_samples, mask_size = batch
-        masked_samples = masked_samples[0].to(device).float()
-        mask_size = mask_size.item()
 
         with torch.no_grad():
             masked_output = model(masked_samples)
