@@ -3,11 +3,10 @@ from typing import Callable, Tuple, Dict
 import torch
 
 from attrbench.lib.util import ACTIVATION_FNS
-from ._dataset import _InsertionDeletionDataset
 
 
 def _get_predictions(samples: torch.Tensor, labels: torch.Tensor,
-                     model: Callable, ds: _InsertionDeletionDataset,
+                     model: Callable, ds,
                      activation_fns: Tuple[str], writer=None) -> Tuple[Dict, Dict, Dict]:
     with torch.no_grad():
         _orig_preds = model(samples)
