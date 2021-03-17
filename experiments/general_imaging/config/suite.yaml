@@ -56,14 +56,14 @@ masking:
 #    strict_impact_score:
 #      type: ImpactScore
 #      strict: true
-    insertion:
-      type: Insertion
-    deletion:
-      type: Deletion
     irof:
       type: Irof
     iiof:
       type: Iiof
+    insertion:
+      type: Insertion
+    deletion:
+      type: Deletion
     sensitivity_n:
       type: SensitivityN
       min_subset_size: 0.1

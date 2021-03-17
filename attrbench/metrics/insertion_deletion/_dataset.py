@@ -42,8 +42,9 @@ class _IrofIiofDataset(_InsertionDeletionDataset):
                  reverse_order: bool = False, writer: AttributionWriter = None):
         super().__init__(mode, num_steps=100, samples=samples, attrs=attrs, masker=masker, reverse_order=reverse_order)
         # Override sorted_indices to use segment indices instead of pixel indices
-        self.segmented_images, avg_attrs = segment_samples_attributions(samples, attrs)
+        self.segmented_images, avg_attrs = segment_samples_attributions(samples.cpu().numpy(), attrs)
         self.sorted_indices = avg_attrs.argsort()  # [batch_size, num_segments]
+        self.segmented_images = torch.tensor(self.segmented_images, device=samples.device)
         if reverse_order:
             self.sorted_indices = np.flip(self.sorted_indices, axis=1)
         if writer is not None:

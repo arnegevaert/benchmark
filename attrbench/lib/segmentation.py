@@ -1,19 +1,26 @@
 import numpy as np
+import torch
 from attrbench.lib.masking import Masker
 from skimage.segmentation import slic
 from typing import Tuple
 
 
-def mask_segments(images: np.ndarray, seg_images: np.ndarray, segments: np.ndarray, masker: Masker) -> np.ndarray:
+def _isin(a: torch.tensor, b: torch.tensor):
+    # https://stackoverflow.com/questions/60918304/get-indices-of-elements-in-tensor-a-that-are-present-in-tensor-b
+    return (a[..., None] == b).any(-1)
+
+
+def mask_segments(images: torch.tensor, seg_images: torch.tensor, segments: np.ndarray, masker: Masker) -> np.ndarray:
     if not (images.shape[0] == seg_images.shape[0] and images.shape[0] == segments.shape[0] and
             images.shape[-2:] == seg_images.shape[-2:]):
         raise ValueError(f"Incompatible shapes: {images.shape}, {seg_images.shape}, {segments.shape}")
     bool_masks = []
+    segments = torch.tensor(segments.copy(), device=images.device)
     for i in range(images.shape[0]):
         seg_img = seg_images[i, ...]
         segs = segments[i, ...]
-        bool_masks.append(np.isin(seg_img, segs))
-    bool_masks = np.stack(bool_masks, axis=0)
+        bool_masks.append(_isin(seg_img, segs))
+    bool_masks = torch.stack(bool_masks, dim=0)
     return masker.mask_boolean(images, bool_masks)
 
 
