@@ -27,7 +27,7 @@ def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np
     for fn in activation_fn:
         aoc = []
         for i in range(samples.shape[0]):
-            num_segments = len(np.unique(masking_dataset.segmented_images[i, ...]))
+            num_segments = len(np.unique(masking_dataset.segmented_images[i, ...].cpu().numpy()))
             aoc.append(1 - np.trapz(preds[fn][i, :num_segments + 1], x=np.linspace(0, 1, num_segments + 1)))
         result[fn] = torch.tensor(aoc).unsqueeze(-1)
     return result
@@ -49,7 +49,7 @@ def iiof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np
     for fn in activation_fn:
         auc = []
         for i in range(samples.shape[0]):
-            num_segments = len(np.unique(masking_dataset.segmented_images[i, ...]))
+            num_segments = len(np.unique(masking_dataset.segmented_images[i, ...].cpu().numpy()))
             auc.append(np.trapz(preds[fn][i, :num_segments + 1], x=np.linspace(0, 1, num_segments + 1)))
         result[fn] = torch.tensor(auc).unsqueeze(-1)
     return result
