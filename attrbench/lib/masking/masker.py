@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 
 # TODO masker should take attributions as constructor argument and then implement the necessary
@@ -21,19 +22,14 @@ class Masker:
             aggregated_shape[1] = 1
             return aggregated_shape == list(attributions.shape)
 
-    def mask(self, samples: np.ndarray, indices: np.ndarray):
+    def mask(self, samples: torch.tensor, indices: np.ndarray):
         if self.baseline is None:
             raise ValueError("Masker was not initialized.")
         batch_size, num_channels, rows, cols = samples.shape
         num_indices = indices.shape[1]
         batch_dim = np.tile(range(batch_size), (num_indices, 1)).transpose()
 
-        #to_mask = torch.zeros(samples.shape).flatten(1 if self.feature_level == "channel" else 2)
-        to_mask = np.zeros(samples.shape)
-        if self.feature_level == "channel":
-            to_mask = to_mask.reshape((to_mask.shape[0], -1))
-        else:
-            to_mask = to_mask.reshape((to_mask.shape[0], to_mask.shape[1], -1))
+        to_mask = torch.zeros(samples.shape, device=samples.device).flatten(1 if self.feature_level == "channel" else 2)
         if self.feature_level == "channel":
             to_mask[batch_dim, indices] = 1.
         else:
@@ -42,7 +38,6 @@ class Masker:
             except IndexError:
                 raise ValueError("Masking index was out of bounds. "
                                  "Make sure the masking policy is compatible with method output.")
-        to_mask = to_mask.reshape(samples.shape)
         return self.mask_boolean(samples, to_mask)
 
     def mask_boolean(self, samples, bool_mask):
