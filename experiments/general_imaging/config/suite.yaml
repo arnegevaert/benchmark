@@ -56,6 +56,18 @@ masking:
 #    strict_impact_score:
 #      type: ImpactScore
 #      strict: true
+    seg_sensitivity_n:
+      type: SegSensitivityN
+      min_subset_size: 0.1
+      max_subset_size: 0.5
+      num_steps: 10
+      num_subsets: 100
+    sensitivity_n:
+      type: SensitivityN
+      min_subset_size: 0.1
+      max_subset_size: 0.5
+      num_steps: 10
+      num_subsets: 100
     irof:
       type: Irof
     iiof:
@@ -64,18 +76,6 @@ masking:
       type: Insertion
     deletion:
       type: Deletion
-    sensitivity_n:
-      type: SensitivityN
-      min_subset_size: 0.1
-      max_subset_size: 0.5
-      num_steps: 10
-      num_subsets: 100
-    seg_sensitivity_n:
-      type: SegSensitivityN
-      min_subset_size: 0.1
-      max_subset_size: 0.5
-      num_steps: 10
-      num_subsets: 100
 
 #other:
 #  metrics:

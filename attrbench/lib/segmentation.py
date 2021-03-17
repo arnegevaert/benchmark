@@ -10,7 +10,7 @@ def _isin(a: torch.tensor, b: torch.tensor):
     return (a[..., None] == b).any(-1)
 
 
-def mask_segments(images: torch.tensor, seg_images: torch.tensor, segments: np.ndarray, masker: Masker) -> np.ndarray:
+def mask_segments(images: torch.tensor, seg_images: torch.tensor, segments: torch.tensor, masker: Masker) -> np.ndarray:
     if not (images.shape[0] == seg_images.shape[0] and images.shape[0] == segments.shape[0] and
             images.shape[-2:] == seg_images.shape[-2:]):
         raise ValueError(f"Incompatible shapes: {images.shape}, {seg_images.shape}, {segments.shape}")

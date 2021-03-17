@@ -21,7 +21,7 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
         activation_fn = (activation_fn,)
     num_features = attrs.reshape(attrs.shape[0], -1).shape[1]
     n_range = (np.linspace(min_subset_size, max_subset_size, num_steps) * num_features).astype(np.int)
-    ds = _SensitivityNDataset(n_range, num_subsets, samples.cpu().numpy(), num_features, masker)
+    ds = _SensitivityNDataset(n_range, num_subsets, samples, num_features, masker)
     output_diffs, indices = _compute_perturbations(samples, labels, ds, model, n_range, activation_fn, writer)
     return _compute_correlations(attrs, n_range, output_diffs, indices)
 
@@ -34,7 +34,7 @@ def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callab
     if type(activation_fn) == str:
         activation_fn = (activation_fn,)
     n_range = (np.linspace(min_subset_size, max_subset_size, num_steps) * 100).astype(np.int)
-    ds = _SegSensNDataset(n_range, num_subsets, samples.cpu().numpy(), masker, writer)
+    ds = _SegSensNDataset(n_range, num_subsets, samples, masker, writer)
     attrs = segment_attributions(ds.segmented_images, attrs)
     output_diffs, indices = _compute_perturbations(samples, labels, ds, model, n_range, activation_fn, writer)
     return _compute_correlations(attrs, n_range, output_diffs, indices)
@@ -64,7 +64,7 @@ class SensitivityN(Metric):
         n_range = (np.linspace(self.min_subset_size, self.max_subset_size, self.num_steps) * num_features).astype(
             np.int)
         # Create pseudo-dataset
-        ds = _SensitivityNDataset(n_range, self.num_subsets, samples.cpu().numpy(), num_features, self.masker)
+        ds = _SensitivityNDataset(n_range, self.num_subsets, samples, num_features, self.masker)
         # Calculate output diffs and removed indices (we will re-use this for each method)
         writer = self.writers["general"] if self.writers is not None else None
         output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, n_range, self.activation_fn,
@@ -96,12 +96,13 @@ class SegSensitivityN(Metric):
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         # Create pseudo-dataset
-        ds = _SegSensNDataset(self.n_range, self.num_subsets, samples.cpu().numpy(), self.masker)
+        ds = _SegSensNDataset(self.n_range, self.num_subsets, samples, self.masker)
         # Calculate output diffs and removed indices (we will re-use this for each method)
         writer = self.writers["general"] if self.writers is not None else None
         output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, self.n_range,
                                                        self.activation_fn, writer)
 
         for method_name in attrs_dict:
-            attrs = segment_attributions(ds.segmented_images, attrs_dict[method_name])
-            self.result.append(method_name, _compute_correlations(attrs, self.n_range, output_diffs, indices))
+            attrs = segment_attributions(ds.segmented_images,
+                                         torch.tensor(attrs_dict[method_name], device=samples.device))
+            self.result.append(method_name, _compute_correlations(attrs.cpu().numpy(), self.n_range, output_diffs, indices))
