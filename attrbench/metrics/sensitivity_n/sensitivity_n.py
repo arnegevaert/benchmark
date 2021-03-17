@@ -43,8 +43,8 @@ def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callab
 class SensitivityN(Metric):
     def __init__(self, model: Callable, method_names: List[str], min_subset_size: float, max_subset_size: float,
                  num_steps: int, num_subsets: int, masker: Masker, activation_fn: Union[Tuple[str], str],
-                 writer_dir: str = None, num_workers=0):
-        super().__init__(model, method_names, writer_dir, num_workers)
+                 writer_dir: str = None):
+        super().__init__(model, method_names, writer_dir)
         self.min_subset_size = min_subset_size
         self.max_subset_size = max_subset_size
         self.num_steps = num_steps
@@ -68,7 +68,7 @@ class SensitivityN(Metric):
         # Calculate output diffs and removed indices (we will re-use this for each method)
         writer = self.writers["general"] if self.writers is not None else None
         output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, n_range, self.activation_fn,
-                                                       writer, self.num_workers)
+                                                       writer)
 
         for method_name in attrs_dict:
             attrs = attrs_dict[method_name]
@@ -79,8 +79,8 @@ class SensitivityN(Metric):
 class SegSensitivityN(Metric):
     def __init__(self, model: Callable, method_names: List[str], min_subset_size: float, max_subset_size: float,
                  num_steps: int, num_subsets: int, masker: Masker, activation_fn: Union[Tuple[str], str],
-                 writer_dir: str = None, num_workers=0):
-        super().__init__(model, method_names, writer_dir, num_workers)
+                 writer_dir: str = None):
+        super().__init__(model, method_names, writer_dir)
         self.min_subset_size = min_subset_size
         self.max_subset_size = max_subset_size
         self.num_steps = num_steps
@@ -100,7 +100,7 @@ class SegSensitivityN(Metric):
         # Calculate output diffs and removed indices (we will re-use this for each method)
         writer = self.writers["general"] if self.writers is not None else None
         output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, self.n_range,
-                                                       self.activation_fn, writer, self.num_workers)
+                                                       self.activation_fn, writer)
 
         for method_name in attrs_dict:
             attrs = segment_attributions(ds.segmented_images, attrs_dict[method_name])

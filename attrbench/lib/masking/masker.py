@@ -31,10 +31,10 @@ class Masker:
 
         to_mask = torch.zeros(samples.shape, device=samples.device).flatten(1 if self.feature_level == "channel" else 2)
         if self.feature_level == "channel":
-            to_mask[batch_dim, indices] = 1.
+            to_mask[batch_dim, indices.copy()] = 1.
         else:
             try:
-                to_mask[batch_dim, :, indices] = 1.
+                to_mask[batch_dim, :, indices.copy()] = 1.
             except IndexError:
                 raise ValueError("Masking index was out of bounds. "
                                  "Make sure the masking policy is compatible with method output.")

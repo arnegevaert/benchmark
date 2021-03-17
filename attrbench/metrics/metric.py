@@ -7,8 +7,7 @@ from typing import List, Callable, Dict, Optional
 class Metric:
     result: MetricResult
 
-    def __init__(self, model: Callable, method_names: List[str], writer_dir: str = None, num_workers=0):
-        self.num_workers = num_workers
+    def __init__(self, model: Callable, method_names: List[str], writer_dir: str = None):
         self.model = model
         self.metadata = {}
         self.writer_dir = writer_dir

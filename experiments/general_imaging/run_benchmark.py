@@ -21,7 +21,6 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--save-images", action="store_true")
     parser.add_argument("-a", "--save-attrs", action="store_true")
     parser.add_argument("-o", "--output", type=str, required=True)
-    parser.add_argument("-t", "--num_workers", type=int, default=1)
     parser.add_argument("--log-dir", type=str, default=None)
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--multi_label",action="store_true")
@@ -56,7 +55,6 @@ if __name__ == "__main__":
                      seed=args.seed,
                      patch_folder=patch_folder,
                      multi_label=args.multi_label,
-                     num_workers=num_workers,
                      log_dir=args.log_dir)
     bm_suite.load_config(args.suite_config)
 

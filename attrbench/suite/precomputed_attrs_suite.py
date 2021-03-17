@@ -18,10 +18,9 @@ class PrecomputedAttrsSuite:
     """
 
     def __init__(self, model, attrs: Dict[str, np.ndarray], samples: np.ndarray, batch_size: int, device="cpu",
-                 seed=None, log_dir=None, explain_label=None, multi_label=False, num_workers=0):
+                 seed=None, log_dir=None, explain_label=None, multi_label=False):
         torch.multiprocessing.set_sharing_strategy("file_system")
         self.metrics: Dict[str, Metric] = {}
-        self.num_workers = num_workers
         self.model = model.to(device)
         self.model.eval()
         self.device = device
@@ -42,7 +41,6 @@ class PrecomputedAttrsSuite:
         global_args = {
             "model": self.model,
             "method_names": list(self.attrs.keys()),
-            "num_workers": self.num_workers
         }
         cfg = Config(loc, global_args, log_dir=self.log_dir)
         self.metrics = cfg.load()

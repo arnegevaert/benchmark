@@ -19,7 +19,6 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarra
     ds = _DeletionUntilFlipDataset(num_steps, samples, attrs, masker)
     result = torch.tensor([-1 for _ in range(samples.shape[0])]).int()
     flipped = torch.tensor([False for _ in range(samples.shape[0])]).bool()
-    device = samples.device
 
     orig_predictions = torch.argmax(model(samples), dim=1)
     it = iter(ds)
@@ -54,8 +53,8 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarra
 
 
 class DeletionUntilFlip(Metric):
-    def __init__(self, model, method_names, num_steps, masker, num_workers=0, writer_dir=None):
-        super().__init__(model, method_names, writer_dir, num_workers)
+    def __init__(self, model, method_names, num_steps, masker, writer_dir=None):
+        super().__init__(model, method_names, writer_dir)
         self.num_steps = num_steps
         self.masker = masker
         self.result = DeletionUntilFlipResult(method_names)
@@ -66,6 +65,5 @@ class DeletionUntilFlip(Metric):
                 raise ValueError(f"Invalid method name: {method_name}")
             self.result.append(method_name,
                                deletion_until_flip(samples, self.model, attrs_dict[method_name], self.num_steps,
-                                                   self.masker, writer=self._get_writer(method_name),
-                                                   num_workers=self.num_workers)
+                                                   self.masker, writer=self._get_writer(method_name))
                                )

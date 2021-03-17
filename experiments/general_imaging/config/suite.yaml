@@ -47,8 +47,8 @@ masking:
       - softmax
     num_steps: 100
   metrics:
-    deletion_until_flip:
-      type: DeletionUntilFlip
+#    deletion_until_flip:
+#      type: DeletionUntilFlip
 #    impact_score:
 #      type: ImpactScore
 #      strict: false
@@ -60,6 +60,10 @@ masking:
       type: Insertion
     deletion:
       type: Deletion
+    irof:
+      type: Irof
+    iiof:
+      type: Iiof
     sensitivity_n:
       type: SensitivityN
       min_subset_size: 0.1
@@ -72,10 +76,6 @@ masking:
       max_subset_size: 0.5
       num_steps: 10
       num_subsets: 100
-    irof:
-      type: Irof
-    iiof:
-      type: Iiof
 
 #other:
 #  metrics:

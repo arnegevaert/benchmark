@@ -1,13 +1,13 @@
 import numpy as np
-from torch.utils.data import Dataset
+import torch
 
 from attrbench.lib import AttributionWriter
 from attrbench.lib import mask_segments, segment_samples_attributions
 from attrbench.lib.masking import Masker
 
 
-class _InsertionDeletionDataset(Dataset):
-    def __init__(self, mode: str, num_steps: int, samples: np.ndarray, attrs: np.ndarray, masker: Masker,
+class _InsertionDeletionDataset:
+    def __init__(self, mode: str, num_steps: int, samples: torch.tensor, attrs: np.ndarray, masker: Masker,
                  reverse_order: bool = False):
         if mode not in ["insertion", "deletion"]:
             raise ValueError("Mode must be insertion or deletion")
@@ -38,7 +38,7 @@ class _InsertionDeletionDataset(Dataset):
 
 
 class _IrofIiofDataset(_InsertionDeletionDataset):
-    def __init__(self, mode: str, samples: np.ndarray, attrs: np.ndarray, masker: Masker,
+    def __init__(self, mode: str, samples: torch.tensor, attrs: np.ndarray, masker: Masker,
                  reverse_order: bool = False, writer: AttributionWriter = None):
         super().__init__(mode, num_steps=100, samples=samples, attrs=attrs, masker=masker, reverse_order=reverse_order)
         # Override sorted_indices to use segment indices instead of pixel indices

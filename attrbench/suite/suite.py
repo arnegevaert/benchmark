@@ -19,10 +19,9 @@ class Suite:
 
     def __init__(self, model, methods, dataloader, device="cpu",
                  save_images=False, save_attrs=False, seed=None, patch_folder=None,
-                 log_dir=None, explain_label=None, multi_label=False, num_workers=1):
+                 log_dir=None, explain_label=None, multi_label=False):
         torch.multiprocessing.set_sharing_strategy("file_system")
         self.metrics: Dict[str, Metric] = {}
-        self.num_workers = num_workers
         self.model = model.to(device)
         self.model.eval()
         self.methods = methods
@@ -49,7 +48,6 @@ class Suite:
             "patch_folder": self.patch_folder,
             "methods": self.methods,
             "method_names": list(self.methods.keys()),
-            "num_workers": self.num_workers
         }
         cfg = Config(loc, global_args, log_dir=self.log_dir)
         self.metrics = cfg.load()
