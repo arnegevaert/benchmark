@@ -1,17 +1,15 @@
-from typing import Callable, List, Union, Tuple, Dict
+from typing import Tuple, Dict
 
-import h5py
 import numpy as np
 import torch
 
-from attrbench.lib import AttributionWriter
 from attrbench.lib.util import corrcoef
-from attrbench.metrics import Metric, MetricResult
 
 _OUT_FNS = {
     "mse": lambda a, b: ((a - b) ** 2).mean(dim=1, keepdims=True),
     "corr": lambda a, b: torch.tensor(corrcoef(a.numpy(), b.numpy())).unsqueeze(-1)
 }
+
 
 def _compute_result(pert_vectors: torch.Tensor, pred_diffs: Dict[str, torch.Tensor], attrs: np.ndarray,
                     mode: Tuple[str]) -> Dict[str, Dict[str, torch.Tensor]]:
@@ -34,4 +32,3 @@ def _compute_result(pert_vectors: torch.Tensor, pred_diffs: Dict[str, torch.Tens
         for afn in pred_diffs.keys():
             result[mode][afn] = _OUT_FNS[mode](dot_product, pred_diffs[afn])
     return result
-

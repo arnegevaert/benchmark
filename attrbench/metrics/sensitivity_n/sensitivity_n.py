@@ -70,6 +70,7 @@ class SensitivityN(Metric):
         output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, n_range, self.activation_fn,
                                                        writer)
 
+        # TODO multiprocessing here
         for method_name in attrs_dict:
             attrs = attrs_dict[method_name]
             attrs = attrs.reshape((attrs.shape[0], 1, -1))  # [batch_size, 1, -1]
@@ -101,7 +102,7 @@ class SegSensitivityN(Metric):
         writer = self.writers["general"] if self.writers is not None else None
         output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, self.n_range,
                                                        self.activation_fn, writer)
-
+        # TODO multiprocessing here
         for method_name in attrs_dict:
             attrs = segment_attributions(ds.segmented_images,
                                          torch.tensor(attrs_dict[method_name], device=samples.device))
