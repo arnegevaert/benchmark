@@ -3,8 +3,8 @@ import torch
 
 
 class SampleAverageMasker(Masker):
-    def __init__(self,samples, attributions, feature_level):
-        super().__init__(samples, attributions, feature_level)
+    def __init__(self,samples, attributions, feature_level,segmentation=None):
+        super().__init__(samples, attributions, feature_level,segmentation)
         self.initialize_baselines(samples)
     def initialize_baselines(self, samples):
         batch_size, num_channels, rows, cols = samples.shape

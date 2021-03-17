@@ -4,8 +4,8 @@ import numpy as np
 
 
 class BlurringMasker(Masker):
-    def __init__(self, samples, attributions, feature_level, kernel_size):
-        super().__init__(samples, attributions,feature_level)
+    def __init__(self, samples, attributions, feature_level, kernel_size,segmentation: np.ndarray =None):
+        super().__init__(samples, attributions,feature_level,segmentation)
         if not 0 < kernel_size < 1.0:
             raise ValueError("Kernel size is expressed as a fraction of image height, and must be between 0 and 1.")
         self.kernel_size = kernel_size
