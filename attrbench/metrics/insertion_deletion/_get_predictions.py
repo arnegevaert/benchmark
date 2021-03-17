@@ -22,7 +22,8 @@ def _get_predictions(samples: torch.Tensor, labels: torch.Tensor,
             writer.add_images("neutral_samples", fully_masked)
 
     inter_preds = {fn: [] for fn in activation_fns}
-    for i, batch in enumerate(ds):
+    for i in range(len(ds)):
+        batch = ds[i]
         with torch.no_grad():
             predictions = model(batch)
         if writer is not None:
