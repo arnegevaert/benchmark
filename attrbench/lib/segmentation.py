@@ -5,7 +5,7 @@ from skimage.segmentation import slic
 from typing import Tuple
 
 
-def _isin(a: torch.tensor, b: torch.tensor):
+def isin(a: torch.tensor, b: torch.tensor):
     # https://stackoverflow.com/questions/60918304/get-indices-of-elements-in-tensor-a-that-are-present-in-tensor-b
     return (a[..., None] == b).any(-1)
 
@@ -18,7 +18,7 @@ def mask_segments(images: torch.tensor, seg_images: torch.tensor, segments: torc
     for i in range(images.shape[0]):
         seg_img = seg_images[i, ...]
         segs = segments[i, ...]
-        bool_masks.append(_isin(seg_img, segs))
+        bool_masks.append(isin(seg_img, segs))
     bool_masks = torch.stack(bool_masks, dim=0)
     return masker.mask_boolean(images, bool_masks)
 

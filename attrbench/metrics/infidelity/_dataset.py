@@ -1,5 +1,5 @@
 import numpy as np
-from skimage.segmentation import slic
+from attrbench.lib import segment_samples, isin
 import torch
 
 
@@ -38,26 +38,22 @@ class _SegmentRemovalPerturbation(_Perturbation):
     # perturbation size is number of segments
     def __init__(self, samples, perturbation_size, num_perturbations):
         super().__init__(samples, perturbation_size, num_perturbations)
-        samples = samples.cpu().numpy()
-        seg_samples = np.stack([slic(np.transpose(samples[i, ...], (1, 2, 0)),
-                                     start_label=0, slic_zero=True)
-                                for i in range(samples.shape[0])])
-        self.seg_samples = np.expand_dims(seg_samples, axis=1)
+        segmented_images = segment_samples(samples.cpu().numpy())
+        self.segmented_images = torch.tensor(segmented_images, device=samples.device)
+        self.segments = [np.unique(segmented_images[i, ...]) for i in range(samples.shape[0])]
+        self.rng = np.random.default_rng()
 
     def __call__(self):
-        perturbed_samples, perturbation_vectors = [], []
-        # This needs to happen per sample, since samples don't necessarily have
-        # the same number of segments
-        # TODO check if this can happen better on GPU (look at segsensn)
+        perturbation_vectors = []
+        # Select segments to mask for each sample
+        segments_to_mask = torch.tensor(
+            np.stack([self.rng.choice(self.segments[i], size=self.perturbation_size, replace=False)
+                      for i in range(self.samples.shape[0])]), device=self.samples.device)
         for i in range(self.samples.shape[0]):
-            seg_sample = self.seg_samples[i, ...]
+            seg_sample = self.segmented_images[i, ...]
             sample = self.samples[i, ...]
-            # Get all segment numbers
-            all_segments = np.unique(seg_sample)
-            # Select segments to mask
-            segments_to_mask = self.rng.choice(all_segments, self.perturbation_size, replace=False)
             # Create boolean mask of pixels that need to be removed
-            to_remove = torch.tensor(np.isin(seg_sample, segments_to_mask), device=self.samples.device).float()
+            to_remove = isin(seg_sample, segments_to_mask[i, ...])
             # Create perturbation vector by multiplying mask with image
             perturbation_vector = sample * to_remove
             perturbation_vectors.append(perturbation_vector)
