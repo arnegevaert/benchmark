@@ -1,34 +1,34 @@
 from typing import Tuple, Dict
 
 import numpy as np
-import torch
 
 from attrbench.lib.util import corrcoef
 
 _OUT_FNS = {
-    "mse": lambda a, b: ((a - b) ** 2).mean(dim=1, keepdims=True),
-    "corr": lambda a, b: torch.tensor(corrcoef(a.numpy(), b.numpy())).unsqueeze(-1)
+    "mse": lambda a, b: ((a - b) ** 2).mean(axis=1, keepdims=True),
+    "corr": lambda a, b: corrcoef(a, b)[..., np.newaxis]
 }
 
 
-def _compute_result(pert_vectors: torch.Tensor, pred_diffs: Dict[str, torch.Tensor], attrs: np.ndarray,
-                    mode: Tuple[str]) -> Dict[str, Dict[str, torch.Tensor]]:
-    # Replicate attributions along channel dimension if necessary (if explanation has fewer channels than image)
-    attrs = torch.tensor(attrs).float()
-    if attrs.shape[1] != pert_vectors.shape[-3]:
-        shape = [1 for _ in range(len(attrs.shape))]
-        shape[1] = pert_vectors.shape[-3]
-        attrs = attrs.repeat(*tuple(shape))
-
-    # Calculate dot product between each sample and its corresponding perturbation vector
-    # This is equivalent to diagonal of matmul
-    attrs = attrs.flatten(1).unsqueeze(1)  # [batch_size, 1, -1]
-    pert_vectors = pert_vectors.flatten(2)  # [batch_size, num_perturbations, -1]
-    dot_product = (attrs * pert_vectors).sum(dim=-1)  # [batch_size, num_perturbations]
-
+def _compute_result(pert_vectors: np.ndarray, pred_diffs: Dict[str, np.ndarray], attrs_dict: Dict[str, np.ndarray],
+                    modes: Tuple[str]) -> Dict[str, Dict[str, np.ndarray]]:
     result = {}
-    for mode in mode:
-        result[mode] = {}
-        for afn in pred_diffs.keys():
-            result[mode][afn] = _OUT_FNS[mode](dot_product, pred_diffs[afn])
+    for key in attrs_dict.keys():
+        attrs = attrs_dict[key]
+        # Replicate attributions along channel dimension if necessary (if explanation has fewer channels than image)
+        if attrs.shape[1] != pert_vectors.shape[-3]:
+            attrs = np.repeat(attrs, pert_vectors.shape[-3], axis=1)
+
+        # Calculate dot product between each sample and its corresponding perturbation vector
+        # This is equivalent to diagonal of matmul
+        attrs = attrs.reshape((attrs.shape[0], 1, -1))  # [batch_size, 1, -1]
+        pert_vectors_flat = pert_vectors.reshape(
+            (pert_vectors.shape[0], pert_vectors.shape[1], -1))  # [batch_size, num_perturbations, -1]
+        dot_product = (attrs * pert_vectors_flat).sum(axis=-1)  # [batch_size, num_perturbations]
+
+        result[key] = {}
+        for mode in modes:
+            result[key][mode] = {}
+            for afn in pred_diffs.keys():
+                result[key][mode][afn] = _OUT_FNS[mode](dot_product, pred_diffs[afn])
     return result

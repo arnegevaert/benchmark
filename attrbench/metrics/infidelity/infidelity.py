@@ -1,11 +1,12 @@
 from typing import Callable, List, Union, Tuple, Dict
 from os import path
+import multiprocessing
 
 import numpy as np
 import torch
 
 from attrbench.lib import AttributionWriter
-from attrbench.metrics import Metric
+from attrbench.metrics import Metric, MetricResult
 from ._compute_perturbations import _compute_perturbations
 from ._compute_result import _compute_result
 from .result import InfidelityResult
@@ -24,7 +25,8 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, att
     for m in mode:
         if m not in ("mse", "corr"):
             raise ValueError(f"Invalid mode: {m}")
-    return _compute_result(pert_vectors, pred_diffs, attrs, mode)
+    res = _compute_result(pert_vectors, pred_diffs, {"m": attrs}, mode)
+    return res["m"]
 
 
 class Infidelity(Metric):
@@ -41,16 +43,27 @@ class Infidelity(Metric):
             self.writers["general"] = AttributionWriter(path.join(self.writer_dir, "general"))
         self.result = InfidelityResult(method_names, perturbation_mode, perturbation_size,
                                        self.mode, self.activation_fn)
+        self.background_process = None
+        self.pool = None
+
+    def _append_cb(self, results):
+        for method_name in results:
+            self.result.append(method_name, results[method_name])
 
     def run_batch(self, samples, labels, attrs_dict: dict):
+        if self.pool is not None:
+            self.pool.join()
         # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
         writer = self.writers["general"] if self.writers is not None else None
         pert_vectors, pred_diffs = _compute_perturbations(samples, labels, self.model,
                                                           self.perturbation_mode, self.perturbation_size,
                                                           self.num_perturbations, self.activation_fn, writer)
-        # TODO multiprocessing here
-        for method_name in attrs_dict:
-            self.result.append(method_name, _compute_result(pert_vectors, pred_diffs, attrs_dict[method_name],
-                                                            self.mode))
+        self.pool = multiprocessing.Pool(processes=1)
+        self.pool.apply_async(_compute_result, args=(pert_vectors, pred_diffs, attrs_dict, self.mode),
+                              callback=self._append_cb)
+        self.pool.close()
 
-
+    def get_result(self) -> MetricResult:
+        if self.pool is not None:
+            self.pool.join()
+        return self.result

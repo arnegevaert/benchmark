@@ -69,11 +69,5 @@ class PrecomputedAttrsSuite:
 
     def save_result(self, loc):
         metric_results = {metric_name: self.metrics[metric_name].get_result() for metric_name in self.metrics}
-        attrs = None
-        if self.save_attrs:
-            attrs = {}
-            for method_name in self.methods:
-                attrs[method_name] = np.concatenate(self.attrs[method_name])
-        images = np.concatenate(self.images) if self.save_images else None
-        result = SuiteResult(metric_results, self.samples_done, self.seed, images, attrs)
+        result = SuiteResult(metric_results, self.samples_done, self.seed)
         result.save_hdf(loc)

@@ -1,7 +1,7 @@
 from typing import Callable, Tuple, Dict
 
 import torch
-from torch.utils.data import DataLoader
+import numpy as np
 
 from attrbench.lib import AttributionWriter
 from attrbench.lib.util import ACTIVATION_FNS
@@ -16,8 +16,7 @@ _PERTURBATION_CLASSES = {
 
 def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: Callable, perturbation_mode: str,
                            perturbation_size: float, num_perturbations: int, activation_fn: Tuple[str],
-                           writer: AttributionWriter = None) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
-    device = samples.device
+                           writer: AttributionWriter = None) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
     if perturbation_mode not in _PERTURBATION_CLASSES.keys():
         raise ValueError(f"Invalid perturbation mode {perturbation_mode}. "
                          f"Valid options are {', '.join(list(_PERTURBATION_CLASSES.keys()))}")
@@ -48,8 +47,8 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
             act_pert_out = ACTIVATION_FNS[fn](perturbed_output).gather(dim=1, index=labels.unsqueeze(-1))
             pred_diffs[fn].append(orig_output[fn] - act_pert_out)
         pert_vectors.append(perturbation_vector.cpu())  # [batch_size, *sample_shape]
-    pert_vectors = torch.stack(pert_vectors, dim=1)  # [batch_size, num_perturbations, *sample_shape]
-    res_pred_diffs: Dict[str, torch.Tensor] = {}
+    pert_vectors = torch.stack(pert_vectors, dim=1).numpy()  # [batch_size, num_perturbations, *sample_shape]
+    res_pred_diffs: Dict[str, np.ndarray] = {}
     for fn in activation_fn:
-        res_pred_diffs[fn] = torch.cat(pred_diffs[fn], dim=1).cpu()  # [batch_size, num_perturbations]
+        res_pred_diffs[fn] = torch.cat(pred_diffs[fn], dim=1).cpu().numpy()  # [batch_size, num_perturbations]
     return pert_vectors, res_pred_diffs
