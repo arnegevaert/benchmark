@@ -1,5 +1,6 @@
 from typing import Callable, List, Union, Tuple, Dict
 from os import path
+import os
 import multiprocessing
 
 import numpy as np
@@ -57,10 +58,15 @@ class Infidelity(Metric):
         pert_vectors, pred_diffs = _compute_perturbations(samples, labels, self.model,
                                                           self.perturbation_mode, self.perturbation_size,
                                                           self.num_perturbations, self.activation_fn, writer)
-        self.pool = multiprocessing.Pool(processes=1)
-        self.pool.apply_async(_compute_result, args=(pert_vectors, pred_diffs, attrs_dict, self.mode),
-                              callback=self._append_cb)
-        self.pool.close()
+        if os.getenv("NO_MULTIPROC"):
+            results = _compute_result(pert_vectors, pred_diffs, attrs_dict, self.mode)
+            for method_name in results:
+                self.result.append(method_name, results[method_name])
+        else:
+            self.pool = multiprocessing.Pool(processes=1)
+            self.pool.apply_async(_compute_result, args=(pert_vectors, pred_diffs, attrs_dict, self.mode),
+                                  callback=self._append_cb)
+            self.pool.close()
 
     def get_result(self) -> MetricResult:
         if self.pool is not None:

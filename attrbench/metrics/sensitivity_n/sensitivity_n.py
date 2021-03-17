@@ -1,6 +1,7 @@
 from typing import Callable, List, Dict, Union, Tuple
 import multiprocessing
 from os import path
+import os
 
 import numpy as np
 import torch
@@ -80,10 +81,15 @@ class SensitivityN(Metric):
         output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, n_range, self.activation_fn,
                                                        writer)
 
-        self.pool = multiprocessing.Pool(processes=1)
-        self.pool.apply_async(_compute_correlations, args=(attrs_dict, n_range, output_diffs, indices),
-                              callback=self._append_cb)
-        self.pool.close()
+        if os.getenv("NO_MULTIPROC"):
+            results = _compute_correlations(attrs_dict, n_range, output_diffs, indices)
+            for method_name in results:
+                self.result.append(method_name, results[method_name])
+        else:
+            self.pool = multiprocessing.Pool(processes=1)
+            self.pool.apply_async(_compute_correlations, args=(attrs_dict, n_range, output_diffs, indices),
+                                  callback=self._append_cb)
+            self.pool.close()
 
     def get_result(self) -> MetricResult:
         if self.pool is not None:
@@ -128,10 +134,15 @@ class SegSensitivityN(Metric):
                                                                        device=samples.device)).cpu().numpy() for key
                                 in attrs_dict}
 
-        self.pool = multiprocessing.Pool(processes=1)
-        self.pool.apply_async(_compute_correlations, args=(segmented_attrs_dict, self.n_range, output_diffs, indices),
-                              callback=self._append_cb)
-        self.pool.close()
+        if os.getenv("NO_MULTIPROC"):
+            results = _compute_correlations(segmented_attrs_dict, self.n_range, output_diffs, indices)
+            for method_name in results:
+                self.result.append(method_name, results[method_name])
+        else:
+            self.pool = multiprocessing.Pool(processes=1)
+            self.pool.apply_async(_compute_correlations, args=(segmented_attrs_dict, self.n_range, output_diffs, indices),
+                                  callback=self._append_cb)
+            self.pool.close()
 
     def get_result(self) -> MetricResult:
         if self.pool is not None:
