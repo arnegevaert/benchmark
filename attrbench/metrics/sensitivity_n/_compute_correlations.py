@@ -11,9 +11,9 @@ def _compute_correlations(attrs: np.ndarray, n_range: List[int], output_diffs: D
     attrs = attrs.reshape((attrs.shape[0], 1, -1))  # [batch_size, 1, -1]
     result = {fn: [] for fn in output_diffs.keys()}
     for n in n_range:
+        n_mask_attrs = np.take_along_axis(attrs, axis=-1, indices=indices[n])  # [batch_size, num_subsets, n]
         for fn in output_diffs.keys():
             # Calculate sums of attributions
-            n_mask_attrs = np.take_along_axis(attrs, axis=-1, indices=indices[n])  # [batch_size, num_subsets, n]
             n_sum_of_attrs = n_mask_attrs.sum(axis=-1)  # [batch_size, num_subsets]
             n_output_diffs = output_diffs[fn][n]
             # Calculate correlation between output difference and sum of attribution values
