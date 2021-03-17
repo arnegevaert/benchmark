@@ -43,7 +43,6 @@ class Infidelity(Metric):
             self.writers["general"] = AttributionWriter(path.join(self.writer_dir, "general"))
         self.result = InfidelityResult(method_names, perturbation_mode, perturbation_size,
                                        self.mode, self.activation_fn)
-        self.background_process = None
         self.pool = None
 
     def _append_cb(self, results):

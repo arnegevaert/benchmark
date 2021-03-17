@@ -10,6 +10,7 @@ _OUT_FNS = {
 }
 
 
+# TODO also handle just np array for attrs (for functional)
 def _compute_result(pert_vectors: np.ndarray, pred_diffs: Dict[str, np.ndarray], attrs_dict: Dict[str, np.ndarray],
                     modes: Tuple[str]) -> Dict[str, Dict[str, np.ndarray]]:
     result = {}

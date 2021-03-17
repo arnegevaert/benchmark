@@ -1,26 +1,26 @@
-infidelity:
-  default:
-    num_perturbations: 1000
-    mode:
-      - mse
-      - corr
-    activation_fn:
-      - linear
-      - sigmoid
-      - softmax
-  metrics:
-    infidelity_seg:
-      type: Infidelity
-      perturbation_mode: segment
-      perturbation_size: 10
-    infidelity_gaussian:
-      type: Infidelity
-      perturbation_mode: gaussian
-      perturbation_size: 0.2
-    infidelity_sq:
-      type: Infidelity
-      perturbation_mode: square
-      perturbation_size: 0.2
+#infidelity:
+#  default:
+#    num_perturbations: 1000
+#    mode:
+#      - mse
+#      - corr
+#    activation_fn:
+#      - linear
+#      - sigmoid
+#      - softmax
+#  metrics:
+#    infidelity_seg:
+#      type: Infidelity
+#      perturbation_mode: segment
+#      perturbation_size: 10
+#    infidelity_gaussian:
+#      type: Infidelity
+#      perturbation_mode: gaussian
+#      perturbation_size: 0.2
+#    infidelity_sq:
+#      type: Infidelity
+#      perturbation_mode: square
+#      perturbation_size: 0.2
 
 masking:
   foreach:
@@ -47,14 +47,20 @@ masking:
       - softmax
     num_steps: 100
   metrics:
+    seg_sensitivity_n:
+      type: SegSensitivityN
+      min_subset_size: 0.1
+      max_subset_size: 0.5
+      num_steps: 10
+      num_subsets: 100
     sensitivity_n:
       type: SensitivityN
       min_subset_size: 0.1
       max_subset_size: 0.5
       num_steps: 10
       num_subsets: 100
-    deletion_until_flip:
-      type: DeletionUntilFlip
+#    deletion_until_flip:
+#      type: DeletionUntilFlip
 #    impact_score:
 #      type: ImpactScore
 #      strict: false
@@ -62,12 +68,6 @@ masking:
 #    strict_impact_score:
 #      type: ImpactScore
 #      strict: true
-    seg_sensitivity_n:
-      type: SegSensitivityN
-      min_subset_size: 0.1
-      max_subset_size: 0.5
-      num_steps: 10
-      num_subsets: 100
     irof:
       type: Irof
     iiof:
