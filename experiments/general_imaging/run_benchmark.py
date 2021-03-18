@@ -28,10 +28,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
 
-    num_workers = args.num_workers
-    if num_workers == -1:
-        num_workers = multiprocessing.cpu_count()
-
     logging.basicConfig(
         format='[%(asctime)s %(levelname)s] %(message)s',
         level=logging.INFO,
