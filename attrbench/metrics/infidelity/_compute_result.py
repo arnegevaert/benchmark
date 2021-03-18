@@ -1,6 +1,7 @@
 from typing import Tuple, Dict
 
 import numpy as np
+import torch
 
 from attrbench.lib.util import corrcoef
 
@@ -12,7 +13,7 @@ _OUT_FNS = {
 
 # TODO also handle just np array for attrs (for functional)
 def _compute_result(pert_vectors: np.ndarray, pred_diffs: Dict[str, np.ndarray], attrs_dict: Dict[str, np.ndarray],
-                    modes: Tuple[str]) -> Dict[str, Dict[str, np.ndarray]]:
+                    modes: Tuple[str]) -> Dict[str, Dict[str, torch.tensor]]:
     result = {}
     for key in attrs_dict.keys():
         attrs = attrs_dict[key]
@@ -31,5 +32,5 @@ def _compute_result(pert_vectors: np.ndarray, pred_diffs: Dict[str, np.ndarray],
         for mode in modes:
             result[key][mode] = {}
             for afn in pred_diffs.keys():
-                result[key][mode][afn] = _OUT_FNS[mode](dot_product, pred_diffs[afn])
+                result[key][mode][afn] = torch.tensor(_OUT_FNS[mode](dot_product, pred_diffs[afn]))
     return result
