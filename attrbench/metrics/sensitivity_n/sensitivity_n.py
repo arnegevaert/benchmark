@@ -4,7 +4,7 @@ from os import path
 import numpy as np
 import torch
 
-from attrbench.lib import segment_attributions, AttributionWriter
+from attrbench.lib import AttributionWriter
 from attrbench.lib.masking import Masker
 from attrbench.metrics import Metric
 from ._compute_correlations import _compute_correlations
@@ -104,5 +104,5 @@ class SegSensitivityN(Metric):
                                                        self.activation_fn, writer)
 
         for method_name in attrs_dict:
-            attrs = segment_attributions(ds.segmented_images, attrs_dict[method_name])
+            attrs = ds.masker.segment_attributions(ds.segmented_images, attrs_dict[method_name])
             self.result.append(method_name, _compute_correlations(attrs, self.n_range, output_diffs, indices))

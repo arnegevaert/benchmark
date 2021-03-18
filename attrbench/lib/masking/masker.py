@@ -8,6 +8,10 @@ class Masker:
         if feature_level not in ("channel", "pixel"):
             raise ValueError(f"feature_level must be 'channel' or 'pixel'. Found {feature_level}.")
         self.feature_level = feature_level
+        if not self._check_attribution_shape(samples,attributions):
+            raise ValueError(f"samples and attribution shape not compatible for feature level {feature_level}."
+                             f"Found shapes {samples.shape} and {attributions.shape}")
+
         self.baseline = None
         self.samples=samples
         self.attributions=attributions
@@ -15,18 +19,9 @@ class Masker:
         self.use_segments = self.segm_samples is not None
         if self.segm_samples is not None:
             self.sorted_segmented_attrs = self.segment_attributions(self.segm_samples, self.attributions).argsort()
+            assert(self.sorted_segmented_attrs.shape[1]-1 == segmented_samples.max())
         self.sorted_indices = attributions.reshape(attributions.shape[0], -1).argsort()
 
-
-    #### can be deleted later
-    def initialize_samples(self, samples, attributions, segmentation = None):
-        if not self.check_attribution_shape(samples,attributions):
-            raise ValueError("Attributions are not compatible with masker")
-        self.initialize_baselines(samples)
-        self.samples=samples
-        self.attributions=attributions
-        self.segm_samples=segmentation
-        self.sorted_indices = attributions.reshape(attributions.shape[0], -1).argsort()
 
     def segment_attributions(self,seg_images: np.ndarray, attrs: np.ndarray) -> np.ndarray:
         segments = np.unique(seg_images)
@@ -43,31 +38,35 @@ class Masker:
             avg_attrs[:, i] = np.nan_to_num(mean_attrs, nan=-np.inf)
         return avg_attrs
 
+    def get_total_features(self):
+        if self.use_segments:
+            return self.sorted_indices.shape[1]
+        return self.sorted_indices.shape[1]
 
     def mask_top(self, k):
         if k==0:
             return self.samples
         if self.use_segments:
-            return self.mask_segments(self.samples, self.segm_samples, self.sorted_segmented_attrs[:, -k:])
+            return self._mask_segments(self.samples, self.segm_samples, self.sorted_segmented_attrs[:, -k:])
         else:
-            return self.mask(self.samples, self.sorted_indices[:,-k:])
+            return self._mask(self.samples, self.sorted_indices[:, -k:])
     def mask_bot(self, k):
         if self.use_segments:
-            return self.mask_segments(self.samples, self.segm_samples, self.sorted_segmented_attrs[:, :k])
+            return self._mask_segments(self.samples, self.segm_samples, self.sorted_segmented_attrs[:, :k])
         else:
-            return self.mask(self.samples, self.sorted_indices[:,:k])
+            return self._mask(self.samples, self.sorted_indices[:, :k])
     def keep_top(self, k):
         if k==0:
             return self.samples
         if self.use_segments:
-            return self.mask_segments(self.samples, self.segm_samples, self.sorted_segmented_attrs[:, :-k])
+            return self._mask_segments(self.samples, self.segm_samples, self.sorted_segmented_attrs[:, :-k])
         else:
-            return self.mask(self.samples, self.sorted_indices[:, :-k])
+            return self._mask(self.samples, self.sorted_indices[:, :-k])
     def keep_bot(self,k):
         if self.use_segments:
-            return self.mask_segments(self.samples, self.segm_samples, self.sorted_segmented_attrs[:, k:])
+            return self._mask_segments(self.samples, self.segm_samples, self.sorted_segmented_attrs[:, k:])
         else:
-            return self.mask(self.samples, self.sorted_indices[:,k:])
+            return self._mask(self.samples, self.sorted_indices[:, k:])
 
     def mask_rand(self,k,return_indices=False):
         if k==0:
@@ -79,30 +78,22 @@ class Masker:
             indices = np.tile(indices, (shape[0],1))
             rng.shuffle(indices,axis=1)
             indices=indices[:, :k]
-            masked_samples = self.mask(self.samples, indices)
+            masked_samples = self._mask(self.samples, indices)
         else:
             # no shuffle here: only select segments that exsist for each image
             #  rng.choice raises exception if k> number of segments
             indices = np.stack([rng.choice(np.unique(self.segm_samples[i, ...]), size=k, replace=False)
                                 for i in range(self.segm_samples.shape[0])])
-            masked_samples= self.mask_segments(self.samples, self.segm_samples, indices)
+            masked_samples= self._mask_segments(self.samples, self.segm_samples, indices)
         if return_indices: return masked_samples, indices
         return masked_samples
     def mask_all(self,segmented=False):
         if self.use_segments:
-            return self.mask_segments(self.samples, self.segm_samples, self.sorted_segmented_attrs)
+            return self._mask_segments(self.samples, self.segm_samples, self.sorted_segmented_attrs)
         else:
-            return self.mask(self.samples, self.sorted_indices)
+            return self._mask(self.samples, self.sorted_indices)
 
-    def predict_masked(self, samples, indices, model, return_masked_samples=False):
-        masked = self.mask(samples, indices)
-        with torch.no_grad():
-            pred = model(masked)
-        if return_masked_samples:
-            return pred, masked
-        return pred
-
-    def check_attribution_shape(self, samples, attributions):
+    def _check_attribution_shape(self, samples, attributions):
         if self.feature_level == "channel":
             # Attributions should be same shape as samples
             return list(samples.shape) == list(attributions.shape)
@@ -113,7 +104,7 @@ class Masker:
             aggregated_shape[1] = 1
             return aggregated_shape == list(attributions.shape)
     #TODO: private
-    def mask(self, samples: np.ndarray, indices: np.ndarray):
+    def _mask(self, samples: np.ndarray, indices: np.ndarray):
         if self.baseline is None:
             raise ValueError("Masker was not initialized.")
         batch_size, num_channels, rows, cols = samples.shape
@@ -135,9 +126,9 @@ class Masker:
                 raise ValueError("Masking index was out of bounds. "
                                  "Make sure the masking policy is compatible with method output.")
         to_mask = to_mask.reshape(samples.shape)
-        return self.mask_boolean(samples, to_mask)
+        return self._mask_boolean(samples, to_mask)
 
-    def mask_segments(self,images: np.ndarray, seg_images: np.ndarray, segments: np.ndarray) -> np.ndarray:
+    def _mask_segments(self, images: np.ndarray, seg_images: np.ndarray, segments: np.ndarray) -> np.ndarray:
         if not (images.shape[0] == seg_images.shape[0] and images.shape[0] == segments.shape[0] and
                 images.shape[-2:] == seg_images.shape[-2:]):
             raise ValueError(f"Incompatible shapes: {images.shape}, {seg_images.shape}, {segments.shape}")
@@ -147,9 +138,9 @@ class Masker:
             segs = segments[i, ...]
             bool_masks.append(np.isin(seg_img, segs))
         bool_masks = np.stack(bool_masks, axis=0)
-        return self.mask_boolean(images, bool_masks)
+        return self._mask_boolean(images, bool_masks)
 
-    def mask_boolean(self, samples, bool_mask):
+    def _mask_boolean(self, samples, bool_mask):
         bool_mask = bool_mask
         return samples - (bool_mask * samples) + (bool_mask * self.baseline)
     # why not return samples[bool_mask] = self.baseline[bool_mask] ?

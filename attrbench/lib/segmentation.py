@@ -4,19 +4,6 @@ from skimage.segmentation import slic
 from typing import Tuple
 
 
-def mask_segments(images: np.ndarray, seg_images: np.ndarray, segments: np.ndarray, masker: Masker) -> np.ndarray:
-    if not (images.shape[0] == seg_images.shape[0] and images.shape[0] == segments.shape[0] and
-            images.shape[-2:] == seg_images.shape[-2:]):
-        raise ValueError(f"Incompatible shapes: {images.shape}, {seg_images.shape}, {segments.shape}")
-    bool_masks = []
-    for i in range(images.shape[0]):
-        seg_img = seg_images[i, ...]
-        segs = segments[i, ...]
-        bool_masks.append(np.isin(seg_img, segs))
-    bool_masks = np.stack(bool_masks, axis=0)
-    return masker.mask_boolean(images, bool_masks)
-
-
 def segment_samples(samples: np.ndarray) -> np.ndarray:
     # Segment images using SLIC
     seg_images = np.stack([slic(np.transpose(samples[i, ...], (1, 2, 0)),

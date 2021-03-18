@@ -1,7 +1,7 @@
 import numpy as np
 from torch.utils.data import Dataset
 
-from attrbench.lib import mask_segments, segment_samples, AttributionWriter
+from attrbench.lib import segment_samples, AttributionWriter
 from attrbench.lib.masking import Masker
 
 
@@ -38,14 +38,7 @@ class _SegSensNDataset(_SensitivityNDataset):
 
     def __getitem__(self, item):
         n = self.n_range[item // self.num_subsets]
-        rng = np.random.default_rng(5)  # Unique seed for each item ensures no duplicate indices
-        indices = np.stack([rng.choice(np.unique(self.segmented_images[i, ...]), size=n, replace=False)
-                            for i in range(self.samples.shape[0])])
-
-        masked_samples= mask_segments(self.samples, self.segmented_images, indices, self.masker)
-
-        masked_samples2, indices2 = self.masker.mask_rand(n, True)
-        assert ((masked_samples == masked_samples2).all())
+        masked_samples, indices = self.masker.mask_rand(n, True)
         return masked_samples, indices, n
 
 
