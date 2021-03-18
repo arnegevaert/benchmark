@@ -48,7 +48,10 @@ class SensitivityN(Metric):
     def __init__(self, model: Callable, method_names: List[str], min_subset_size: float, max_subset_size: float,
                  num_steps: int, num_subsets: int, masker: Masker, activation_fn: Union[Tuple[str], str],
                  writer_dir: str = None):
-        super().__init__(model, method_names, writer_dir)
+        super().__init__(model, method_names)  # We don't pass writer_dir to super because we only use 1 general writer
+        print(writer_dir)
+        self.writers = {"general": AttributionWriter(path.join(writer_dir, "general"))} \
+            if writer_dir is not None else None
         self.min_subset_size = min_subset_size
         self.max_subset_size = max_subset_size
         self.num_steps = num_steps
@@ -57,8 +60,6 @@ class SensitivityN(Metric):
         self.activation_fn = (activation_fn,) if type(activation_fn) == str else activation_fn
         self.result = SensitivityNResult(method_names, self.activation_fn,
                                          index=np.linspace(min_subset_size, max_subset_size, num_steps))
-        if self.writer_dir is not None:
-            self.writers["general"] = AttributionWriter(self.writer_dir)
         self.pool = None
 
     def _append_cb(self, results):
@@ -101,7 +102,9 @@ class SegSensitivityN(Metric):
     def __init__(self, model: Callable, method_names: List[str], min_subset_size: float, max_subset_size: float,
                  num_steps: int, num_subsets: int, masker: Masker, activation_fn: Union[Tuple[str], str],
                  writer_dir: str = None):
-        super().__init__(model, method_names, writer_dir)
+        super().__init__(model, method_names)  # We don't pass writer_dir to super because we only use 1 general writer
+        self.writers = {"general": AttributionWriter(path.join(writer_dir, "general"))} \
+            if writer_dir is not None else None
         self.min_subset_size = min_subset_size
         self.max_subset_size = max_subset_size
         self.num_steps = num_steps
@@ -112,8 +115,6 @@ class SegSensitivityN(Metric):
         self.activation_fn = (activation_fn,) if type(activation_fn) == str else activation_fn
         self.result = SegSensitivityNResult(method_names, self.activation_fn,
                                             index=np.linspace(min_subset_size, max_subset_size, num_steps))
-        if self.writer_dir is not None:
-            self.writers["general"] = AttributionWriter(path.join(self.writer_dir, "general"))
         self.pool = None
 
     def _append_cb(self, results):

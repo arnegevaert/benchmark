@@ -42,7 +42,7 @@ def segment_attributions(seg_images: torch.tensor, attrs: torch.tensor) -> torch
         masked_attrs = mask * attrs_flat
         mask_size = torch.sum(mask, dim=1)
         sum_attrs = torch.sum(masked_attrs, dim=1)
-        mean_attrs = sum_attrs / mask_size
+        mean_attrs = torch.true_divide(sum_attrs, mask_size)
         # If seg does not exist for image, mean_attrs will be inf (since mask_size=0). Replace with -inf.
         mean_attrs[mean_attrs == float('inf')] = -float('inf')
         avg_attrs[:, i] = mean_attrs

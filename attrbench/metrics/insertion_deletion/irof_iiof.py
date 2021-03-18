@@ -72,13 +72,14 @@ def _iiof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: n
 class _IrofIiof(Metric):
     def __init__(self, model: Callable, method_names: List[str], masker: Masker,
                  mode: Union[Tuple[str], str], activation_fn: Union[Tuple[str], str],
-                 result_class: Callable, method_fn: Callable, writer_dir: str = None):
+                 result_class: Callable, dataset_mode: str, method_fn: Callable, writer_dir: str = None):
         super().__init__(model, method_names, writer_dir)
         self.masker = masker
         self.modes = (mode,) if type(mode) == str else mode
         for m in self.modes:
             if m not in ("morf", "lerf"):
                 raise ValueError(f"Invalid mode: {m}")
+        self.dataset_mode = dataset_mode
         self.activation_fns = (activation_fn,) if type(activation_fn) == str else activation_fn
         self.method_fn = method_fn
         self.result = result_class(method_names, self.modes, self.activation_fns)
@@ -87,7 +88,7 @@ class _IrofIiof(Metric):
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         writer = self._get_writer("general")
-        masking_dataset = _IrofIiofDataset("insertion", samples, self.masker, writer)
+        masking_dataset = _IrofIiofDataset(self.dataset_mode, samples, self.masker, writer)
         for method_name in attrs_dict:
             method_result = {}
             for mode in self.modes:
@@ -102,11 +103,11 @@ class Irof(_IrofIiof):
     def __init__(self, model: Callable, method_names: List[str], masker: Masker,
                  mode: Union[Tuple[str], str], activation_fn: Union[Tuple[str], str],
                  writer_dir: str = None):
-        super().__init__(model, method_names, masker, mode, activation_fn, IrofResult, _irof, writer_dir)
+        super().__init__(model, method_names, masker, mode, activation_fn, IrofResult, "deletion", _irof, writer_dir)
 
 
 class Iiof(_IrofIiof):
     def __init__(self, model: Callable, method_names: List[str], masker: Masker,
                  mode: Union[Tuple[str], str], activation_fn: Union[Tuple[str], str],
                  writer_dir: str = None):
-        super().__init__(model, method_names, masker, mode, activation_fn, IiofResult, _iiof, writer_dir)
+        super().__init__(model, method_names, masker, mode, activation_fn, IiofResult, "insertion", _iiof, writer_dir)
