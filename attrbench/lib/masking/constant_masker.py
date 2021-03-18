@@ -3,8 +3,8 @@ import numpy as np
 
 
 class ConstantMasker(Masker):
-    def __init__(self,samples, attributions, feature_level, mask_value=0.,segmentation: np.ndarray =None):
-        super().__init__(samples, attributions,feature_level,segmentation)
+    def __init__(self, samples, attributions, feature_level, mask_value=0., segmented_samples: np.ndarray =None):
+        super().__init__(samples, attributions, feature_level, segmented_samples)
         self.mask_value = mask_value
         self.initialize_baselines(samples)
 

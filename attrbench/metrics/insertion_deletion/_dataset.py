@@ -59,7 +59,7 @@ class _IrofIiofDataset(_InsertionDeletionDataset):
         self.sorted_indices = avg_attrs.argsort()  # [batch_size, num_segments]
         # Override masker
         masker_constructor, masker_kwargs=masker
-        self.masker = masker_constructor(samples, attrs,**masker_kwargs, segmentation=self.segmented_images)
+        self.masker = masker_constructor(samples, attrs,**masker_kwargs, segmented_samples=self.segmented_images)
         if reverse_order:
             self.sorted_indices = np.flip(self.sorted_indices, axis=1)
         if writer is not None:
@@ -73,9 +73,9 @@ class _IrofIiofDataset(_InsertionDeletionDataset):
         indices = self.sorted_indices[:, :-(item+1)] if self.mode == "insertion" else self.sorted_indices[:, -(item+1):]
         masked = mask_segments(self.samples, self.segmented_images, indices, self.masker)
         if not self.reverse_order:
-            masked2 = self.masker.keep_top(item+1,segmented=True) if self.mode == "insertion" else self.masker.mask_top(item+1,segmented=True)
+            masked2 = self.masker.keep_top(item+1) if self.mode == "insertion" else self.masker.mask_top(item+1)
         else:
-            masked2 = self.masker.keep_bot(item+1,segmented=True) if self.mode == "insertion" else self.masker.mask_bot(item+1,segmented=True)
+            masked2 = self.masker.keep_bot(item+1) if self.mode == "insertion" else self.masker.mask_bot(item+1)
         assert((masked==masked2).all())
 
         return masked

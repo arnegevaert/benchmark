@@ -4,16 +4,17 @@ import numpy as np
 # TODO masker should take attributions as constructor argument and then implement the necessary
 #      functions (mask_highest, keep_highest, mask_lowest, keep_lowest, mask_random, mask_all)
 class Masker:
-    def __init__(self,samples: np.ndarray, attributions: np.ndarray, feature_level, segmentation: np.ndarray =None):
+    def __init__(self, samples: np.ndarray, attributions: np.ndarray, feature_level, segmented_samples: np.ndarray =None):
         if feature_level not in ("channel", "pixel"):
             raise ValueError(f"feature_level must be 'channel' or 'pixel'. Found {feature_level}.")
         self.feature_level = feature_level
         self.baseline = None
         self.samples=samples
         self.attributions=attributions
-        self.segments=segmentation
-        if self.segments is not None:
-            self.segmented_attrs = self.segment_attributions(self.segments,self.attributions).argsort()
+        self.segm_samples=segmented_samples
+        self.use_segments = self.segm_samples is not None
+        if self.segm_samples is not None:
+            self.sorted_segmented_attrs = self.segment_attributions(self.segm_samples, self.attributions).argsort()
         self.sorted_indices = attributions.reshape(attributions.shape[0], -1).argsort()
 
 
@@ -24,7 +25,7 @@ class Masker:
         self.initialize_baselines(samples)
         self.samples=samples
         self.attributions=attributions
-        self.segments=segmentation
+        self.segm_samples=segmentation
         self.sorted_indices = attributions.reshape(attributions.shape[0], -1).argsort()
 
     def segment_attributions(self,seg_images: np.ndarray, attrs: np.ndarray) -> np.ndarray:
@@ -42,48 +43,54 @@ class Masker:
             avg_attrs[:, i] = np.nan_to_num(mean_attrs, nan=-np.inf)
         return avg_attrs
 
-    # TODO: deal with segments: see irof
-    def mask_top(self, k, segmented=False):
+
+    def mask_top(self, k):
         if k==0:
             return self.samples
-        if segmented:
-            return self.mask_segments(self.samples,self.segments,self.segmented_attrs[:,-k:])
+        if self.use_segments:
+            return self.mask_segments(self.samples, self.segm_samples, self.sorted_segmented_attrs[:, -k:])
         else:
             return self.mask(self.samples, self.sorted_indices[:,-k:])
-    def mask_bot(self, k, segmented=False):
-        if segmented:
-            return self.mask_segments(self.samples,self.segments,self.segmented_attrs[:,:k])
+    def mask_bot(self, k):
+        if self.use_segments:
+            return self.mask_segments(self.samples, self.segm_samples, self.sorted_segmented_attrs[:, :k])
         else:
             return self.mask(self.samples, self.sorted_indices[:,:k])
-    def keep_top(self, k, segmented=False):
+    def keep_top(self, k):
         if k==0:
             return self.samples
-        if segmented:
-            return self.mask_segments(self.samples,self.segments,self.segmented_attrs[:,:-k])
+        if self.use_segments:
+            return self.mask_segments(self.samples, self.segm_samples, self.sorted_segmented_attrs[:, :-k])
         else:
             return self.mask(self.samples, self.sorted_indices[:, :-k])
-    def keep_bot(self,k, segmented=False):
-        if segmented:
-            return self.mask_segments(self.samples,self.segments,self.segmented_attrs[:,k:])
+    def keep_bot(self,k):
+        if self.use_segments:
+            return self.mask_segments(self.samples, self.segm_samples, self.sorted_segmented_attrs[:, k:])
         else:
             return self.mask(self.samples, self.sorted_indices[:,k:])
 
-    def mask_rand(self,k,segmented=False):
+    def mask_rand(self,k,return_indices=False):
         if k==0:
             return self.samples
-        indices = self.segmented_attrs if segmented else self.sorted_indices
-        shape = indices.shape
-        indices = np.arange(shape(-1))
-        indices = np.tile(indices, (shape[0],1))
-        rng=np.random.default_rng()
-        rng.shuffle(indices,axis=1)
-        if segmented:
-            return self.mask_segments(self.samples,self.segments,indices[:,:k])
+        rng = np.random.default_rng(5) #TODO: remove seed
+        if not self.use_segments:
+            shape = self.sorted_indices.shape
+            indices = np.arange(shape[-1])
+            indices = np.tile(indices, (shape[0],1))
+            rng.shuffle(indices,axis=1)
+            indices=indices[:, :k]
+            masked_samples = self.mask(self.samples, indices)
         else:
-            return self.mask(self.samples, indices[:,:k])
+            # no shuffle here: only select segments that exsist for each image
+            #  rng.choice raises exception if k> number of segments
+            indices = np.stack([rng.choice(np.unique(self.segm_samples[i, ...]), size=k, replace=False)
+                                for i in range(self.segm_samples.shape[0])])
+            masked_samples= self.mask_segments(self.samples, self.segm_samples, indices)
+        if return_indices: return masked_samples, indices
+        return masked_samples
     def mask_all(self,segmented=False):
-        if segmented:
-            return self.mask_segments(self.samples,self.segments,self.segmented_attrs)
+        if self.use_segments:
+            return self.mask_segments(self.samples, self.segm_samples, self.sorted_segmented_attrs)
         else:
             return self.mask(self.samples, self.sorted_indices)
 
