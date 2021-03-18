@@ -34,14 +34,14 @@ class Infidelity(Metric):
     def __init__(self, model: Callable, method_names: List[str], perturbation_mode: str,
                  perturbation_size: float, num_perturbations: int, mode: Union[Tuple[str], str] = "mse",
                  activation_fn: Union[Tuple[str], str] = "linear", writer_dir: str = None):
-        super().__init__(model, method_names, writer_dir)
+        super().__init__(model, method_names)  # We don't pass writer_dir to super because we only use 1 general writer
+        self.writers = {"general": AttributionWriter(path.join(writer_dir, "general"))} \
+            if writer_dir is not None else None
         self.perturbation_mode = perturbation_mode
         self.perturbation_size = perturbation_size
         self.num_perturbations = num_perturbations
         self.mode = (mode,) if type(mode) == str else mode
         self.activation_fn = (activation_fn,) if type(activation_fn) == str else activation_fn
-        if self.writer_dir is not None:
-            self.writers["general"] = AttributionWriter(path.join(self.writer_dir, "general"))
         self.result = InfidelityResult(method_names, perturbation_mode, perturbation_size,
                                        self.mode, self.activation_fn)
         self.pool = None
