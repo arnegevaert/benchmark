@@ -30,13 +30,13 @@ masking:
         type: ConstantMasker
         feature_level: pixel
         mask_value: 0.
-#      random:
-#        type: RandomMasker
-#        feature_level: pixel
-#      blur:
-#        type: BlurringMasker
-#        feature_level: pixel
-#        kernel_size: 0.5
+      random:
+        type: RandomMasker
+        feature_level: pixel
+      blur:
+        type: BlurringMasker
+        feature_level: pixel
+        kernel_size: 0.5
   default:
     mode:
       - morf
