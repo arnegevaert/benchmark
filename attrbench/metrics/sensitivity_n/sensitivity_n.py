@@ -49,7 +49,6 @@ class SensitivityN(Metric):
                  num_steps: int, num_subsets: int, masker: Masker, activation_fn: Union[Tuple[str], str],
                  writer_dir: str = None):
         super().__init__(model, method_names)  # We don't pass writer_dir to super because we only use 1 general writer
-        print(writer_dir)
         self.writers = {"general": AttributionWriter(path.join(writer_dir, "general"))} \
             if writer_dir is not None else None
         self.min_subset_size = min_subset_size
