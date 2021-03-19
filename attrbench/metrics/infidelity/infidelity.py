@@ -11,6 +11,8 @@ from attrbench.metrics import Metric, MetricResult
 from ._compute_perturbations import _compute_perturbations
 from ._compute_result import _compute_result
 from .result import InfidelityResult
+import time
+import logging
 
 
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
@@ -47,12 +49,17 @@ class Infidelity(Metric):
         self.pool = None
 
     def _append_cb(self, results):
+        logging.info("Appending Infidelity")
         for method_name in results:
             self.result.append(method_name, results[method_name])
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         if self.pool is not None:
+            start_t = time.time()
+            logging.info("Joining...")
             self.pool.join()
+            end_t = time.time()
+            logging.info(f"Join done in {end_t - start_t:.2f}s")
         # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
         writer = self.writers["general"] if self.writers is not None else None
         pert_vectors, pred_diffs = _compute_perturbations(samples, labels, self.model,
@@ -63,12 +70,16 @@ class Infidelity(Metric):
             for method_name in results:
                 self.result.append(method_name, results[method_name])
         else:
-            self.pool = multiprocessing.Pool(processes=1)
+            self.pool = multiprocessing.pool.ThreadPool(processes=1)
             self.pool.apply_async(_compute_result, args=(pert_vectors, pred_diffs, attrs_dict, self.mode),
                                   callback=self._append_cb)
             self.pool.close()
 
     def get_result(self) -> MetricResult:
         if self.pool is not None:
+            start_t = time.time()
+            logging.info("Joining...")
             self.pool.join()
+            end_t = time.time()
+            logging.info(f"Join done in {end_t - start_t:.2f}s")
         return self.result

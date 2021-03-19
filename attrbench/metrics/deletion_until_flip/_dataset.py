@@ -22,6 +22,8 @@ class _DeletionUntilFlipDataset:
 
     def __getitem__(self, item):
         num_to_mask = self.step_size * (item + 1)
+        if num_to_mask > self.sorted_indices.shape[1]:
+            raise StopIteration()
         indices = self.sorted_indices[:, -num_to_mask:]
         masked_samples = self.masker.mask(self.samples, indices)
         return masked_samples, num_to_mask

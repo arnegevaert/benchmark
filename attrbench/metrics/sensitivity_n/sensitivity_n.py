@@ -13,6 +13,8 @@ from ._compute_correlations import _compute_correlations
 from ._compute_perturbations import _compute_perturbations
 from ._dataset import _SensitivityNDataset, _SegSensNDataset
 from .result import SegSensitivityNResult, SensitivityNResult
+import logging
+import time
 
 
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
@@ -62,12 +64,17 @@ class SensitivityN(Metric):
         self.pool = None
 
     def _append_cb(self, results):
+        logging.info("Appending Sensitivity-N")
         for method_name in results:
             self.result.append(method_name, results[method_name])
 
     def run_batch(self, samples, labels, attrs_dict: Dict[str, np.ndarray]):
         if self.pool is not None:
+            start_t = time.time()
+            logging.info("Joining Sensitivity-N...")
             self.pool.join()
+            end_t = time.time()
+            logging.info("Join done in {end_t - start_t:.2f}s")
         # Get total number of features from attributions dict
         attrs = attrs_dict[next(iter(attrs_dict))]
         num_features = attrs.reshape(attrs.shape[0], -1).shape[1]
@@ -86,14 +93,18 @@ class SensitivityN(Metric):
             for method_name in results:
                 self.result.append(method_name, results[method_name])
         else:
-            self.pool = multiprocessing.Pool(processes=1)
+            self.pool = multiprocessing.pool.ThreadPool(processes=1)
             self.pool.apply_async(_compute_correlations, args=(attrs_dict, n_range, output_diffs, indices),
                                   callback=self._append_cb)
             self.pool.close()
 
     def get_result(self) -> MetricResult:
         if self.pool is not None:
+            start_t = time.time()
+            logging.info("Joining Sensitivity-N...")
             self.pool.join()
+            end_t = time.time()
+            logging.info(f"Join done in {end_t - start_t:.2f}s")
         return self.result
 
 
@@ -117,12 +128,17 @@ class SegSensitivityN(Metric):
         self.pool = None
 
     def _append_cb(self, results):
+        logging.info("Appending Seg-Sensitivity-N")
         for method_name in results:
             self.result.append(method_name, results[method_name])
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         if self.pool is not None:
+            start_t = time.time()
+            logging.info("Joining Seg-Sensitivity-N...")
             self.pool.join()
+            end_t = time.time()
+            logging.info(f"Join done in {end_t - start_t:.2f}s")
         # Create pseudo-dataset
         ds = _SegSensNDataset(self.n_range, self.num_subsets, samples, self.masker)
         # Calculate output diffs and removed indices (we will re-use this for each method)
@@ -139,12 +155,16 @@ class SegSensitivityN(Metric):
             for method_name in results:
                 self.result.append(method_name, results[method_name])
         else:
-            self.pool = multiprocessing.Pool(processes=1)
+            self.pool = multiprocessing.pool.ThreadPool(processes=1)
             self.pool.apply_async(_compute_correlations, args=(segmented_attrs_dict, self.n_range, output_diffs, indices),
                                   callback=self._append_cb)
             self.pool.close()
 
     def get_result(self) -> MetricResult:
         if self.pool is not None:
+            start_t = time.time()
+            logging.info("Joining Seg-Sensitivity-N...")
             self.pool.join()
+            end_t = time.time()
+            logging.info("Join done in {end_t - start_t:.2f}s")
         return self.result
