@@ -2,7 +2,7 @@ import argparse
 import torch
 import numpy as np
 import logging
-from experiments.general_imaging.dataset_models import get_dataset_model
+from experiments.general_imaging.lib.dataset_models import get_dataset_model
 from torch.utils.data import DataLoader
 from experiments.lib import MethodLoader
 from os import path

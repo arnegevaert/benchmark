@@ -1,11 +1,10 @@
 import argparse
 import torch
-from experiments.general_imaging.dataset_models import get_dataset_model
+from experiments.general_imaging.lib.dataset_models import get_dataset_model
 from experiments.lib import MethodLoader
 from attrbench.suite import Suite
 from torch.utils.data import DataLoader
 import time
-import multiprocessing
 import logging
 
 
@@ -23,7 +22,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output", type=str, required=True)
     parser.add_argument("--log-dir", type=str, default=None)
     parser.add_argument("--seed", type=int, default=None)
-    parser.add_argument("--multi_label",action="store_true")
+    parser.add_argument("--multi_label", action="store_true")
     # Parse arguments
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"

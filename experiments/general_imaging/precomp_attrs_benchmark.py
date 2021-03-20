@@ -7,7 +7,7 @@ import numpy as np
 import torch
 
 from attrbench.suite import PrecomputedAttrsSuite
-from experiments.general_imaging.dataset_models import get_dataset_model
+from experiments.general_imaging.lib.dataset_models import get_dataset_model
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
