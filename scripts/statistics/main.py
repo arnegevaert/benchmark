@@ -1,6 +1,7 @@
 import argparse
 from attrbench.suite import SuiteResult
 from scripts.statistics._metric_scores import metric_scores
+from attrbench import metrics
 
 
 if __name__ == "__main__":
@@ -13,4 +14,5 @@ if __name__ == "__main__":
     dfs = {}
     for metric_name in res.metric_results:
         mr = res.metric_results[metric_name]
-        dfs[metric_name] = mr.to_df()
+        if type(mr) == metrics.DeletionResult:
+            dfs[metric_name] = mr.to_df()
