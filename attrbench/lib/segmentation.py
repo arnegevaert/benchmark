@@ -1,10 +1,16 @@
 import numpy as np
+import torch
 from attrbench.lib.masking import Masker
 from skimage.segmentation import slic
 from typing import Tuple
 
 
-def mask_segments(images: np.ndarray, seg_images: np.ndarray, segments: np.ndarray, masker: Masker) -> np.ndarray:
+def isin(a: torch.tensor, b: torch.tensor):
+    # https://stackoverflow.com/questions/60918304/get-indices-of-elements-in-tensor-a-that-are-present-in-tensor-b
+    return (a[..., None] == b).any(-1)
+
+
+def mask_segments(images: torch.tensor, seg_images: torch.tensor, segments: torch.tensor, masker: Masker) -> np.ndarray:
     if not (images.shape[0] == seg_images.shape[0] and images.shape[0] == segments.shape[0] and
             images.shape[-2:] == seg_images.shape[-2:]):
         raise ValueError(f"Incompatible shapes: {images.shape}, {seg_images.shape}, {segments.shape}")
@@ -12,8 +18,8 @@ def mask_segments(images: np.ndarray, seg_images: np.ndarray, segments: np.ndarr
     for i in range(images.shape[0]):
         seg_img = seg_images[i, ...]
         segs = segments[i, ...]
-        bool_masks.append(np.isin(seg_img, segs))
-    bool_masks = np.stack(bool_masks, axis=0)
+        bool_masks.append(isin(seg_img, segs))
+    bool_masks = torch.stack(bool_masks, dim=0)
     return masker.mask_boolean(images, bool_masks)
 
 
@@ -26,19 +32,20 @@ def segment_samples(samples: np.ndarray) -> np.ndarray:
     return seg_images
 
 
-def segment_attributions(seg_images: np.ndarray, attrs: np.ndarray) -> np.ndarray:
-    segments = np.unique(seg_images)
-    seg_img_flat = seg_images.reshape(seg_images.shape[0], -1)
-    attrs_flat = attrs.reshape(attrs.shape[0], -1)
-    avg_attrs = np.zeros((seg_images.shape[0], len(segments)))
+def segment_attributions(seg_images: torch.tensor, attrs: torch.tensor) -> torch.tensor:
+    segments = torch.unique(seg_images)
+    seg_img_flat = seg_images.flatten(1)
+    attrs_flat = attrs.flatten(1)
+    avg_attrs = torch.zeros((seg_images.shape[0], len(segments)), device=seg_images.device)
     for i, seg in enumerate(segments):  # Segments should be 0, ..., n, but we use enumerate just in case
-        mask = (seg_img_flat == seg).astype(np.long)
+        mask = (seg_img_flat == seg).long()
         masked_attrs = mask * attrs_flat
-        mask_size = np.sum(mask, axis=1)
-        sum_attrs = np.sum(masked_attrs, axis=1)
-        mean_attrs = np.divide(sum_attrs, mask_size, out=np.zeros_like(sum_attrs), where=mask_size!=0)
-        # If seg does not exist for image, mean_attrs will be nan. Replace with -inf.
-        avg_attrs[:, i] = np.nan_to_num(mean_attrs, nan=-np.inf)
+        mask_size = torch.sum(mask, dim=1)
+        sum_attrs = torch.sum(masked_attrs, dim=1)
+        mean_attrs = torch.true_divide(sum_attrs, mask_size)
+        # If seg does not exist for image, mean_attrs will be inf (since mask_size=0). Replace with -inf.
+        mean_attrs[mean_attrs == float('inf')] = -float('inf')
+        avg_attrs[:, i] = mean_attrs
     return avg_attrs
 
 

@@ -2,25 +2,22 @@ from typing import Callable, Dict, Tuple
 
 import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 
 from attrbench.lib.util import ACTIVATION_FNS
 from attrbench.lib import AttributionWriter
 
 
-def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, ds: Dataset,
+def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, ds,
                            model: Callable, n_range, activation_fns: Tuple[str], writer: AttributionWriter = None) \
         -> Tuple[Dict[str, Dict[int, np.ndarray]], Dict[int, np.ndarray]]:
-    dl = DataLoader(ds, shuffle=False, num_workers=0, batch_size=1)
-    device = samples.device
     with torch.no_grad():
         orig_output = model(samples)
 
     output_diffs = {fn: {n: [] for n in n_range} for fn in activation_fns}
     removed_indices = {n: [] for n in n_range}
-    for i, (batch, indices, n) in enumerate(dl):
-        batch = batch[0].to(device).float()
-        indices = indices[0].numpy()
+    for i in range(len(ds)):
+        batch, indices, n = ds[i]
         n = n.item()
         with torch.no_grad():
             output = model(batch)
@@ -30,7 +27,7 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, ds: Data
             fn_orig_out = ACTIVATION_FNS[fn](orig_output)
             fn_out = ACTIVATION_FNS[fn](output)
             output_diffs[fn][n].append((fn_orig_out - fn_out).gather(dim=1, index=labels.unsqueeze(-1)))  # [batch_size, 1]
-        removed_indices[n].append(indices)  # [batch_size, n]
+        removed_indices[n].append(indices.cpu().numpy())  # [batch_size, n]
 
     for n in n_range:
         for fn in activation_fns:

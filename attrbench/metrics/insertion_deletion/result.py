@@ -5,13 +5,6 @@ class InsertionDeletionResult(ModeActivationMetricResult):
     pass
 
 
-class InsertionResult(InsertionDeletionResult):
-    inverted = {
-        "morf": False,
-        "lerf": True
-    }
-
-
 class DeletionResult(InsertionDeletionResult):
     inverted = {
         "morf": True,
@@ -23,6 +16,13 @@ class IrofResult(InsertionDeletionResult):
     inverted = {
         "morf": True,
         "lerf": False
+    }
+
+
+class InsertionResult(InsertionDeletionResult):
+    inverted = {
+        "morf": False,
+        "lerf": True
     }
 
 

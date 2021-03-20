@@ -1,13 +1,13 @@
 import numpy as np
-from torch.utils.data import Dataset
+import torch
 
 from attrbench.lib import AttributionWriter
-from attrbench.lib import mask_segments, segment_samples_attributions
+from attrbench.lib import mask_segments, segment_samples, segment_attributions
 from attrbench.lib.masking import Masker
 
 
-class _InsertionDeletionDataset(Dataset):
-    def __init__(self, mode: str, num_steps: int, samples: np.ndarray, attrs: np.ndarray, masker: Masker,
+class _InsertionDeletionDataset:
+    def __init__(self, mode: str, num_steps: int, samples: torch.tensor, attrs: np.ndarray, masker: Masker,
                  reverse_order: bool = False):
         if mode not in ["insertion", "deletion"]:
             raise ValueError("Mode must be insertion or deletion")
@@ -37,17 +37,24 @@ class _InsertionDeletionDataset(Dataset):
         return masked_samples
 
 
-class _IrofIiofDataset(_InsertionDeletionDataset):
-    def __init__(self, mode: str, samples: np.ndarray, attrs: np.ndarray, masker: Masker,
-                 reverse_order: bool = False, writer: AttributionWriter = None):
-        super().__init__(mode, num_steps=100, samples=samples, attrs=attrs, masker=masker, reverse_order=reverse_order)
+class _IrofIiofDataset:
+    def __init__(self, mode: str, samples: torch.tensor, masker: Masker,
+                 writer: AttributionWriter = None):
+        self.mode = mode
+        self.samples = samples
+        self.masker = masker
+        self.masker.initialize_baselines(samples)
+        self.sorted_indices = None
         # Override sorted_indices to use segment indices instead of pixel indices
-        self.segmented_images, avg_attrs = segment_samples_attributions(samples, attrs)
-        self.sorted_indices = avg_attrs.argsort()  # [batch_size, num_segments]
-        if reverse_order:
-            self.sorted_indices = np.flip(self.sorted_indices, axis=1)
+        self.segmented_images = torch.tensor(segment_samples(samples.cpu().numpy()), device=samples.device)
         if writer is not None:
             writer.add_images("segmented samples", self.segmented_images)
+
+    def set_attrs(self, attrs: np.ndarray, reverse_order: bool = False):
+        avg_attrs = segment_attributions(self.segmented_images, torch.tensor(attrs, device=self.samples.device))
+        self.sorted_indices = avg_attrs.argsort()  # [batch_size, num_segments]
+        if reverse_order:
+            self.sorted_indices = torch.flip(self.sorted_indices, dims=[1])
 
     def __len__(self):
         # Exclude fully masked/inserted image

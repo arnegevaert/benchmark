@@ -1,9 +1,9 @@
-from torch.utils.data import Dataset
 import numpy as np
+import torch
 
 
-class _DeletionUntilFlipDataset(Dataset):
-    def __init__(self, num_steps, samples: np.ndarray, attrs: np.ndarray, masker):
+class _DeletionUntilFlipDataset:
+    def __init__(self, num_steps, samples: torch.tensor, attrs: np.ndarray, masker):
         self.num_steps = num_steps
         self.samples = samples
         self.masker = masker
@@ -22,6 +22,8 @@ class _DeletionUntilFlipDataset(Dataset):
 
     def __getitem__(self, item):
         num_to_mask = self.step_size * (item + 1)
+        if num_to_mask > self.sorted_indices.shape[1]:
+            raise StopIteration()
         indices = self.sorted_indices[:, -num_to_mask:]
         masked_samples = self.masker.mask(self.samples, indices)
         return masked_samples, num_to_mask
