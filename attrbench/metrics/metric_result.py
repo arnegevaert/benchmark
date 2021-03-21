@@ -31,12 +31,15 @@ class MetricResult:
         result.data = {m_name: np.array(group[m_name]) for m_name in method_names}
         return result
 
+    def _aggregate(self, data):
+        return data
+
     def to_df(self) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
         data = self.data
         for method_name in self.method_names:
             if type(data[method_name]) == list:
                 data[method_name] = torch.cat(data[method_name]).numpy()
-            data[method_name] = data[method_name].squeeze().tolist()
+            data[method_name] = self._aggregate(data[method_name].squeeze())
         return pd.DataFrame.from_dict(data)
 
 
@@ -86,7 +89,8 @@ class ModeActivationMetricResult(MetricResult):
         result = {}
         for mode in self.modes:
             for afn in self.activation_fn:
-                data = {m_name: self.data[m_name][mode][afn].squeeze().tolist() for m_name in self.method_names}
+                data = {m_name: self._aggregate(self.data[m_name][mode][afn].squeeze())
+                        for m_name in self.method_names}
                 df = pd.DataFrame.from_dict(data)
                 result[f"{mode}_{afn}"] = df
         return result
