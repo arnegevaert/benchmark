@@ -103,7 +103,6 @@ class Masker:
             aggregated_shape = list(samples.shape)
             aggregated_shape[1] = 1
             return aggregated_shape == list(attributions.shape)
-    #TODO: private
     def _mask(self, samples: np.ndarray, indices: np.ndarray):
         if self.baseline is None:
             raise ValueError("Masker was not initialized.")

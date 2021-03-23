@@ -20,4 +20,3 @@ class _DeletionUntilFlipDataset(Dataset):
         num_to_mask = self.step_size * (item + 1)
         masked_samples= self.masker.mask_top(num_to_mask)
         return masked_samples, num_to_mask
-
