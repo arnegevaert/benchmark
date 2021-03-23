@@ -22,16 +22,16 @@ _DATASET_MODELS = {
             "resnet18": lambda: Resnet("resnet18", 10, path.join(_DATA_LOC, "models/CIFAR10/resnet18.pt"))
         }
     },
-    "ImageNette": {
+    "ImageNet": {
         "ds": lambda: ImageNette(path.join(_DATA_LOC, "imagenette2"), train=False),
         "n_pixels": 224*224,
         "models": {
-            "alexnet": lambda: Alexnet(10, path.join(_DATA_LOC, "models/ImageNette/alexnet.pt")),
-            "densenet": lambda: Densenet("densenet121", 10, path.join(_DATA_LOC, "models/ImageNette/densenet121.pt")),
-            "mobilenet_v2": lambda: Mobilenet_v2(10, path.join(_DATA_LOC, "models/ImageNette/mobilenet_v2.pt")),
-            "resnet18": lambda: Resnet("resnet18", 10, path.join(_DATA_LOC, "models/ImageNette/resnet18.pt")),
-            "squeezenet1_0": lambda: Squeezenet("squeezenet1_0.pt", 10, path.join(_DATA_LOC, "models/ImageNette/squeezenet1_0.pt")),
-            "vgg11_bn": lambda: Vgg("vgg11_bn", 10, path.join(_DATA_LOC, "models/ImageNette/vgg11_bn.pt"))
+            "alexnet": lambda: Alexnet(10, path.join(_DATA_LOC, "models/ImageNet/alexnet.pt")),
+            "densenet": lambda: Densenet("densenet121", 10, path.join(_DATA_LOC, "models/ImageNet/densenet121.pt")),
+            "mobilenet_v2": lambda: Mobilenet_v2(10, path.join(_DATA_LOC, "models/ImageNet/mobilenet_v2.pt")),
+            "resnet18": lambda: Resnet("resnet18", 10, path.join(_DATA_LOC, "models/ImageNet/resnet18.pt")),
+            "squeezenet1_0": lambda: Squeezenet("squeezenet1_0.pt", 10, path.join(_DATA_LOC, "models/ImageNet/squeezenet1_0.pt")),
+            "vgg11_bn": lambda: Vgg("vgg11_bn", 10, path.join(_DATA_LOC, "models/ImageNet/vgg11_bn.pt"))
         }
     },
     "Aptos": {
