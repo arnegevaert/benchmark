@@ -16,6 +16,8 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--batch-size", type=int, required=True)
     parser.add_argument("-n", "--num-samples", type=int, required=True)
     parser.add_argument("-c", "--cuda", action="store_true")
+    parser.add_argument("-i", "--save-images", action="store_true")
+    parser.add_argument("-a", "--save-attrs", action="store_true")
     parser.add_argument("-o", "--output", type=str, required=True)
     parser.add_argument("--log-dir", type=str, default=None)
     parser.add_argument("--seed", type=int, default=None)
@@ -38,6 +40,8 @@ if __name__ == "__main__":
     bm_suite = Suite(model, methods,
                      DataLoader(ds, batch_size=args.batch_size, shuffle=True, num_workers=4),
                      device,
+                     save_images=args.save_images,
+                     save_attrs=args.save_attrs,
                      seed=args.seed,
                      patch_folder=patch_folder,
                      multi_label=args.multi_label,
