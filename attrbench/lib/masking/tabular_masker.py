@@ -1,10 +1,10 @@
-from attrbench.lib.masking import Masker
+from attrbench.lib.masking import ImageMasker
 import torch
 import numpy as np
 import typing
 from typing import List, Union
 
-class TabularMasker(Masker):
+class TabularMasker(ImageMasker):
     def __init__(self, samples: np.ndarray, attributions: np.ndarray, mask_value:Union[float, List[float]] =0.):
         self.mask_value = mask_value
         super().__init__(samples, attributions, "channel", None)

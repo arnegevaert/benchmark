@@ -1,8 +1,8 @@
-from attrbench.lib.masking import Masker
+from attrbench.lib.masking import ImageMasker
 import torch
 
 
-class SampleAverageMasker(Masker):
+class SampleAverageMasker(ImageMasker):
     def __init__(self, samples, attributions, feature_level, segmented_samples=None):
         super().__init__(samples, attributions, feature_level, segmented_samples)
         self.initialize_baselines(samples)

@@ -1,9 +1,9 @@
-from attrbench.lib.masking import Masker
+from attrbench.lib.masking import ImageMasker
 from cv2 import blur
 import numpy as np
 
 
-class BlurringMasker(Masker):
+class BlurringMasker(ImageMasker):
     def __init__(self, samples, attributions, feature_level, kernel_size, segmented_samples: np.ndarray =None):
         super().__init__(samples, attributions, feature_level, segmented_samples)
         if not 0 < kernel_size < 1.0:
