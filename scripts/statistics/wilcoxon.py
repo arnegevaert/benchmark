@@ -31,15 +31,16 @@ def plot_wilcoxon_result(title, effect_sizes, pvalues, labels):
     plt.show()
 
 
-def wilcoxon_tests(title, names, variant, effect_size_measure, labels):
+def wilcoxon_tests(res_obj, title, names, mode, activation, effect_size_measure, labels):
     # Infidelity
     all_pvalues, all_effect_sizes = {}, {}
     for name in names:
         pvalues, effect_sizes = {}, {}
         # Load dataframes from object
         df_dict = res_obj.metric_results[name].to_df()
-        # We start by just looking at basic MSE-linear
-        df = df_dict[f"{variant}"]
+        # Select the correct variant of the metric
+        df = df_dict[f"{mode}_{activation}"]
+        inverted = res_obj.metric_results[name].inverted[mode]
         # Take the first n rows for pilot study
         df = df.iloc[:PILOT_ROWS, :]
         # Remove the methods that we want to ignore
@@ -47,7 +48,8 @@ def wilcoxon_tests(title, names, variant, effect_size_measure, labels):
         baseline_results = df[BASELINE].to_numpy()
         for method_name in df.columns.difference([BASELINE]):
             method_results = df[method_name].to_numpy()
-            statistic, pvalue = stats.wilcoxon(method_results, baseline_results, alternative="less")
+            statistic, pvalue = stats.wilcoxon(method_results, baseline_results,
+                                               alternative="less" if inverted else "greater")
             pvalues[method_name] = pvalue
             # Probability of superiority effect size
             if effect_size_measure == "cohend":
@@ -67,7 +69,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("file", type=str)
     parser.add_argument("metric", type=str)
-    parser.add_argument("-v", "--variant", type=str, default="mse_linear")
+    parser.add_argument("-m", "--mode", type=str, default="mse")
+    parser.add_argument("-a", "--activation", type=str, default="linear")
     parser.add_argument("-e", "--effect-size-measure", type=str, default="cohend", choices=["cohend", "meandiff"])
     args = parser.parse_args()
 
@@ -79,7 +82,7 @@ if __name__ == "__main__":
 
     if args.metric == "infidelity":
         infidelity_names = [f"infidelity_{pert}" for pert in ("gaussian", "seg", "sq")]
-        wilcoxon_tests("Infidelity", infidelity_names, args.variant, args.effect_size_measure, ("Gaussian", "Segment", "Square"))
+        wilcoxon_tests(res_obj, "Infidelity", infidelity_names, args.mode, args.activation, args.effect_size_measure, ("Gaussian", "Segment", "Square"))
     elif args.metric == "deletion":
         deletion_names = [f"masker_constant.deletion", "masker_blur.deletion", "masker_random.deletion"]
-        wilcoxon_tests("Deletion", deletion_names, args.variant, args.effect_size_measure, ("Constant", "Blur", "Random"))
+        wilcoxon_tests(res_obj, "Deletion", deletion_names, args.mode, args.activation, args.effect_size_measure, ("Constant", "Blur", "Random"))
