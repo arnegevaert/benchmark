@@ -1,13 +1,13 @@
 import numpy as np
-from torch.utils.data import Dataset
+import torch
 
 from attrbench.lib import AttributionWriter
 from attrbench.lib import segment_samples
 from attrbench.lib.masking import Masker
 
 
-class _InsertionDeletionDataset(Dataset):
-    def __init__(self, mode: str, num_steps: int, samples: np.ndarray, attrs: np.ndarray, masker: Masker,
+class _InsertionDeletionDataset:
+    def __init__(self, mode: str, num_steps: int, samples: torch.tensor, attrs: np.ndarray, masker: Masker,
                  reverse_order: bool = False):
         if mode not in ["insertion", "deletion"]:
             raise ValueError("Mode must be insertion or deletion")
@@ -33,12 +33,16 @@ class _InsertionDeletionDataset(Dataset):
         return masked_samples
 
 
-class _IrofIiofDataset(_InsertionDeletionDataset):
-    def __init__(self, mode: str, samples: np.ndarray, attrs: np.ndarray, masker: Masker,
+class _IrofIiofDataset:
+    def __init__(self, mode: str, samples: torch.tensor, attrs: np.ndarray, masker: Masker,
                  reverse_order: bool = False, writer: AttributionWriter = None):
-        super().__init__(mode, num_steps=100, samples=samples, attrs=attrs, masker=masker, reverse_order=reverse_order)
+        self.mode = mode
+        self.samples = samples
+        self.sorted_indices = None
+        self.reverse_order = reverse_order
         # Override sorted_indices to use segment indices instead of pixel indices
-        self.segmented_images = segment_samples(samples)
+        self.segmented_images = segment_samples(samples.cpu().numpy())
+        # self.segmented_images = torch.tensor(segment_samples(samples.cpu().numpy()), device=samples.device)
         # Override masker
         masker_constructor, masker_kwargs=masker
         self.masker = masker_constructor(samples, attrs,**masker_kwargs, segmented_samples=self.segmented_images)

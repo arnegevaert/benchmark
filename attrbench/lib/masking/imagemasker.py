@@ -1,10 +1,11 @@
 from attrbench.lib.masking import Masker
 import numpy as np
+import torch
 
 
 
 class ImageMasker(Masker):
-    def __init__(self, samples: np.ndarray, attributions: np.ndarray, feature_level, segmented_samples: np.ndarray =None):
+    def __init__(self, samples: torch.tensor, attributions: np.ndarray, feature_level, segmented_samples: torch.tensor =None):
         if feature_level not in ("channel", "pixel"):
             raise ValueError(f"feature_level must be 'channel' or 'pixel'. Found {feature_level}.")
         self.feature_level = feature_level
@@ -22,7 +23,7 @@ class ImageMasker(Masker):
             self.sorted_indices = attributions.reshape(attributions.shape[0], -1).argsort()
 
 
-    def segment_attributions(self,seg_images: np.ndarray, attrs: np.ndarray) -> np.ndarray:
+    def segment_attributions(self,seg_images: torch.tensor, attrs: np.ndarray) -> np.ndarray:
         segments = np.unique(seg_images)
         seg_img_flat = seg_images.reshape(seg_images.shape[0], -1)
         attrs_flat = attrs.reshape(attrs.shape[0], -1)
@@ -69,7 +70,7 @@ class ImageMasker(Masker):
         if return_indices: return masked_samples, indices
         return masked_samples
 
-    def _mask(self, samples: np.ndarray, indices: np.ndarray):
+    def _mask(self, samples: torch.tensor, indices: np.ndarray):
         if self.baseline is None:
             raise ValueError("Masker was not initialized.")
         if self.use_segments:
@@ -96,7 +97,9 @@ class ImageMasker(Masker):
             to_mask = to_mask.reshape(samples.shape)
             return self._mask_boolean(samples, to_mask)
 
-    def _mask_segments(self, images: np.ndarray, seg_images: np.ndarray, segments: np.ndarray) -> np.ndarray:
+
+
+    def _mask_segments(self, images: torch.tensor, seg_images: torch.tensor, segments: np.ndarray) -> np.ndarray:
         if not (images.shape[0] == seg_images.shape[0] and images.shape[0] == segments.shape[0] and
                 images.shape[-2:] == seg_images.shape[-2:]):
             raise ValueError(f"Incompatible shapes: {images.shape}, {seg_images.shape}, {segments.shape}")
@@ -104,12 +107,12 @@ class ImageMasker(Masker):
         for i in range(images.shape[0]):
             seg_img = seg_images[i, ...]
             segs = segments[i, ...]
-            bool_masks.append(np.isin(seg_img, segs))
+            bool_masks.append(_isin(seg_img, segs))
         bool_masks = np.stack(bool_masks, axis=0)
         return self._mask_boolean(images, bool_masks)
 
     def _mask_boolean(self, samples, bool_mask):
-        bool_mask = bool_mask
+        bool_mask = torch.tensor(bool_mask, device = samples.device)
         return samples - (bool_mask * samples) + (bool_mask * self.baseline)
     # why not return samples[bool_mask] = self.baseline[bool_mask] ?
 
@@ -117,3 +120,6 @@ class ImageMasker(Masker):
     def initialize_baselines(self, samples):
         raise NotImplementedError
 
+def _isin(a: torch.tensor, b: torch.tensor):
+# https://stackoverflow.com/questions/60918304/get-indices-of-elements-in-tensor-a-that-are-present-in-tensor-b
+    return (a[..., None] == b).any(-1)

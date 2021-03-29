@@ -7,14 +7,7 @@ import torch
 import numpy as np
 from os import path
 from typing import Dict
-from functools import partial
-import multiprocessing
 import logging
-
-
-def _run_metric(metric_name, metrics, samples, labels, attrs):
-    metrics[metric_name].run_batch(samples, labels, attrs)
-    logging.info(f"{metric_name} done.")
 
 
 class Suite:
@@ -26,11 +19,9 @@ class Suite:
 
     def __init__(self, model, methods, dataloader, device="cpu",
                  save_images=False, save_attrs=False, seed=None, patch_folder=None,
-                 log_dir=None, explain_label=None, multi_label=False, num_threads=1):
+                 log_dir=None, explain_label=None, multi_label=False):
+        torch.multiprocessing.set_sharing_strategy("file_system")
         self.metrics: Dict[str, Metric] = {}
-        self.num_threads = num_threads
-        if num_threads > 1:
-            torch.multiprocessing.set_sharing_strategy("file_system")
         self.model = model.to(device)
         self.model.eval()
         self.methods = methods
@@ -52,9 +43,13 @@ class Suite:
             if self.log_dir is not None else None
 
     def load_config(self, loc):
-        multithreaded = self.num_threads > 1
-        cfg = Config(loc, self.model, multithreaded, self.log_dir, patch_folder=self.patch_folder, methods=self.methods,
-                     method_names=list(self.methods.keys()))
+        global_args = {
+            "model": self.model,
+            "patch_folder": self.patch_folder,
+            "methods": self.methods,
+            "method_names": list(self.methods.keys()),
+        }
+        cfg = Config(loc, global_args, log_dir=self.log_dir)
         self.metrics = cfg.load()
 
     def run(self, num_samples, verbose=True):
@@ -83,8 +78,10 @@ class Suite:
 
                 # We need the attributions, to save them or to check their shapes
                 logging.info("Computing attributions...")
-                attrs = {method_name: self.methods[method_name](samples, labels).cpu().detach().numpy()
-                         for method_name in self.methods.keys()}
+                attrs = {}
+                for method_name in self.methods.keys():
+                    logging.info(method_name)
+                    attrs[method_name] = self.methods[method_name](samples, labels).cpu().detach().numpy()
                 logging.info("Finished.")
 
                 if self.writer is not None:
@@ -98,19 +95,10 @@ class Suite:
                         self.attrs[method_name].append(attrs[method_name])
 
                 # Metric loop
-                logging.info("Starting metrics...")
-                if self.num_threads != 1:
-                    # Use multiprocessing when num_threads > 1
-                    with multiprocessing.pool.ThreadPool(self.num_threads) as pool:
-                        run_metric_partial = partial(_run_metric, metrics=self.metrics, samples=samples,
-                                                     labels=labels, attrs=attrs)
-                        pool.map(run_metric_partial, self.metrics.keys())
-                else:
-                    # If num_threads = 1, no multiprocessing is necessary
-                    for i, metric in enumerate(self.metrics.keys()):
-                        if verbose:
-                            prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
-                        self.metrics[metric].run_batch(samples, labels, attrs)
+                for i, metric in enumerate(self.metrics.keys()):
+                    if verbose:
+                        prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
+                    self.metrics[metric].run_batch(samples, labels, attrs)
 
                 if verbose:
                     prog.update(samples.size(0))
@@ -118,8 +106,8 @@ class Suite:
         self.samples_done += num_samples
 
     def get_batch(self, it, batch_size):
-        out_samples, out_labels =[],[]
-        out_size =0
+        out_samples, out_labels = [], []
+        out_size = 0
         # collect a full batch
         while out_size < batch_size:
             full_batch, full_labels = next(it)
@@ -143,8 +131,8 @@ class Suite:
             out_labels.append(labels.detach().cpu())
             out_samples.append(samples.detach().cpu())
             out_size += samples.size(0)
-        labels = torch.cat(out_labels,dim=0)
-        samples = torch.cat(out_samples,dim=0)
+        labels = torch.cat(out_labels, dim=0)
+        samples = torch.cat(out_samples, dim=0)
         return labels[:batch_size].to(self.device), samples[:batch_size].to(self.device)
 
     def save_result(self, loc):

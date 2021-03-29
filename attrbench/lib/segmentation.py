@@ -1,4 +1,6 @@
 import numpy as np
+import torch
+from attrbench.lib.masking import Masker
 from skimage.segmentation import slic
 from typing import Tuple
 

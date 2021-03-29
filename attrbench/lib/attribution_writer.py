@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 
 def _scale_images(img_tensor):
-    return (img_tensor - img_tensor.min()) / (img_tensor.max() - img_tensor.min())
+    return torch.true_divide((img_tensor - img_tensor.min()), (img_tensor.max() - img_tensor.min()))
 
 
 def _clip_image(img_tensor):

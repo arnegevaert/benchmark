@@ -1,9 +1,10 @@
 import numpy as np
+import torch
 
 
 
 class Masker:
-    def __init__(self, samples: np.ndarray, attributions: np.ndarray):
+    def __init__(self, samples: torch.tensor, attributions: np.ndarray):
         if not self._check_attribution_shape(samples,attributions):
             raise ValueError(f"samples and attribution shape not compatible."
                              f"Found shapes {samples.shape} and {attributions.shape}")

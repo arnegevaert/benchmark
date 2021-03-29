@@ -18,12 +18,10 @@ def _parse_args(args):
 
 
 class Config:
-    def __init__(self, filename: str, model: Callable, multithreaded=False, log_dir: str = None, **kwargs):
+    def __init__(self, filename: str, global_args: Dict, log_dir: str = None):
         self.filename = filename
-        self.default_args = kwargs
+        self.global_args = global_args
         self.log_dir = log_dir
-        self.model = model
-        self.multithreaded = multithreaded
 
     def _parse_section(self, section: Dict, section_name: str, prefix: str = None, section_args: Dict = None) -> Dict[str, Metric]:
         # Only keywords "metrics", "default" and "foreach" are allowed in section root
@@ -31,7 +29,7 @@ class Config:
             if key not in ("metrics", "default", "foreach"):
                 raise ValueError(f"Invalid configuration file: illegal key {key} in section {section_name}")
         # Parse section default arguments
-        default_args = {**self.default_args, **_parse_args(section.get("default", {}))}
+        default_args = {**self.global_args, **_parse_args(section.get("default", {}))}
         if section_args is not None:
             default_args = {**default_args, **section_args}
         # Parse section metrics
@@ -53,8 +51,6 @@ class Config:
             all_args = {**default_args, **metric_args}
             # args contains the arguments in all_args that are applicable to this metric
             args = {key: all_args[key] for key in all_args if key in signature}
-            # Add copy of model to metric if multithreaded
-            args["model"] = copy.deepcopy(self.model) if self.multithreaded else self.model
             # Check if all necessary arguments are present
             for arg in signature:
                 if signature[arg].default == inspect.Parameter.empty and (arg not in args or args[arg] is None):

@@ -13,24 +13,21 @@ from .result import DeletionUntilFlipResult
 # We assume none of the samples has the same label as the output of the network when given
 # a fully masked image (in which case we might not see a flip)
 def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarray,
-                        num_steps: float, masker: Masker, writer=None):
+                        num_steps: float, masker: Masker, writer=None, num_workers=0):
     if writer is not None:
         flipped_samples = [None for _ in range(samples.shape[0])]
-    ds = _DeletionUntilFlipDataset(num_steps, samples.cpu().numpy(), attrs, masker)
-    dl = DataLoader(ds, shuffle=False, num_workers=0, batch_size=1)
+    ds = _DeletionUntilFlipDataset(num_steps, samples, attrs, masker)
     result = torch.tensor([-1 for _ in range(samples.shape[0])]).int()
     flipped = torch.tensor([False for _ in range(samples.shape[0])]).bool()
-    device = samples.device
 
     orig_predictions = torch.argmax(model(samples), dim=1)
-    it = iter(dl)
+    it = iter(ds)
     batch = next(it)
     while not torch.all(flipped) and batch is not None:
         masked_samples, mask_size = batch
-        masked_samples = masked_samples[0].to(device).float()
-        mask_size = mask_size.item()
 
-        masked_output = model(masked_samples)
+        with torch.no_grad():
+            masked_output = model(masked_samples)
         predictions = torch.argmax(masked_output, dim=1)
         criterion = (predictions != orig_predictions)
         new_flipped = torch.logical_or(flipped, criterion.cpu())

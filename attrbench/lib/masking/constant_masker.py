@@ -1,5 +1,7 @@
 from attrbench.lib.masking import ImageMasker
 import numpy as np
+import torch
+
 
 
 class ConstantMasker(ImageMasker):
@@ -9,5 +11,5 @@ class ConstantMasker(ImageMasker):
         self.initialize_baselines(samples)
 
 
-    def initialize_baselines(self, samples):
-        self.baseline = np.ones(samples.shape) * self.mask_value
+    def initialize_baselines(self, samples: torch.tensor):
+        self.baseline = torch.ones(samples.shape, device=samples.device) * self.mask_value

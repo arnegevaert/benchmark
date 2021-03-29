@@ -30,18 +30,14 @@ class DeepShap:
             shuffle=True, drop_last=True)
 
     def _get_reference_batch(self):
-        self.ref_sampler = DataLoader(
-            dataset=self.reference_dataset,
-            batch_size=self.n_baseline_samples,
-            shuffle=True, drop_last=True)
         return next(iter(self.ref_sampler))[0]
 
     def __call__(self, x, target):
         baseline = self._get_reference_batch().to(x.device)
 
-        dl_attr = x * 0
+        dl_attr = (x * 0).cpu()
         for base in baseline:
-            dl_attr += self.method.attribute(x, target=target, baselines=base[None])
+            dl_attr += self.method.attribute(x, target=target, baselines=base[None]).detach().cpu()
         attr = dl_attr / self.n_baseline_samples
 
         return attr
