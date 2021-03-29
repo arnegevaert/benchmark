@@ -18,6 +18,7 @@ def get_dfs(res_obj, metric_name, baseline_method, ignore_methods=None):
         result[key] = (df, baseline, inverted[key])
     return result
 
+
 @nb.njit()
 def cohend(x, y, type="mean"):
     pooled_std = np.sqrt(((x.shape[0] - 1) * np.var(x) + (y.shape[0] - 1) * np.var(y)) / (x.shape[0] + y.shape[0] - 2))
@@ -43,6 +44,7 @@ def plot_wilcoxon_result(effect_sizes, pvalues, labels, alpha):
     axs[1].set_xticklabels(labels, ha="right")
     return fig, axs
 
+
 def emp_power_curve(sample, baseline_sample, effect_size, iterations, n_range, inverted, tolerance, alpha):
     emp_power = []
     for n in n_range:
@@ -52,7 +54,7 @@ def emp_power_curve(sample, baseline_sample, effect_size, iterations, n_range, i
 
         with ThreadPool(multiprocessing.cpu_count()) as p:
             results = p.starmap(partial(stats.wilcoxon, alternative="less" if inverted else "greater"),
-                            [(bs_sample[i, ...], bs_baseline[i, ...]) for i in range(iterations)])
+                                [(bs_sample[i, ...], bs_baseline[i, ...]) for i in range(iterations)])
         pvalues = np.array([p[1] for p in results])
         effect_sizes = np.array([cohend(bs_sample[i, ...], bs_baseline[i, ...]) for i in range(iterations)])
         significant = pvalues < alpha
@@ -77,3 +79,30 @@ def wilcoxon_tests(df, baseline, effect_size_measure, inverted):
         else:
             raise ValueError("Variant must be mse or corr")
     return effect_sizes, pvalues
+
+
+def _interval_metric(a, b):
+    return (a - b) ** 2
+
+
+def krippendorff_alpha(data):
+    # Assumptions: no missing values, interval metric, data is numpy array ([observers, samples])
+    # Assuming no missing values, each column is a unit, and the number of pairable values is m*n
+    pairable_values = data.shape[0] * data.shape[1]
+
+    # Calculate observed disagreement
+    observed_disagreement = 0.
+    for col in range(data.shape[1]):
+        unit = data[:, col].reshape(1, -1)
+        observed_disagreement += np.sum(_interval_metric(unit, unit.T))
+    observed_disagreement /= (pairable_values * (data.shape[0] - 1))
+
+    # Calculate expected disagreement
+    expected_disagreement = 0.
+    for col1 in range(data.shape[1]):
+        unit1 = data[:, col1].reshape(1, -1)
+        for col2 in range(data.shape[1]):
+            unit2 = data[:, col2].reshape(1, -1)
+            expected_disagreement += np.sum(_interval_metric(unit1, unit2.T))
+    expected_disagreement /= (pairable_values * (pairable_values - 1))
+    return 1. - (observed_disagreement / expected_disagreement)

@@ -66,7 +66,7 @@ if __name__ == "__main__":
         group_out_dir = path.join(args.out_dir, metric_group)
         if not path.isdir(group_out_dir):
             os.makedirs(group_out_dir)
-        # variant -> (metric_name -> es/pv)
+        # variant -> (metric_name -> (method_name -> es/pv))
         effect_sizes, pvalues = defaultdict(dict), defaultdict(dict)
 
         prog = tqdm(params["metric_names"])
