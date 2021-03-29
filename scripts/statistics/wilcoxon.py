@@ -15,7 +15,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("file", type=str)
     parser.add_argument("out_dir", type=str)
-    parser.add_argument("-e", "--effect-size-measure", type=str, default="cohend", choices=["cohend", "meandiff"])
+    parser.add_argument("-p", "--power-curves", action="store_true")
     args = parser.parse_args()
 
     # Constant parameters, might be moved to args if necessary
@@ -41,22 +41,38 @@ if __name__ == "__main__":
         "infidelity": {
             "metric_names": [f"infidelity_{pert}" for pert in ("gaussian", "seg", "sq")],
             "labels": ("Gaussian", "Segment", "Square"),
+            "es_measure": "cohend"
         },
         "deletion": {
             "metric_names": [f"masker_constant.deletion", "masker_blur.deletion", "masker_random.deletion"],
             "labels": ("Constant", "Blur", "Random"),
+            "es_measure": "cohend"
         },
         "insertion": {
             "metric_names": [f"masker_constant.insertion", "masker_blur.insertion", "masker_random.insertion"],
             "labels": ("Constant", "Blur", "Random"),
+            "es_measure": "cohend"
         },
         "irof": {
             "metric_names": [f"masker_constant.irof", "masker_blur.irof", "masker_random.irof"],
             "labels": ("Constant", "Blur", "Random"),
+            "es_measure": "cohend"
         },
         "iiof": {
             "metric_names": [f"masker_constant.iiof", "masker_blur.iiof", "masker_random.iiof"],
             "labels": ("Constant", "Blur", "Random"),
+            "es_measure": "cohend"
+        },
+        "sens-n": {
+            "metric_names": [f"masker_constant.sensitivity_n", "masker_blur.sensitivity_n", "masker_random.sensitivity_n"],
+            "labels": ("Constant", "Blur", "Random"),
+            "es_measure": "meandiff"
+        },
+        "seg-sens-n": {
+            "metric_names": [f"masker_constant.seg_sensitivity_n", "masker_blur.seg_sensitivity_n",
+                             "masker_random.seg_sensitivity_n"],
+            "labels": ("Constant", "Blur", "Random"),
+            "es_measure": "meandiff"
         }
     }
 
@@ -74,33 +90,34 @@ if __name__ == "__main__":
             dfs = get_dfs(res_obj, metric_name, BASELINE, IGNORE_METHODS)
             for variant, (df, baseline, inverted) in dfs.items():
                 prog.set_postfix({"metric": metric_name, "variant": variant})
-                variant_out_dir = path.join(group_out_dir, variant)
-                if not path.isdir(variant_out_dir):
-                    os.makedirs(variant_out_dir)
 
                 # Compute effect sizes and p-values
-                mes, mpv = wilcoxon_tests(df, baseline, args.effect_size_measure, inverted)
+                mes, mpv = wilcoxon_tests(df, baseline, params["es_measure"], inverted)
                 effect_sizes[variant][metric_name] = mes
                 pvalues[variant][metric_name] = mpv
 
                 # Compute power curves for significant methods
-                power_curves = {}
-                for method_name in mpv.keys():
-                    if mpv[method_name] < ALPHA:
-                        effect_size = cohend(df[method_name].to_numpy(), baseline.to_numpy())
-                        power_curves[method_name] = emp_power_curve(df[method_name].to_numpy(),
-                                                                    baseline.to_numpy(),
-                                                                    effect_size, PWR_ITERATIONS, PWR_N_RANGE, inverted,
-                                                                    PWR_TOLERANCE,
-                                                                    ALPHA)
-                fig, ax = plt.subplots()
-                for method_name, power_curve in power_curves.items():
-                    ax.plot(PWR_N_RANGE, power_curve, label=method_name)
-                fig.legend()
-                fig.savefig(path.join(variant_out_dir, f"{metric_name.replace('.', '_')}_power.png"))
+                if args.power_curves:
+                    power_curves = {}
+                    for method_name in mpv.keys():
+                        if mpv[method_name] < ALPHA:
+                            effect_size = cohend(df[method_name].to_numpy(), baseline.to_numpy())
+                            power_curves[method_name] = emp_power_curve(df[method_name].to_numpy(),
+                                                                        baseline.to_numpy(),
+                                                                        effect_size, PWR_ITERATIONS, PWR_N_RANGE, inverted,
+                                                                        PWR_TOLERANCE,
+                                                                        ALPHA)
+                    fig, ax = plt.subplots()
+                    for method_name, power_curve in power_curves.items():
+                        ax.plot(PWR_N_RANGE, power_curve, label=method_name)
+                    fig.legend()
+                    variant_out_dir = path.join(group_out_dir, variant)
+                    if not path.isdir(variant_out_dir):
+                        os.makedirs(variant_out_dir)
+                    fig.savefig(path.join(variant_out_dir, f"{metric_name.replace('.', '_')}_power.png"))
 
         for variant in effect_sizes.keys():
             es_df = pd.DataFrame.from_dict(effect_sizes[variant])
             pv_df = pd.DataFrame.from_dict(pvalues[variant])
             fig, axs = plot_wilcoxon_result(es_df, pv_df, params["labels"], ALPHA)
-            fig.savefig(path.join(group_out_dir, variant, f"{metric_group}_summary.png"))
+            fig.savefig(path.join(group_out_dir, f"{metric_group}_{variant}_summary.png"))
