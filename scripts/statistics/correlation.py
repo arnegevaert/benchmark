@@ -1,6 +1,5 @@
 import argparse
 import pandas as pd
-from collections import defaultdict
 import matplotlib.pyplot as plt
 from attrbench.suite import SuiteResult
 from os import path
