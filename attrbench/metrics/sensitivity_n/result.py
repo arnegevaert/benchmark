@@ -43,14 +43,16 @@ class SensitivityNResult(MetricResult):
     def _aggregate(self, data):
         return np.mean(data, axis=1)
 
-    def to_df(self) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
+    def to_df(self) -> Tuple[Dict[str, pd.DataFrame], Dict[str, bool]]:
         result = {}
+        inverted = {}
         for afn in self.activation_fns:
             data = {m_name: self._aggregate(self.data[m_name][afn].squeeze())
                     for m_name in self.method_names}
             df = pd.DataFrame.from_dict(data)
             result[afn] = df
-        return result
+            inverted[afn] = self.inverted
+        return result, inverted
 
 
 class SegSensitivityNResult(SensitivityNResult):

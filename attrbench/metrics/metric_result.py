@@ -34,13 +34,13 @@ class MetricResult:
     def _aggregate(self, data):
         return data
 
-    def to_df(self) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
+    def to_df(self) -> Tuple[pd.DataFrame, bool]:
         data = self.data
         for method_name in self.method_names:
             if type(data[method_name]) == list:
                 data[method_name] = torch.cat(data[method_name]).numpy()
             data[method_name] = self._aggregate(data[method_name].squeeze())
-        return pd.DataFrame.from_dict(data)
+        return pd.DataFrame.from_dict(data), self.inverted
 
 
 class ModeActivationMetricResult(MetricResult):
@@ -85,12 +85,14 @@ class ModeActivationMetricResult(MetricResult):
         }
         return result
 
-    def to_df(self) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
+    def to_df(self) -> Tuple[Dict[str, pd.DataFrame], Dict[str, bool]]:
         result = {}
+        inverted = {}
         for mode in self.modes:
             for afn in self.activation_fn:
                 data = {m_name: self._aggregate(self.data[m_name][mode][afn].squeeze())
                         for m_name in self.method_names}
                 df = pd.DataFrame.from_dict(data)
                 result[f"{mode}_{afn}"] = df
-        return result
+                inverted[f"{mode}_{afn}"] = self.inverted[mode]
+        return result, inverted
