@@ -11,8 +11,8 @@ class TabularMasker(ImageMasker):
         self.initialize_baselines(samples)
 
     def initialize_baselines(self, samples):
-        self.baseline = np.ones(samples.shape) * self.mask_value
-
+        mask = torch.tensor(self.mask_value, device=samples.device, dtype = samples.dtype)
+        self.baseline = torch.ones(samples.shape, device=samples.device, dtype = samples.dtype) * mask
     def _check_attribution_shape(self, samples, attributions):
         check1 = super()._check_attribution_shape(samples,attributions)
         if not isinstance(self.mask_value, float):
@@ -20,7 +20,7 @@ class TabularMasker(ImageMasker):
         else:
             return check1
 
-    def _mask(self, samples: np.ndarray, indices: np.ndarray):
+    def _mask(self, samples: torch.tensor, indices: np.ndarray):
         if self.baseline is None:
             raise ValueError("Masker was not initialized.")
         batch_size = samples.shape[0]

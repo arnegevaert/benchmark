@@ -112,7 +112,7 @@ class ImageMasker(Masker):
         return self._mask_boolean(images, bool_masks)
 
     def _mask_boolean(self, samples, bool_mask):
-        bool_mask = torch.tensor(bool_mask, device = samples.device)
+        bool_mask = torch.tensor(bool_mask, dtype=samples.dtype, device = samples.device)
         return samples - (bool_mask * samples) + (bool_mask * self.baseline)
     # why not return samples[bool_mask] = self.baseline[bool_mask] ?
 
