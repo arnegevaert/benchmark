@@ -53,7 +53,7 @@ if __name__ == "__main__":
                 fig.savefig(path.join(inter_method_dir, f"{metric_name}_{variant}.png"))
                 plt.close(fig)
                 """
-                all_dfs.append(df)
+                all_dfs.append((df - df.min())/(df.max() - df.min()))
 
     corrs = pd.concat(all_dfs).corr(method="spearman")
     fig, ax = plt.subplots(figsize=(10, 10))
@@ -70,6 +70,7 @@ if __name__ == "__main__":
             dfs = get_dfs(res_obj, metric_name, BASELINE, IGNORE_METHODS)
             for variant, (df, baseline, inverted) in dfs.items():
                 all_columns = []
+                df = (df - df.min()) / (df.max() - df.min())
                 for column in sorted(df.columns):
                     all_columns.append(df[column])
                 flattened_dfs[f"{metric_name}_{variant}"] = pd.concat(all_columns)

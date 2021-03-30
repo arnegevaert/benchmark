@@ -12,7 +12,7 @@ from scripts.statistics.util import get_dfs, krippendorff_alpha
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("file", type=str)
-    parser.add_argument("out_dir", type=str)
+    parser.add_argument("out_file", type=str)
     args = parser.parse_args()
 
     # Constant parameters, might be moved to args if necessary
@@ -22,9 +22,6 @@ if __name__ == "__main__":
     ALPHA = 0.01
     plt.rcParams["figure.dpi"] = 140
     res_obj = SuiteResult.load_hdf(args.file)
-
-    if not path.isdir(args.out_dir):
-        os.makedirs(args.out_dir)
 
     logging.basicConfig(
         format='[%(asctime)s %(levelname)s] %(message)s',
@@ -77,4 +74,4 @@ if __name__ == "__main__":
     fig, ax = plt.subplots()
     k_a.plot.barh(figsize=(10, 10), ax=ax)
     fig.tight_layout()
-    fig.savefig(path.join(args.out_dir, "krippendorff.png"))
+    fig.savefig(args.out_file)
