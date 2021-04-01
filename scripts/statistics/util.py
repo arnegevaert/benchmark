@@ -7,16 +7,29 @@ from functools import partial
 import numba as nb
 
 
-def get_dfs(res_obj, metric_name, baseline_method, ignore_methods=None):
-    df_dict, inverted = res_obj.metric_results[metric_name].to_df()
-    result = {}
-    for key, df in df_dict.items():
-        if ignore_methods is not None:
-            df = df[df.columns.difference(ignore_methods)]
+def split_df(df, baseline_method=None, exclude_methods=None):
+    if exclude_methods is not None:
+        df = df[df.columns.difference(exclude_methods)]
+    if baseline_method is not None:
         baseline = df[baseline_method]
         df = df[df.columns.difference([baseline_method])]
-        result[key] = (df, baseline, inverted[key])
-    return result
+    else:
+        baseline = None
+    return df, baseline
+
+
+def get_dfs(res_obj, metric_name, variants=None, baseline_method=None, exclude_methods=None):
+    df_dict, inverted = res_obj.metric_results[metric_name].get_df()
+    if type(df_dict) == dict:
+        result = {}
+        for key, df in df_dict.items():
+            if any([v in key for v in variants]):
+                df, baseline = split_df(df, baseline_method, exclude_methods)
+                result[key] = (df, baseline, inverted[key])
+        return result
+    else:
+        df, baseline = split_df(df_dict)
+        return df, baseline, inverted
 
 
 @nb.njit()
