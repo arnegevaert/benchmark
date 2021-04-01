@@ -17,6 +17,7 @@ if __name__ == "__main__":
 
     # Constant parameters, might be moved to args if necessary
     EXCLUDE = ["Random_pos_only", "GradCAM_no_relu", "GuidedGradCAM_no_relu"]
+    BASELINE = "Random"
     plt.rcParams["figure.dpi"] = 140
     RES_OBJ = SuiteResult.load_hdf(args.file)
 
@@ -35,18 +36,20 @@ if __name__ == "__main__":
             os.makedirs(dir)
 
     dfe = DFExtractor(RES_OBJ, EXCLUDE)
-    dfe.add_infidelity("mse", "linear")
-    dfe.add_infidelity("corr", "linear")
-    dfe.compare_maskers(["constant", "blur", "random"], "linear")
+    #dfe.add_infidelity("mse", "linear")
+    #dfe.add_infidelity("corr", "linear")
+    #dfe.compare_maskers(["constant", "blur", "random"], "linear")
+    dfe.compare_maskers(["constant"], "linear")
     dfs = dfe.get_dfs()
 
     # Inter-method correlations
-    normalized_dfs = []
+    all_dfs = []
     for metric_name, (df, inverted) in dfs.items():
+        df = df.sub(df[BASELINE], axis=0)
+        df = df[df.columns.difference([BASELINE])]
         correlation_heatmap(df, path.join(inter_method_dir, f"{metric_name}.png"))
-        normalized = (df - df.min())/(df.max() - df.min())
-        normalized_dfs.append(normalized if not inverted else -normalized)
-    correlation_heatmap(pd.concat(normalized_dfs), path.join(args.out_dir, "inter_method_correlation.png"))
+        all_dfs.append(df if not inverted else -df)
+    correlation_heatmap(pd.concat(all_dfs), path.join(args.out_dir, "inter_method_correlation.png"))
 
     # Inter-metric correlations
     flattened_dfs = {}
