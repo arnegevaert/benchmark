@@ -5,31 +5,8 @@ from multiprocessing.pool import ThreadPool
 import multiprocessing
 from functools import partial
 import numba as nb
-
-
-def split_df(df, baseline_method=None, exclude_methods=None):
-    if exclude_methods is not None:
-        df = df[df.columns.difference(exclude_methods)]
-    if baseline_method is not None:
-        baseline = df[baseline_method]
-        df = df[df.columns.difference([baseline_method])]
-    else:
-        baseline = None
-    return df, baseline
-
-
-def get_dfs(res_obj, metric_name, variants=None, baseline_method=None, exclude_methods=None):
-    df_dict, inverted = res_obj.metric_results[metric_name].get_df()
-    if type(df_dict) == dict:
-        result = {}
-        for key, df in df_dict.items():
-            if any([v in key for v in variants]):
-                df, baseline = split_df(df, baseline_method, exclude_methods)
-                result[key] = (df, baseline, inverted[key])
-        return result
-    else:
-        df, baseline = split_df(df_dict)
-        return df, baseline, inverted
+import seaborn as sns
+import matplotlib as mpl
 
 
 @nb.njit()
@@ -56,6 +33,17 @@ def plot_wilcoxon_result(effect_sizes, pvalues, labels, alpha):
     axs[1].tick_params(axis="x", rotation=45)
     axs[1].set_xticklabels(labels, ha="right")
     return fig, axs
+
+
+def correlation_heatmap(df, outfile):
+    mpl.use("agg")
+    corrs = df.corr(method="spearman")
+    fig, ax = plt.subplots(figsize=(10, 10))
+    cmap = sns.diverging_palette(230, 20, as_cmap=True)
+    sns.heatmap(corrs, vmin=-1, vmax=1, center=0, ax=ax, cmap=cmap)
+    fig.tight_layout()
+    fig.savefig(outfile)
+    plt.close(fig)
 
 
 def emp_power_curve(sample, baseline_sample, effect_size, iterations, n_range, inverted, tolerance, alpha):

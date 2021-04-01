@@ -5,9 +5,8 @@ from attrbench.suite import SuiteResult
 from os import path
 import os
 import logging
-from scripts.statistics.util import get_dfs
-import seaborn as sns
-from tqdm import tqdm
+from scripts.statistics.df_extractor import DFExtractor
+from scripts.statistics.util import correlation_heatmap
 
 
 if __name__ == "__main__":
@@ -17,12 +16,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Constant parameters, might be moved to args if necessary
-    IGNORE_METHODS = ["Random_pos_only", "GradCAM_no_relu", "GuidedGradCAM_no_relu"]
-    BASELINE = "Random"
-    PWR_ITERATIONS = 1000
-    ALPHA = 0.01
+    EXCLUDE = ["Random_pos_only", "GradCAM_no_relu", "GuidedGradCAM_no_relu"]
     plt.rcParams["figure.dpi"] = 140
-    res_obj = SuiteResult.load_hdf(args.file)
+    RES_OBJ = SuiteResult.load_hdf(args.file)
 
     if not path.isdir(args.out_dir):
         os.makedirs(args.out_dir)
@@ -38,46 +34,26 @@ if __name__ == "__main__":
         if not path.isdir(dir):
             os.makedirs(dir)
 
-    # Inter-method correlations
-    all_dfs = []
-    for metric_name in tqdm(res_obj.metric_results.keys()):
-        if "until_flip" not in metric_name:  # TODO handle del_until_flip as well
-            dfs = get_dfs(res_obj, metric_name, BASELINE, IGNORE_METHODS)
-            for variant, (df, baseline, inverted) in dfs.items():
-                """
-                corrs = df.corr(method="spearman")
-                fig, ax = plt.subplots(figsize=(10, 10))
-                cmap = sns.diverging_palette(230, 20, as_cmap=True)
-                plot = sns.heatmap(corrs, vmin=-1, vmax=1, center=0, ax=ax, cmap=cmap)
-                fig.tight_layout()
-                fig.savefig(path.join(inter_method_dir, f"{metric_name}_{variant}.png"))
-                plt.close(fig)
-                """
-                all_dfs.append((df - df.min())/(df.max() - df.min()))
+    dfe = DFExtractor(RES_OBJ, EXCLUDE)
+    dfe.add_infidelity("mse", "linear")
+    dfe.add_infidelity("corr", "linear")
+    dfe.compare_maskers(["constant", "blur", "random"], "linear")
+    dfs = dfe.get_dfs()
 
-    corrs = pd.concat(all_dfs).corr(method="spearman")
-    fig, ax = plt.subplots(figsize=(10, 10))
-    cmap = sns.diverging_palette(230, 20, as_cmap=True)
-    plot = sns.heatmap(corrs, vmin=-1, vmax=1, center=0, ax=ax, cmap=cmap)
-    fig.tight_layout()
-    fig.savefig(path.join(args.out_dir, "inter_method_correlation.png"))
-    plt.close(fig)
+    # Inter-method correlations
+    normalized_dfs = []
+    for metric_name, (df, inverted) in dfs.items():
+        correlation_heatmap(df, path.join(inter_method_dir, f"{metric_name}.png"))
+        normalized = (df - df.min())/(df.max() - df.min())
+        normalized_dfs.append(normalized if not inverted else -normalized)
+    correlation_heatmap(pd.concat(normalized_dfs), path.join(args.out_dir, "inter_method_correlation.png"))
 
     # Inter-metric correlations
     flattened_dfs = {}
-    for metric_name in tqdm(res_obj.metric_results.keys()):
-        if "until_flip" not in metric_name:  # TODO handle del_until_flip as well
-            dfs = get_dfs(res_obj, metric_name, BASELINE, IGNORE_METHODS)
-            for variant, (df, baseline, inverted) in dfs.items():
-                all_columns = []
-                df = (df - df.min()) / (df.max() - df.min())
-                for column in sorted(df.columns):
-                    all_columns.append(df[column])
-                flattened_dfs[f"{metric_name}_{variant}"] = pd.concat(all_columns)
-    corrs = pd.concat(flattened_dfs, axis=1).corr(method="spearman")
-    fig, ax = plt.subplots(figsize=(10, 10))
-    cmap = sns.diverging_palette(230, 20, as_cmap=True)
-    plot = sns.heatmap(corrs, vmin=-1, vmax=1, center=0, ax=ax, cmap=cmap)
-    fig.tight_layout()
-    fig.savefig(path.join(args.out_dir, "inter_metric_correlation.png"))
-    plt.close(fig)
+    for metric_name, (df, inverted) in dfs.items():
+        df = (df - df.min()) / (df.max() - df.min())
+        all_columns = [df[column] for column in sorted(df.columns)]
+        flattened_dfs[metric_name] = pd.concat(all_columns)
+    df = pd.concat(flattened_dfs, axis=1)
+    df = df.reindex(sorted(df.columns), axis=1)
+    correlation_heatmap(df, path.join(args.out_dir, "inter_metric_correlation.png"))
