@@ -58,13 +58,6 @@ masking:
       num_subsets: 100
     deletion_until_flip:
       type: DeletionUntilFlip
-#    impact_score:
-#      type: ImpactScore
-#      strict: false
-#      tau: 0.5
-#    strict_impact_score:
-#      type: ImpactScore
-#      strict: true
     irof:
       type: Irof
     iiof:
@@ -73,7 +66,6 @@ masking:
       type: Insertion
     deletion:
       type: Deletion
-
 #other:
 #  metrics:
 #    impact_coverage:

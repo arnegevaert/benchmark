@@ -27,13 +27,11 @@ def _compute_coverage(attacked_samples: torch.Tensor, method: Callable, patch_ma
 
     # Create mask of critical factors (most important pixels/features according to attributions)
     to_mask = sorted_indices[:, -nr_top_attributions:]
-    # TODO don't use a masker for this
-    masker = ConstantMasker(feature_level="pixel" if attrs.shape[1] == 1 else "channel", mask_value=1.)
-    # Initialize as constant zeros, "mask" the most important features with 1
-    critical_factor_mask = np.zeros(attrs.shape)
-    masker.initialize_baselines(critical_factor_mask)
-    critical_factor_mask = masker.mask(critical_factor_mask, to_mask)
-    critical_factor_mask = critical_factor_mask.reshape(critical_factor_mask.shape[0], -1).astype(np.bool)
+    critical_factor_mask = np.zeros(attrs.shape).reshape(attrs.shape[0], -1)
+    batch_size = attrs.shape[0]
+    batch_dim = np.tile(range(batch_size), (nr_top_attributions, 1)).transpose()
+    critical_factor_mask[batch_dim, to_mask] = 1
+    critical_factor_mask = critical_factor_mask.astype(np.bool)
 
     # Calculate IoU of critical factors (top n attributions) with adversarial patch
     patch_mask_flattened = patch_mask.flatten(1).bool().numpy()
