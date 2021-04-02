@@ -31,24 +31,71 @@ class MetricResult:
         result.data = {m_name: np.array(group[m_name]) for m_name in method_names}
         return result
 
-    def to_df(self) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
+    def _aggregate(self, data):
+        return data
+
+    def get_df(self, **kwargs) -> Tuple[pd.DataFrame, bool]:
         data = self.data
         for method_name in self.method_names:
             if type(data[method_name]) == list:
                 data[method_name] = torch.cat(data[method_name]).numpy()
-            data[method_name] = data[method_name].squeeze().tolist()
-        return pd.DataFrame.from_dict(data)
+            data[method_name] = self._aggregate(data[method_name].squeeze())
+        return pd.DataFrame.from_dict(data), self.inverted
 
 
-class ModeActivationMetricResult(MetricResult):
+class ActivationMetricResult(MetricResult):
+    def __init__(self, method_names: List[str], activation_fns: Tuple[str]):
+        super().__init__(method_names)
+        self.data = {m_name: {afn: [] for afn in activation_fns} for m_name in self.method_names}
+        self.activation_fns = activation_fns
+
+    def append(self, method_name, batch):
+        for afn in batch.keys():
+            self.data[method_name][afn].append(batch[afn])
+
+    def add_to_hdf(self, group: h5py.Group):
+        for method_name in self.method_names:
+            method_group = group.create_group(method_name)
+            for afn in self.activation_fns:
+                data = torch.cat(self.data[method_name][afn]).numpy() if type(self.data[method_name][afn]) == list \
+                    else self.data[method_name][afn]
+                ds = method_group.create_dataset(afn, data=data)
+                ds.attrs["inverted"] = self.inverted
+
+    @classmethod
+    def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
+        method_names = list(group.keys())
+        activation_fns = tuple(group[method_names[0]].keys())
+        result = cls(method_names, activation_fns)
+        result.data = {m_name: {fn: np.array(group[m_name][fn]) for fn in activation_fns}
+                       for m_name in method_names}
+        return result
+
+    def all_dfs(self) -> Tuple[Dict[str, pd.DataFrame], Dict[str, bool]]:
+        result = {}
+        inverted = {}
+        for afn in self.activation_fns:
+            data = {m_name: self._aggregate(self.data[m_name][afn].squeeze())
+                    for m_name in self.method_names}
+            df = pd.DataFrame.from_dict(data)
+            result[afn] = df
+            inverted[afn] = self.inverted
+        return result, inverted
+
+    def get_df(self, *, activation=None) -> Tuple[pd.DataFrame, bool]:
+        data = {m_name: self._aggregate(self.data[m_name][activation].squeeze())
+                for m_name in self.method_names}
+        df = pd.DataFrame.from_dict(data)
+        return df, self.inverted
+
+
+class ModeActivationMetricResult(ActivationMetricResult):
     inverted: Dict[str, bool]
 
-    def __init__(self, method_names: List[str], modes: Tuple[str], activation_fn: Tuple[str],
-                 ):
-        super().__init__(method_names)
+    def __init__(self, method_names: List[str], modes: Tuple[str], activation_fns: Tuple[str]):
+        super().__init__(method_names, activation_fns)
         self.modes = modes
-        self.activation_fn = activation_fn
-        self.data = {m_name: {mode: {afn: [] for afn in activation_fn} for mode in modes}
+        self.data = {m_name: {mode: {afn: [] for afn in activation_fns} for mode in modes}
                      for m_name in self.method_names}
 
     def append(self, method_name, batch: Dict):
@@ -61,7 +108,7 @@ class ModeActivationMetricResult(MetricResult):
             method_group = group.create_group(method_name)
             for mode in self.modes:
                 mode_group = method_group.create_group(mode)
-                for afn in self.activation_fn:
+                for afn in self.activation_fns:
                     data = torch.cat(self.data[method_name][mode][afn]).numpy() \
                         if type(self.data[method_name][mode][afn]) == list else self.data[method_name][mode][afn]
                     ds = mode_group.create_dataset(afn, data=data)
@@ -82,11 +129,18 @@ class ModeActivationMetricResult(MetricResult):
         }
         return result
 
-    def to_df(self) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
+    def all_dfs(self) -> Tuple[Dict[str, pd.DataFrame], Dict[str, bool]]:
         result = {}
+        inverted = {}
         for mode in self.modes:
-            for afn in self.activation_fn:
-                data = {m_name: self.data[m_name][mode][afn].squeeze().tolist() for m_name in self.method_names}
-                df = pd.DataFrame.from_dict(data)
+            for afn in self.activation_fns:
+                df, inv = self.get_df()
                 result[f"{mode}_{afn}"] = df
-        return result
+                inverted[f"{mode}_{afn}"] = inv
+        return result, inverted
+
+    def get_df(self, *, mode=None, activation=None) -> Tuple[pd.DataFrame, bool]:
+        data = {m_name: self._aggregate(self.data[m_name][mode][activation].squeeze())
+                for m_name in self.method_names}
+        df = pd.DataFrame.from_dict(data)
+        return df, self.inverted[mode]

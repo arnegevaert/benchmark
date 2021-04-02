@@ -38,9 +38,6 @@ masking:
         feature_level: pixel
         kernel_size: 0.5
   default:
-    mode:
-      - morf
-      - lerf
     activation_fn:
       - linear
       - sigmoid
@@ -69,3 +66,12 @@ masking:
       type: Insertion
     deletion:
       type: Deletion
+#other:
+#  metrics:
+#    impact_coverage:
+#      type: ImpactCoverage
+#    max_sensitivity:
+#      type: MaxSensitivity
+#      num_perturbations: 50
+#      radius: 0.1
+#
