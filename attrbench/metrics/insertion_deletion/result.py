@@ -1,35 +1,23 @@
-from attrbench.metrics import ModeActivationMetricResult
+from attrbench.metrics import ActivationMetricResult
 import numpy as np
 
 
-class InsertionDeletionResult(ModeActivationMetricResult):
+class InsertionDeletionResult(ActivationMetricResult):
     def _aggregate(self, data):
         return np.trapz(data, x=np.linspace(0, 1, data.shape[1]))
 
 
-class DeletionResult(InsertionDeletionResult):
-    inverted = {
-        "morf": True,
-        "lerf": False
-    }
-
-
-class IrofResult(ModeActivationMetricResult):
-    inverted = {
-        "morf": True,
-        "lerf": False
-    }
-
-
 class InsertionResult(InsertionDeletionResult):
-    inverted = {
-        "morf": False,
-        "lerf": True
-    }
+    inverted = False
 
 
-class IiofResult(ModeActivationMetricResult):
-    inverted = {
-        "morf": False,
-        "lerf": True
-    }
+class DeletionResult(InsertionDeletionResult):
+    inverted = True
+
+
+class IrofResult(ActivationMetricResult):
+    inverted = True
+
+
+class IiofResult(ActivationMetricResult):
+    inverted = False
