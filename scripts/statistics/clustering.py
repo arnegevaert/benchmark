@@ -3,7 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from attrbench.suite import SuiteResult
 import logging
-from scripts.statistics.util import split_df
 from scripts.statistics.df_extractor import DFExtractor
 import seaborn as sns
 from sklearn.preprocessing import MinMaxScaler
@@ -34,7 +33,7 @@ if __name__ == "__main__":
 
     avg_values = {}
     for metric_name, (df, inverted) in dfs.items():
-        df, baseline = split_df(df, BASELINE, EXCLUDE)
+        df = df[df.columns.difference([BASELINE])]
         avg_values[metric_name] = df.mean(axis=0) if not inverted else -df.mean(axis=0)
 
     df = pd.DataFrame.from_dict(avg_values)
