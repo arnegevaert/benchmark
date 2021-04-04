@@ -62,7 +62,7 @@ def heatmap(x, y, size, color):
         ind = int(val_position * (n_colors - 1))
         return palette[ind]
 
-    size_scale = 18000 / max(len(x_labels), len(y_labels))
+    size_scale = 10000 / max(len(x_labels), len(y_labels))
     ax.scatter(
         x=x.map(x_to_num),  # Use mapping for x
         y=y.map(y_to_num),  # Use mapping for y
