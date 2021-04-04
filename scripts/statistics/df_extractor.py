@@ -36,20 +36,19 @@ class DFExtractor:
             f"infid-gauss-{activation}-{mode}": dict(metric="infidelity_gaussian",
                                                      mode=mode, activation=activation),
             f"infid-seg-{activation}-{mode}": dict(metric="infidelity_seg",
-                                                        mode=mode, activation=activation)
+                                                   mode=mode, activation=activation)
         }, log_transform=True)
 
     def compare_maskers(self, maskers: List[str], activation: str):
         for masker in maskers:
             self.add_metric(f"del_flip-{masker}", f"masker_{masker}.deletion_until_flip")
-            self.add_metric(f"sens_n-{masker}", f"masker_{masker}.sensitivity_n", activation=activation)
-            self.add_metric(f"seg_sens_n-{masker}", f"masker_{masker}.seg_sensitivity_n", activation=activation)
-            for metric in ("insertion", "deletion", "irof", "iiof"):
-                self.add_metric(f"{metric}-{masker}", f"masker_{masker}.{metric}", mode="morf", activation=activation)
+            for metric in ("insertion", "deletion", "irof", "iiof", "seg_sensitivity_n", "sensitivity_n"):
+                self.add_metric(f"{metric}-{masker}", f"masker_{masker}.{metric}", activation=activation)
 
     def compare_activations(self, activations: List[str], masker: str):
         for activation in activations:
             self.add_metric(f"sens_n-{activation}", f"masker_{masker}.sensitivity_n", activation=activation)
             self.add_metric(f"seg_sens_n-{activation}", f"masker_{masker}.seg_sensitivity_n", activation=activation)
             for metric in ("insertion", "deletion", "irof", "iiof"):
-                self.add_metric(f"{metric}-{activation}", f"masker_{masker}.{metric}", mode="morf", activation=activation)
+                self.add_metric(f"{metric}-{activation}", f"masker_{masker}.{metric}", mode="morf",
+                                activation=activation)

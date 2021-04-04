@@ -6,10 +6,12 @@ from os import path
 import os
 import logging
 from scripts.statistics.df_extractor import DFExtractor
-from scripts.statistics.util import correlation_heatmap
+from scripts.statistics.plot import corr_heatmap
+import matplotlib as mpl
 
 
 if __name__ == "__main__":
+    mpl.use("agg")
     parser = argparse.ArgumentParser()
     parser.add_argument("file", type=str)
     parser.add_argument("out_dir", type=str)
@@ -47,9 +49,11 @@ if __name__ == "__main__":
     for metric_name, (df, inverted) in dfs.items():
         df = df.sub(df[BASELINE], axis=0)
         df = df[df.columns.difference([BASELINE])]
-        correlation_heatmap(df, path.join(inter_method_dir, f"{metric_name}.png"))
+        fig = corr_heatmap(df)
+        fig.savefig(path.join(inter_method_dir, f"{metric_name}.png"))
         all_dfs.append(df if not inverted else -df)
-    correlation_heatmap(pd.concat(all_dfs), path.join(args.out_dir, "inter_method_correlation.png"))
+    fig = corr_heatmap(pd.concat(all_dfs))
+    fig.savefig(path.join(args.out_dir, "inter_method_correlation.png"))
 
     # Inter-metric correlations
     flattened_dfs = {}
@@ -59,4 +63,5 @@ if __name__ == "__main__":
         flattened_dfs[metric_name] = pd.concat(all_columns)
     df = pd.concat(flattened_dfs, axis=1)
     df = df.reindex(sorted(df.columns), axis=1)
-    correlation_heatmap(df, path.join(args.out_dir, "inter_metric_correlation.png"))
+    fig = corr_heatmap(df)
+    fig.savefig(path.join(args.out_dir, "inter_metric_correlation.png"))
