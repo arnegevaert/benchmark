@@ -116,7 +116,7 @@ class Suite:
             # Only use correctly classified samples
             with torch.no_grad():
                 out = self.model(full_batch)
-                pred = torch.argmax(out, dim=1)
+                pred = torch.argmax(out, dim=1) if out.shape[1]>1 else out.squeeze()>0.5 # binary output
                 if self.multi_label:
                     pred_labels = full_labels[torch.arange(len(pred)), pred]
                     samples = full_batch[pred_labels == 1]
