@@ -13,7 +13,7 @@ def correlation(dfe: DFExtractor, out_dir: str, baseline: str):
 
     dfs = dfe.get_dfs()
 
-    # Inter-method correlations
+    # Relative Inter-method correlations
     all_dfs = []
     for metric_name, (df, inverted) in dfs.items():
         df = df.sub(df[baseline], axis=0)
@@ -24,6 +24,21 @@ def correlation(dfe: DFExtractor, out_dir: str, baseline: str):
         all_dfs.append(df if not inverted else -df)
     fig = corr_heatmap(pd.concat(all_dfs))
     fig.savefig(path.join(out_dir, "inter_method_correlation.png"))
+    plt.close(fig)
+
+    # Inter-method correlations
+    all_dfs = []
+    inter_method_dir = path.join(out_dir, "inter_method_correlations_abs")
+    if not path.isdir(inter_method_dir):
+        os.makedirs(inter_method_dir)
+    for metric_name, (df, inverted) in dfs.items():
+        df = df[df.columns.difference([baseline])]
+        fig = corr_heatmap(df)
+        fig.savefig(path.join(inter_method_dir, f"{metric_name}.png"))
+        plt.close(fig)
+        all_dfs.append(df if not inverted else -df)
+    fig = corr_heatmap(pd.concat(all_dfs))
+    fig.savefig(path.join(out_dir, "inter_method_correlation_abs.png"))
     plt.close(fig)
 
     # Inter-metric correlations
