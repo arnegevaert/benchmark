@@ -1,12 +1,9 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy import stats
 from multiprocessing.pool import ThreadPool
 import multiprocessing
 from functools import partial
 import numba as nb
-import seaborn as sns
-import matplotlib as mpl
 
 
 @nb.njit()
@@ -18,32 +15,6 @@ def cohend(x, y, type="mean"):
         return (np.median(x) - np.median(y)) / pooled_std
     else:
         raise ValueError("Type must be mean or median")
-
-
-def plot_wilcoxon_result(effect_sizes, pvalues, labels, alpha):
-    fig, axs = plt.subplots(ncols=2, gridspec_kw={'width_ratios': [4, 1]})
-
-    effect_sizes.plot.barh(figsize=(14, 6), ax=axs[0])
-    axs[0].legend(labels, loc='upper center', bbox_to_anchor=(0.5, -.05), ncol=3, fancybox=True,
-                  shadow=True)
-    axs[1].pcolor(pvalues < alpha, cmap="RdYlGn", edgecolor="black")
-    axs[1].set_title(f"p < {alpha}")
-    axs[1].set_yticks([])
-    axs[1].set_xticks(np.arange(3) + 0.5)
-    axs[1].tick_params(axis="x", rotation=45)
-    axs[1].set_xticklabels(labels, ha="right")
-    return fig, axs
-
-
-def correlation_heatmap(df, outfile):
-    mpl.use("agg")
-    corrs = df.corr(method="spearman")
-    fig, ax = plt.subplots(figsize=(10, 10))
-    cmap = sns.diverging_palette(230, 20, as_cmap=True)
-    sns.heatmap(corrs, vmin=-1, vmax=1, center=0, ax=ax, cmap=cmap)
-    fig.tight_layout()
-    fig.savefig(outfile)
-    plt.close(fig)
 
 
 def emp_power_curve(sample, baseline_sample, effect_size, iterations, n_range, inverted, tolerance, alpha):
@@ -74,7 +45,7 @@ def wilcoxon_tests(df, baseline, effect_size_measure, inverted):
                                            alternative="less" if inverted else "greater")
         pvalues[method_name] = pvalue
         if effect_size_measure == "cohend":
-            effect_sizes[method_name] = cohend(method_results, baseline.to_numpy())
+            effect_sizes[method_name] = cohend(method_results, baseline)
         elif effect_size_measure == "meandiff":
             effect_sizes[method_name] = np.mean(method_results) - np.mean(baseline)
         else:

@@ -1,55 +1,45 @@
-import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
-from attrbench.suite import SuiteResult
 from os import path
 import os
-import logging
 from scripts.statistics.df_extractor import DFExtractor
-from scripts.statistics.util import correlation_heatmap
+from scripts.statistics.plot import corr_heatmap
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("file", type=str)
-    parser.add_argument("out_dir", type=str)
-    args = parser.parse_args()
+def correlation(dfe: DFExtractor, out_dir: str, baseline: str):
+    inter_method_dir = path.join(out_dir, "inter_method_correlations")
+    if not path.isdir(inter_method_dir):
+        os.makedirs(inter_method_dir)
 
-    # Constant parameters, might be moved to args if necessary
-    EXCLUDE = ["Random_pos_only", "GradCAM_no_relu", "GuidedGradCAM_no_relu"]
-    BASELINE = "Random"
-    plt.rcParams["figure.dpi"] = 140
-    RES_OBJ = SuiteResult.load_hdf(args.file)
-
-    if not path.isdir(args.out_dir):
-        os.makedirs(args.out_dir)
-
-    logging.basicConfig(
-        format='[%(asctime)s %(levelname)s] %(message)s',
-        level=logging.INFO,
-        datefmt="%Y-%m-%d %H:%M:%S")
-
-    inter_metric_dir = path.join(args.out_dir, "inter_metric_correlations")
-    inter_method_dir = path.join(args.out_dir, "inter_method_correlations")
-    for dir in (inter_metric_dir, inter_method_dir):
-        if not path.isdir(dir):
-            os.makedirs(dir)
-
-    dfe = DFExtractor(RES_OBJ, EXCLUDE)
-    #dfe.add_infidelity("mse", "linear")
-    #dfe.add_infidelity("corr", "linear")
-    #dfe.compare_maskers(["constant", "blur", "random"], "linear")
-    dfe.compare_maskers(["constant"], "linear")
     dfs = dfe.get_dfs()
+
+    # Relative Inter-method correlations
+    all_dfs = []
+    for metric_name, (df, inverted) in dfs.items():
+        df = df.sub(df[baseline], axis=0)
+        df = df[df.columns.difference([baseline])]
+        fig = corr_heatmap(df)
+        fig.savefig(path.join(inter_method_dir, f"{metric_name}.png"))
+        plt.close(fig)
+        all_dfs.append(df if not inverted else -df)
+    fig = corr_heatmap(pd.concat(all_dfs))
+    fig.savefig(path.join(out_dir, "inter_method_correlation.png"))
+    plt.close(fig)
 
     # Inter-method correlations
     all_dfs = []
+    inter_method_dir = path.join(out_dir, "inter_method_correlations_abs")
+    if not path.isdir(inter_method_dir):
+        os.makedirs(inter_method_dir)
     for metric_name, (df, inverted) in dfs.items():
-        df = df.sub(df[BASELINE], axis=0)
-        df = df[df.columns.difference([BASELINE])]
-        correlation_heatmap(df, path.join(inter_method_dir, f"{metric_name}.png"))
+        df = df[df.columns.difference([baseline])]
+        fig = corr_heatmap(df)
+        fig.savefig(path.join(inter_method_dir, f"{metric_name}.png"))
+        plt.close(fig)
         all_dfs.append(df if not inverted else -df)
-    correlation_heatmap(pd.concat(all_dfs), path.join(args.out_dir, "inter_method_correlation.png"))
+    fig = corr_heatmap(pd.concat(all_dfs))
+    fig.savefig(path.join(out_dir, "inter_method_correlation_abs.png"))
+    plt.close(fig)
 
     # Inter-metric correlations
     flattened_dfs = {}
@@ -59,4 +49,6 @@ if __name__ == "__main__":
         flattened_dfs[metric_name] = pd.concat(all_columns)
     df = pd.concat(flattened_dfs, axis=1)
     df = df.reindex(sorted(df.columns), axis=1)
-    correlation_heatmap(df, path.join(args.out_dir, "inter_metric_correlation.png"))
+    fig = corr_heatmap(df)
+    fig.savefig(path.join(out_dir, "inter_metric_correlation.png"))
+    plt.close(fig)
