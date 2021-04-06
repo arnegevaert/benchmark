@@ -45,7 +45,7 @@ def wilcoxon_tests(df, baseline, effect_size_measure, inverted):
                                            alternative="less" if inverted else "greater")
         pvalues[method_name] = pvalue
         if effect_size_measure == "cohend":
-            effect_sizes[method_name] = cohend(method_results, baseline.to_numpy())
+            effect_sizes[method_name] = cohend(method_results, baseline)
         elif effect_size_measure == "meandiff":
             effect_sizes[method_name] = np.mean(method_results) - np.mean(baseline)
         else:

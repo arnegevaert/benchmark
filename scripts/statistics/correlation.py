@@ -1,4 +1,5 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 from os import path
 import os
 from scripts.statistics.df_extractor import DFExtractor
@@ -19,9 +20,11 @@ def correlation(dfe: DFExtractor, out_dir: str, baseline: str):
         df = df[df.columns.difference([baseline])]
         fig = corr_heatmap(df)
         fig.savefig(path.join(inter_method_dir, f"{metric_name}.png"))
+        plt.close(fig)
         all_dfs.append(df if not inverted else -df)
     fig = corr_heatmap(pd.concat(all_dfs))
     fig.savefig(path.join(out_dir, "inter_method_correlation.png"))
+    plt.close(fig)
 
     # Inter-metric correlations
     flattened_dfs = {}
@@ -33,3 +36,4 @@ def correlation(dfe: DFExtractor, out_dir: str, baseline: str):
     df = df.reindex(sorted(df.columns), axis=1)
     fig = corr_heatmap(df)
     fig.savefig(path.join(out_dir, "inter_metric_correlation.png"))
+    plt.close(fig)
