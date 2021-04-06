@@ -48,5 +48,5 @@ def wilcoxon(dfe: DFExtractor, es_measure: str, baseline: str, out_file: str, po
     es_df = pd.DataFrame.from_dict(effect_sizes)
     pv_df = pd.DataFrame.from_dict(pvalues)
     fig, axs = plot_wilcoxon_result(es_df, pv_df, dfs.keys(), ALPHA)
-    fig.savefig(path.join(out_file))
+    fig.savefig(out_file)
     plt.close(fig)
