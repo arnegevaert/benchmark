@@ -14,10 +14,10 @@ def plot_wilcoxon_result(effect_sizes, pvalues, labels, alpha):
     effect_sizes.plot.barh(figsize=(14, 6), ax=axs[0])
     axs[0].legend(labels, loc='upper center', bbox_to_anchor=(0.5, -.05), ncol=3, fancybox=True,
                   shadow=True)
-    axs[1].pcolor(pvalues < alpha, cmap="RdYlGn", edgecolor="black")
+    axs[1].pcolor(pvalues < alpha, cmap="RdYlGn", edgecolor="black",vmin=0., vmax=1.)
     axs[1].set_title(f"p < {alpha}")
     axs[1].set_yticks([])
-    axs[1].set_xticks(np.arange(3) + 0.5)
+    axs[1].set_xticks(np.arange(len(labels)) + 0.5)
     axs[1].tick_params(axis="x", rotation=45)
     axs[1].set_xticklabels(labels, ha="right")
     return fig, axs
