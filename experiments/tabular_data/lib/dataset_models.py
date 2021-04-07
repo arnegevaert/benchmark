@@ -12,7 +12,7 @@ _DATA_LOC = os.environ["BM_DATA_LOC"] if "BM_DATA_LOC" in os.environ else path.j
 
 
 def get_dataset_model(name, model_name=None, train=False):
-    if name == "SeizeIT1":
+    if name == "SeizeIT1_binary":
         with open(path.join(_DATA_LOC,name,"scalar"), 'rb') as f:
             scalar = pickle.load(f)
         with open(path.join(_DATA_LOC,name,"val_dicts"), 'rb') as f:
@@ -28,7 +28,25 @@ def get_dataset_model(name, model_name=None, train=False):
             nn.Linear(20,20),
             nn.ReLU(),
             nn.Linear(20,1))
-        model.load_state_dict(torch.load(path.join(_DATA_LOC,"models",name,"model.pt")))
+        model.load_state_dict(torch.load(path.join(_DATA_LOC,"models",name,"model_binary.pt")))
+        patch_folder = None
+    elif name== "SeizeIT1":
+        with open(path.join(_DATA_LOC,name,"scalar"), 'rb') as f:
+            scalar = pickle.load(f)
+        with open(path.join(_DATA_LOC,name,"val_dicts"), 'rb') as f:
+            val_labels, val_feats= pickle.load(f)
+        x_val, y_val = np.concatenate([val_feats[key] for key in val_feats]), np.concatenate(
+            [val_labels[key] for key in val_labels])
+        x_val = scalar.transform(x_val)
+        x_val, y_val = torch.tensor(x_val, dtype=torch.float32), torch.tensor(y_val, dtype=torch.int64)
+        ds = torch.utils.data.TensorDataset(x_val,y_val)
+        model = nn.Sequential(
+            nn.Linear(67,20),
+            nn.ReLU(),
+            nn.Linear(20,20),
+            nn.ReLU(),
+            nn.Linear(20,2))
+        model.load_state_dict(torch.load(path.join(_DATA_LOC,"models",name,"model2.pt")))
         patch_folder = None
 
     return ds, model, patch_folder

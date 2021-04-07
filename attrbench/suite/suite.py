@@ -113,10 +113,16 @@ class Suite:
             full_batch, full_labels = next(it)
             full_batch = full_batch.to(self.device)
             full_labels = full_labels.to(self.device)
+
             # Only use correctly classified samples
             with torch.no_grad():
                 out = self.model(full_batch)
-                pred = torch.argmax(out, dim=1) if out.shape[1]>1 else out.squeeze()>0.5 # binary output
+                if out.shape[1] > 1:
+                    pred = torch.argmax(out, dim=1)
+                    binary = False
+                else:
+                    pred = out.squeeze()>0.5 # binary output
+                    binary = True
                 if self.multi_label:
                     pred_labels = full_labels[torch.arange(len(pred)), pred]
                     samples = full_batch[pred_labels == 1]
@@ -133,7 +139,9 @@ class Suite:
             out_size += samples.size(0)
         labels = torch.cat(out_labels, dim=0)
         samples = torch.cat(out_samples, dim=0)
-        return labels[:batch_size].to(self.device), samples[:batch_size].to(self.device)
+        labels=labels[:batch_size].to(self.device) if not binary else torch.zeros_like(labels[:batch_size],device=self.device)
+        samples=samples[:batch_size].to(self.device)
+        return labels, samples
 
     def save_result(self, loc):
         metric_results = {metric_name: self.metrics[metric_name].get_result() for metric_name in self.metrics}
