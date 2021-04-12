@@ -49,9 +49,9 @@ class DFExtractor:
                 else:
                     self.add_metric(f"{m_group}-{masker}", f"masker_{masker}.{m_group}", activation=activation)
 
-    def compare_activations(self, activations: List[str], masker: str):
+    def compare_activations(self, activations: List[str], masker: str, metric_group=None):
+        all_metric_groups = ["deletion_until_flip", "insertion", "deletion", "irof", "iiof", "seg_sensitivity_n", "sensitivity_n"]
+        m_groups = all_metric_groups if metric_group is None else [metric_group]
         for activation in activations:
-            self.add_metric(f"sens_n-{activation}", f"masker_{masker}.sensitivity_n", activation=activation)
-            self.add_metric(f"seg_sens_n-{activation}", f"masker_{masker}.seg_sensitivity_n", activation=activation)
-            for metric in ("insertion", "deletion", "irof", "iiof"):
-                self.add_metric(f"{metric}-{activation}", f"masker_{masker}.{metric}", activation=activation)
+            for m_group in m_groups:
+                self.add_metric(f"{m_group}-{activation}", f"masker_{masker}.{m_group}", activation=activation)

@@ -32,7 +32,6 @@ def correlation(dfe: DFExtractor, out_dir: str, baseline: str):
     if not path.isdir(inter_method_dir):
         os.makedirs(inter_method_dir)
     for metric_name, (df, inverted) in dfs.items():
-        df = df[df.columns.difference([baseline])]
         fig = corr_heatmap(df)
         fig.savefig(path.join(inter_method_dir, f"{metric_name}.png"))
         plt.close(fig)
