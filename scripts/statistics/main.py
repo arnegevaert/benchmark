@@ -80,3 +80,4 @@ if __name__ == "__main__":
             clustering(dfe, args.out_dir, BASELINE)
         if plot == "krippendorff":
             krippendorff(dfe, BASELINE, path.join(args.out_dir, "krippendorff.png"))
+            krippendorff(dfe, BASELINE, path.join(args.out_dir, "krippendorff_sig.png"))
