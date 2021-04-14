@@ -3,7 +3,7 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 from scripts.statistics.util import cohend, emp_power_curve, wilcoxon_tests
-from scripts.statistics.plot import plot_wilcoxon_result, heatmap
+from scripts.statistics.plot import effect_size_barplot, heatmap
 from scripts.statistics.df_extractor import DFExtractor
 import os
 from os import path
@@ -48,7 +48,7 @@ def wilcoxon(dfe: DFExtractor, es_measure: str, baseline: str, out_file: str, po
 
     es_df = pd.DataFrame.from_dict(effect_sizes)
     pv_df = pd.DataFrame.from_dict(pvalues)
-    fig, axs = plot_wilcoxon_result(es_df, pv_df, dfs.keys(), ALPHA)
+    fig, axs = effect_size_barplot(es_df, pv_df, dfs.keys(), ALPHA)
     fig.savefig(out_file)
     plt.close(fig)
 

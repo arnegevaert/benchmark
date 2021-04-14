@@ -2,7 +2,6 @@ from attrbench.suite import SuiteResult
 from tqdm import tqdm
 from os import path
 import os
-import logging
 from scripts.statistics.df_extractor import DFExtractor
 from scripts.statistics import correlation, clustering, wilcoxon, krippendorff, boxplot
 import matplotlib as mpl
@@ -10,9 +9,13 @@ from matplotlib import pyplot as plt
 import argparse
 
 
+def get_dfs():
+    pass
+
+
 if __name__ == "__main__":
     mpl.use("agg")
-    plot_choices = ["correlation", "wilcoxon", "boxplot", "clustering", "krippendorff"]
+    plot_choices = ["correlation", "wilcoxon", "wilcoxon-summary", "boxplot", "clustering", "krippendorff", "krippendorff-sig"]
     parser = argparse.ArgumentParser()
     parser.add_argument("file", type=str)
     parser.add_argument("out_dir", type=str)
@@ -30,19 +33,12 @@ if __name__ == "__main__":
     if not path.isdir(args.out_dir):
         os.makedirs(args.out_dir)
 
-    logging.basicConfig(
-        format='[%(asctime)s %(levelname)s] %(message)s',
-        level=logging.INFO,
-        datefmt="%Y-%m-%d %H:%M:%S")
-
     dfe = DFExtractor(RES_OBJ, EXCLUDE)
     if "impact_coverage" in RES_OBJ.metric_results.keys():
         dfe.add_metric("impact_coverage", "impact_coverage")
     dfe.add_infidelity("mse", "linear")
     dfe.compare_maskers(["constant", "blur", "random"], "linear")
     for plot in tqdm(args.plots):
-        if plot == "correlation":
-            correlation(dfe, args.out_dir, BASELINE)
         if plot == "wilcoxon":
             metric_groups = ["deletion_until_flip", "insertion", "deletion", "irof", "iiof", "seg_sensitivity_n", "sensitivity_n"]
             for m_group in metric_groups:
@@ -80,4 +76,9 @@ if __name__ == "__main__":
             clustering(dfe, args.out_dir, BASELINE)
         if plot == "krippendorff":
             krippendorff(dfe, BASELINE, path.join(args.out_dir, "krippendorff.png"))
-            krippendorff(dfe, BASELINE, path.join(args.out_dir, "krippendorff_sig.png"))
+        if plot == "krippendorff-sig":
+            krippendorff(dfe, BASELINE, path.join(args.out_dir, "krippendorff_sig.png"), exclude_non_significant=True)
+        if plot == "wilcoxon-summary":
+            pass
+        if plot == "correlation":
+            correlation(dfe, args.out_dir, BASELINE)

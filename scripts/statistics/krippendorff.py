@@ -16,6 +16,8 @@ def krippendorff(dfe: DFExtractor, baseline: str, out_file: str = None, exclude_
         k_a[metric_name] = krippendorff_alpha(df.to_numpy())
     k_a = pd.DataFrame(k_a, index=["Krippendorff Alpha"]).transpose()
     fig, ax = plt.subplots()
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
     k_a.plot.barh(figsize=(10, 10), ax=ax)
     fig.tight_layout()
     if out_file:

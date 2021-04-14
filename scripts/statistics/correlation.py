@@ -3,7 +3,28 @@ import matplotlib.pyplot as plt
 from os import path
 import os
 from scripts.statistics.df_extractor import DFExtractor
-from scripts.statistics.plot import corr_heatmap
+from scripts.statistics.plot import heatmap
+from scipy.stats import pearsonr
+import numpy as np
+
+
+def corr_heatmap(df):
+    corr = df.corr(method=lambda x, y: pearsonr(x, y)[0])
+    pvalues = df.corr(method=lambda x, y: pearsonr(x, y)[1]) - np.eye(corr.shape[0])
+    corr[pvalues > 0.01] = 0
+
+    corr = pd.melt(corr.reset_index(),
+                   id_vars='index')  # Unpivot the dataframe, so we can get pair of arrays for x and y
+    corr.columns = ['x', 'y', 'value']
+    fig = heatmap(
+        x=corr['x'],
+        y=corr['y'],
+        size=corr['value'].abs(),
+        color=corr['value']
+    )
+    return fig
+
+
 
 
 def correlation(dfe: DFExtractor, out_dir: str, baseline: str):
@@ -49,5 +70,5 @@ def correlation(dfe: DFExtractor, out_dir: str, baseline: str):
     df = pd.concat(flattened_dfs, axis=1)
     df = df.reindex(sorted(df.columns), axis=1)
     fig = corr_heatmap(df)
-    fig.savefig(path.join(out_dir, "inter_metric_correlation.png"))
+    fig.savefig(path.join(out_dir, "inter_metric_correlation.png"), bbox_inches="tight")
     plt.close(fig)

@@ -1,14 +1,12 @@
 # Sources:
 # https://towardsdatascience.com/better-heatmaps-and-correlation-matrix-plots-in-python-41445d0f2bec
 # https://seaborn.pydata.org/generated/seaborn.heatmap.html
-import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 import numpy as np
-from scipy.stats import pearsonr
 
 
-def plot_wilcoxon_result(effect_sizes, pvalues, labels, alpha):
+def effect_size_barplot(effect_sizes, pvalues, labels, alpha):
     fig, axs = plt.subplots(ncols=2, gridspec_kw={'width_ratios': [4, 1]})
 
     effect_sizes.plot.barh(figsize=(14, 6), ax=axs[0])
@@ -23,23 +21,6 @@ def plot_wilcoxon_result(effect_sizes, pvalues, labels, alpha):
     return fig, axs
 
 
-def corr_heatmap(df):
-    corr = df.corr(method=lambda x, y: pearsonr(x, y)[0])
-    pvalues = df.corr(method=lambda x, y: pearsonr(x, y)[1]) - np.eye(corr.shape[0])
-    corr[pvalues > 0.01] = 0
-
-    corr = pd.melt(corr.reset_index(),
-                   id_vars='index')  # Unpivot the dataframe, so we can get pair of arrays for x and y
-    corr.columns = ['x', 'y', 'value']
-    fig = heatmap(
-        x=corr['x'],
-        y=corr['y'],
-        size=corr['value'].abs(),
-        color=corr['value']
-    )
-    return fig
-
-
 def heatmap(x, y, size, color, palette=None, color_min=-1, color_max=1):
     sns.set()
     fig = plt.figure(figsize=(20, 20))
@@ -52,6 +33,9 @@ def heatmap(x, y, size, color, palette=None, color_min=-1, color_max=1):
     y_labels = list(sorted(y.unique()))[::-1]
     x_to_num = {label: num for num, label in enumerate(x_labels)}
     y_to_num = {label: num for num, label in enumerate(y_labels)}
+
+    if palette is None:
+        palette = sns.diverging_palette(240, 10, n=256)
 
     def value_to_color(val):
         val_position = float((val - color_min)) / (color_max - color_min)
@@ -68,9 +52,9 @@ def heatmap(x, y, size, color, palette=None, color_min=-1, color_max=1):
     )
     # Show column labels on the axes
     ax.set_xticks([x_to_num[v] for v in x_labels])
-    ax.set_xticklabels(x_labels, rotation=45, horizontalalignment='right')
+    ax.set_xticklabels(x_labels, rotation=45, horizontalalignment='right', fontsize=35)
     ax.set_yticks([y_to_num[v] for v in y_labels])
-    ax.set_yticklabels(y_labels)
+    ax.set_yticklabels(y_labels, fontsize=35)
     ax.grid(False, 'major')
     ax.grid(True, 'minor')
     ax.set_xticks([t + 0.5 for t in ax.get_xticks()], minor=True)
