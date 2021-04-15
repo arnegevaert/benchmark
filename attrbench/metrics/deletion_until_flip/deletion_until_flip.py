@@ -13,7 +13,7 @@ from .result import DeletionUntilFlipResult
 # We assume none of the samples has the same label as the output of the network when given
 # a fully masked image (in which case we might not see a flip)
 def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarray,
-                        num_steps: float, masker: Masker, writer=None, num_workers=0):
+                        num_steps: float, masker: Masker, writer=None):
     if writer is not None:
         flipped_samples = [None for _ in range(samples.shape[0])]
     ds = _DeletionUntilFlipDataset(num_steps, samples, attrs, masker)

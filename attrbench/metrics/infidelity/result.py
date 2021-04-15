@@ -3,18 +3,18 @@ from typing import List, Tuple
 import h5py
 import numpy as np
 
-from attrbench.metrics import MetricResult, ModeActivationMetricResult
+from attrbench.metrics import MetricResult, MaskerActivationMetricResult
 
 
-class InfidelityResult(ModeActivationMetricResult):
+class InfidelityResult(MaskerActivationMetricResult):
     inverted = {
         "mse": True,
         "corr": False
     }
 
     def __init__(self, method_names: List[str], perturbation_mode: str, perturbation_size: float,
-                 modes: Tuple[str], activation_fn: Tuple[str]):
-        super().__init__(method_names, modes, activation_fn)
+                 maskers: Tuple[str], activation_fn: Tuple[str]):
+        super().__init__(method_names, maskers, activation_fn)
         self.perturbation_mode = perturbation_mode
         self.perturbation_size = perturbation_size
 

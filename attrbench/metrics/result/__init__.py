@@ -1,3 +1,2 @@
 from .metric_result import MetricResult
-from .activation_metric_result import ActivationMetricResult
-from .mode_activation_metric_result import ModeActivationMetricResult
+from .masker_activation_metric_result import MaskerActivationMetricResult
