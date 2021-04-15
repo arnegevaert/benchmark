@@ -1,73 +1,65 @@
-infidelity:
-  default:
+default:
+  maskers:
+    constant:
+      type: ConstantMasker
+      feature_level: pixel
+      mask_value: 0.
+    random:
+      type: RandomMasker
+      feature_level: pixel
+    blur:
+      type: BlurringMasker
+      feature_level: pixel
+      kernel_size: 0.5
+  activation_fns:
+    - linear
+    - sigmoid
+    - softmax
+metrics:
+  infidelity:
+    type: Infidelity
     num_perturbations: 1000
-    mode:
+    loss_fns:
       - mse
+      - normalized_mse
       - corr
-    activation_fn:
-      - linear
-      - sigmoid
-      - softmax
-  metrics:
-    infidelity_seg:
-      type: Infidelity
-      perturbation_mode: segment
-      perturbation_size: 10
-    infidelity_gaussian:
-      type: Infidelity
-      perturbation_mode: gaussian
-      perturbation_size: 0.2
-    infidelity_sq:
-      type: Infidelity
-      perturbation_mode: square
-      perturbation_size: 0.2
-
-masking:
-  foreach:
-    arg: masker
-    values:
-      constant:
-        type: ConstantMasker
-        feature_level: pixel
-        mask_value: 0.
-      random:
-        type: RandomMasker
-        feature_level: pixel
-      blur:
-        type: BlurringMasker
-        feature_level: pixel
-        kernel_size: 0.5
-  default:
-    activation_fn:
-      - linear
-      - sigmoid
-      - softmax
+    perturbation_modes:
+      segment:
+        type: SegmentPerturbationMode
+        size: 10
+      gaussian:
+        type: GaussianPerturbationMode
+        size: 0.2
+      square:
+        type: SquarePerturbationMode
+        size: 0.2
+  seg_sensitivity_n:
+    type: SegSensitivityN
+    min_subset_size: 0.1
+    max_subset_size: 0.5
+    num_steps: 10
+    num_subsets: 100
+  sensitivity_n:
+    type: SensitivityN
+    min_subset_size: 0.1
+    max_subset_size: 0.5
+    num_steps: 10
+    num_subsets: 100
+  deletion_until_flip:
+    type: DeletionUntilFlip
     num_steps: 100
-  metrics:
-    seg_sensitivity_n:
-      type: SegSensitivityN
-      min_subset_size: 0.1
-      max_subset_size: 0.5
-      num_steps: 10
-      num_subsets: 100
-    sensitivity_n:
-      type: SensitivityN
-      min_subset_size: 0.1
-      max_subset_size: 0.5
-      num_steps: 10
-      num_subsets: 100
-    deletion_until_flip:
-      type: DeletionUntilFlip
-    irof:
-      type: Irof
-    iiof:
-      type: Iiof
-    insertion:
-      type: Insertion
-    deletion:
-      type: Deletion
-#other:
-#  metrics:
+  irof:
+    type: Irof
+    num_steps: 100
+  iiof:
+    type: Iiof
+    num_steps: 100
+  insertion:
+    type: Insertion
+    num_steps: 100
+  deletion:
+    type: Deletion
+    num_steps: 100
 #    impact_coverage:
 #      type: ImpactCoverage
 #    max_sensitivity:

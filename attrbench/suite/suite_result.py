@@ -1,19 +1,31 @@
 import numpy as np
 from os import path, makedirs
 import h5py
-from typing import Dict
+from typing import Dict, Optional
 from attrbench.metrics import MetricResult
 from attrbench import metrics
 
 
 class SuiteResult:
-    def __init__(self, metric_results: Dict[str, MetricResult], num_samples: int, seed: int = None,
-                 images: np.ndarray = None, attributions: Dict[str, np.ndarray] = None):
+    def __init__(self, metric_results: Dict[str, MetricResult], num_samples: int, seed: int = None):
         self.metric_results = metric_results
         self.num_samples = num_samples
         self.seed = seed
-        self.images = images
-        self.attributions = attributions
+        self.images: Optional[np.ndarray] = None
+        self.attributions: Optional[Dict[str, np.ndarray]] = None
+
+    def add_images(self, images: np.ndarray):
+        if self.images is None:
+            self.images = images
+        else:
+            self.images = np.concatenate([self.images, images], axis=0)
+
+    def add_attributions(self, attrs: Dict[str, np.ndarray]):
+        if self.attributions is None:
+            self.attributions = attrs
+        else:
+            for method_name in self.attributions.keys():
+                self.attributions[method_name] = np.concatenate([self.attributions[method_name], attrs[method_name]])
 
     def save_hdf(self, filename):
         # if dir not exists: create dir

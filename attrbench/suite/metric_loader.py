@@ -5,7 +5,6 @@ from typing import Dict, Callable
 from attrbench.metrics import Metric
 from attrbench import metrics
 from attrbench.lib import masking
-import copy
 
 
 def _parse_masker(d):
@@ -17,10 +16,17 @@ def _parse_args(args):
     return {key: _parse_masker(args[key]) if key == "masker" else args[key] for key in args}
 
 
-class Config:
-    def __init__(self, filename: str, global_args: Dict, log_dir: str = None):
+class MetricLoader:
+    def __init__(self, filename: str, model: Callable, methods: Dict[str, Callable],
+                 log_dir: str = None, **kwargs):
         self.filename = filename
-        self.global_args = global_args
+        self.global_args = {
+            "model": model,
+            "methods": methods,
+            "method_names": list(methods.keys())
+        }
+        for arg in kwargs:
+            self.global_args[arg] = kwargs[arg]
         self.log_dir = log_dir
 
     def _parse_section(self, section: Dict, section_name: str, prefix: str = None, section_args: Dict = None) -> Dict[str, Metric]:

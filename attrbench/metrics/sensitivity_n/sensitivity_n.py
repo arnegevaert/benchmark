@@ -70,10 +70,8 @@ class SensitivityN(Metric):
 
     def run_batch(self, samples, labels, attrs_dict: Dict[str, np.ndarray]):
         if self.pool is not None:
-            start_t = time.time()
             logging.info("Joining Sensitivity-N...")
             self.pool.join()
-            end_t = time.time()
             logging.info("Join done in {end_t - start_t:.2f}s")
         # Get total number of features from attributions dict
         attrs = attrs_dict[next(iter(attrs_dict))]

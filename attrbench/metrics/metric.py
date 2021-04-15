@@ -22,9 +22,6 @@ class Metric:
                 raise AttributeError(f'required attribute {name} not present '
                                      f'in {self.__class__}')
 
-    def run_batch(self, samples, labels, attrs_dict: dict):
-        raise NotImplementedError
-
     def _get_writer(self, method_name):
         if self.writer_dir is not None:
             writer = self.writers[method_name]
@@ -35,3 +32,9 @@ class Metric:
 
     def get_result(self) -> MetricResult:
         return self.result
+
+    def run_batch(self, samples, labels, attrs_dict: dict):
+        raise NotImplementedError
+
+    def reset_result(self):
+        raise NotImplementedError
