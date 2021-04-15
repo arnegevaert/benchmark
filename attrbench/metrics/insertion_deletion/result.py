@@ -1,8 +1,8 @@
-from attrbench.metrics import ActivationMetricResult
+from attrbench.metrics import MaskerActivationMetricResult
 import numpy as np
 
 
-class InsertionDeletionResult(ActivationMetricResult):
+class InsertionDeletionResult(MaskerActivationMetricResult):
     def _aggregate(self, data):
         return np.trapz(data, x=np.linspace(0, 1, data.shape[1]))
 
@@ -15,9 +15,9 @@ class DeletionResult(InsertionDeletionResult):
     inverted = True
 
 
-class IrofResult(ActivationMetricResult):
+class IrofResult(MaskerActivationMetricResult):
     inverted = True
 
 
-class IiofResult(ActivationMetricResult):
+class IiofResult(MaskerActivationMetricResult):
     inverted = False

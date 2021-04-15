@@ -22,7 +22,11 @@ class MaskerActivationMetricResult(MetricResult):
     def append(self, method_name, batch: Dict):
         for masker in batch.keys():
             for afn in batch[masker].keys():
-                self.data[masker][afn][method_name].append(batch[masker][afn])
+                cur_data = self.data[masker][afn][method_name]
+                if cur_data is not None:
+                    self.data[masker][afn][method_name] = np.concatenate([cur_data, batch[masker][afn]], axis=0)
+                else:
+                    self.data[masker][afn][method_name] = batch[masker][afn]
 
     def add_to_hdf(self, group: h5py.Group):
         for masker in self.maskers:
@@ -47,8 +51,8 @@ class MaskerActivationMetricResult(MetricResult):
         return result
 
     # TODO make this return a DataFrame with nested indices if mode or activation is not provided
-    def get_df(self, *, mode=None, activation=None) -> Tuple[pd.DataFrame, bool]:
-        data = {m_name: self._aggregate(self.data[m_name][mode][activation].squeeze())
+    def get_df(self, *, masker=None, activation=None) -> Tuple[pd.DataFrame, bool]:
+        data = {m_name: self._aggregate(self.data[masker][activation][m_name].squeeze())
                 for m_name in self.method_names}
         df = pd.DataFrame.from_dict(data)
         return df, self.inverted
