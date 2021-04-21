@@ -1,5 +1,6 @@
 from .result import MetricResult, MaskerActivationMetricResult
 from .metric import Metric
+from .masker_metric import MaskerMetric
 from .impact_coverage import impact_coverage, ImpactCoverage, ImpactCoverageResult
 from .impact_score import impact_score, ImpactScore, ImpactScoreResult
 from .infidelity import infidelity, Infidelity, InfidelityResult

@@ -49,7 +49,7 @@ class Suite:
             save_images=False, save_attrs=False, out_filename=None) -> SuiteResult:
         # Initialization
         samples_done = 0
-        prog = tqdm(total=num_samples)
+        prog = tqdm(total=num_samples) if num_samples else tqdm()
         if seed is not None:
             torch.manual_seed(seed)
             np.random.seed(seed)
@@ -61,11 +61,17 @@ class Suite:
         it = iter(dataloader)
         batch_size = dataloader.batch_size
         batch_nr = 0
-        while samples_done < num_samples:
-            # Get batch
-            if samples_done + batch_size > num_samples:
+        done = False
+        while not done:
+            # Check if we need to truncate our final batch
+            if num_samples is not None and samples_done + batch_size > num_samples:
                 batch_size = num_samples - samples_done
-            labels, samples = self.get_batch(it, batch_size)
+
+            # Get batch
+            try:
+                labels, samples = self.get_batch(it, batch_size)
+            except StopIteration:
+                break
             batch_nr += 1
 
             # Calculate all attributions
@@ -92,12 +98,16 @@ class Suite:
 
             if out_filename:
                 suite_result.save_hdf(out_filename)
+            # If we have a predetermined amount of samples, check if we have enough
+            # Otherwise, we just keep going until there are no samples left
+            if num_samples is not None:
+                done = samples_done >= num_samples
         return suite_result
 
     def get_batch(self, it, batch_size):
         out_samples, out_labels = [], []
         out_size = 0
-        # collect a full batch
+        # collect a full batch of correctly classified samples
         while out_size < batch_size:
             full_batch, full_labels = next(it)
             full_batch = full_batch.to(self.device)

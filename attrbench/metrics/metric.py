@@ -35,6 +35,3 @@ class Metric:
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         raise NotImplementedError
-
-    def reset_result(self):
-        raise NotImplementedError

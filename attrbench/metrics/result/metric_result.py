@@ -18,7 +18,7 @@ class MetricResult:
             ds = group.create_dataset(method_name, data=self.data[method_name])
             ds.attrs["inverted"] = self.inverted
 
-    def append(self, method_name: str, batch: np.ndarray):
+    def append(self, method_name: str, batch):
         if self.data[method_name] is not None:
             self.data[method_name] = np.concatenate([self.data[method_name], batch], axis=0)
         else:

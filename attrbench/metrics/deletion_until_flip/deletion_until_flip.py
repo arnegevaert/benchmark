@@ -2,10 +2,9 @@ from typing import Callable
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
 
 from attrbench.lib.masking import Masker
-from attrbench.metrics import Metric
+from attrbench.metrics import MaskerMetric
 from ._dataset import _DeletionUntilFlipDataset
 from .result import DeletionUntilFlipResult
 
@@ -52,18 +51,18 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarra
     return result.reshape(-1, 1)
 
 
-class DeletionUntilFlip(Metric):
-    def __init__(self, model, method_names, num_steps, masker, writer_dir=None):
-        super().__init__(model, method_names, writer_dir)
+class DeletionUntilFlip(MaskerMetric):
+    def __init__(self, model, method_names, num_steps, maskers, writer_dir=None):
+        super().__init__(model, method_names, maskers, writer_dir)
         self.num_steps = num_steps
-        self.masker = masker
-        self.result = DeletionUntilFlipResult(method_names)
+        self.result = DeletionUntilFlipResult(method_names, list(maskers.keys()))
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         for method_name in attrs_dict:
             if method_name not in self.result.method_names:
                 raise ValueError(f"Invalid method name: {method_name}")
-            self.result.append(method_name,
-                               deletion_until_flip(samples, self.model, attrs_dict[method_name], self.num_steps,
-                                                   self.masker, writer=self._get_writer(method_name))
-                               )
+            batch_result = {}
+            for key, masker in self.maskers.items():
+                batch_result[key] = deletion_until_flip(samples, self.model, attrs_dict[method_name], self.num_steps,
+                                                        masker, writer=self._get_writer(method_name)).detach().cpu().numpy()
+            self.result.append(method_name, batch_result)
