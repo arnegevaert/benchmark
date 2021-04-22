@@ -2,13 +2,13 @@ import numpy as np
 from os import path, makedirs
 import h5py
 from typing import Dict, Optional
-from attrbench.metrics import BasicMetricResult
+from attrbench.metrics import Metric, AbstractMetricResult
 from attrbench import metrics
 
 
 class SuiteResult:
-    def __init__(self, metric_results: Dict[str, BasicMetricResult], num_samples: int, seed: int = None):
-        self.metric_results = metric_results
+    def __init__(self, metrics: Dict[str, Metric], num_samples: int, seed: int = None):
+        self.metrics = metrics
         self.num_samples = num_samples
         self.seed = seed
         self.images: Optional[np.ndarray] = None
@@ -50,10 +50,11 @@ class SuiteResult:
             # Save results
             # Each metric gets a group under the "results" group
             result_group = fp.create_group("results")
-            for metric_name in self.metric_results:
+            for metric_name in self.metrics:
                 metric_group = result_group.create_group(metric_name)
-                metric_group.attrs["type"] = str(self.metric_results[metric_name].__class__.__name__)
-                self.metric_results[metric_name].add_to_hdf(metric_group)
+                result_obj = self.metrics[metric_name].get_result()
+                metric_group.attrs["type"] = str(result_obj.__class__.__name__)
+                result_obj.add_to_hdf(metric_group)
 
     @staticmethod
     def load_hdf(filename):
@@ -74,7 +75,7 @@ class SuiteResult:
                 result_group = fp["results"]
                 for metric_name in result_group.keys():
                     result_type = result_group[metric_name].attrs["type"]
-                    result_obj: BasicMetricResult = getattr(metrics, result_type).load_from_hdf(result_group[metric_name])
+                    result_obj: AbstractMetricResult = getattr(metrics, result_type).load_from_hdf(result_group[metric_name])
                     metric_results[metric_name] = result_obj
                 return SuiteResult(metric_results, num_samples, seed, images, attributions)
         else:

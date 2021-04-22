@@ -15,6 +15,7 @@ from ._dataset import _SensitivityNDataset, _SegSensNDataset
 from .result import SegSensitivityNResult, SensitivityNResult
 import logging
 import time
+from functools import partial
 
 
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
@@ -66,11 +67,11 @@ class SensitivityN(MaskerMetric):
         self.pool = None
 
     def append_result(self, masker_name, results):
-        logging.info("Appending Sensitivity-N")
         for method_name in results:
             for afn in results[method_name]:
                 self.result.append(method_name, masker_name, afn,
-                                   results[method_name][masker_name].detach().cpu().numpy())
+                                   results[method_name][afn].detach().cpu().numpy())
+        logging.info(f"Appended Sensitivity-N {masker_name}")
 
     def run_batch(self, samples, labels, attrs_dict: Dict[str, np.ndarray]):
         if self.pool is not None:
@@ -84,6 +85,8 @@ class SensitivityN(MaskerMetric):
         n_range = (np.linspace(self.min_subset_size, self.max_subset_size, self.num_steps) * num_features).astype(
             np.int)
         writer = self.writers["general"] if self.writers is not None else None
+
+        output_diffs_dict, indices_dict = {}, {}
         for masker_name, masker in self.maskers.items():
             # Create pseudo-dataset
             ds = _SensitivityNDataset(n_range, self.num_subsets, samples, num_features, masker)
@@ -91,15 +94,22 @@ class SensitivityN(MaskerMetric):
             output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, n_range,
                                                            self.activation_fns,
                                                            writer)
+            output_diffs_dict[masker_name] = output_diffs
+            indices_dict[masker_name] = indices
 
-            if os.getenv("NO_MULTIPROC"):
-                results = _compute_correlations(attrs_dict, n_range, output_diffs, indices)
+        if os.getenv("NO_MULTIPROC"):
+            for masker_name in self.maskers:
+                results = _compute_correlations(attrs_dict, n_range, output_diffs_dict[masker_name],
+                                                indices_dict[masker_name])
                 self.append_result(masker_name, results)
-            else:
-                self.pool = multiprocessing.pool.ThreadPool(processes=1)
-                self.pool.apply_async(_compute_correlations, args=(attrs_dict, n_range, output_diffs, indices),
-                                      callback=lambda res: self.append_result(masker_name, res))
-                self.pool.close()
+        else:
+            self.pool = multiprocessing.pool.ThreadPool(processes=1)
+            for masker_name in self.maskers:
+                self.pool.apply_async(
+                    _compute_correlations,
+                    args=(attrs_dict, n_range, output_diffs_dict[masker_name], indices_dict[masker_name]),
+                    callback=partial(self.append_result, masker_name))
+            self.pool.close()
 
     def get_result(self) -> SensitivityNResult:
         if self.pool is not None:
@@ -133,12 +143,12 @@ class SegSensitivityN(MaskerMetric):
                                                                                      num_steps))
         self.pool = None
 
-    def append_results(self, masker_name, results):
-        logging.info("Appending Seg-Sensitivity-N")
+    def append_result(self, masker_name, results):
         for method_name in results:
             for afn in results[method_name]:
                 self.result.append(method_name, masker_name, afn,
-                                   results[method_name][masker_name].detach().cpu().numpy())
+                                   results[method_name][afn].detach().cpu().numpy())
+        logging.info(f"Appended Seg-Sensitivity-N {masker_name}")
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         if self.pool is not None:
@@ -148,26 +158,34 @@ class SegSensitivityN(MaskerMetric):
             end_t = time.time()
             logging.info(f"Join done in {end_t - start_t:.2f}s")
         writer = self.writers["general"] if self.writers is not None else None
+        ds = _SegSensNDataset(self.n_range, self.num_subsets, samples)
+        segmented_attrs_dict = {method_name: segment_attributions(ds.segmented_images,
+                                                                  torch.tensor(attrs_dict[method_name],
+                                                                               device=samples.device)).cpu().numpy()
+                                for method_name in attrs_dict}
+        output_diffs_dict, indices_dict = {}, {}
         for masker_name, masker in self.maskers.items():
             # Create pseudo-dataset
-            ds = _SegSensNDataset(self.n_range, self.num_subsets, samples, masker)
             # Calculate output diffs and removed indices (we will re-use this for each method)
+            ds.set_masker(masker)
             output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, self.n_range,
                                                            self.activation_fns, writer)
-            segmented_attrs_dict = {key: segment_attributions(ds.segmented_images,
-                                                              torch.tensor(attrs_dict[key],
-                                                                           device=samples.device)).cpu().numpy() for key
-                                    in attrs_dict}
+            output_diffs_dict[masker_name] = output_diffs
+            indices_dict[masker_name] = indices
 
-            if os.getenv("NO_MULTIPROC"):
-                results = _compute_correlations(segmented_attrs_dict, self.n_range, output_diffs, indices)
-                self.append_results(masker_name, results)
-            else:
-                self.pool = multiprocessing.pool.ThreadPool(processes=1)
+        if os.getenv("NO_MULTIPROC"):
+            for masker_name in self.maskers:
+                results = _compute_correlations(segmented_attrs_dict, self.n_range, output_diffs_dict[masker_name],
+                                                indices_dict[masker_name])
+                self.append_result(masker_name, results)
+        else:
+            self.pool = multiprocessing.pool.ThreadPool(processes=1)
+            for masker_name in self.maskers:
                 self.pool.apply_async(_compute_correlations,
-                                      args=(segmented_attrs_dict, self.n_range, output_diffs, indices),
-                                      callback=lambda res: self.append_results(masker_name, res))
-                self.pool.close()
+                                      args=(segmented_attrs_dict, self.n_range, output_diffs_dict[masker_name],
+                                            indices_dict[masker_name]),
+                                      callback=partial(self.append_result, masker_name))
+            self.pool.close()
 
     def get_result(self) -> SegSensitivityNResult:
         if self.pool is not None:

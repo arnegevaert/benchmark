@@ -78,7 +78,8 @@ class _IrofIiof(MaskerMetric):
         self.mode = mode  # "insertion" or "deletion"
         self.activation_fns = (activation_fns,) if type(activation_fns) == str else activation_fns
         self.method_fn = method_fn
-        self.result: MaskerActivationMetricResult = result_class(method_names, self.activation_fns)
+        self.result: MaskerActivationMetricResult = result_class(method_names, list(self.maskers.keys()),
+                                                                 self.activation_fns)
         if self.writer_dir is not None:
             for key in self.maskers:
                 self.writers[key] = AttributionWriter(path.join(self.writer_dir, key))
@@ -88,7 +89,7 @@ class _IrofIiof(MaskerMetric):
         for masker_name, masker in self.maskers.items():
             masking_datasets[masker_name] = _IrofIiofDataset(self.mode, samples, masker, self._get_writer(masker_name))
         for method_name in attrs_dict:
-            for masker_name, masking_dataset in masking_datasets:
+            for masker_name, masking_dataset in masking_datasets.items():
                 result = self.method_fn(samples, labels, self.model, attrs_dict[method_name],
                                         masking_dataset, self.activation_fns,
                                         writer=self._get_writer(method_name))

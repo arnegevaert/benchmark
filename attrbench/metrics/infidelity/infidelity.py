@@ -14,6 +14,7 @@ from . import perturbation_generator
 from .result import InfidelityResult
 import time
 import logging
+from functools import partial
 
 
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
@@ -66,29 +67,40 @@ class Infidelity(Metric):
     def run_batch(self, samples, labels, attrs_dict: dict):
         if self.pool is not None:
             start_t = time.time()
-            logging.info("Joining...")
+            logging.info("Joining Infidelity...")
             self.pool.join()
             end_t = time.time()
             logging.info(f"Join done in {end_t - start_t:.2f}s")
         # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
         writer = self.writers["general"] if self.writers is not None else None
 
+        pert_vectors, pred_diffs = {}, {}
         for key, pert_gen in self.perturbation_generators.items():
-            pert_vectors, pred_diffs = _compute_perturbations(samples, labels, self.model, pert_gen,
-                                                              self.num_perturbations, self.activation_fns, writer)
-            if os.getenv("NO_MULTIPROC"):
-                results = _compute_result(pert_vectors, pred_diffs, attrs_dict, self.loss_fns)
+            p_vectors, p_diffs = _compute_perturbations(samples, labels, self.model, pert_gen,
+                                                                        self.num_perturbations, self.activation_fns,
+                                                                        writer)
+            pert_vectors[key] = p_vectors
+            pred_diffs[key] = p_diffs
+
+        if os.getenv("NO_MULTIPROC"):
+            for key in self.perturbation_generators:
+                results = _compute_result(pert_vectors[key], pred_diffs[key], attrs_dict, self.loss_fns)
                 self.result.append(key, results)
-            else:
-                self.pool = multiprocessing.pool.ThreadPool(processes=1)
-                self.pool.apply_async(_compute_result, args=(pert_vectors, pred_diffs, attrs_dict, self.loss_fns),
-                                      callback=lambda res: self.result.append(key, res))
-                self.pool.close()
+        else:
+            self.pool = multiprocessing.pool.ThreadPool(processes=1)
+            for key in self.perturbation_generators:
+                self.pool.apply_async(_compute_result, args=(pert_vectors[key], pred_diffs[key], attrs_dict, self.loss_fns),
+                                      callback=partial(self.append_results, key))  # self.result.append(key, res))
+            self.pool.close()
+
+    def append_results(self, pert_name, results):
+        self.result.append(pert_name, results)
+        logging.info(f"Appended Infidelity {pert_name}")
 
     def get_result(self) -> InfidelityResult:
         if self.pool is not None:
             start_t = time.time()
-            logging.info("Joining...")
+            logging.info("Joining Infidelity...")
             self.pool.join()
             end_t = time.time()
             logging.info(f"Join done in {end_t - start_t:.2f}s")

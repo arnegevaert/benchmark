@@ -55,8 +55,7 @@ class Suite:
             np.random.seed(seed)
 
         # Initialize result object
-        metric_results = {metric_name: self.metrics[metric_name].get_result() for metric_name in self.metrics}
-        suite_result = SuiteResult(metric_results, samples_done, seed)
+        suite_result = SuiteResult(self.metrics, samples_done, seed)
 
         it = iter(dataloader)
         batch_size = dataloader.batch_size

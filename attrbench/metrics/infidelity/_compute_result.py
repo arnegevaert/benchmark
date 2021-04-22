@@ -5,8 +5,16 @@ import torch
 
 from attrbench.lib.util import corrcoef
 
+
+def _normalized_mse(a: np.ndarray, b: np.ndarray):
+    a = (a - np.mean(a, axis=1, keepdims=True))/np.std(a, axis=1, keepdims=True)
+    b = (b - np.mean(b, axis=1, keepdims=True))/np.std(b, axis=1, keepdims=True)
+    return ((a - b)**2).mean(axis=1, keepdims=True)
+
+
 _LOSS_FNS = {
     "mse": lambda a, b: ((a - b) ** 2).mean(axis=1, keepdims=True),
+    "normalized_mse": _normalized_mse,
     "corr": lambda a, b: corrcoef(a, b)[..., np.newaxis]
 }
 
@@ -27,7 +35,6 @@ def _compute_result(pert_vectors: np.ndarray, pred_diffs: Dict[str, np.ndarray],
         pert_vectors_flat = pert_vectors.reshape(
             (pert_vectors.shape[0], pert_vectors.shape[1], -1))  # [batch_size, num_perturbations, -1]
         dot_product = (attrs * pert_vectors_flat).sum(axis=-1)  # [batch_size, num_perturbations]
-
         result[method] = {}
         for loss_fn in loss_fns:
             result[method][loss_fn] = {}

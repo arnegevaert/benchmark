@@ -25,13 +25,13 @@ metrics:
       - corr
     perturbation_generators:
       segment:
-        type: SegmentPerturbationGenerator
+        type: SegmentRemovalPerturbationGenerator
         num_segments: 10
       gaussian:
         type: GaussianPerturbationGenerator
         sd: 0.2
       square:
-        type: SquarePerturbationGenerator
+        type: SquareRemovalPerturbationGenerator
         square_size: 0.2
   seg_sensitivity_n:
     type: SegSensitivityN

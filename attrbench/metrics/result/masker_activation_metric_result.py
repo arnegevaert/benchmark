@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numpy as np
 import h5py
-from typing import List, Dict, Tuple
+from typing import List, Tuple
 import pandas as pd
 from attrbench.metrics.result import AbstractMetricResult
 
