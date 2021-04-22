@@ -5,11 +5,31 @@ from typing import List, Dict, Tuple
 import pandas as pd
 
 
-class MetricResult:
+class AbstractMetricResult:
     inverted: bool
 
     def __init__(self, method_names: List[str]):
         self.method_names = method_names
+
+    def add_to_hdf(self, group: h5py.Group):
+        raise NotImplementedError
+
+    def append(self, *args, **kwargs):
+        raise NotImplementedError
+
+    @classmethod
+    def load_from_hdf(cls, group: h5py.Group) -> AbstractMetricResult:
+        raise NotImplementedError
+
+    def get_df(self, *args, **kwargs) -> Tuple[pd.DataFrame, bool]:
+        raise NotImplementedError
+
+
+class MetricResult(AbstractMetricResult):
+    inverted: bool
+
+    def __init__(self, method_names: List[str]):
+        super().__init__(method_names)
         # Data contains either a list of batches or a single numpy array (if the result was loaded from HDF)
         self.data: Dict[str, np.ndarray] = {m_name: None for m_name in method_names}
 

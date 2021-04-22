@@ -23,16 +23,16 @@ metrics:
       - mse
       - normalized_mse
       - corr
-    perturbation_modes:
+    perturbation_generators:
       segment:
-        type: SegmentPerturbationMode
-        size: 10
+        type: SegmentPerturbationGenerator
+        num_segments: 10
       gaussian:
-        type: GaussianPerturbationMode
-        size: 0.2
+        type: GaussianPerturbationGenerator
+        sd: 0.2
       square:
-        type: SquarePerturbationMode
-        size: 0.2
+        type: SquarePerturbationGenerator
+        square_size: 0.2
   seg_sensitivity_n:
     type: SegSensitivityN
     min_subset_size: 0.1

@@ -1,11 +1,11 @@
 from attrbench.lib import AttributionWriter
-from attrbench.metrics import MetricResult
+from attrbench.metrics import AbstractMetricResult
 from os import path
 from typing import List, Callable, Dict, Optional
 
 
 class Metric:
-    result: MetricResult
+    result: AbstractMetricResult
 
     def __init__(self, model: Callable, method_names: List[str], writer_dir: str = None):
         self.model = model
@@ -30,7 +30,7 @@ class Metric:
             return writer
         return None
 
-    def get_result(self) -> MetricResult:
+    def get_result(self) -> AbstractMetricResult:
         return self.result
 
     def run_batch(self, samples, labels, attrs_dict: dict):
