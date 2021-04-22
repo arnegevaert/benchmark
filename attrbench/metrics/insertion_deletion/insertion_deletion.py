@@ -5,7 +5,7 @@ import torch
 
 from attrbench.lib import AttributionWriter
 from attrbench.lib.masking import Masker
-from attrbench.metrics import Metric
+from attrbench.metrics import MaskerMetric
 from ._concat_results import _concat_results
 from ._dataset import _InsertionDeletionDataset
 from ._get_predictions import _get_predictions
@@ -36,35 +36,36 @@ def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs
     return _concat_results(orig_preds, inter_preds, neutral_preds, orig_preds)
 
 
-class _InsertionDeletion(Metric):
-    def __init__(self, model: Callable, method_names: List[str], num_steps: int, masker: Masker,
-                 activation_fn: Union[Tuple[str], str],
+class _InsertionDeletion(MaskerMetric):
+    def __init__(self, model: Callable, method_names: List[str], num_steps: int, maskers: Dict,
+                 activation_fns: Union[Tuple[str], str],
                  result_class: Callable, method_fn: Callable, writer_dir: str = None):
-        super().__init__(model, method_names, writer_dir)
+        super().__init__(model, method_names, maskers, writer_dir)
         self.num_steps = num_steps
-        self.masker = masker
-        self.activation_fns = (activation_fn,) if type(activation_fn) == str else activation_fn
+        self.activation_fns = (activation_fns,) if type(activation_fns) == str else activation_fns
         self.result = result_class(method_names, self.activation_fns)
         self.method_fn = method_fn
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         for method_name in attrs_dict:
-            method_result = self.method_fn(samples, labels, self.model,
-                                           attrs_dict[method_name], self.num_steps, self.masker,
-                                           self.activation_fns,
-                                           self._get_writer(method_name))
+            method_result = {}
+            for key, masker in self.maskers.items():
+                method_result[key] = self.method_fn(samples, labels, self.model,
+                                                    attrs_dict[method_name], self.num_steps, masker,
+                                                    self.activation_fns,
+                                                    self._get_writer(method_name))
             self.result.append(method_name, method_result)
 
 
 class Insertion(_InsertionDeletion):
-    def __init__(self, model: Callable, method_names: List[str], num_steps: int, masker: Masker,
-                 activation_fn: Union[Tuple[str], str], writer_dir: str = None):
-        super().__init__(model, method_names, num_steps, masker, activation_fn,
+    def __init__(self, model: Callable, method_names: List[str], num_steps: int, maskers: Dict,
+                 activation_fns: Union[Tuple[str], str], writer_dir: str = None):
+        super().__init__(model, method_names, num_steps, maskers, activation_fns,
                          InsertionResult, insertion, writer_dir)
 
 
 class Deletion(_InsertionDeletion):
-    def __init__(self, model: Callable, method_names: List[str], num_steps: int, masker: Masker,
-                 activation_fn: Union[Tuple[str], str], writer_dir: str = None):
-        super().__init__(model, method_names, num_steps, masker, activation_fn,
+    def __init__(self, model: Callable, method_names: List[str], num_steps: int, maskers: Dict,
+                 activation_fns: Union[Tuple[str], str], writer_dir: str = None):
+        super().__init__(model, method_names, num_steps, maskers, activation_fns,
                          DeletionResult, deletion, writer_dir)
