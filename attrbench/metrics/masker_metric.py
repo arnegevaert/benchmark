@@ -1,6 +1,7 @@
 from attrbench.metrics import Metric
 from attrbench.lib import masking
 from typing import Callable, List, Dict
+import numpy as np
 
 
 def _parse_masker(d):
@@ -21,5 +22,5 @@ class MaskerMetric(Metric):
             else:
                 self.maskers[key] = _parse_masker(value)  # Object needs to be parsed into a Masker
 
-    def run_batch(self, samples, labels, attrs_dict: dict):
+    def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         raise NotImplementedError

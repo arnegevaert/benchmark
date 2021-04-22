@@ -7,15 +7,6 @@ from attrbench import metrics
 from attrbench.lib import masking
 
 
-def _parse_masker(d):
-    constructor = getattr(masking, d["type"])
-    return constructor(**{key: d[key] for key in d if key != "type"})
-
-
-def _parse_args(args):
-    return {key: _parse_masker(args[key]) if key == "masker" else args[key] for key in args}
-
-
 class MetricLoader:
     def __init__(self, filename: str, model: Callable, methods: Dict[str, Callable],
                  log_dir: str = None, **kwargs):
@@ -35,7 +26,7 @@ class MetricLoader:
             if key not in ("metrics", "default", "foreach"):
                 raise ValueError(f"Invalid configuration file: illegal key {key} in section {section_name}")
         # Parse section default arguments
-        default_args = {**self.global_args, **_parse_args(section.get("default", {}))}
+        default_args = {**self.global_args, **section.get("default", {})}
         if section_args is not None:
             default_args = {**default_args, **section_args}
         # Parse section metrics
@@ -48,7 +39,7 @@ class MetricLoader:
             # Get metric constructor
             constructor = getattr(metrics, m_dict["type"])
             # metric_args contains specific args for this single metric
-            metric_args = _parse_args({key: m_dict[key] for key in m_dict if key != "type"})
+            metric_args = {key: m_dict[key] for key in m_dict if key != "type"}
             if self.log_dir is not None:
                 metric_args["writer_dir"] = path.join(self.log_dir, metric_name)
             # Fill in all expected args (default_args may contain args that are not applicable to this metric)
@@ -85,8 +76,6 @@ class MetricLoader:
                         arg = foreach["arg"]
                         for value in foreach["values"]:
                             prefix = value
-                            if arg == "masker":
-                                value = _parse_masker(foreach["values"][value])
                             result = {**result,
                                       **self._parse_section(data[section], section_name=section,
                                                             prefix=f"{arg}_{prefix}", section_args={arg: value})}

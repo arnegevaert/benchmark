@@ -1,4 +1,5 @@
 from typing import Callable
+from collections import defaultdict
 
 import numpy as np
 import torch
@@ -55,14 +56,23 @@ class DeletionUntilFlip(MaskerMetric):
     def __init__(self, model, method_names, num_steps, maskers, writer_dir=None):
         super().__init__(model, method_names, maskers, writer_dir)
         self.num_steps = num_steps
-        self.result = DeletionUntilFlipResult(method_names, list(maskers.keys()))
+        self.result: DeletionUntilFlipResult = DeletionUntilFlipResult(method_names, list(maskers.keys()))
 
-    def run_batch(self, samples, labels, attrs_dict: dict):
-        for method_name in attrs_dict:
-            if method_name not in self.result.method_names:
-                raise ValueError(f"Invalid method name: {method_name}")
-            batch_result = {}
-            for key, masker in self.maskers.items():
-                batch_result[key] = deletion_until_flip(samples, self.model, attrs_dict[method_name], self.num_steps,
-                                                        masker, writer=self._get_writer(method_name)).detach().cpu().numpy()
-            self.result.append(method_name, batch_result)
+    def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
+        batch_result = defaultdict(dict)
+        baseline_result = {}
+        for masker_name, masker in self.maskers.items():
+            # Compute results on baseline attributions
+            masker_bl_result = []
+            for i in range(baseline_attrs.shape[0]):
+                masker_bl_result.append(deletion_until_flip(
+                    samples, self.model, baseline_attrs[i, ...], self.num_steps,masker
+                ).detach().cpu().numpy())
+            baseline_result[masker_name] = np.stack(masker_bl_result, axis=0)
+
+            # Compute results on actual attributions
+            for method_name in attrs_dict:
+                batch_result[masker_name][method_name] = deletion_until_flip(
+                    samples, self.model, attrs_dict[method_name], self.num_steps,
+                    masker, writer=self._get_writer(method_name)).detach().cpu().numpy()
+        self.result.append(batch_result, baseline_result)

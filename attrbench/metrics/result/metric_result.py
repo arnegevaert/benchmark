@@ -11,6 +11,9 @@ class AbstractMetricResult:
     def __init__(self, method_names: List[str]):
         self.method_names = method_names
 
+    def _aggregate(self, data: np.ndarray):
+        return data
+
     def add_to_hdf(self, group: h5py.Group):
         raise NotImplementedError
 
@@ -50,9 +53,6 @@ class BasicMetricResult(AbstractMetricResult):
         result = cls(method_names)
         result.data = {m_name: np.array(group[m_name]) for m_name in method_names}
         return result
-
-    def _aggregate(self, data: np.ndarray):
-        return data
 
     def get_df(self, **kwargs) -> Tuple[pd.DataFrame, bool]:
         data = self.data

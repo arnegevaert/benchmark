@@ -18,16 +18,19 @@ class Suite:
     """
 
     def __init__(self, model: torch.nn.Module, methods: Dict[str, Callable], metrics: Dict[str, Metric],
-                 device="cpu", log_dir: str = None, explain_label: int = None, multi_label=False):
+                 device="cpu", num_baseline_samples=25, log_dir: str = None, explain_label: int = None,
+                 multi_label=False):
         torch.multiprocessing.set_sharing_strategy("file_system")
         # Save arguments as properties
         self.model = model.to(device)
         self.methods = methods
         self.metrics = metrics
+        self.num_baseline_samples = num_baseline_samples
         self.device = device
         self.log_dir = log_dir
         self.explain_label = explain_label
         self.multi_label = multi_label
+        self.rng = np.random.default_rng()
 
         # Construct other properties
         self.model.eval()
@@ -74,24 +77,25 @@ class Suite:
             batch_nr += 1
 
             # Calculate all attributions
-            attrs = self._compute_attrs(samples, labels)
+            attrs_dict = self._compute_attrs(samples, labels)
+            baseline_attrs = self.rng.random((self.num_baseline_samples, *samples.shape)) * 2 - 1
 
             # Save samples to writer
             if self.writer is not None:
                 self.writer.add_images("Samples", samples, global_step=batch_nr)
-                for name in attrs.keys():
-                    self.writer.add_attribution(name, attrs[name], batch_nr)
+                for name in attrs_dict.keys():
+                    self.writer.add_attribution(name, attrs_dict[name], batch_nr)
 
             # Save images and attributions
             if save_images:
                 suite_result.add_images(samples.cpu().detach().numpy())
             if save_attrs:
-                suite_result.add_attributions(attrs)
+                suite_result.add_attributions(attrs_dict)
 
             # Metric loop
             for i, metric in enumerate(self.metrics.keys()):
                 prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
-                self.metrics[metric].run_batch(samples, labels, attrs)
+                self.metrics[metric].run_batch(samples, labels, attrs_dict, baseline_attrs)
             prog.update(samples.size(0))
             samples_done += samples.size(0)
 

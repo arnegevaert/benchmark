@@ -2,6 +2,7 @@ from attrbench.lib import AttributionWriter
 from attrbench.metrics import AbstractMetricResult
 from os import path
 from typing import List, Callable, Dict, Optional
+import numpy as np
 
 
 class Metric:
@@ -33,5 +34,5 @@ class Metric:
     def get_result(self) -> AbstractMetricResult:
         return self.result
 
-    def run_batch(self, samples, labels, attrs_dict: dict):
+    def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         raise NotImplementedError
