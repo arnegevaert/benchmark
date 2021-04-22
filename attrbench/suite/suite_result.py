@@ -2,12 +2,12 @@ import numpy as np
 from os import path, makedirs
 import h5py
 from typing import Dict, Optional
-from attrbench.metrics import MetricResult
+from attrbench.metrics import BasicMetricResult
 from attrbench import metrics
 
 
 class SuiteResult:
-    def __init__(self, metric_results: Dict[str, MetricResult], num_samples: int, seed: int = None):
+    def __init__(self, metric_results: Dict[str, BasicMetricResult], num_samples: int, seed: int = None):
         self.metric_results = metric_results
         self.num_samples = num_samples
         self.seed = seed
@@ -74,7 +74,7 @@ class SuiteResult:
                 result_group = fp["results"]
                 for metric_name in result_group.keys():
                     result_type = result_group[metric_name].attrs["type"]
-                    result_obj: MetricResult = getattr(metrics, result_type).load_from_hdf(result_group[metric_name])
+                    result_obj: BasicMetricResult = getattr(metrics, result_type).load_from_hdf(result_group[metric_name])
                     metric_results[metric_name] = result_obj
                 return SuiteResult(metric_results, num_samples, seed, images, attributions)
         else:

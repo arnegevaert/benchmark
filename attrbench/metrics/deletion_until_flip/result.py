@@ -1,11 +1,11 @@
-from attrbench.metrics import MetricResult
+from attrbench.metrics import BasicMetricResult
 import pandas as pd
 import numpy as np
 import h5py
 from typing import List, Dict, Tuple
 
 
-class DeletionUntilFlipResult(MetricResult):
+class DeletionUntilFlipResult(BasicMetricResult):
     inverted = True
 
     def __init__(self, method_names: List[str], maskers: List[str]):

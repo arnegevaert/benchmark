@@ -3,10 +3,10 @@ import numpy as np
 import h5py
 from typing import List, Dict, Tuple
 import pandas as pd
-from attrbench.metrics.result import MetricResult
+from attrbench.metrics.result import AbstractMetricResult
 
 
-class MaskerActivationMetricResult(MetricResult):
+class MaskerActivationMetricResult(AbstractMetricResult):
     inverted: bool
 
     def __init__(self, method_names: List[str], maskers: List[str], activation_fns: List[str]):
@@ -19,14 +19,12 @@ class MaskerActivationMetricResult(MetricResult):
                     m_name: None for m_name in method_names
                 } for afn in activation_fns} for masker in maskers}
 
-    def append(self, method_name, batch: Dict):
-        for masker in batch.keys():
-            for afn in batch[masker].keys():
-                cur_data = self.data[masker][afn][method_name]
-                if cur_data is not None:
-                    self.data[masker][afn][method_name] = np.concatenate([cur_data, batch[masker][afn]], axis=0)
-                else:
-                    self.data[masker][afn][method_name] = batch[masker][afn]
+    def append(self, method_name: str, masker_name: str, afn: str, data: np.ndarray):
+        cur_data = self.data[masker_name][afn][method_name]
+        if cur_data is not None:
+            self.data[masker_name][afn][method_name] = np.concatenate([cur_data, data], axis=0)
+        else:
+            self.data[masker_name][afn][method_name] = data
 
     def add_to_hdf(self, group: h5py.Group):
         for masker in self.maskers:

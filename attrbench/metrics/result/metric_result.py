@@ -25,7 +25,7 @@ class AbstractMetricResult:
         raise NotImplementedError
 
 
-class MetricResult(AbstractMetricResult):
+class BasicMetricResult(AbstractMetricResult):
     inverted: bool
 
     def __init__(self, method_names: List[str]):
@@ -45,7 +45,7 @@ class MetricResult(AbstractMetricResult):
             self.data[method_name] = batch
 
     @classmethod
-    def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
+    def load_from_hdf(cls, group: h5py.Group) -> BasicMetricResult:
         method_names = list(group.keys())
         result = cls(method_names)
         result.data = {m_name: np.array(group[m_name]) for m_name in method_names}

@@ -7,14 +7,13 @@ import numpy as np
 import torch
 
 from attrbench.lib import AttributionWriter
-from attrbench.metrics import Metric, MetricResult
+from attrbench.metrics import Metric
 from ._compute_perturbations import _compute_perturbations
 from ._compute_result import _compute_result
 from . import perturbation_generator
 from .result import InfidelityResult
 import time
 import logging
-from functools import partial
 
 
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
@@ -74,16 +73,16 @@ class Infidelity(Metric):
         # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
         writer = self.writers["general"] if self.writers is not None else None
 
-        for pert_gen in self.perturbation_generators:
+        for key, pert_gen in self.perturbation_generators.items():
             pert_vectors, pred_diffs = _compute_perturbations(samples, labels, self.model, pert_gen,
                                                               self.num_perturbations, self.activation_fns, writer)
             if os.getenv("NO_MULTIPROC"):
                 results = _compute_result(pert_vectors, pred_diffs, attrs_dict, self.loss_fns)
-                self.result.append(pert_gen, results)
+                self.result.append(key, results)
             else:
                 self.pool = multiprocessing.pool.ThreadPool(processes=1)
                 self.pool.apply_async(_compute_result, args=(pert_vectors, pred_diffs, attrs_dict, self.loss_fns),
-                                      callback=lambda res: self.result.append(pert_gen, res))
+                                      callback=lambda res: self.result.append(key, res))
                 self.pool.close()
 
     def get_result(self) -> InfidelityResult:

@@ -1,2 +1,2 @@
-from .metric_result import MetricResult, AbstractMetricResult
+from .metric_result import BasicMetricResult, AbstractMetricResult
 from .masker_activation_metric_result import MaskerActivationMetricResult

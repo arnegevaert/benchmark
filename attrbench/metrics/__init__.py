@@ -1,4 +1,4 @@
-from .result import MetricResult, MaskerActivationMetricResult, AbstractMetricResult
+from .result import BasicMetricResult, MaskerActivationMetricResult, AbstractMetricResult
 from .metric import Metric
 from .masker_metric import MaskerMetric
 from .impact_coverage import impact_coverage, ImpactCoverage, ImpactCoverageResult

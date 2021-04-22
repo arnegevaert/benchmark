@@ -3,10 +3,10 @@ from typing import List
 import h5py
 import numpy as np
 
-from attrbench.metrics import MetricResult
+from attrbench.metrics import BasicMetricResult
 
 
-class MaxSensitivityResult(MetricResult):
+class MaxSensitivityResult(BasicMetricResult):
     inverted = True
 
     def __init__(self, method_names: List[str], radius: float):
@@ -19,7 +19,7 @@ class MaxSensitivityResult(MetricResult):
         group.attrs["radius"] = self.radius
 
     @classmethod
-    def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
+    def load_from_hdf(cls, group: h5py.Group) -> BasicMetricResult:
         method_names = list(group.keys())
         result = cls(method_names, radius=group.attrs["radius"])
         result.data = {m_name: np.array(group[m_name]) for m_name in method_names}

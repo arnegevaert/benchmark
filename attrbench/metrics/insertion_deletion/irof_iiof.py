@@ -11,6 +11,7 @@ from ._concat_results import _concat_results
 from ._dataset import _IrofIiofDataset
 from ._get_predictions import _get_predictions
 from .result import IrofResult, IiofResult
+from attrbench.metrics import MaskerActivationMetricResult
 
 
 def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
@@ -77,22 +78,22 @@ class _IrofIiof(MaskerMetric):
         self.mode = mode  # "insertion" or "deletion"
         self.activation_fns = (activation_fns,) if type(activation_fns) == str else activation_fns
         self.method_fn = method_fn
-        self.result = result_class(method_names, self.activation_fns)
+        self.result: MaskerActivationMetricResult = result_class(method_names, self.activation_fns)
         if self.writer_dir is not None:
             for key in self.maskers:
                 self.writers[key] = AttributionWriter(path.join(self.writer_dir, key))
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         masking_datasets = {}
-        for key, masker in self.maskers.items():
-            masking_datasets[key] = _IrofIiofDataset(self.mode, samples, masker, self._get_writer(key))
+        for masker_name, masker in self.maskers.items():
+            masking_datasets[masker_name] = _IrofIiofDataset(self.mode, samples, masker, self._get_writer(masker_name))
         for method_name in attrs_dict:
-            method_result = {}
-            for key, masking_dataset in masking_datasets:
-                method_result[key] = self.method_fn(samples, labels, self.model, attrs_dict[method_name],
-                                                    masking_dataset, self.activation_fns,
-                                                    writer=self._get_writer(method_name))
-            self.result.append(method_name, method_result)
+            for masker_name, masking_dataset in masking_datasets:
+                result = self.method_fn(samples, labels, self.model, attrs_dict[method_name],
+                                        masking_dataset, self.activation_fns,
+                                        writer=self._get_writer(method_name))
+                for afn in self.activation_fns:
+                    self.result.append(method_name, masker_name, afn, result[afn])
 
 
 class Irof(_IrofIiof):

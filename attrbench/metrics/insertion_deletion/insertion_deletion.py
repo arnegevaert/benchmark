@@ -9,7 +9,7 @@ from attrbench.metrics import MaskerMetric
 from ._concat_results import _concat_results
 from ._dataset import _InsertionDeletionDataset
 from ._get_predictions import _get_predictions
-from .result import InsertionResult, DeletionResult
+from .result import InsertionResult, DeletionResult, InsertionDeletionResult
 
 
 def insertion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
@@ -43,18 +43,18 @@ class _InsertionDeletion(MaskerMetric):
         super().__init__(model, method_names, maskers, writer_dir)
         self.num_steps = num_steps
         self.activation_fns = (activation_fns,) if type(activation_fns) == str else activation_fns
-        self.result = result_class(method_names, self.activation_fns)
+        self.result: InsertionDeletionResult = result_class(method_names, self.activation_fns)
         self.method_fn = method_fn
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         for method_name in attrs_dict:
-            method_result = {}
-            for key, masker in self.maskers.items():
-                method_result[key] = self.method_fn(samples, labels, self.model,
-                                                    attrs_dict[method_name], self.num_steps, masker,
-                                                    self.activation_fns,
-                                                    self._get_writer(method_name))
-            self.result.append(method_name, method_result)
+            for masker_name, masker in self.maskers.items():
+                result = self.method_fn(samples, labels, self.model,
+                                        attrs_dict[method_name], self.num_steps, masker,
+                                        self.activation_fns,
+                                        self._get_writer(method_name))
+                for afn in self.activation_fns:
+                    self.result.append(method_name, masker_name, afn, result[afn])
 
 
 class Insertion(_InsertionDeletion):
