@@ -17,7 +17,7 @@ class DeletionUntilFlipResult(AbstractMetricResult):
             } for masker in maskers}
         self.baseline_data = {masker: None for masker in maskers}
 
-    def append(self, method_results: Dict, baseline_results: np.ndarray):
+    def append(self, method_results: Dict, baseline_results: Dict):
         for masker in method_results.keys():
             # Append method results
             for method_name in method_results[masker].keys():

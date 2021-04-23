@@ -4,13 +4,16 @@ import numpy as np
 import torch
 
 from attrbench.lib import AttributionWriter
-from attrbench.lib.masking import ConstantMasker
 
 
-def _compute_coverage(attacked_samples: torch.Tensor, method: Callable, patch_mask: torch.Tensor,
-                      targets: torch.Tensor, writer: AttributionWriter = None) -> torch.Tensor:
+def _compute_coverage(attacked_samples: torch.Tensor, patch_mask: torch.Tensor, targets: torch.Tensor, method: Callable = None,
+                      attrs: np.ndarray = None,
+                      writer: AttributionWriter = None) -> torch.Tensor:
+    if method is None and attrs is None:
+        raise ValueError("Specify an attribution method or attributions array")
     # Get attributions
-    attrs = method(attacked_samples, target=targets).detach()
+    if method is not None:
+        attrs = method(attacked_samples, target=targets).detach()
     # Check attributions shape
     if attrs.shape[1] not in (1, 3):
         raise ValueError(f"Impact Coverage only works on image data. Attributions must have 1 or 3 color channels."
