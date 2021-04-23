@@ -30,8 +30,7 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, att
     for m in loss_fns:
         if m not in ("mse", "corr"):
             raise ValueError(f"Invalid mode: {m}")
-    res = _compute_result(pert_vectors, pred_diffs, {"m": attrs}, loss_fns)
-    return res["m"]
+    return _compute_result(pert_vectors, pred_diffs, attrs, loss_fns)
 
 
 def _parse_pert_generator(d):
@@ -64,7 +63,7 @@ class Infidelity(Metric):
                                                          list(self.loss_fns))
         self.pool = None
 
-    def run_batch(self, samples, labels, attrs_dict: dict):
+    def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         if self.pool is not None:
             start_t = time.time()
             logging.info("Joining Infidelity...")
@@ -77,25 +76,46 @@ class Infidelity(Metric):
         pert_vectors, pred_diffs = {}, {}
         for key, pert_gen in self.perturbation_generators.items():
             p_vectors, p_diffs = _compute_perturbations(samples, labels, self.model, pert_gen,
-                                                                        self.num_perturbations, self.activation_fns,
-                                                                        writer)
+                                                        self.num_perturbations, self.activation_fns,
+                                                        writer)
             pert_vectors[key] = p_vectors
             pred_diffs[key] = p_diffs
 
         if os.getenv("NO_MULTIPROC"):
-            for key in self.perturbation_generators:
-                results = _compute_result(pert_vectors[key], pred_diffs[key], attrs_dict, self.loss_fns)
-                self.result.append(key, results)
+            self.compute_and_append_results(pert_vectors, pred_diffs, attrs_dict, baseline_attrs)
         else:
             self.pool = multiprocessing.pool.ThreadPool(processes=1)
-            for key in self.perturbation_generators:
-                self.pool.apply_async(_compute_result, args=(pert_vectors[key], pred_diffs[key], attrs_dict, self.loss_fns),
-                                      callback=partial(self.append_results, key))  # self.result.append(key, res))
+            self.pool.apply_async(self.compute_and_append_results,
+                                  args=(pert_vectors, pred_diffs, attrs_dict, baseline_attrs))
             self.pool.close()
 
-    def append_results(self, pert_name, results):
-        self.result.append(pert_name, results)
-        logging.info(f"Appended Infidelity {pert_name}")
+    def compute_and_append_results(self, pert_vectors: Dict, pred_diffs: Dict, attrs_dict: Dict,
+                                   baseline_attrs: np.ndarray):
+        baseline_results = {
+            pert_gen: {
+                loss: {
+                    afn: [] for afn in pred_diffs[pert_gen].keys()
+                } for loss in self.loss_fns} for pert_gen in pred_diffs.keys()}
+        method_results = {}
+        for pert_gen in self.perturbation_generators:
+            # Calculate baseline results
+            for i in range(baseline_attrs.shape[0]):
+                baseline_result = _compute_result(pert_vectors[pert_gen], pred_diffs[pert_gen], baseline_attrs[i, ...],
+                                    self.loss_fns)
+                for loss in baseline_result.keys():
+                    for afn in baseline_result[loss].keys():
+                        baseline_results[pert_gen][loss][afn].append(baseline_result[pert_gen][loss][afn])
+            for loss in baseline_results[pert_gen].keys():
+                for afn in baseline_results[pert_gen][loss].keys():
+                    baseline_results[pert_gen][loss][afn] = np.stack(baseline_results[pert_gen][loss][afn], axis=0)
+
+            # Calculate actual method results
+            method_results[pert_gen] = {}
+            for method_name in attrs_dict.keys():
+                method_results[pert_gen][method_name] = _compute_result(pert_vectors[pert_gen], pred_diffs[pert_gen],
+                                                                        attrs_dict[method_name], self.loss_fns)
+        self.result.append(method_results, baseline_results)
+        logging.info(f"Appended Infidelity")
 
     def get_result(self) -> InfidelityResult:
         if self.pool is not None:
