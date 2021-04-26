@@ -47,15 +47,28 @@ class _InsertionDeletion(MaskerMetric):
                                                             self.activation_fns)
         self.method_fn = method_fn
 
-    def run_batch(self, samples, labels, attrs_dict: dict):
-        for method_name in attrs_dict:
-            for masker_name, masker in self.maskers.items():
+    def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
+        methods_result = {masker_name: {afn: {} for afn in self.activation_fns} for masker_name in self.maskers}
+        baseline_result = {masker_name: {afn: [] for afn in self.activation_fns} for masker_name in self.maskers}
+        for masker_name, masker in self.maskers.items():
+            methods_result[masker_name] = {afn: {} for afn in self.activation_fns}
+            for method_name in attrs_dict:
                 result = self.method_fn(samples, labels, self.model,
                                         attrs_dict[method_name], self.num_steps, masker,
                                         self.activation_fns,
                                         self._get_writer(method_name))
                 for afn in self.activation_fns:
-                    self.result.append(method_name, masker_name, afn, result[afn])
+                    methods_result[masker_name][afn][method_name] = result
+
+            for i in range(baseline_attrs.shape[0]):
+                bl_result = self.method_fn(samples, labels, self.model,
+                                           baseline_attrs[i, ...], self.num_steps, masker,
+                                           self.activation_fns)
+                for afn in self.activation_fns:
+                    baseline_result[masker][afn].append(bl_result[afn])
+            for afn in self.activation_fns:
+                baseline_result[masker][afn] = np.stack(baseline_result[masker][afn])
+        self.result.append(methods_result, baseline_result)
 
 
 class Insertion(_InsertionDeletion):

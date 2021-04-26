@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numpy as np
 import h5py
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 import pandas as pd
 from attrbench.metrics.result import AbstractMetricResult
 
@@ -13,18 +13,31 @@ class MaskerActivationMetricResult(AbstractMetricResult):
         super().__init__(method_names)
         self.maskers = maskers
         self.activation_fns = activation_fns
-        self.data = {
+        self.method_data = {
             masker: {
                 afn: {
                     m_name: None for m_name in method_names
                 } for afn in activation_fns} for masker in maskers}
+        self.baseline_data = {masker: {afn: None for afn in activation_fns} for masker in maskers}
 
-    def append(self, method_name: str, masker_name: str, afn: str, data: np.ndarray):
-        cur_data = self.data[masker_name][afn][method_name]
-        if cur_data is not None:
-            self.data[masker_name][afn][method_name] = np.concatenate([cur_data, data], axis=0)
-        else:
-            self.data[masker_name][afn][method_name] = data
+    def append(self, method_results: Dict, baseline_results: Dict):
+        for masker in self.maskers:
+            for afn in self.activation_fns:
+                # Append method results
+                for method_name in self.method_names:
+                    cur_data = self.method_data[masker][afn][method_name]
+                    if cur_data is not None:
+                        self.method_data[masker][afn][method_name] = np.concatenate(
+                            [cur_data, method_results[masker][afn][method_name]], axis=0)
+                    else:
+                        self.method_data[masker][afn][method_name] = method_results[masker][afn][method_name]
+
+                # Append baseline results
+                cur_baseline_data = self.baseline_data[masker][afn]
+                if cur_baseline_data is not None:
+                    self.baseline_data[masker][afn] = np.concatenate([cur_baseline_data, baseline_results[masker][afn]], axis=0)
+                else:
+                    self.baseline_data[masker][afn] = baseline_results[masker][afn]
 
     def add_to_hdf(self, group: h5py.Group):
         for masker in self.maskers:
@@ -32,8 +45,10 @@ class MaskerActivationMetricResult(AbstractMetricResult):
             for afn in self.activation_fns:
                 afn_group = masker_group.create_group(afn)
                 for method_name in self.method_names:
-                    ds = afn_group.create_dataset(method_name, data=self.data[masker][afn][method_name])
+                    ds = afn_group.create_dataset(method_name, data=self.method_data[masker][afn][method_name])
                     ds.attrs["inverted"] = self.inverted
+                ds = afn_group.create_dataset("_BASELINE", data=self.baseline_data[masker][afn])
+                ds.attrs["inverted"] = self.inverted
 
     @classmethod
     def load_from_hdf(cls, group: h5py.Group) -> MaskerActivationMetricResult:
@@ -46,11 +61,13 @@ class MaskerActivationMetricResult(AbstractMetricResult):
                 afn: {
                     m_name: np.array(group[masker][afn][m_name]) for m_name in method_names
                 } for afn in activation_fns} for masker in maskers}
+        result.baseline_data = {masker: {afn: np.array(group[masker][afn]["_BASELINE"]) for afn in activation_fns}
+                                for masker in maskers}
         return result
 
     # TODO make this return a DataFrame with nested indices if mode or activation is not provided
     def get_df(self, *, masker=None, activation=None) -> Tuple[pd.DataFrame, bool]:
-        data = {m_name: self._aggregate(self.data[masker][activation][m_name].squeeze())
+        data = {m_name: self._aggregate(self.method_data[masker][activation][m_name].squeeze())
                 for m_name in self.method_names}
         df = pd.DataFrame.from_dict(data)
         return df, self.inverted
