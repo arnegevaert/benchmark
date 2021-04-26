@@ -58,16 +58,16 @@ class _InsertionDeletion(MaskerMetric):
                                         self.activation_fns,
                                         self._get_writer(method_name))
                 for afn in self.activation_fns:
-                    methods_result[masker_name][afn][method_name] = result
+                    methods_result[masker_name][afn][method_name] = result[afn].cpu().detach().numpy()
 
             for i in range(baseline_attrs.shape[0]):
                 bl_result = self.method_fn(samples, labels, self.model,
                                            baseline_attrs[i, ...], self.num_steps, masker,
                                            self.activation_fns)
                 for afn in self.activation_fns:
-                    baseline_result[masker][afn].append(bl_result[afn])
+                    baseline_result[masker_name][afn].append(bl_result[afn].cpu().detach().numpy())
             for afn in self.activation_fns:
-                baseline_result[masker][afn] = np.stack(baseline_result[masker][afn])
+                baseline_result[masker_name][afn] = np.stack(baseline_result[masker_name][afn], axis=0)
         self.result.append(methods_result, baseline_result)
 
 

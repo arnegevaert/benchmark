@@ -104,7 +104,7 @@ class Infidelity(Metric):
                                     self.loss_fns)
                 for loss in baseline_result.keys():
                     for afn in baseline_result[loss].keys():
-                        baseline_results[pert_gen][loss][afn].append(baseline_result[pert_gen][loss][afn])
+                        baseline_results[pert_gen][loss][afn].append(baseline_result[loss][afn])
             for loss in baseline_results[pert_gen].keys():
                 for afn in baseline_results[pert_gen][loss].keys():
                     baseline_results[pert_gen][loss][afn] = np.stack(baseline_results[pert_gen][loss][afn], axis=0)

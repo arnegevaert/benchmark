@@ -41,6 +41,6 @@ if __name__ == "__main__":
     metrics = MetricLoader(args.suite_config, model, methods, args.log_dir).load()
 
     # Run BM suite and save result to disk
-    bm_suite = Suite(model, methods, metrics, device, args.log_dir)
+    bm_suite = Suite(model, methods, metrics, device, log_dir=args.log_dir)
     bm_suite.run(DataLoader(ds, batch_size=args.batch_size, shuffle=True, num_workers=4), args.num_samples,
                  args.seed, args.save_images, args.save_attrs, args.output)

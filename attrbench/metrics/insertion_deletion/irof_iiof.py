@@ -96,13 +96,13 @@ class _IrofIiof(MaskerMetric):
                                         masking_dataset, self.activation_fns,
                                         writer=self._get_writer(method_name))
                 for afn in self.activation_fns:
-                    methods_result[masker_name][afn][method_name] = result
+                    methods_result[masker_name][afn][method_name] = result[afn].cpu().detach().numpy()
 
             for i in range(baseline_attrs.shape[0]):
                 bl_result = self.metric_fn(samples, labels, self.model, baseline_attrs[i, ...],
                                            masking_dataset, self.activation_fns)
                 for afn in self.activation_fns:
-                    baseline_result[masker_name][afn].append(bl_result)
+                    baseline_result[masker_name][afn].append(bl_result[afn].cpu().detach().numpy())
             for afn in self.activation_fns:
                 baseline_result[masker_name][afn] = np.stack(baseline_result[masker_name][afn])
         self.result.append(methods_result, baseline_result)

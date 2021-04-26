@@ -26,18 +26,20 @@ class MaskerActivationMetricResult(AbstractMetricResult):
                 # Append method results
                 for method_name in self.method_names:
                     cur_data = self.method_data[masker][afn][method_name]
+                    new_data = method_results[masker][afn][method_name]
                     if cur_data is not None:
                         self.method_data[masker][afn][method_name] = np.concatenate(
-                            [cur_data, method_results[masker][afn][method_name]], axis=0)
+                            [cur_data, new_data], axis=0)
                     else:
-                        self.method_data[masker][afn][method_name] = method_results[masker][afn][method_name]
+                        self.method_data[masker][afn][method_name] = new_data
 
                 # Append baseline results
                 cur_baseline_data = self.baseline_data[masker][afn]
+                new_baseline_data = baseline_results[masker][afn]
                 if cur_baseline_data is not None:
-                    self.baseline_data[masker][afn] = np.concatenate([cur_baseline_data, baseline_results[masker][afn]], axis=0)
+                    self.baseline_data[masker][afn] = np.concatenate([cur_baseline_data, new_baseline_data], axis=0)
                 else:
-                    self.baseline_data[masker][afn] = baseline_results[masker][afn]
+                    self.baseline_data[masker][afn] = new_baseline_data
 
     def add_to_hdf(self, group: h5py.Group):
         for masker in self.maskers:
