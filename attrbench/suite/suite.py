@@ -31,6 +31,7 @@ class Suite:
         self.explain_label = explain_label
         self.multi_label = multi_label
         self.rng = np.random.default_rng()
+        self.attrs_shape = None
 
         # Construct other properties
         self.model.eval()
@@ -45,6 +46,8 @@ class Suite:
         for method_name in self.methods.keys():
             logging.info(method_name)
             attrs[method_name] = self.methods[method_name](samples, labels).cpu().detach().numpy()
+            if self.attrs_shape is None:
+                self.attrs_shape = attrs[method_name].shape
         logging.info("Finished.")
         return attrs
 
@@ -78,7 +81,7 @@ class Suite:
 
             # Calculate all attributions
             attrs_dict = self._compute_attrs(samples, labels)
-            baseline_attrs = self.rng.random((self.num_baseline_samples, *samples.shape)) * 2 - 1
+            baseline_attrs = self.rng.random((self.num_baseline_samples, *self.attrs_shape)) * 2 - 1
 
             # Save samples to writer
             if self.writer is not None:

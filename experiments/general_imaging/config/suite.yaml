@@ -60,8 +60,8 @@ metrics:
   deletion:
     type: Deletion
     num_steps: 100
-#    impact_coverage:
-#      type: ImpactCoverage
+  impact_coverage:
+    type: ImpactCoverage
 #    max_sensitivity:
 #      type: MaxSensitivity
 #      num_perturbations: 50

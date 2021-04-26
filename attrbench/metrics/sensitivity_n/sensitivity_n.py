@@ -119,7 +119,7 @@ class SensitivityN(MaskerMetric):
                 for afn in self.activation_fns:
                     baseline_results[masker_name][afn].append(res[afn])
             for afn in self.activation_fns:
-                baseline_results[masker_name][afn] = np.stack(baseline_results[masker_name][afn], axis=0)
+                baseline_results[masker_name][afn] = np.stack(baseline_results[masker_name][afn], axis=1)
         self.result.append(method_results, baseline_results)
         logging.info("Appended Sensitivity-n")
 

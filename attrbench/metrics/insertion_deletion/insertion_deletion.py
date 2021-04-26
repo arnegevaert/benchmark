@@ -67,7 +67,7 @@ class _InsertionDeletion(MaskerMetric):
                 for afn in self.activation_fns:
                     baseline_result[masker_name][afn].append(bl_result[afn].cpu().detach().numpy())
             for afn in self.activation_fns:
-                baseline_result[masker_name][afn] = np.stack(baseline_result[masker_name][afn], axis=0)
+                baseline_result[masker_name][afn] = np.stack(baseline_result[masker_name][afn], axis=1)
         self.result.append(methods_result, baseline_result)
 
 

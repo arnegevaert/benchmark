@@ -68,7 +68,7 @@ class DeletionUntilFlip(MaskerMetric):
                 masker_bl_result.append(deletion_until_flip(
                     samples, self.model, baseline_attrs[i, ...], self.num_steps,masker
                 ).detach().cpu().numpy())
-            baseline_result[masker_name] = np.stack(masker_bl_result, axis=0)
+            baseline_result[masker_name] = np.stack(masker_bl_result, axis=1)
 
             # Compute results on actual attributions
             for method_name in attrs_dict:

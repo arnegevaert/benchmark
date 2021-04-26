@@ -107,7 +107,7 @@ class Infidelity(Metric):
                         baseline_results[pert_gen][loss][afn].append(baseline_result[loss][afn])
             for loss in baseline_results[pert_gen].keys():
                 for afn in baseline_results[pert_gen][loss].keys():
-                    baseline_results[pert_gen][loss][afn] = np.stack(baseline_results[pert_gen][loss][afn], axis=0)
+                    baseline_results[pert_gen][loss][afn] = np.stack(baseline_results[pert_gen][loss][afn], axis=1)
 
             # Calculate actual method results
             method_results[pert_gen] = {}

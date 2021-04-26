@@ -41,6 +41,8 @@ class BasicMetricResult(AbstractMetricResult):
         for method_name in self.method_names:
             ds = group.create_dataset(method_name, data=self.data[method_name])
             ds.attrs["inverted"] = self.inverted
+        ds = group.create_dataset("_BASELINE", data=self.baseline_data)
+        ds.attrs["inverted"] = self.inverted
 
     def append(self, method_results: Dict, baseline_results: np.ndarray):
         for method_name in method_results.keys():

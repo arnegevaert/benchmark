@@ -38,7 +38,7 @@ if __name__ == "__main__":
                            reference_dataset=ds).load_config(args.method_config)
 
     # Get metrics
-    metrics = MetricLoader(args.suite_config, model, methods, args.log_dir).load()
+    metrics = MetricLoader(args.suite_config, model, methods, args.log_dir, patch_folder=patch_folder).load()
 
     # Run BM suite and save result to disk
     bm_suite = Suite(model, methods, metrics, device, log_dir=args.log_dir)
