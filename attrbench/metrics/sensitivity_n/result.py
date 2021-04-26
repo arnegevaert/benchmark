@@ -28,6 +28,8 @@ class SensitivityNResult(MaskerActivationMetricResult):
                 afn: {
                     m_name: np.array(group[masker][afn][m_name]) for m_name in method_names
                 } for afn in activation_fns} for masker in maskers}
+        result.baseline_data = {masker: {afn: np.array(group[masker][afn]["_BASELINE"]) for afn in activation_fns}
+                                for masker in maskers}
         return result
 
     def _aggregate(self, data):

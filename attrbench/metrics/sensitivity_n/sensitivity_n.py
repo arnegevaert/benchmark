@@ -66,14 +66,7 @@ class SensitivityN(MaskerMetric):
                                                                                num_steps))
         self.pool = None
 
-    def append_result(self, masker_name, results):
-        for method_name in results:
-            for afn in results[method_name]:
-                self.result.append(method_name, masker_name, afn,
-                                   results[method_name][afn].detach().cpu().numpy())
-        logging.info(f"Appended Sensitivity-N {masker_name}")
-
-    def run_batch(self, samples, labels, attrs_dict: Dict[str, np.ndarray]):
+    def run_batch(self, samples, labels, attrs_dict: Dict[str, np.ndarray], baseline_attrs: np.ndarray):
         if self.pool is not None:
             logging.info("Joining Sensitivity-N...")
             self.pool.join()
@@ -98,18 +91,37 @@ class SensitivityN(MaskerMetric):
             indices_dict[masker_name] = indices
 
         if os.getenv("NO_MULTIPROC"):
-            for masker_name in self.maskers:
-                results = _compute_correlations(attrs_dict, n_range, output_diffs_dict[masker_name],
-                                                indices_dict[masker_name])
-                self.append_result(masker_name, results)
+            self.compute_and_append_results(n_range, output_diffs_dict, indices_dict, attrs_dict, baseline_attrs)
         else:
             self.pool = multiprocessing.pool.ThreadPool(processes=1)
-            for masker_name in self.maskers:
-                self.pool.apply_async(
-                    _compute_correlations,
-                    args=(attrs_dict, n_range, output_diffs_dict[masker_name], indices_dict[masker_name]),
-                    callback=partial(self.append_result, masker_name))
+            self.pool.apply_async(
+                self.compute_and_append_results,
+                args=(n_range, output_diffs_dict, indices_dict, attrs_dict, baseline_attrs)
+            )
             self.pool.close()
+
+    def compute_and_append_results(self, n_range: List[int], output_diffs_dict: Dict, indices_dict: Dict,
+                                   attrs_dict: Dict, baseline_attrs: np.ndarray):
+        method_results = {masker: {afn: {method_name: None for method_name in self.method_names}
+                                   for afn in self.activation_fns}
+                          for masker in self.maskers}
+        baseline_results = {masker: {afn: [] for afn in self.activation_fns} for masker in self.maskers}
+        for masker_name in self.maskers:
+            for method_name in self.method_names:
+                res = _compute_correlations(attrs_dict[method_name], n_range, output_diffs_dict[masker_name],
+                                            indices_dict[masker_name])
+                for afn in self.activation_fns:
+                    method_results[masker_name][afn][method_name] = res[afn]
+
+            for i in range(baseline_attrs.shape[0]):
+                res = _compute_correlations(baseline_attrs[i, ...], n_range, output_diffs_dict[masker_name],
+                                            indices_dict[masker_name])
+                for afn in self.activation_fns:
+                    baseline_results[masker_name][afn].append(res[afn])
+            for afn in self.activation_fns:
+                baseline_results[masker_name][afn] = np.stack(baseline_results[masker_name][afn], axis=0)
+        self.result.append(method_results, baseline_results)
+        logging.info("Appended Sensitivity-n")
 
     def get_result(self) -> SensitivityNResult:
         if self.pool is not None:
@@ -121,36 +133,21 @@ class SensitivityN(MaskerMetric):
         return self.result
 
 
-class SegSensitivityN(MaskerMetric):
+class SegSensitivityN(SensitivityN):
     def __init__(self, model: Callable, method_names: List[str], min_subset_size: float, max_subset_size: float,
                  num_steps: int, num_subsets: int, maskers: Dict, activation_fns: Union[Tuple[str], str],
                  writer_dir: str = None):
-        super().__init__(model, method_names,
-                         maskers)  # We don't pass writer_dir to super because we only use 1 general writer
-        self.writers = {"general": AttributionWriter(path.join(writer_dir, "general"))} \
-            if writer_dir is not None else None
-        self.min_subset_size = min_subset_size
-        self.max_subset_size = max_subset_size
-        self.num_steps = num_steps
-        self.num_subsets = num_subsets
+        super().__init__(model, method_names, min_subset_size, max_subset_size, num_steps, num_subsets, maskers,
+                         activation_fns)
         # Total number of segments is fixed 100
         self.n_range = (np.linspace(self.min_subset_size, self.max_subset_size, self.num_steps) * 100).astype(np.int)
-        self.masker = maskers
-        self.activation_fns = (activation_fns,) if type(activation_fns) == str else activation_fns
         self.result: SegSensitivityNResult = SegSensitivityNResult(method_names, list(self.maskers.keys()),
                                                                    list(self.activation_fns),
                                                                    index=np.linspace(min_subset_size, max_subset_size,
                                                                                      num_steps))
         self.pool = None
 
-    def append_result(self, masker_name, results):
-        for method_name in results:
-            for afn in results[method_name]:
-                self.result.append(method_name, masker_name, afn,
-                                   results[method_name][afn].detach().cpu().numpy())
-        logging.info(f"Appended Seg-Sensitivity-N {masker_name}")
-
-    def run_batch(self, samples, labels, attrs_dict: dict):
+    def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         if self.pool is not None:
             start_t = time.time()
             logging.info("Joining Seg-Sensitivity-N...")
@@ -174,17 +171,11 @@ class SegSensitivityN(MaskerMetric):
             indices_dict[masker_name] = indices
 
         if os.getenv("NO_MULTIPROC"):
-            for masker_name in self.maskers:
-                results = _compute_correlations(segmented_attrs_dict, self.n_range, output_diffs_dict[masker_name],
-                                                indices_dict[masker_name])
-                self.append_result(masker_name, results)
+            self.compute_and_append_results(self.n_range, output_diffs_dict, indices_dict, attrs_dict, baseline_attrs)
         else:
             self.pool = multiprocessing.pool.ThreadPool(processes=1)
-            for masker_name in self.maskers:
-                self.pool.apply_async(_compute_correlations,
-                                      args=(segmented_attrs_dict, self.n_range, output_diffs_dict[masker_name],
-                                            indices_dict[masker_name]),
-                                      callback=partial(self.append_result, masker_name))
+            self.pool.apply_async(self.compute_and_append_results,
+                                  args=(self.n_range, output_diffs_dict, indices_dict, attrs_dict, baseline_attrs))
             self.pool.close()
 
     def get_result(self) -> SegSensitivityNResult:

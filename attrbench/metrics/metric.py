@@ -9,6 +9,7 @@ class Metric:
     result: AbstractMetricResult
 
     def __init__(self, model: Callable, method_names: List[str], writer_dir: str = None):
+        self.method_names = method_names
         self.model = model
         self.metadata = {}
         self.writer_dir = writer_dir
