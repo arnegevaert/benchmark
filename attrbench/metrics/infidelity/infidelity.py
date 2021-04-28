@@ -1,7 +1,5 @@
 from typing import Callable, List, Union, Tuple, Dict
 from os import path
-import os
-import multiprocessing
 
 import numpy as np
 import torch
@@ -14,7 +12,6 @@ from . import perturbation_generator
 from .result import InfidelityResult
 import time
 import logging
-from functools import partial
 
 
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
@@ -61,15 +58,8 @@ class Infidelity(Metric):
         self.result: InfidelityResult = InfidelityResult(method_names, list(perturbation_generators.keys()),
                                                          list(self.activation_fns),
                                                          list(self.loss_fns))
-        self.pool = None
 
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
-        if self.pool is not None:
-            start_t = time.time()
-            logging.info("Joining Infidelity...")
-            self.pool.join()
-            end_t = time.time()
-            logging.info(f"Join done in {end_t - start_t:.2f}s")
         # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
         writer = self.writers["general"] if self.writers is not None else None
 
@@ -81,19 +71,7 @@ class Infidelity(Metric):
             pert_vectors[key] = p_vectors
             pred_diffs[key] = p_diffs
 
-        if os.getenv("NO_MULTIPROC"):
-            start_t = time.time()
-            self.compute_and_append_results(pert_vectors, pred_diffs, attrs_dict, baseline_attrs)
-            end_t = time.time()
-            print(f"Result computation took {end_t - start_t:.2f}s")
-        else:
-            self.pool = multiprocessing.pool.ThreadPool(processes=1)
-            self.pool.apply_async(self.compute_and_append_results,
-                                  args=(pert_vectors, pred_diffs, attrs_dict, baseline_attrs))
-            self.pool.close()
-
-    def compute_and_append_results(self, pert_vectors: Dict, pred_diffs: Dict, attrs_dict: Dict,
-                                   baseline_attrs: np.ndarray):
+        # Compute and append results
         baseline_results = {
             pert_gen: {
                 loss: {
@@ -121,10 +99,4 @@ class Infidelity(Metric):
         logging.info(f"Appended Infidelity")
 
     def get_result(self) -> InfidelityResult:
-        if self.pool is not None:
-            start_t = time.time()
-            logging.info("Joining Infidelity...")
-            self.pool.join()
-            end_t = time.time()
-            logging.info(f"Join done in {end_t - start_t:.2f}s")
         return self.result
