@@ -23,7 +23,7 @@ class MetricLoader:
     def _parse_section(self, section: Dict, section_name: str, prefix: str = None, section_args: Dict = None) -> Dict[str, Metric]:
         # Only keywords "metrics", "default" and "foreach" are allowed in section root
         for key in section.keys():
-            if key not in ("metrics", "default", "foreach"):
+            if key not in ("metrics", "default"):
                 raise ValueError(f"Invalid configuration file: illegal key {key} in section {section_name}")
         # Parse section default arguments
         default_args = {**self.global_args, **section.get("default", {})}
@@ -68,18 +68,7 @@ class MetricLoader:
                 result = {}
                 for section in data.keys():
                     # Section can't have keyword as name
-                    if section in ("metrics", "default", "foreach"):
+                    if section in ("metrics", "default"):
                         raise ValueError(f"Invalid configuration file: illegal section '{section}' in root")
-                    if "foreach" in data[section].keys():
-                        # If section contains "foreach" key, we need to parse multiple times, using different prefix
-                        foreach = data[section]["foreach"]
-                        arg = foreach["arg"]
-                        for value in foreach["values"]:
-                            prefix = value
-                            result = {**result,
-                                      **self._parse_section(data[section], section_name=section,
-                                                            prefix=f"{arg}_{prefix}", section_args={arg: value})}
-                    else:
-                        # Otherwise, just parse the section without prefix
-                        result = {**result, **self._parse_section(data[section], section_name=section)}
+                    result = {**result, **self._parse_section(data[section], section_name=section)}
                 return result

@@ -64,6 +64,8 @@ class InfidelityResult(AbstractMetricResult):
                     for m_name in self.method_names:
                         ds = afn_group.create_dataset(m_name, data=self.method_data[pert_gen][loss][afn][m_name])
                         ds.attrs["inverted"] = self.inverted[loss]
+                    ds = afn_group.create_dataset("_BASELINE", data=self.baseline_data[pert_gen][loss][afn])
+                    ds.attrs["inverted"] = self.inverted
 
     @classmethod
     def load_from_hdf(cls, group: h5py.Group):

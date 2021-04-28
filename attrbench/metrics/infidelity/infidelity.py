@@ -10,7 +10,6 @@ from ._compute_perturbations import _compute_perturbations
 from ._compute_result import _compute_result
 from . import perturbation_generator
 from .result import InfidelityResult
-import time
 import logging
 
 

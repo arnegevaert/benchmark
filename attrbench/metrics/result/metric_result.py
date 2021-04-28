@@ -67,3 +67,4 @@ class BasicMetricResult(AbstractMetricResult):
         for method_name in self.method_names:
             data[method_name] = self._aggregate(data[method_name].squeeze())
         return pd.DataFrame.from_dict(data), self.inverted
+

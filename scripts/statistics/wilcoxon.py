@@ -10,7 +10,7 @@ from os import path
 from typing import Dict
 
 
-def wilcoxon(dfe: DFExtractor, es_measure: str, baseline: str, out_file: str, power_curves=False, power_dir=None):
+def wilcoxon(dfe: DFExtractor, es_measure: str, baseline: str, out_file: str):
     ALPHA = 0.01
     effect_sizes, pvalues = {}, {}
     dfs = dfe.get_dfs()
@@ -22,29 +22,6 @@ def wilcoxon(dfe: DFExtractor, es_measure: str, baseline: str, out_file: str, po
         mes, mpv = wilcoxon_tests(df, baseline_array, es_measure, inverted)
         effect_sizes[metric_name] = mes
         pvalues[metric_name] = mpv
-
-        # Compute power curves for significant methods
-        if power_curves:
-            PWR_ITERATIONS = 1000
-            PWR_N_RANGE = np.arange(20, 250, 20)
-            PWR_TOLERANCE = 0.8
-            power_curves = {}
-            for method_name in mpv.keys():
-                if mpv[method_name] < ALPHA:
-                    effect_size = cohend(df[method_name].to_numpy(), baseline_array)
-                    power_curves[method_name] = emp_power_curve(df[method_name].to_numpy(),
-                                                                baseline_array,
-                                                                effect_size, PWR_ITERATIONS, PWR_N_RANGE, inverted,
-                                                                PWR_TOLERANCE,
-                                                                ALPHA)
-            fig, ax = plt.subplots()
-            for method_name, power_curve in power_curves.items():
-                ax.plot(PWR_N_RANGE, power_curve, label=method_name)
-            fig.legend()
-            metric_out_dir = path.join(power_dir, metric_name)
-            if not path.isdir(metric_out_dir):
-                os.makedirs(metric_out_dir)
-            fig.savefig(path.join(metric_out_dir, f"{metric_name.replace('.', '_')}_power.png"))
 
     es_df = pd.DataFrame.from_dict(effect_sizes)
     pv_df = pd.DataFrame.from_dict(pvalues)
