@@ -82,7 +82,10 @@ class Infidelity(Metric):
             pred_diffs[key] = p_diffs
 
         if os.getenv("NO_MULTIPROC"):
+            start_t = time.time()
             self.compute_and_append_results(pert_vectors, pred_diffs, attrs_dict, baseline_attrs)
+            end_t = time.time()
+            print(f"Result computation took {end_t - start_t:.2f}s")
         else:
             self.pool = multiprocessing.pool.ThreadPool(processes=1)
             self.pool.apply_async(self.compute_and_append_results,

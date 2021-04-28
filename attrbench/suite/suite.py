@@ -61,7 +61,7 @@ class Suite:
             np.random.seed(seed)
 
         # Initialize result object
-        suite_result = SuiteResult(self.metrics, samples_done, seed)
+        suite_result = SuiteResult(seed=seed)
 
         it = iter(dataloader)
         batch_size = dataloader.batch_size
@@ -103,6 +103,8 @@ class Suite:
             samples_done += samples.size(0)
 
             if out_filename:
+                suite_result.set_metric_results({metric: self.metrics[metric].get_result() for metric in self.metrics})
+                suite_result.num_samples = samples_done
                 suite_result.save_hdf(out_filename)
             # If we have a predetermined amount of samples, check if we have enough
             # Otherwise, we just keep going until there are no samples left

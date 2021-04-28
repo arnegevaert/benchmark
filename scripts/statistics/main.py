@@ -34,7 +34,7 @@ if __name__ == "__main__":
         os.makedirs(args.out_dir)
 
     dfe = DFExtractor(RES_OBJ, EXCLUDE)
-    if "impact_coverage" in RES_OBJ.metrics.keys():
+    if "impact_coverage" in RES_OBJ.metric_results.keys():
         dfe.add_metric("impact_coverage", "impact_coverage")
     dfe.add_infidelity("mse", "linear")
     dfe.compare_maskers(["constant", "blur", "random"], "linear")
@@ -51,7 +51,7 @@ if __name__ == "__main__":
             dfe_wilc.add_infidelity("mse", "linear")
             wilcoxon(dfe_wilc, "cohend", BASELINE, path.join(args.out_dir, "infidelity_wilcoxon.png"))
 
-            if "impact_coverage" in RES_OBJ.metrics.keys():
+            if "impact_coverage" in RES_OBJ.metric_results.keys():
                 dfe_wilc = DFExtractor(RES_OBJ, EXCLUDE)
                 dfe_wilc.add_metric("impact_coverage", "impact_coverage")
                 wilcoxon(dfe_wilc, "meandiff", BASELINE, path.join(args.out_dir, "impact_coverage_wilcoxon.png"))
@@ -67,7 +67,7 @@ if __name__ == "__main__":
             dfe_box.add_infidelity("mse", "linear")
             boxplot(dfe_box, path.join(args.out_dir, f"infidelity_box.png"))
 
-            if "impact_coverage" in RES_OBJ.metrics.keys():
+            if "impact_coverage" in RES_OBJ.metric_results.keys():
                 dfe_box = DFExtractor(RES_OBJ, EXCLUDE)
                 dfe_box.add_metric("impact_coverage", "impact_coverage")
                 boxplot(dfe_box, path.join(args.out_dir, f"impact_coverage_box.png"))

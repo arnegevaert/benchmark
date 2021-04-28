@@ -19,7 +19,6 @@ _LOSS_FNS = {
 }
 
 
-# TODO also handle just np array for attrs (for functional)
 def _compute_result(pert_vectors: np.ndarray, pred_diffs: Dict[str, np.ndarray], attrs: np.ndarray,
                     loss_fns: Tuple[str]) -> Dict[str, Dict[str, torch.tensor]]:
     result = {}
@@ -32,7 +31,12 @@ def _compute_result(pert_vectors: np.ndarray, pred_diffs: Dict[str, np.ndarray],
     attrs = attrs.reshape((attrs.shape[0], 1, -1))  # [batch_size, 1, -1]
     pert_vectors_flat = pert_vectors.reshape(
         (pert_vectors.shape[0], pert_vectors.shape[1], -1))  # [batch_size, num_perturbations, -1]
-    dot_product = (attrs * pert_vectors_flat).sum(axis=-1)  # [batch_size, num_perturbations]
+
+    attrs = torch.tensor(attrs).to("cuda")
+    pert_vectors_flat = torch.tensor(pert_vectors_flat).to("cuda")
+    # Calculate dot product in-place
+    pert_vectors_flat *= attrs
+    dot_product = pert_vectors_flat.sum(dim=-1).detach().cpu().numpy()  # [batch_size, num_perturbations]
     for loss_fn in loss_fns:
         result[loss_fn] = {}
         for afn in pred_diffs.keys():

@@ -33,37 +33,37 @@ metrics:
       square:
         type: SquareRemovalPerturbationGenerator
         square_size: 0.2
-  seg_sensitivity_n:
-    type: SegSensitivityN
-    min_subset_size: 0.1
-    max_subset_size: 0.5
-    num_steps: 10
-    num_subsets: 100
-  sensitivity_n:
-    type: SensitivityN
-    min_subset_size: 0.1
-    max_subset_size: 0.5
-    num_steps: 10
-    num_subsets: 100
-  deletion_until_flip:
-    type: DeletionUntilFlip
-    num_steps: 100
-  irof:
-    type: Irof
-    num_steps: 100
-  iiof:
-    type: Iiof
-    num_steps: 100
-  insertion:
-    type: Insertion
-    num_steps: 100
-  deletion:
-    type: Deletion
-    num_steps: 100
-  impact_coverage:
-    type: ImpactCoverage
-#    max_sensitivity:
-#      type: MaxSensitivity
-#      num_perturbations: 50
-#      radius: 0.1
-#
+#  seg_sensitivity_n:
+#    type: SegSensitivityN
+#    min_subset_size: 0.1
+#    max_subset_size: 0.5
+#    num_steps: 10
+#    num_subsets: 100
+#  sensitivity_n:
+#    type: SensitivityN
+#    min_subset_size: 0.1
+#    max_subset_size: 0.5
+#    num_steps: 10
+#    num_subsets: 100
+#  deletion_until_flip:
+#    type: DeletionUntilFlip
+#    num_steps: 100
+#  irof:
+#    type: Irof
+#    num_steps: 100
+#  iiof:
+#    type: Iiof
+#    num_steps: 100
+#  insertion:
+#    type: Insertion
+#    num_steps: 100
+#  deletion:
+#    type: Deletion
+#    num_steps: 100
+#  impact_coverage:
+#    type: ImpactCoverage
+##    max_sensitivity:
+##      type: MaxSensitivity
+##      num_perturbations: 50
+##      radius: 0.1
+##

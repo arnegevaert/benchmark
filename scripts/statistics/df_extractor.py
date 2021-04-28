@@ -17,7 +17,7 @@ class DFExtractor:
             kwargs["mode"] = mode
         if activation is not None:
             kwargs["activation"] = activation
-        df, inverted = self.res_obj.metrics[metric].get_df(**kwargs)
+        df, inverted = self.res_obj.metric_results[metric].get_df(**kwargs)
         if log_transform:
             df = df.apply(np.log)
         if self.exclude_methods is not None:

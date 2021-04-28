@@ -2,17 +2,21 @@ import numpy as np
 from os import path, makedirs
 import h5py
 from typing import Dict, Optional
-from attrbench.metrics import Metric, AbstractMetricResult
+from attrbench.metrics import AbstractMetricResult
 from attrbench import metrics
 
 
 class SuiteResult:
-    def __init__(self, metrics: Dict[str, Metric], num_samples: int, seed: int = None):
-        self.metrics = metrics
+    def __init__(self, metric_results: Dict[str, AbstractMetricResult] = None, num_samples: int = None,
+                 seed: int = None, images: np.ndarray = None, attributions: Dict[str, np.ndarray] = None):
+        self.metric_results = metric_results
         self.num_samples = num_samples
         self.seed = seed
-        self.images: Optional[np.ndarray] = None
-        self.attributions: Optional[Dict[str, np.ndarray]] = None
+        self.images: Optional[np.ndarray] = images
+        self.attributions: Optional[Dict[str, np.ndarray]] = attributions
+
+    def set_metric_results(self, metric_results: Dict[str, AbstractMetricResult]):
+        self.metric_results = metric_results
 
     def add_images(self, images: np.ndarray):
         if self.images is None:
@@ -50,9 +54,9 @@ class SuiteResult:
             # Save results
             # Each metric gets a group under the "results" group
             result_group = fp.create_group("results")
-            for metric_name in self.metrics:
+            for metric_name in self.metric_results:
                 metric_group = result_group.create_group(metric_name)
-                result_obj = self.metrics[metric_name].get_result()
+                result_obj = self.metric_results[metric_name]
                 metric_group.attrs["type"] = str(result_obj.__class__.__name__)
                 result_obj.add_to_hdf(metric_group)
 
