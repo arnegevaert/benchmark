@@ -1,0 +1,60 @@
+import numpy as np
+from typing import List, Tuple, Dict
+
+
+class NDArrayTree:
+    def __init__(self, levels: List[Tuple[str, List[str]]]):
+        self.levels = levels
+
+        def _initialize_data(data=None, depth=0):
+            if data is None:
+                data = {}
+            _, keys = levels[depth]
+            for key in keys:
+                if depth < len(levels) - 1:
+                    data[key] = {}
+                    _initialize_data(data[key], depth + 1)
+                else:
+                    data[key] = None
+            return data
+        self.data = _initialize_data()
+
+    def append(self, new_data: Dict):
+        def _append_rec(_data, _new_data):
+            for key in _new_data:
+                if type(_new_data[key]) == dict:
+                    # Descend down the tree
+                    _append_rec(_data[key], _new_data[key])
+                elif type(_new_data[key]) == np.ndarray:
+                    # Base case
+                    if _data[key] is None:
+                        _data[key] = _new_data[key]
+                    else:
+                        _data[key] = np.concatenate([_data[key], _new_data[key]], axis=0)
+        _append_rec(self.data, new_data)
+
+    def get(self, postproc_fn=None, **kwargs):
+        # For every level not in kwargs, take all level keys
+        # otherwise, select key in kwargs
+        if postproc_fn is None:
+            postproc_fn = lambda x: x
+
+        def _get_rec(cur_data=None, depth=0):
+            # Initialize cur_data if necessary (root level)
+            if cur_data is None:
+                cur_data = self.data
+            # Get the level name and keys
+            level, keys = self.levels[depth]
+            if depth == len(self.levels) - 1:
+                # We are at leaf node, return desired array(s)
+                if level in kwargs.keys():
+                    return postproc_fn(cur_data[kwargs[level]])
+                else:
+                    return {key: postproc_fn(cur_data[key]) for key in cur_data}
+            else:
+                # We are not at leaf node, execute recursive call
+                if level in kwargs.keys():
+                    return _get_rec(cur_data[kwargs[level]], depth + 1)
+                else:
+                    return {key: _get_rec(cur_data[key], depth + 1) for key in keys}
+        return _get_rec()

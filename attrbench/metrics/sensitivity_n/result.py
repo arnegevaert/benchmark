@@ -1,7 +1,8 @@
-from typing import List
+from typing import List, Tuple
 
 import h5py
 import numpy as np
+import pandas as pd
 
 from attrbench.metrics import MaskerActivationMetricResult
 
@@ -23,17 +24,14 @@ class SensitivityNResult(MaskerActivationMetricResult):
         activation_fns = list(group[maskers[0]].keys())
         method_names = list(group[maskers[0]][activation_fns[0]].keys())
         result = cls(method_names, maskers, activation_fns, group.attrs["index"])
-        result.data = {
-            masker: {
-                afn: {
-                    m_name: np.array(group[masker][afn][m_name]) for m_name in method_names
-                } for afn in activation_fns} for masker in maskers}
-        result.baseline_data = {masker: {afn: np.array(group[masker][afn]["_BASELINE"]) for afn in activation_fns}
-                                for masker in maskers}
+        result.append(dict(group))
         return result
 
-    def _aggregate(self, data):
-        return np.mean(data, axis=1)
+    def get_df(self, **kwargs) -> Tuple[pd.DataFrame, bool]:
+        return pd.DataFrame.from_dict(
+            self.tree.get(
+                postproc_fn=lambda x: np.mean(x, axis=1),
+                **kwargs)), self.inverted
 
 
 class SegSensitivityNResult(SensitivityNResult):
