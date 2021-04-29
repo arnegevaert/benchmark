@@ -31,12 +31,10 @@ class BasicMetricResult(AbstractMetricResult):
 
     def __init__(self, method_names: List[str]):
         super().__init__(method_names)
-        self.tree = NDArrayTree([("method", self.method_names + ["_BASELINE"])])
+        self.tree = NDArrayTree([("method", self.method_names)])
 
     def add_to_hdf(self, group: h5py.Group):
-        for method_name in self.method_names:
-            ds = group.create_dataset(method_name, data=self.tree.get(methods=[method_name]))
-            ds.attrs["inverted"] = self.inverted
+        self.tree.add_to_hdf(group)
 
     def append(self, data: Dict, **kwargs):
         self.tree.append(data, **kwargs)

@@ -27,8 +27,7 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
     n_range = (np.linspace(min_subset_size, max_subset_size, num_steps) * num_features).astype(np.int)
     ds = _SensitivityNDataset(n_range, num_subsets, samples, num_features, masker)
     output_diffs, indices = _compute_perturbations(samples, labels, ds, model, n_range, activation_fn, writer)
-    res = _compute_correlations({"m": attrs}, n_range, output_diffs, indices)
-    return res["m"]
+    return _compute_correlations(attrs, n_range, output_diffs, indices)
 
 
 def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
@@ -42,8 +41,7 @@ def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callab
     ds = _SegSensNDataset(n_range, num_subsets, samples, masker, writer)
     attrs = segment_attributions(ds.segmented_images, attrs)
     output_diffs, indices = _compute_perturbations(samples, labels, ds, model, n_range, activation_fn, writer)
-    res = _compute_correlations({"m": attrs}, n_range, output_diffs, indices)
-    return res["m"]
+    return _compute_correlations(attrs, n_range, output_diffs, indices)
 
 
 class SensitivityN(MaskerMetric):
@@ -59,7 +57,7 @@ class SensitivityN(MaskerMetric):
         self.num_steps = num_steps
         self.num_subsets = num_subsets
         self.activation_fns = (activation_fns,) if type(activation_fns) == str else activation_fns
-        self.result: SensitivityNResult = SensitivityNResult(method_names, list(self.maskers.keys()),
+        self.result: SensitivityNResult = SensitivityNResult(method_names + ["_BASELINE"], list(self.maskers.keys()),
                                                              list(self.activation_fns),
                                                              index=np.linspace(min_subset_size, max_subset_size,
                                                                                num_steps))
@@ -68,8 +66,10 @@ class SensitivityN(MaskerMetric):
     def run_batch(self, samples, labels, attrs_dict: Dict[str, np.ndarray], baseline_attrs: np.ndarray):
         if self.pool is not None:
             logging.info("Joining Sensitivity-N...")
+            start_t = time.time()
             self.pool.join()
-            logging.info("Join done in {end_t - start_t:.2f}s")
+            end_t = time.time()
+            logging.info(f"Join done in {end_t - start_t:.2f}s")
         # Get total number of features from attributions dict
         attrs = attrs_dict[next(iter(attrs_dict))]
         num_features = attrs.reshape(attrs.shape[0], -1).shape[1]
@@ -110,7 +110,7 @@ class SensitivityN(MaskerMetric):
                 res = _compute_correlations(attrs_dict[method_name], n_range, output_diffs_dict[masker_name],
                                             indices_dict[masker_name])
                 for afn in self.activation_fns:
-                    method_results[masker_name][afn][method_name] = res[afn]
+                    method_results[masker_name][afn][method_name] = res[afn].cpu().detach().numpy()
 
             for i in range(baseline_attrs.shape[0]):
                 res = _compute_correlations(baseline_attrs[i, ...], n_range, output_diffs_dict[masker_name],
@@ -141,7 +141,7 @@ class SegSensitivityN(SensitivityN):
                          activation_fns)
         # Total number of segments is fixed 100
         self.n_range = (np.linspace(self.min_subset_size, self.max_subset_size, self.num_steps) * 100).astype(np.int)
-        self.result: SegSensitivityNResult = SegSensitivityNResult(method_names, list(self.maskers.keys()),
+        self.result: SegSensitivityNResult = SegSensitivityNResult(method_names + ["_BASELINE"], list(self.maskers.keys()),
                                                                    list(self.activation_fns),
                                                                    index=np.linspace(min_subset_size, max_subset_size,
                                                                                      num_steps))
@@ -171,11 +171,11 @@ class SegSensitivityN(SensitivityN):
             indices_dict[masker_name] = indices
 
         if os.getenv("NO_MULTIPROC"):
-            self.compute_and_append_results(self.n_range, output_diffs_dict, indices_dict, attrs_dict, baseline_attrs)
+            self.compute_and_append_results(self.n_range, output_diffs_dict, indices_dict, segmented_attrs_dict, baseline_attrs)
         else:
             self.pool = multiprocessing.pool.ThreadPool(processes=1)
             self.pool.apply_async(self.compute_and_append_results,
-                                  args=(self.n_range, output_diffs_dict, indices_dict, attrs_dict, baseline_attrs))
+                                  args=(self.n_range, output_diffs_dict, indices_dict, segmented_attrs_dict, baseline_attrs))
             self.pool.close()
 
     def get_result(self) -> SegSensitivityNResult:

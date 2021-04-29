@@ -56,7 +56,7 @@ class DeletionUntilFlip(MaskerMetric):
     def __init__(self, model, method_names, num_steps, maskers, writer_dir=None):
         super().__init__(model, method_names, maskers, writer_dir)
         self.num_steps = num_steps
-        self.result: DeletionUntilFlipResult = DeletionUntilFlipResult(method_names, list(maskers.keys()))
+        self.result: DeletionUntilFlipResult = DeletionUntilFlipResult(method_names + ["_BASELINE"], list(maskers.keys()))
 
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         batch_result = defaultdict(dict)

@@ -54,7 +54,8 @@ class Infidelity(Metric):
             else:
                 self.perturbation_generators[key] = _parse_pert_generator(value)
 
-        self.result: InfidelityResult = InfidelityResult(method_names, list(perturbation_generators.keys()),
+        self.result: InfidelityResult = InfidelityResult(method_names + ["_BASELINE"],
+                                                         list(perturbation_generators.keys()),
                                                          list(self.activation_fns),
                                                          list(self.loss_fns))
 
@@ -73,19 +74,25 @@ class Infidelity(Metric):
         # Compute and append results
         for pert_gen in self.perturbation_generators:
             # Calculate baseline results
+            baseline_result = {afn: {loss: [] for loss in self.loss_fns} for afn in self.activation_fns}
             for i in range(baseline_attrs.shape[0]):
-                baseline_result = _compute_result(pert_vectors[pert_gen], pred_diffs[pert_gen], baseline_attrs[i, ...],
-                                                  self.loss_fns)
-                # Expand dims and concatenate => equivalent to np.stack(axis=1)
+                bl_result = _compute_result(pert_vectors[pert_gen], pred_diffs[pert_gen], baseline_attrs[i, ...],
+                                            self.loss_fns)
                 for afn in self.activation_fns:
                     for loss in self.loss_fns:
-                        baseline_result[afn][loss] = np.expand_dims(baseline_result[afn][loss], axis=1)
-                self.result.append(baseline_result, axis=1, perturbation_generator=pert_gen, method="_BASELINE")
+                        baseline_result[afn][loss].append(bl_result[afn][loss].cpu().detach().numpy())
+            for afn in self.activation_fns:
+                for loss in self.loss_fns:
+                    baseline_result[afn][loss] = np.stack(baseline_result[afn][loss], axis=1)
+            self.result.append(baseline_result, perturbation_generator=pert_gen, method="_BASELINE")
 
             # Calculate actual method results
             for method_name in attrs_dict.keys():
                 method_result = _compute_result(pert_vectors[pert_gen], pred_diffs[pert_gen],
                                                 attrs_dict[method_name], self.loss_fns)
+                for afn in self.activation_fns:
+                    for loss in self.loss_fns:
+                        method_result[afn][loss] = method_result[afn][loss].cpu().detach().numpy()
                 self.result.append(method_result, perturbation_generator=pert_gen, method=method_name)
         logging.info(f"Appended Infidelity")
 

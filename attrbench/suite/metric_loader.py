@@ -4,7 +4,6 @@ from os import path
 from typing import Dict, Callable
 from attrbench.metrics import Metric
 from attrbench import metrics
-from attrbench.lib import masking
 
 
 class MetricLoader:

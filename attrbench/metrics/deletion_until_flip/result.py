@@ -13,7 +13,7 @@ class DeletionUntilFlipResult(AbstractMetricResult):
         self.maskers = maskers
         self.tree = NDArrayTree([
             ("masker", maskers),
-            ("method", method_names + ["_BASELINE"])
+            ("method", method_names)
         ])
 
     def append(self, data: Dict):
@@ -24,7 +24,6 @@ class DeletionUntilFlipResult(AbstractMetricResult):
             masker_group = group.create_group(masker)
             for method_name in self.method_names:
                 ds = masker_group.create_dataset(method_name, data=self.tree.get(masker=masker, method=method_name))
-                ds.attrs["inverted"] = self.inverted
 
     @classmethod
     def load_from_hdf(cls, group: h5py.Group):

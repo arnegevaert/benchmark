@@ -7,8 +7,14 @@ from attrbench.lib.util import corrcoef
 
 
 def _normalized_mse(a: np.ndarray, b: np.ndarray):
-    a = (a - np.mean(a, axis=1, keepdims=True))/np.std(a, axis=1, keepdims=True)
-    b = (b - np.mean(b, axis=1, keepdims=True))/np.std(b, axis=1, keepdims=True)
+    a = (a - np.mean(a, axis=1, keepdims=True))
+    a_std = np.std(a, axis=1, keepdims=True)
+    a = np.divide(a, a_std, out=a, where=a_std != 0)
+
+    b = (b - np.mean(b, axis=1, keepdims=True))
+    b_std = np.std(b, axis=1, keepdims=True)
+    b = np.divide(b, b_std, out=b, where=b_std != 0)
+
     return ((a - b)**2).mean(axis=1, keepdims=True)
 
 

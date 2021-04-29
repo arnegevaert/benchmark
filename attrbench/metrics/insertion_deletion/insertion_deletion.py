@@ -43,7 +43,7 @@ class _InsertionDeletion(MaskerMetric):
         super().__init__(model, method_names, maskers, writer_dir)
         self.num_steps = num_steps
         self.activation_fns = (activation_fns,) if type(activation_fns) == str else activation_fns
-        self.result: InsertionDeletionResult = result_class(method_names, list(self.maskers.keys()),
+        self.result: InsertionDeletionResult = result_class(method_names + ["_BASELINE"], list(self.maskers.keys()),
                                                             self.activation_fns)
         self.method_fn = method_fn
 

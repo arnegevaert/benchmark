@@ -78,7 +78,7 @@ class _IrofIiof(MaskerMetric):
         self.mode = mode  # "insertion" or "deletion"
         self.activation_fns = (activation_fns,) if type(activation_fns) == str else activation_fns
         self.metric_fn = metric_fn
-        self.result: MaskerActivationMetricResult = result_class(method_names, list(self.maskers.keys()),
+        self.result: MaskerActivationMetricResult = result_class(method_names + ["_BASELINE"], list(self.maskers.keys()),
                                                                  self.activation_fns)
         if self.writer_dir is not None:
             for key in self.maskers:

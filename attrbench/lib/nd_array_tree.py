@@ -1,4 +1,5 @@
 import numpy as np
+import h5py
 from typing import List, Tuple, Dict, Callable
 
 
@@ -31,20 +32,25 @@ class NDArrayTree:
                 key = kwargs[level_name]
                 if type(_data[key]) == dict:
                     _append_rec(_data[key], _new_data, depth + 1)
-                elif type(_data[key]) == np.ndarray:
-                    _data[key] = _new_data[key] if _data[key] is None else np.concatenate(
+                elif type(_data[key]) == np.ndarray or _data[key] is None:
+                    _data[key] = _new_data if _data[key] is None else np.concatenate(
                         [_data[key], _new_data], axis=axis)
+                else:
+                    raise ValueError(f"Invalid type: {type(_data[key])}")
             else:
                 # If level name not found in kwargs, loop over each key in current level
                 for key in _new_data:
                     if type(_data[key]) == dict:
                         # Descend down the tree (passing down a level both in _data and in _new_data)
                         _append_rec(_data[key], _new_data[key], depth + 1)
-                    elif type(_data[key]) == np.ndarray:
+                    elif type(_data[key]) == np.ndarray or _data[key] is None:
                         # Base case: leaf nodes are ndarrays
                         _data[key] = _new_data[key] if _data[key] is None else np.concatenate(
                             [_data[key], _new_data[key]], axis=axis)
+                    else:
+                        raise ValueError(f"Invalid type: {type(_data[key])}")
         _append_rec(self.data, new_data)
+
 
     def apply(self, fn: Callable):
         def _apply_rec(_cur_data):
@@ -81,5 +87,29 @@ class NDArrayTree:
                     return _get_rec(cur_data[kwargs[level]], depth + 1)
                 else:
                     return {key: _get_rec(cur_data[key], depth + 1) for key in keys}
-
         return _get_rec()
+
+    def add_to_hdf(self, group: h5py.Group):
+        def _add_rec(cur_data, cur_group):
+            for key in cur_data:
+                if type(cur_data[key]) == np.ndarray:
+                    cur_group.create_dataset(key, data=cur_data[key])
+                elif type(cur_data[key]) == dict:
+                    next_group = cur_group.create_group(key)
+                    _add_rec(cur_data[key], next_group)
+        _add_rec(self.data, group)
+
+    @classmethod
+    def load_from_hdf(cls, level_names: List[str], group: h5py.Group):
+        def _load_levels(cur_group, depth=0, cur_result=None):
+            if cur_result is None:
+                cur_result = {}
+            keys = list(cur_group.keys())
+            cur_result[level_names[depth]] = keys
+            if depth < len(level_names) - 1:
+                return _load_levels(cur_group[keys[0]], depth + 1)
+            return cur_result
+        levels = _load_levels(group)
+        result = cls(levels)
+        result.append(dict(group))
+        return result

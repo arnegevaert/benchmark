@@ -13,12 +13,11 @@ default:
       kernel_size: 0.5
   activation_fns:
     - linear
-    - sigmoid
     - softmax
 metrics:
   infidelity:
     type: Infidelity
-    num_perturbations: 10
+    num_perturbations: 1000
     loss_fns:
       - mse
       - normalized_mse
@@ -38,26 +37,26 @@ metrics:
     min_subset_size: 0.1
     max_subset_size: 0.5
     num_steps: 10
-    num_subsets: 10
+    num_subsets: 100
   sensitivity_n:
     type: SensitivityN
     min_subset_size: 0.1
     max_subset_size: 0.5
     num_steps: 10
-    num_subsets: 10
+    num_subsets: 100
   deletion_until_flip:
     type: DeletionUntilFlip
-    num_steps: 10
+    num_steps: 100
   irof:
     type: Irof
   iiof:
     type: Iiof
   insertion:
     type: Insertion
-    num_steps: 10
+    num_steps: 100
   deletion:
     type: Deletion
-    num_steps: 10
+    num_steps: 100
   impact_coverage:
     type: ImpactCoverage
 #    max_sensitivity:

@@ -25,7 +25,7 @@ class ImpactCoverage(Metric):
         self.patch_folder = patch_folder
         self.writers = {method_name: path.join(writer_dir, method_name) if writer_dir else None
                         for method_name in methods}
-        self.result: ImpactCoverageResult = ImpactCoverageResult(list(methods.keys()))
+        self.result: ImpactCoverageResult = ImpactCoverageResult(list(methods.keys()) + ["_BASELINE"])
 
     def run_batch(self, samples, labels, attrs_dict: Dict = None, baseline_attrs: np.ndarray = None):
         attacked_samples, patch_mask, targets = _apply_patches(samples, labels,
@@ -41,6 +41,6 @@ class ImpactCoverage(Metric):
         # Compute results on actual attributions
         for method_name in self.methods:
             batch_result[method_name] = _compute_coverage(attacked_samples, patch_mask, targets,
-                                                            self.methods[method_name],
-                                                            writer=self._get_writer(method_name)).reshape(-1, 1)
+                                                          self.methods[method_name],
+                                                          writer=self._get_writer(method_name)).reshape(-1, 1).cpu().detach().numpy()
         self.result.append(batch_result)
