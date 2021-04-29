@@ -37,8 +37,8 @@ def _compute_result(pert_vectors: np.ndarray, pred_diffs: Dict[str, np.ndarray],
     # Calculate dot product in-place
     pert_vectors_flat *= attrs
     dot_product = pert_vectors_flat.sum(dim=-1).detach().cpu().numpy()  # [batch_size, num_perturbations]
-    for loss_fn in loss_fns:
-        result[loss_fn] = {}
-        for afn in pred_diffs.keys():
-            result[loss_fn][afn] = torch.tensor(_LOSS_FNS[loss_fn](dot_product, pred_diffs[afn]))
+    for afn in pred_diffs.keys():
+        result[afn] = {}
+        for loss_fn in loss_fns:
+            result[afn][loss_fn] = torch.tensor(_LOSS_FNS[loss_fn](dot_product, pred_diffs[afn]))
     return result

@@ -77,9 +77,9 @@ class Infidelity(Metric):
                 baseline_result = _compute_result(pert_vectors[pert_gen], pred_diffs[pert_gen], baseline_attrs[i, ...],
                                                   self.loss_fns)
                 # Expand dims and concatenate => equivalent to np.stack(axis=1)
-                for loss in baseline_result.keys():
-                    for afn in baseline_result[loss].keys():
-                        baseline_result[loss][afn] = np.expand_dims(baseline_result[loss][afn], axis=1)
+                for afn in self.activation_fns:
+                    for loss in self.loss_fns:
+                        baseline_result[afn][loss] = np.expand_dims(baseline_result[afn][loss], axis=1)
                 self.result.append(baseline_result, axis=1, perturbation_generator=pert_gen, method="_BASELINE")
 
             # Calculate actual method results

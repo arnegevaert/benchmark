@@ -16,7 +16,7 @@ class MaskerActivationMetricResult(AbstractMetricResult):
         self.tree = NDArrayTree([
             ("masker", maskers),
             ("activation_fn", activation_fns),
-            ("method", method_names)
+            ("method", method_names + ["_BASELINE"])
         ])
 
     def append(self, data: Dict, **kwargs):

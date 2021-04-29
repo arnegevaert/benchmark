@@ -13,7 +13,7 @@ class DeletionUntilFlipResult(AbstractMetricResult):
         self.maskers = maskers
         self.tree = NDArrayTree([
             ("masker", maskers),
-            ("method", method_names)
+            ("method", method_names + ["_BASELINE"])
         ])
 
     def append(self, data: Dict):

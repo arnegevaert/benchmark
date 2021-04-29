@@ -17,26 +17,33 @@ class NDArrayTree:
                 else:
                     data[key] = None
             return data
+
         self.data = _initialize_data()
 
     def append(self, new_data: Dict, axis=0, **kwargs):
         def _append_rec(_data, _new_data, depth=0):
             level_name = self.levels[depth][0]
+            # If the level name is found in kwargs,
             if level_name in kwargs.keys():
                 # If level name found in kwargs, descend down the corresponding branch
-                _append_rec(_data[kwargs[level_name]], _new_data, depth + 1)
+                # In this case we pass _new_data instead of _new_data[key], since this level is not present
+                # in the data dict
+                key = kwargs[level_name]
+                if type(_data[key]) == dict:
+                    _append_rec(_data[key], _new_data, depth + 1)
+                elif type(_data[key]) == np.ndarray:
+                    _data[key] = _new_data[key] if _data[key] is None else np.concatenate(
+                        [_data[key], _new_data], axis=axis)
             else:
                 # If level name not found in kwargs, loop over each key in current level
                 for key in _new_data:
-                    if type(_new_data[key]) == dict:
-                        # Descend down the tree
+                    if type(_data[key]) == dict:
+                        # Descend down the tree (passing down a level both in _data and in _new_data)
                         _append_rec(_data[key], _new_data[key], depth + 1)
-                    elif type(_new_data[key]) == np.ndarray:
+                    elif type(_data[key]) == np.ndarray:
                         # Base case: leaf nodes are ndarrays
-                        if _data[key] is None:
-                            _data[key] = _new_data[key]
-                        else:
-                            _data[key] = np.concatenate([_data[key], _new_data[key]], axis=axis)
+                        _data[key] = _new_data[key] if _data[key] is None else np.concatenate(
+                            [_data[key], _new_data[key]], axis=axis)
         _append_rec(self.data, new_data)
 
     def apply(self, fn: Callable):
@@ -47,6 +54,7 @@ class NDArrayTree:
                     _apply_rec(_cur_data[key])
                 elif type(_cur_data[key]) == np.ndarray:
                     _cur_data[key] = fn(_cur_data[key])
+
         _apply_rec(self.data)
 
     def get(self, postproc_fn=None, **kwargs):
@@ -73,4 +81,5 @@ class NDArrayTree:
                     return _get_rec(cur_data[kwargs[level]], depth + 1)
                 else:
                     return {key: _get_rec(cur_data[key], depth + 1) for key in keys}
+
         return _get_rec()

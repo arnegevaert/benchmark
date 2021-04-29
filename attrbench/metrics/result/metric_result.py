@@ -31,7 +31,7 @@ class BasicMetricResult(AbstractMetricResult):
 
     def __init__(self, method_names: List[str]):
         super().__init__(method_names)
-        self.tree = NDArrayTree([("method", self.method_names)])
+        self.tree = NDArrayTree([("method", self.method_names + ["_BASELINE"])])
 
     def add_to_hdf(self, group: h5py.Group):
         for method_name in self.method_names:

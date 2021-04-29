@@ -24,7 +24,7 @@ class InfidelityResult(AbstractMetricResult):
             ("perturbation_generator", perturbation_generators),
             ("activation_fn", activation_fns),
             ("loss_fn", loss_fns),
-            ("method", method_names)
+            ("method", method_names + ["_BASELINE"])
         ])
 
     def append(self, data: Dict, **kwargs):
