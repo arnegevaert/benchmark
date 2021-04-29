@@ -30,17 +30,17 @@ class ImpactCoverage(Metric):
     def run_batch(self, samples, labels, attrs_dict: Dict = None, baseline_attrs: np.ndarray = None):
         attacked_samples, patch_mask, targets = _apply_patches(samples, labels,
                                                                self.model, self.patch_folder)
+        batch_result = {}
         # Compute results on baseline attributions
         baseline_result = []
         for i in range(baseline_attrs.shape[0]):
             baseline_result.append(
                 _compute_coverage(attacked_samples, patch_mask, targets, attrs=baseline_attrs[i, ...]).reshape(-1, 1))
-        baseline_result = np.stack(baseline_result, axis=1)
+        batch_result["_BASELINE"] = np.stack(baseline_result, axis=1)
 
         # Compute results on actual attributions
-        method_results = {}
         for method_name in self.methods:
-            method_results[method_name] = _compute_coverage(attacked_samples, patch_mask, targets,
+            batch_result[method_name] = _compute_coverage(attacked_samples, patch_mask, targets,
                                                             self.methods[method_name],
                                                             writer=self._get_writer(method_name)).reshape(-1, 1)
-        self.result.append(method_results, baseline_result)
+        self.result.append(batch_result)

@@ -15,7 +15,6 @@ from ._dataset import _SensitivityNDataset, _SegSensNDataset
 from .result import SegSensitivityNResult, SensitivityNResult
 import logging
 import time
-from functools import partial
 
 
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
@@ -120,7 +119,8 @@ class SensitivityN(MaskerMetric):
                     baseline_results[masker_name][afn].append(res[afn])
             for afn in self.activation_fns:
                 baseline_results[masker_name][afn] = np.stack(baseline_results[masker_name][afn], axis=1)
-        self.result.append(method_results, baseline_results)
+        self.result.append(method_results)
+        self.result.append(baseline_results, method="_BASELINE")
         logging.info("Appended Sensitivity-n")
 
     def get_result(self) -> SensitivityNResult:

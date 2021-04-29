@@ -60,7 +60,6 @@ class DeletionUntilFlip(MaskerMetric):
 
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         batch_result = defaultdict(dict)
-        baseline_result = {}
         for masker_name, masker in self.maskers.items():
             # Compute results on baseline attributions
             masker_bl_result = []
@@ -68,11 +67,11 @@ class DeletionUntilFlip(MaskerMetric):
                 masker_bl_result.append(deletion_until_flip(
                     samples, self.model, baseline_attrs[i, ...], self.num_steps,masker
                 ).detach().cpu().numpy())
-            baseline_result[masker_name] = np.stack(masker_bl_result, axis=1)
+            batch_result[masker_name]["_BASELINE"] = np.stack(masker_bl_result, axis=1)
 
             # Compute results on actual attributions
             for method_name in attrs_dict:
                 batch_result[masker_name][method_name] = deletion_until_flip(
                     samples, self.model, attrs_dict[method_name], self.num_steps,
                     masker, writer=self._get_writer(method_name)).detach().cpu().numpy()
-        self.result.append(batch_result, baseline_result)
+        self.result.append(batch_result)

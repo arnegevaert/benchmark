@@ -19,8 +19,8 @@ class MaskerActivationMetricResult(AbstractMetricResult):
             ("method", method_names)
         ])
 
-    def append(self, data: Dict):
-        self.tree.append(data)
+    def append(self, data: Dict, **kwargs):
+        self.tree.append(data, **kwargs)
 
     def add_to_hdf(self, group: h5py.Group):
         for masker in self.maskers:

@@ -4,7 +4,7 @@ from os import path
 import numpy as np
 import torch
 
-from attrbench.lib import AttributionWriter
+from attrbench.lib import AttributionWriter, NDArrayTree
 from attrbench.metrics import Metric
 from ._compute_perturbations import _compute_perturbations
 from ._compute_result import _compute_result
@@ -43,7 +43,7 @@ class Infidelity(Metric):
         self.writers = {"general": AttributionWriter(path.join(writer_dir, "general"))} \
             if writer_dir is not None else None
         self.num_perturbations = num_perturbations
-        self.loss_fns = (loss_fns,) if type(loss_fns) == str else loss_fns
+        self.loss_fns: Tuple[str] = (loss_fns,) if type(loss_fns) == str else loss_fns
         self.activation_fns = (activation_fns,) if type(activation_fns) == str else activation_fns
         # Process "perturbation-generators" argument: either it is a dictionary of PerturbationGenerator objects,
         # or it is a dictionary that needs to be parsed.
@@ -71,30 +71,22 @@ class Infidelity(Metric):
             pred_diffs[key] = p_diffs
 
         # Compute and append results
-        baseline_results = {
-            pert_gen: {
-                loss: {
-                    afn: [] for afn in pred_diffs[pert_gen].keys()
-                } for loss in self.loss_fns} for pert_gen in pred_diffs.keys()}
-        method_results = {}
         for pert_gen in self.perturbation_generators:
             # Calculate baseline results
             for i in range(baseline_attrs.shape[0]):
                 baseline_result = _compute_result(pert_vectors[pert_gen], pred_diffs[pert_gen], baseline_attrs[i, ...],
-                                    self.loss_fns)
+                                                  self.loss_fns)
+                # Expand dims and concatenate => equivalent to np.stack(axis=1)
                 for loss in baseline_result.keys():
                     for afn in baseline_result[loss].keys():
-                        baseline_results[pert_gen][loss][afn].append(baseline_result[loss][afn])
-            for loss in baseline_results[pert_gen].keys():
-                for afn in baseline_results[pert_gen][loss].keys():
-                    baseline_results[pert_gen][loss][afn] = np.stack(baseline_results[pert_gen][loss][afn], axis=1)
+                        baseline_result[loss][afn] = np.expand_dims(baseline_result[loss][afn], axis=1)
+                self.result.append(baseline_result, axis=1, perturbation_generator=pert_gen, method="_BASELINE")
 
             # Calculate actual method results
-            method_results[pert_gen] = {}
             for method_name in attrs_dict.keys():
-                method_results[pert_gen][method_name] = _compute_result(pert_vectors[pert_gen], pred_diffs[pert_gen],
-                                                                        attrs_dict[method_name], self.loss_fns)
-        self.result.append(method_results, baseline_results)
+                method_result = _compute_result(pert_vectors[pert_gen], pred_diffs[pert_gen],
+                                                attrs_dict[method_name], self.loss_fns)
+                self.result.append(method_result, perturbation_generator=pert_gen, method=method_name)
         logging.info(f"Appended Infidelity")
 
     def get_result(self) -> InfidelityResult:

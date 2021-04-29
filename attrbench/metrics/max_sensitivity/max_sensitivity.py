@@ -46,9 +46,9 @@ class MaxSensitivity(Metric):
         self.methods = methods
         self.radius = radius
         self.num_perturbations = num_perturbations
-        self.result = MaxSensitivityResult(method_names=list(methods.keys()), radius=radius)
+        self.result: MaxSensitivityResult = MaxSensitivityResult(method_names=list(methods.keys()), radius=radius)
 
-    def run_batch(self, samples, labels, attrs_dict: dict):
+    def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         """
         Runs the metric for a given batch, for all methods, and saves result internally
         """
@@ -56,4 +56,4 @@ class MaxSensitivity(Metric):
             method = self.methods[method_name]
             max_sens = max_sensitivity(samples, labels, method, attrs_dict[method_name], self.radius,
                                        self.num_perturbations, writer=self._get_writer(method_name))
-            self.result.append(method_name, max_sens)
+            self.result.append({method_name: max_sens.cpu().detach().numpy()})

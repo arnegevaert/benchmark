@@ -38,8 +38,8 @@ class BasicMetricResult(AbstractMetricResult):
             ds = group.create_dataset(method_name, data=self.tree.get(methods=[method_name]))
             ds.attrs["inverted"] = self.inverted
 
-    def append(self, data: Dict):
-        self.tree.append(data)
+    def append(self, data: Dict, **kwargs):
+        self.tree.append(data, **kwargs)
 
     @classmethod
     def load_from_hdf(cls, group: h5py.Group) -> BasicMetricResult:
