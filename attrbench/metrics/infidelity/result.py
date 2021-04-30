@@ -1,5 +1,6 @@
 from typing import List, Dict
 import pandas as pd
+import numpy as np
 
 import h5py
 
@@ -37,8 +38,8 @@ class InfidelityResult(AbstractMetricResult):
         loss_fns = list(group[pert_gens[0]][activation_fns[0]].keys())
         method_names = list(group[pert_gens[0]][activation_fns[0]][loss_fns[0]].keys())
         result = cls(method_names, pert_gens, activation_fns, loss_fns)
-        result.append(dict(group))
+        result.tree = NDArrayTree.load_from_hdf(["perturbation_generator", "activation_fn", "loss_fn", "method"], group)
         return result
 
-    def get_df(self, **kwargs):
-        return pd.DataFrame.from_dict(self.tree.get(**kwargs)), self.inverted
+    def get_df(self, loss_fn, **kwargs):
+        return pd.DataFrame.from_dict(self.tree.get(postproc_fn=lambda x: np.squeeze(x, axis=-1), loss_fn=loss_fn, **kwargs)), self.inverted[loss_fn]

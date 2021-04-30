@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from attrbench.metrics import MaskerActivationMetricResult
+from attrbench.lib import NDArrayTree
 
 
 class SensitivityNResult(MaskerActivationMetricResult):
@@ -24,7 +25,7 @@ class SensitivityNResult(MaskerActivationMetricResult):
         activation_fns = list(group[maskers[0]].keys())
         method_names = list(group[maskers[0]][activation_fns[0]].keys())
         result = cls(method_names, maskers, activation_fns, group.attrs["index"])
-        result.append(dict(group))
+        result.tree = NDArrayTree.load_from_hdf(["masker", "activation_fn", "method"], group)
         return result
 
     def get_df(self, **kwargs) -> Tuple[pd.DataFrame, bool]:

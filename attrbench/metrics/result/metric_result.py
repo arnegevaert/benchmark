@@ -43,8 +43,8 @@ class BasicMetricResult(AbstractMetricResult):
     def load_from_hdf(cls, group: h5py.Group) -> BasicMetricResult:
         method_names = list(group.keys())
         result = cls(method_names)
-        result.append({m_name: np.array(group[m_name]) for m_name in method_names})
+        result.tree = NDArrayTree.load_from_hdf(["method"], group)
         return result
 
     def get_df(self, **kwargs) -> Tuple[pd.DataFrame, bool]:
-        return pd.DataFrame.from_dict(self.tree.get(**kwargs)), self.inverted
+        return pd.DataFrame.from_dict(self.tree.get(postproc_fn=lambda x: np.squeeze(x, axis=-1), **kwargs)), self.inverted

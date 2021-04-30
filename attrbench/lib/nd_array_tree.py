@@ -40,15 +40,19 @@ class NDArrayTree:
             else:
                 # If level name not found in kwargs, loop over each key in current level
                 for key in _new_data:
-                    if type(_data[key]) == dict:
+                    if type(_new_data[key]) in (dict, h5py.Group):
                         # Descend down the tree (passing down a level both in _data and in _new_data)
                         _append_rec(_data[key], _new_data[key], depth + 1)
-                    elif type(_data[key]) == np.ndarray or _data[key] is None:
+                    elif type(_new_data[key]) == np.ndarray:
                         # Base case: leaf nodes are ndarrays
                         _data[key] = _new_data[key] if _data[key] is None else np.concatenate(
                             [_data[key], _new_data[key]], axis=axis)
+                    elif type(_new_data[key]) == h5py.Dataset:
+                        # Base case: leaf nodes are HDF5 datasets, convert to ndarray using [()]
+                        _data[key] = _new_data[key][()] if _data[key] is None else np.concatenate(
+                            [_data[key], _new_data[key][()]], axis=axis)
                     else:
-                        raise ValueError(f"Invalid type: {type(_data[key])}")
+                        raise ValueError(f"Invalid type: {type(_new_data[key])}")
         _append_rec(self.data, new_data)
 
     def apply(self, fn: Callable):
@@ -59,7 +63,6 @@ class NDArrayTree:
                     _apply_rec(_cur_data[key])
                 elif type(_cur_data[key]) == np.ndarray:
                     _cur_data[key] = fn(_cur_data[key])
-
         _apply_rec(self.data)
 
     def get(self, postproc_fn=None, **kwargs):
@@ -102,11 +105,11 @@ class NDArrayTree:
     def load_from_hdf(cls, level_names: List[str], group: h5py.Group):
         def _load_levels(cur_group, depth=0, cur_result=None):
             if cur_result is None:
-                cur_result = {}
+                cur_result = []
             keys = list(cur_group.keys())
-            cur_result[level_names[depth]] = keys
+            cur_result.append((level_names[depth], keys))
             if depth < len(level_names) - 1:
-                return _load_levels(cur_group[keys[0]], depth + 1)
+                return _load_levels(cur_group[keys[0]], depth + 1, cur_result)
             return cur_result
         levels = _load_levels(group)
         result = cls(levels)

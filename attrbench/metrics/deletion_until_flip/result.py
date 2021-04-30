@@ -30,7 +30,7 @@ class DeletionUntilFlipResult(AbstractMetricResult):
         maskers = list(group.keys())
         method_names = list(group[maskers[0]].keys())
         result = cls(method_names, maskers)
-        result.append(dict(group))
+        result.tree = NDArrayTree.load_from_hdf(["masker", "method"], group)
         return result
 
     def get_df(self, **kwargs) -> Tuple[pd.DataFrame, bool]:
