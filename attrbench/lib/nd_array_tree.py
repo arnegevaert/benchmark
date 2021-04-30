@@ -51,7 +51,6 @@ class NDArrayTree:
                         raise ValueError(f"Invalid type: {type(_data[key])}")
         _append_rec(self.data, new_data)
 
-
     def apply(self, fn: Callable):
         def _apply_rec(_cur_data):
             for key in _cur_data:
