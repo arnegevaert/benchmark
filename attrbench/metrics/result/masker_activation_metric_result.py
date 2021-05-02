@@ -35,5 +35,28 @@ class MaskerActivationMetricResult(AbstractMetricResult):
         result.tree = NDArrayTree.load_from_hdf(["masker", "activation_fn", "method"], group)
         return result
 
-    def get_df(self, **kwargs) -> Tuple[pd.DataFrame, bool]:
-        return pd.DataFrame.from_dict(self.tree.get(postproc_fn=lambda x: np.squeeze(x, axis=-1), **kwargs)), self.inverted
+    def get_df(self, mode="raw", masker: str = "constant", activation_fn: str = "linear") -> Tuple[pd.DataFrame, bool]:
+        raw_results = pd.DataFrame.from_dict(
+            self.tree.get(
+                postproc_fn=lambda x: np.squeeze(x, axis=-1),
+                exclude=dict(method=["_BASELINE"]),
+                select=dict(masker=[masker], activation_fn=[activation_fn])
+            )[masker][activation_fn]
+        )
+        if mode == "raw":
+            return raw_results, self.inverted
+        else:
+            baseline_results = pd.DataFrame(self.tree.get(
+                postproc_fn=lambda x: np.squeeze(x, axis=-1),
+                select=dict(method=["_BASELINE"], masker=[masker], activation_fn=[activation_fn])
+            )[masker][activation_fn]["_BASELINE"])
+            baseline_avg = baseline_results.mean(axis=1)
+            if mode == "raw_dist":
+                return raw_results.sub(baseline_avg, axis=0), self.inverted
+            elif mode == "std_dist":
+                return raw_results \
+                           .sub(baseline_avg, axis=0) \
+                           .div(baseline_results.std(axis=1), axis=0), \
+                       self.inverted
+            else:
+                raise ValueError(f"Invalid value for argument mode: {mode}. Must be raw, raw_dist or std_dist.")
