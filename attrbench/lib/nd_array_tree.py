@@ -65,7 +65,11 @@ class NDArrayTree:
                     _cur_data[key] = fn(_cur_data[key])
         _apply_rec(self.data)
 
-    def get(self, postproc_fn=None, **kwargs):
+    def get(self, postproc_fn=None, select: Dict[str, list] = None, exclude: Dict[str, list] = None):
+        # Initialize empty dicts if select/exclude not given
+        select = select if select is not None else dict()
+        exclude = exclude if exclude is not None else dict()
+
         # For every level not in kwargs, take all level keys
         # otherwise, select key in kwargs
         if postproc_fn is None:
@@ -77,18 +81,14 @@ class NDArrayTree:
                 cur_data = self.data
             # Get the level name and keys
             level, keys = self.levels[depth]
+            select_keys = select.get(level, list(cur_data.keys()))
+            exclude_keys = exclude.get(level, [])
             if depth == len(self.levels) - 1:
                 # We are at leaf node, return desired array(s)
-                if level in kwargs.keys():
-                    return postproc_fn(cur_data[kwargs[level]])
-                else:
-                    return {key: postproc_fn(cur_data[key]) for key in cur_data}
+                return {key: postproc_fn(cur_data[key]) for key in select_keys if key not in exclude_keys}
             else:
                 # We are not at leaf node, execute recursive call
-                if level in kwargs.keys():
-                    return _get_rec(cur_data[kwargs[level]], depth + 1)
-                else:
-                    return {key: _get_rec(cur_data[key], depth + 1) for key in keys}
+                return {key: _get_rec(cur_data[key], depth + 1) for key in select_keys if key not in exclude_keys}
         return _get_rec()
 
     def add_to_hdf(self, group: h5py.Group):
