@@ -21,9 +21,10 @@ def effect_size_barplot(effect_sizes, pvalues, labels, alpha):
     return fig, axs
 
 
-def heatmap(x, y, size, color, palette=None, color_min=-1, color_max=1):
+def heatmap(x, y, size, color, palette=None, color_min=-1, color_max=1, figsize=(20, 20), glyph_scale=1500,
+            fontsize=None):
     sns.set()
-    fig = plt.figure(figsize=(20, 20))
+    fig = plt.figure(figsize=figsize)
     fig.tight_layout()
     plot_grid = plt.GridSpec(1, 15, hspace=0.2, wspace=0.1, figure=fig)  # 1x15 grid
     ax = fig.add_subplot(plot_grid[:, :-1])  # Use leftmost 14 columns for the main plot
@@ -42,19 +43,18 @@ def heatmap(x, y, size, color, palette=None, color_min=-1, color_max=1):
         ind = int(val_position * (len(palette) - 1))
         return palette[ind]
 
-    size_scale = 30000 / max(len(x_labels), len(y_labels))
     ax.scatter(
         x=x.map(x_to_num),  # Use mapping for x
         y=y.map(y_to_num),  # Use mapping for y
-        s=size * size_scale,  # Vector of square sizes, proportional to size parameter
+        s=size * glyph_scale,  # Vector of square sizes, proportional to size parameter
         c=color.apply(value_to_color),
         marker='s'  # Use square as scatterplot marker
     )
     # Show column labels on the axes
     ax.set_xticks([x_to_num[v] for v in x_labels])
-    ax.set_xticklabels(x_labels, rotation=45, horizontalalignment='right', fontsize=35)
+    ax.set_xticklabels(x_labels, rotation=45, horizontalalignment='right', fontsize=fontsize)
     ax.set_yticks([y_to_num[v] for v in y_labels])
-    ax.set_yticklabels(y_labels, fontsize=35)
+    ax.set_yticklabels(y_labels, fontsize=fontsize)
     ax.grid(False, 'major')
     ax.grid(True, 'minor')
     ax.set_xticks([t + 0.5 for t in ax.get_xticks()], minor=True)

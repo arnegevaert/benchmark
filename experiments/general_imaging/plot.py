@@ -1,14 +1,20 @@
 from attrbench.suite import SuiteResult
+from attrbench.suite.plot import WilcoxonSummaryPlot
+import matplotlib.pyplot as plt
+
+
+def plot_wsp(res, mode):
+    dfs = {metric_name: res.metric_results[metric_name].get_df(mode=mode) for metric_name in res.metric_results}
+    wsp = WilcoxonSummaryPlot(
+        {key: value[0] for key, value in dfs.items()},
+        {key: value[1] for key, value in dfs.items()})
+    fig = wsp.render(figsize=(10, 7), glyph_scale=1000)
+    fig.tight_layout()
+    plt.show()
 
 
 if __name__ == "__main__":
     res = SuiteResult.load_hdf("../../out/imagenet_resnet18.h5")
-    for key in res.metric_results:
-        df, inverted = res.metric_results[key].get_df(mode="std_dist")
-        df2, inverted2 = res.metric_results[key].get_df(mode="raw_dist")
 
-    """
-    dfs = {}
-    for m_name, m_res in res.metric_results.items():
-        dfs[m_name] = m_res.get_df()[0]
-    """
+    plot_wsp(res, mode="std_dist")
+    plot_wsp(res, mode="raw_dist")

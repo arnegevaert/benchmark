@@ -52,7 +52,7 @@ class InfidelityResult(AbstractMetricResult):
             )[perturbation_generator][activation_fn][loss_fn]
         )
         if mode == "raw":
-            return raw_results, self.inverted
+            return raw_results, self.inverted[loss_fn]
         else:
             baseline_results = pd.DataFrame(self.tree.get(
                 postproc_fn=lambda x: np.squeeze(x, axis=-1),
@@ -63,11 +63,11 @@ class InfidelityResult(AbstractMetricResult):
             )[perturbation_generator][activation_fn][loss_fn]["_BASELINE"])
             baseline_avg = baseline_results.mean(axis=1)
             if mode == "raw_dist":
-                return raw_results.sub(baseline_avg, axis=0), self.inverted
+                return raw_results.sub(baseline_avg, axis=0), self.inverted[loss_fn]
             elif mode == "std_dist":
                 return raw_results \
                            .sub(baseline_avg, axis=0) \
                            .div(baseline_results.std(axis=1), axis=0), \
-                       self.inverted
+                       self.inverted[loss_fn]
             else:
                 raise ValueError(f"Invalid value for argument mode: {mode}. Must be raw, raw_dist or std_dist.")
