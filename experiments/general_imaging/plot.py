@@ -3,8 +3,8 @@ from attrbench.suite import SuiteResult
 
 if __name__ == "__main__":
     res = SuiteResult.load_hdf("../../out/imagenet_resnet18.h5")
-    df, inverted = res.metric_results["irof"].get_df(mode="std_dist")
-    df2, inverted2 = res.metric_results["irof"].get_df(mode="raw_dist")
+    df, inverted = res.metric_results["deletion"].get_df(mode="std_dist")
+    df2, inverted2 = res.metric_results["deletion"].get_df(mode="raw_dist")
 
     """
     dfs = {}
