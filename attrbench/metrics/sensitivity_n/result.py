@@ -1,8 +1,7 @@
-from typing import List, Tuple
+from typing import List
 
 import h5py
 import numpy as np
-import pandas as pd
 
 from attrbench.metrics import MaskerActivationMetricResult
 from attrbench.lib import NDArrayTree
@@ -28,11 +27,8 @@ class SensitivityNResult(MaskerActivationMetricResult):
         result.tree = NDArrayTree.load_from_hdf(["masker", "activation_fn", "method"], group)
         return result
 
-    def get_df(self, **kwargs) -> Tuple[pd.DataFrame, bool]:
-        return pd.DataFrame.from_dict(
-            self.tree.get(
-                postproc_fn=lambda x: np.mean(x, axis=1),
-                **kwargs)), self.inverted
+    def _postproc_fn(self, x):
+        return np.mean(x, axis=1)
 
 
 class SegSensitivityNResult(SensitivityNResult):
