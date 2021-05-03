@@ -38,13 +38,5 @@ def correlation(dfe: DFExtractor, out_dir: str, baseline: str):
         os.makedirs(inter_method_dir)
 
     # Inter-metric correlations
-    flattened_dfs = {}
-    for metric_name, (df, inverted) in dfs.items():
-        df = (df - df.min()) / (df.max() - df.min())
-        all_columns = [df[column] for column in sorted(df.columns)]
-        flattened_dfs[metric_name] = pd.concat(all_columns)
-    df = pd.concat(flattened_dfs, axis=1)
-    df = df.reindex(sorted(df.columns), axis=1)
-    fig = corr_heatmap(df)
     fig.savefig(path.join(out_dir, "inter_metric_correlation.png"), bbox_inches="tight")
     plt.close(fig)

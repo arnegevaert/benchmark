@@ -35,7 +35,7 @@ class DeletionUntilFlipResult(AbstractMetricResult):
         result.tree = NDArrayTree.load_from_hdf(["masker", "method"], group)
         return result
 
-    def get_df(self, mode="raw", masker: str = "constant") -> Tuple[pd.DataFrame, bool]:
+    def get_df(self, mode="raw", include_baseline=False, masker: str = "constant") -> Tuple[pd.DataFrame, bool]:
         raw_results = pd.DataFrame.from_dict(
             self.tree.get(
                 postproc_fn=lambda x: np.squeeze(x, axis=-1),
@@ -43,20 +43,22 @@ class DeletionUntilFlipResult(AbstractMetricResult):
                 select=dict(masker=[masker])
             )[masker]
         )
+        baseline_results = pd.DataFrame(self.tree.get(
+            postproc_fn=lambda x: np.squeeze(x, axis=-1),
+            select=dict(method=["_BASELINE"], masker=[masker])
+        )[masker]["_BASELINE"])
+        if include_baseline:
+            raw_results["Baseline"] = baseline_results.iloc[:, 0]
         if mode == "raw":
             return raw_results, self.inverted
         else:
-            baseline_results = pd.DataFrame(self.tree.get(
-                postproc_fn=lambda x: np.squeeze(x, axis=-1),
-                select=dict(method=["_BASELINE"], masker=[masker])
-            )[masker]["_BASELINE"])
             baseline_avg = baseline_results.mean(axis=1)
             if mode == "raw_dist":
                 return raw_results.sub(baseline_avg, axis=0), self.inverted
             elif mode == "std_dist":
                 return raw_results \
                            .sub(baseline_avg, axis=0) \
-                           .div(baseline_results.std(axis=1), axis=0).dropna(), \
+                           .div(baseline_results.std(axis=1), axis=0).fillna(0), \
                        self.inverted
             else:
                 raise ValueError(f"Invalid value for argument mode: {mode}. Must be raw, raw_dist or std_dist.")

@@ -41,7 +41,7 @@ class InfidelityResult(AbstractMetricResult):
         result.tree = NDArrayTree.load_from_hdf(["perturbation_generator", "activation_fn", "loss_fn", "method"], group)
         return result
 
-    def get_df(self, mode="raw", perturbation_generator="gaussian", activation_fn="linear", loss_fn="mse"):
+    def get_df(self, mode="raw", include_baseline=False, perturbation_generator="gaussian", activation_fn="linear", loss_fn="mse"):
         raw_results = pd.DataFrame.from_dict(
             self.tree.get(
                 postproc_fn=lambda x: np.squeeze(x, axis=-1),
@@ -51,16 +51,18 @@ class InfidelityResult(AbstractMetricResult):
                             loss_fn=[loss_fn])
             )[perturbation_generator][activation_fn][loss_fn]
         )
+        baseline_results = pd.DataFrame(self.tree.get(
+            postproc_fn=lambda x: np.squeeze(x, axis=-1),
+            select=dict(perturbation_generator=[perturbation_generator],
+                        activation_fn=[activation_fn],
+                        loss_fn=[loss_fn],
+                        method=["_BASELINE"])
+        )[perturbation_generator][activation_fn][loss_fn]["_BASELINE"])
+        if include_baseline:
+            raw_results["Baseline"] = baseline_results.iloc[:, 0]
         if mode == "raw":
             return raw_results, self.inverted[loss_fn]
         else:
-            baseline_results = pd.DataFrame(self.tree.get(
-                postproc_fn=lambda x: np.squeeze(x, axis=-1),
-                select=dict(perturbation_generator=[perturbation_generator],
-                            activation_fn=[activation_fn],
-                            loss_fn=[loss_fn],
-                            method=["_BASELINE"])
-            )[perturbation_generator][activation_fn][loss_fn]["_BASELINE"])
             baseline_avg = baseline_results.mean(axis=1)
             if mode == "raw_dist":
                 return raw_results.sub(baseline_avg, axis=0), self.inverted[loss_fn]

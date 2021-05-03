@@ -46,20 +46,22 @@ class BasicMetricResult(AbstractMetricResult):
         result.tree = NDArrayTree.load_from_hdf(["method"], group)
         return result
 
-    def get_df(self, mode="raw") -> Tuple[pd.DataFrame, bool]:
+    def get_df(self, mode="raw", include_baseline=False) -> Tuple[pd.DataFrame, bool]:
         raw_results = pd.DataFrame.from_dict(
             self.tree.get(
                 postproc_fn=lambda x: np.squeeze(x, axis=-1),
                 exclude=dict(method=["_BASELINE"])
             )
         )
+        baseline_results = pd.DataFrame(self.tree.get(
+            postproc_fn=lambda x: np.squeeze(x, axis=-1),
+            select=dict(method=["_BASELINE"])
+        )["_BASELINE"])
+        if include_baseline:
+            raw_results["Baseline"] = baseline_results.iloc[:, 0]
         if mode == "raw":
             return raw_results, self.inverted
         else:
-            baseline_results = pd.DataFrame(self.tree.get(
-                postproc_fn=lambda x: np.squeeze(x, axis=-1),
-                select=dict(method=["_BASELINE"])
-            )["_BASELINE"])
             baseline_avg = baseline_results.mean(axis=1)
             if mode == "raw_dist":
                 return raw_results.sub(baseline_avg, axis=0), self.inverted

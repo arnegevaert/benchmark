@@ -38,7 +38,7 @@ class MaskerActivationMetricResult(AbstractMetricResult):
     def _postproc_fn(self, x):
         return np.squeeze(x, axis=-1)
 
-    def get_df(self, mode="raw", masker: str = "constant", activation_fn: str = "linear") -> Tuple[pd.DataFrame, bool]:
+    def get_df(self, mode="raw", include_baseline=False, masker: str = "constant", activation_fn: str = "linear") -> Tuple[pd.DataFrame, bool]:
         raw_results = pd.DataFrame.from_dict(
             self.tree.get(
                 postproc_fn=self._postproc_fn,
@@ -46,13 +46,15 @@ class MaskerActivationMetricResult(AbstractMetricResult):
                 select=dict(masker=[masker], activation_fn=[activation_fn])
             )[masker][activation_fn]
         )
+        baseline_results = pd.DataFrame(self.tree.get(
+            postproc_fn=self._postproc_fn,
+            select=dict(method=["_BASELINE"], masker=[masker], activation_fn=[activation_fn])
+        )[masker][activation_fn]["_BASELINE"])
+        if include_baseline:
+            raw_results["Baseline"] = baseline_results.iloc[:, 0]
         if mode == "raw":
             return raw_results, self.inverted
         else:
-            baseline_results = pd.DataFrame(self.tree.get(
-                postproc_fn=self._postproc_fn,
-                select=dict(method=["_BASELINE"], masker=[masker], activation_fn=[activation_fn])
-            )[masker][activation_fn]["_BASELINE"])
             baseline_avg = baseline_results.mean(axis=1)
             if mode == "raw_dist":
                 return raw_results.sub(baseline_avg, axis=0), self.inverted

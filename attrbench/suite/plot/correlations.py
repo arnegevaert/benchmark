@@ -25,7 +25,19 @@ def _corr_heatmap(df, figsize=(20, 20), glyph_scale=1500, fontsize=None):
 
 
 class InterMetricCorrelationPlot:
-    pass
+    def __init__(self, dfs: Dict[str, pd.DataFrame], inverted: Dict[str, bool]):
+        self.dfs = dfs
+        self.inverted = inverted
+
+    def render(self, figsize=(20, 20), glyph_scale=1500, fontsize=None):
+        flattened_dfs = {}
+        for metric_name, df in self.dfs.items():
+            df = (df - df.min()) / (df.max() - df.min())
+            all_columns = [df[column].to_numpy() for column in sorted(df.columns)]
+            flattened_dfs[metric_name] = np.concatenate(all_columns)
+        df = pd.DataFrame(flattened_dfs)
+        df = df.reindex(sorted(df.columns), axis=1)
+        return _corr_heatmap(df, figsize, glyph_scale, fontsize)
 
 
 class InterMethodCorrelationPlot:
