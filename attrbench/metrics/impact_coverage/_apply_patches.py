@@ -25,29 +25,35 @@ def _apply_patches(samples: torch.Tensor, labels: torch.Tensor, model: Callable,
         num_tries += 1
         patch_name = next(patch_names)
         target = int(target_expr.match(patch_name).group(1))
-        patch = torch.load(path.join(patch_folder, patch_name), map_location=lambda storage, loc: storage).to(samples.device)
+        patch = torch.load(path.join(patch_folder, patch_name), map_location=lambda storage, loc: storage).to(
+            samples.device)
         image_size = samples.shape[-1]
         patch_size = patch.shape[-1]
 
         # Apply patch to all images in batch (random location, but same for each image in batch)
         indx = random.randint(0, image_size - patch_size)
         indy = random.randint(0, image_size - patch_size)
+        attacked_samples[~successful, ...] = samples[~successful, ...].clone()
         attacked_samples[~successful, :, indx:indx + patch_size, indy:indy + patch_size] = patch.float()
         with torch.no_grad():
             adv_out = model(attacked_samples).detach().cpu()
 
-        # Check which ones were successful now for the first time
-        successful_now = ~successful & (original_output.argmax(axis=1) != target) & (adv_out.argmax(axis=1) == target) & (labels.cpu() != target)
-
         # Set the patch mask and targets for the samples that were successful this iteration
-        patch_mask[successful_now, :, indx:indx + patch_size, indy:indy + patch_size] = 1
-        targets[successful_now] = target
+        # We set the patch mask for all samples that weren't yet successful
+        # This way, if any samples can't be attacked, they will still have a patch on them
+        # (even though it didn't flip the prediction)
+        patch_mask[~successful, ...] = 0
+        patch_mask[~successful, :, indx:indx + patch_size, indy:indy + patch_size] = 1
+        targets[~successful] = target
 
         # Add the currently successful samples to all successful samples
+        successful_now = (original_output.argmax(axis=1) != target) &\
+                         (adv_out.argmax(axis=1) == target) &\
+                         (labels.cpu() != target)
         successful = successful | successful_now
 
         if num_tries > max_tries:
-            logging.info(f"Not all samples could be attacked: {torch.sum(successful)}/{samples.size(0)} were successful.")
+            logging.info(
+                f"Not all samples could be attacked: {torch.sum(successful)}/{samples.size(0)} were successful.")
             break
     return attacked_samples, patch_mask, targets.to(samples.device)
-

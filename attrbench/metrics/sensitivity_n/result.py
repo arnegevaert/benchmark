@@ -1,35 +1,21 @@
-from typing import List, Tuple, Union, Dict
+from typing import List, Tuple
 
 import h5py
 import numpy as np
-import torch
-import pandas as pd
 
-from attrbench.metrics import MetricResult
+from attrbench.metrics import MetricResult, ActivationMetricResult
 
 
-class SensitivityNResult(MetricResult):
+class SensitivityNResult(ActivationMetricResult):
     inverted = False
 
     def __init__(self, method_names: List[str], activation_fns: Tuple[str], index: np.ndarray):
-        super().__init__(method_names)
-        self.data = {m_name: {afn: [] for afn in activation_fns} for m_name in self.method_names}
-        self.activation_fns = activation_fns
+        super().__init__(method_names, activation_fns)
         self.index = index
-
-    def append(self, method_name, batch):
-        for afn in batch.keys():
-            self.data[method_name][afn].append(batch[afn])
 
     def add_to_hdf(self, group: h5py.Group):
         group.attrs["index"] = self.index
-        for method_name in self.method_names:
-            method_group = group.create_group(method_name)
-            for afn in self.activation_fns:
-                data = torch.cat(self.data[method_name][afn]).numpy() if type(self.data[method_name][afn]) == list \
-                    else self.data[method_name][afn]
-                ds = method_group.create_dataset(afn, data=data)
-                ds.attrs["inverted"] = self.inverted
+        super().add_to_hdf(group)
 
     @classmethod
     def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
@@ -40,13 +26,8 @@ class SensitivityNResult(MetricResult):
                        for m_name in method_names}
         return result
 
-    def to_df(self) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
-        result = {}
-        for afn in self.activation_fns:
-            data = {m_name: self.data[m_name][afn].squeeze().tolist() for m_name in self.method_names}
-            df = pd.DataFrame.from_dict(data)
-            result[afn] = df
-        return result
+    def _aggregate(self, data):
+        return np.mean(data, axis=1)
 
 
 class SegSensitivityNResult(SensitivityNResult):

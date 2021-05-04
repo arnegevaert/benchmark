@@ -18,19 +18,20 @@ def _compute_coverage(attacked_samples: torch.Tensor, method: Callable, patch_ma
     # If attributions have only 1 color channel, we need a single-channel patch mask as well
     if attrs.shape[1] == 1:
         patch_mask = patch_mask[:, 0, :, :]
-
+    # Get indices of top k attributions
+    flattened_attrs = attrs.flatten(1)
+    sorted_indices = flattened_attrs.argsort().cpu()
     # Number of top attributions is equal to number of features masked by the patch
     # We assume here that the mask is the same size for all samples!
     nr_top_attributions = patch_mask[0, ...].long().sum().item()
 
     # Create mask of critical factors (most important pixels/features according to attributions)
-    # TODO don't use a masker for this
-    # Initialize as constant zeros, "mask" the most important features with 1
-    critical_factor_mask = np.zeros(attrs.shape)
-    fl="pixel" if attrs.shape[1] == 1 else "channel"
-    masker = ConstantMasker(samples=critical_factor_mask, attributions=attrs, feature_level=fl, mask_value=1.)
-    critical_factor_mask=masker.mask_top(nr_top_attributions)
-    critical_factor_mask= critical_factor_mask.reshape(critical_factor_mask.shape[0], -1).astype(np.bool)
+    to_mask = sorted_indices[:, -nr_top_attributions:]
+    critical_factor_mask = np.zeros(attrs.shape).reshape(attrs.shape[0], -1)
+    batch_size = attrs.shape[0]
+    batch_dim = np.tile(range(batch_size), (nr_top_attributions, 1)).transpose()
+    critical_factor_mask[batch_dim, to_mask] = 1
+    critical_factor_mask = critical_factor_mask.astype(np.bool)
 
     # Calculate IoU of critical factors (top n attributions) with adversarial patch
     patch_mask_flattened = patch_mask.flatten(1).bool().numpy()
