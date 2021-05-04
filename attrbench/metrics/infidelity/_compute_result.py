@@ -17,9 +17,11 @@ def _compute_result(pert_vectors: np.ndarray, pred_diffs: Dict[str, np.ndarray],
     result = {}
     for key in attrs_dict.keys():
         attrs = attrs_dict[key]
+
+        if len(attrs.shape) != 2: # if len ==2, then we are using tabular data, there is no channel dimension
         # Replicate attributions along channel dimension if necessary (if explanation has fewer channels than image)
-        if attrs.shape[1] != pert_vectors.shape[-3]:
-            attrs = np.repeat(attrs, pert_vectors.shape[-3], axis=1)
+            if attrs.shape[1] != pert_vectors.shape[-3]:
+                attrs = np.repeat(attrs, pert_vectors.shape[-3], axis=1)
 
         # Calculate dot product between each sample and its corresponding perturbation vector
         # This is equivalent to diagonal of matmul
