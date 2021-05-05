@@ -22,10 +22,10 @@ def effect_size_barplot(effect_sizes, pvalues, labels, alpha):
 
 
 def heatmap(x, y, size, color, palette=None, color_min=-1, color_max=1, figsize=(20, 20), glyph_scale=1500,
-            fontsize=None):
+            fontsize=None, title=None):
     sns.set()
     fig = plt.figure(figsize=figsize)
-    fig.tight_layout()
+    fig.suptitle(title, fontsize=16)
     plot_grid = plt.GridSpec(1, 15, hspace=0.2, wspace=0.1, figure=fig)  # 1x15 grid
     ax = fig.add_subplot(plot_grid[:, :-1])  # Use leftmost 14 columns for the main plot
 

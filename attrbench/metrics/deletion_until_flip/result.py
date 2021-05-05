@@ -51,6 +51,8 @@ class DeletionUntilFlipResult(AbstractMetricResult):
             raw_results["Baseline"] = baseline_results.iloc[:, 0]
         if mode == "raw":
             return raw_results, self.inverted
+        elif mode == "single_dist":
+            return raw_results.sub(baseline_results.iloc[:, 0], axis=0), self.inverted
         else:
             baseline_avg = baseline_results.mean(axis=1)
             if mode == "raw_dist":
