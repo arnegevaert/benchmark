@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numpy as np
 import h5py
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 import pandas as pd
 from attrbench.lib import NDArrayTree
 
@@ -11,12 +11,39 @@ class AbstractMetricResult:
 
     def __init__(self, method_names: List[str]):
         self.method_names = method_names
+        self._tree: Optional[NDArrayTree] = None
+
+    @property
+    def tree(self) -> NDArrayTree:
+        if self._tree is not None:
+            return self._tree
+        raise NotImplementedError
 
     def add_to_hdf(self, group: h5py.Group):
-        raise NotImplementedError
+        self.tree.add_to_hdf(group)
 
-    def append(self, *args, **kwargs):
-        raise NotImplementedError
+    def append(self, data: Dict, **kwargs):
+        self.tree.append(data, **kwargs)
+
+    def _get_df(self, raw_results: pd.DataFrame, baseline_results: pd.DataFrame,
+                mode: str, include_baseline: bool) -> Tuple[pd.DataFrame, bool]:
+        if include_baseline:
+            raw_results["Baseline"] = baseline_results.iloc[:, 0]
+        if mode == "raw":
+            return raw_results, self.inverted
+        elif mode == "single_dist":
+            return raw_results.sub(baseline_results.iloc[:, 0], axis=0), self.inverted
+        else:
+            baseline_avg = baseline_results.mean(axis=1)
+            if mode == "raw_dist":
+                return raw_results.sub(baseline_avg, axis=0), self.inverted
+            elif mode == "std_dist":
+                return raw_results \
+                           .sub(baseline_avg, axis=0) \
+                           .div(baseline_results.std(axis=1), axis=0), \
+                       self.inverted
+            else:
+                raise ValueError(f"Invalid value for argument mode: {mode}. Must be raw, raw_dist or std_dist.")
 
     @classmethod
     def load_from_hdf(cls, group: h5py.Group) -> AbstractMetricResult:
@@ -31,19 +58,13 @@ class BasicMetricResult(AbstractMetricResult):
 
     def __init__(self, method_names: List[str]):
         super().__init__(method_names)
-        self.tree = NDArrayTree([("method", self.method_names)])
-
-    def add_to_hdf(self, group: h5py.Group):
-        self.tree.add_to_hdf(group)
-
-    def append(self, data: Dict, **kwargs):
-        self.tree.append(data, **kwargs)
+        self._tree = NDArrayTree([("method", self.method_names)])
 
     @classmethod
     def load_from_hdf(cls, group: h5py.Group) -> BasicMetricResult:
         method_names = list(group.keys())
         result = cls(method_names)
-        result.tree = NDArrayTree.load_from_hdf(["method"], group)
+        result._tree = NDArrayTree.load_from_hdf(["method"], group)
         return result
 
     def get_df(self, mode="raw", include_baseline=False) -> Tuple[pd.DataFrame, bool]:
@@ -57,20 +78,4 @@ class BasicMetricResult(AbstractMetricResult):
             postproc_fn=lambda x: np.squeeze(x, axis=-1),
             select=dict(method=["_BASELINE"])
         )["_BASELINE"])
-        if include_baseline:
-            raw_results["Baseline"] = baseline_results.iloc[:, 0]
-        if mode == "raw":
-            return raw_results, self.inverted
-        elif mode == "single_dist":
-            return raw_results.sub(baseline_results.iloc[:, 0], axis=0), self.inverted
-        else:
-            baseline_avg = baseline_results.mean(axis=1)
-            if mode == "raw_dist":
-                return raw_results.sub(baseline_avg, axis=0), self.inverted
-            elif mode == "std_dist":
-                return raw_results\
-                           .sub(baseline_avg, axis=0)\
-                           .div(baseline_results.std(axis=1), axis=0),\
-                       self.inverted
-            else:
-                raise ValueError(f"Invalid value for argument mode: {mode}. Must be raw, raw_dist or std_dist.")
+        return self._get_df(raw_results, baseline_results, mode, include_baseline)

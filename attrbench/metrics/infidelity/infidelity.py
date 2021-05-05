@@ -54,10 +54,10 @@ class Infidelity(Metric):
             else:
                 self.perturbation_generators[key] = _parse_pert_generator(value)
 
-        self.result: InfidelityResult = InfidelityResult(method_names + ["_BASELINE"],
-                                                         list(perturbation_generators.keys()),
-                                                         list(self.activation_fns),
-                                                         list(self.loss_fns))
+        self._result: InfidelityResult = InfidelityResult(method_names + ["_BASELINE"],
+                                                          list(perturbation_generators.keys()),
+                                                          list(self.activation_fns),
+                                                          list(self.loss_fns))
 
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
@@ -95,6 +95,3 @@ class Infidelity(Metric):
                         method_result[afn][loss] = method_result[afn][loss].cpu().detach().numpy()
                 self.result.append(method_result, perturbation_generator=pert_gen, method=method_name)
         logging.info(f"Appended Infidelity")
-
-    def get_result(self) -> InfidelityResult:
-        return self.result

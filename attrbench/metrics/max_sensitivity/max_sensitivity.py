@@ -46,7 +46,7 @@ class MaxSensitivity(Metric):
         self.methods = methods
         self.radius = radius
         self.num_perturbations = num_perturbations
-        self.result: MaxSensitivityResult = MaxSensitivityResult(method_names=list(methods.keys()) + ["_BASELINE"], radius=radius)
+        self._result: MaxSensitivityResult = MaxSensitivityResult(method_names=list(methods.keys()) + ["_BASELINE"], radius=radius)
 
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         """

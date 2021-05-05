@@ -40,7 +40,7 @@ class NDArrayTree:
             else:
                 # If level name not found in kwargs, loop over each key in current level
                 for key in _new_data:
-                    if type(_new_data[key]) in (dict, h5py.Group):
+                    if type(_new_data[key]) in (dict, h5py.Group) or type(_data[key]) in (dict, h5py.Group):
                         # Descend down the tree (passing down a level both in _data and in _new_data)
                         _append_rec(_data[key], _new_data[key], depth + 1)
                     elif type(_new_data[key]) == np.ndarray:

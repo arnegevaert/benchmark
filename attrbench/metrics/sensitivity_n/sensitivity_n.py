@@ -57,19 +57,13 @@ class SensitivityN(MaskerMetric):
         self.num_steps = num_steps
         self.num_subsets = num_subsets
         self.activation_fns = (activation_fns,) if type(activation_fns) == str else activation_fns
-        self.result: SensitivityNResult = SensitivityNResult(method_names + ["_BASELINE"], list(self.maskers.keys()),
-                                                             list(self.activation_fns),
-                                                             index=np.linspace(min_subset_size, max_subset_size,
-                                                                               num_steps))
+        self._result: SensitivityNResult = SensitivityNResult(method_names + ["_BASELINE"], list(self.maskers.keys()),
+                                                              list(self.activation_fns),
+                                                              index=np.linspace(min_subset_size, max_subset_size,
+                                                                                num_steps))
         self.pool = None
 
     def run_batch(self, samples, labels, attrs_dict: Dict[str, np.ndarray], baseline_attrs: np.ndarray):
-        if self.pool is not None:
-            logging.info("Joining Sensitivity-N...")
-            start_t = time.time()
-            self.pool.join()
-            end_t = time.time()
-            logging.info(f"Join done in {end_t - start_t:.2f}s")
         # Get total number of features from attributions dict
         attrs = attrs_dict[next(iter(attrs_dict))]
         num_features = attrs.reshape(attrs.shape[0], -1).shape[1]
@@ -90,17 +84,18 @@ class SensitivityN(MaskerMetric):
             indices_dict[masker_name] = indices
 
         if os.getenv("NO_MULTIPROC"):
-            self.compute_and_append_results(n_range, output_diffs_dict, indices_dict, attrs_dict, baseline_attrs)
+            self.compute_and_append_results(n_range, output_diffs_dict, indices_dict, attrs_dict, baseline_attrs, self.result)
         else:
+            result = self.result
             self.pool = multiprocessing.pool.ThreadPool(processes=1)
             self.pool.apply_async(
                 self.compute_and_append_results,
-                args=(n_range, output_diffs_dict, indices_dict, attrs_dict, baseline_attrs)
+                args=(n_range, output_diffs_dict, indices_dict, attrs_dict, baseline_attrs, result)
             )
             self.pool.close()
 
     def compute_and_append_results(self, n_range: List[int], output_diffs_dict: Dict, indices_dict: Dict,
-                                   attrs_dict: Dict, baseline_attrs: np.ndarray):
+                                   attrs_dict: Dict, baseline_attrs: np.ndarray, result: SensitivityNResult):
         method_results = {masker: {afn: {method_name: None for method_name in self.method_names}
                                    for afn in self.activation_fns}
                           for masker in self.maskers}
@@ -119,18 +114,19 @@ class SensitivityN(MaskerMetric):
                     baseline_results[masker_name][afn].append(res[afn])
             for afn in self.activation_fns:
                 baseline_results[masker_name][afn] = np.stack(baseline_results[masker_name][afn], axis=1)
-        self.result.append(method_results)
-        self.result.append(baseline_results, method="_BASELINE")
+        result.append(method_results)
+        result.append(baseline_results, method="_BASELINE")
         logging.info("Appended Sensitivity-n")
 
-    def get_result(self) -> SensitivityNResult:
+    @property
+    def result(self) -> SensitivityNResult:
         if self.pool is not None:
             start_t = time.time()
             logging.info("Joining Sensitivity-N...")
             self.pool.join()
             end_t = time.time()
             logging.info(f"Join done in {end_t - start_t:.2f}s")
-        return self.result
+        return self._result
 
 
 class SegSensitivityN(SensitivityN):
@@ -141,19 +137,14 @@ class SegSensitivityN(SensitivityN):
                          activation_fns)
         # Total number of segments is fixed 100
         self.n_range = (np.linspace(self.min_subset_size, self.max_subset_size, self.num_steps) * 100).astype(np.int)
-        self.result: SegSensitivityNResult = SegSensitivityNResult(method_names + ["_BASELINE"], list(self.maskers.keys()),
-                                                                   list(self.activation_fns),
-                                                                   index=np.linspace(min_subset_size, max_subset_size,
-                                                                                     num_steps))
+        self._result: SegSensitivityNResult = SegSensitivityNResult(method_names + ["_BASELINE"],
+                                                                    list(self.maskers.keys()),
+                                                                    list(self.activation_fns),
+                                                                    index=np.linspace(min_subset_size, max_subset_size,
+                                                                                      num_steps))
         self.pool = None
 
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
-        if self.pool is not None:
-            start_t = time.time()
-            logging.info("Joining Seg-Sensitivity-N...")
-            self.pool.join()
-            end_t = time.time()
-            logging.info(f"Join done in {end_t - start_t:.2f}s")
         writer = self.writers["general"] if self.writers is not None else None
         ds = _SegSensNDataset(self.n_range, self.num_subsets, samples)
         segmented_attrs_dict = {method_name: segment_attributions(ds.segmented_images,
@@ -171,18 +162,23 @@ class SegSensitivityN(SensitivityN):
             indices_dict[masker_name] = indices
 
         if os.getenv("NO_MULTIPROC"):
-            self.compute_and_append_results(self.n_range, output_diffs_dict, indices_dict, segmented_attrs_dict, baseline_attrs)
+            self.compute_and_append_results(self.n_range, output_diffs_dict, indices_dict, segmented_attrs_dict,
+                                            baseline_attrs, self.result)
         else:
+            result = self.result
             self.pool = multiprocessing.pool.ThreadPool(processes=1)
             self.pool.apply_async(self.compute_and_append_results,
-                                  args=(self.n_range, output_diffs_dict, indices_dict, segmented_attrs_dict, baseline_attrs))
+                                  args=(
+                                      self.n_range, output_diffs_dict, indices_dict, segmented_attrs_dict,
+                                      baseline_attrs, result))
             self.pool.close()
 
-    def get_result(self) -> SegSensitivityNResult:
+    @property
+    def result(self) -> SegSensitivityNResult:
         if self.pool is not None:
             start_t = time.time()
             logging.info("Joining Seg-Sensitivity-N...")
             self.pool.join()
             end_t = time.time()
             logging.info(f"Join done in {end_t - start_t:.2f}s")
-        return self.result
+        return self._result

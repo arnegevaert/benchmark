@@ -47,7 +47,7 @@ class ImpactScore(Metric):
         self.strict = strict
         self.masker = masker
         self.tau = tau
-        self.result = ImpactScoreResult(method_names, strict, tau)
+        self._result = ImpactScoreResult(method_names, strict, tau)
 
     def run_batch(self, samples, labels, attrs_dict: dict):
         for method_name in attrs_dict:
