@@ -1,2 +1,3 @@
 from .wilcoxon_summary_plot import WilcoxonSummaryPlot
 from .correlations import InterMetricCorrelationPlot, InterMethodCorrelationPlot
+from .convergence_plot import ConvergencePlot
