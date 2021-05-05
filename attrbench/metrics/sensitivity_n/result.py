@@ -24,7 +24,7 @@ class SensitivityNResult(MaskerActivationMetricResult):
         activation_fns = list(group[maskers[0]].keys())
         method_names = list(group[maskers[0]][activation_fns[0]].keys())
         result = cls(method_names, maskers, activation_fns, group.attrs["index"])
-        result.tree = NDArrayTree.load_from_hdf(["masker", "activation_fn", "method"], group)
+        result._tree = NDArrayTree.load_from_hdf(["masker", "activation_fn", "method"], group)
         return result
 
     def _postproc_fn(self, x):

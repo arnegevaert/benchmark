@@ -7,7 +7,7 @@ from itertools import product
 if __name__ == "__main__":
     #plt.ioff()
     res = SuiteResult.load_hdf("../../../out/fashionmnist.h5")
-    for mode in ("raw_dist", "std_dist", "single_dist"):
+    for mode in ("raw", "single_dist", "median_dist", "std_dist"):
         m_res = res.metric_results["sensitivity_n"]
         dfs = {
             f"{afn} - {masker}": m_res.get_df(mode=mode, activation_fn=afn, masker=masker)

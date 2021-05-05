@@ -34,16 +34,17 @@ class AbstractMetricResult:
         elif mode == "single_dist":
             return raw_results.sub(baseline_results.iloc[:, 0], axis=0), self.inverted
         else:
-            baseline_avg = baseline_results.mean(axis=1)
-            if mode == "raw_dist":
-                return raw_results.sub(baseline_avg, axis=0), self.inverted
+            baseline_med = baseline_results.median(axis=1)
+            if mode == "median_dist":
+                return raw_results.sub(baseline_med, axis=0), self.inverted
             elif mode == "std_dist":
+                baseline_mad = baseline_results.sub(baseline_med, axis=0).abs().median(axis=1)
                 return raw_results \
-                           .sub(baseline_avg, axis=0) \
-                           .div(baseline_results.std(axis=1), axis=0), \
+                           .sub(baseline_med, axis=0) \
+                           .div(baseline_mad, axis=0), \
                        self.inverted
             else:
-                raise ValueError(f"Invalid value for argument mode: {mode}. Must be raw, raw_dist or std_dist.")
+                raise ValueError(f"Invalid value for argument mode: {mode}.")
 
     @classmethod
     def load_from_hdf(cls, group: h5py.Group) -> AbstractMetricResult:
