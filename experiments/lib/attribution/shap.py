@@ -1,22 +1,53 @@
 from captum import attr
+from captum._utils.models.linear_model import SkLearnLinearModel
 from skimage import segmentation
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
+class TabularShap:
+    def __init__(self, model, n_samples, baselines=None,feature_mask=None):
+        self.method = attr.ShapleyValueSampling(model)
+        self.n_samples = n_samples
+        if isinstance(baselines, list):
+            baselines = torch.Tensor(baselines)[None]
+        self.baselines=baselines
+        self.feature_mask=feature_mask
+
+    def __call__(self,x, target):
+        return self.method.attribute(x,baselines=self.baselines,target=target,feature_mask=self.feature_mask)
+
+class TabularLime:
+    def __init__(self, model, n_samples, baselines=None, feature_mask=None):
+        self.method = attr.Lime(model,interpretable_model=SkLearnLinearModel("linear_model.LinearRegression")) # defaolt lasso model always learns to output 0.
+        self.n_samples = n_samples
+        if isinstance(baselines, list):
+            baselines = torch.Tensor(baselines)[None]
+        self.baselines=baselines
+        self.feature_mask=feature_mask
+
+    def __call__(self,x, target):
+        return self.method.attribute(x,baselines=self.baselines,target=target,feature_mask=self.feature_mask)
 
 class KernelShap:
-    def __init__(self, model, n_samples, super_pixels=True, n_segments=None):
+    def __init__(self, model, n_samples, super_pixels=True, n_segments=None, feature_mask=None, baselines=None):
         if super_pixels and n_samples is None:
             raise ValueError(f"n_segments cannot be None when using super_pixels")
         self.n_segments = n_segments
         self.super_pixels = super_pixels
         self.method = attr.KernelShap(model)
         self.n_samples = n_samples
+        self.feature_mask = feature_mask
+        if isinstance(baselines, list):
+            baselines = torch.Tensor(baselines)[None]
+        self.baselines=baselines
 
     def __call__(self, x, target):
-        masks = get_super_pixels(x, self.n_segments) if self.super_pixels else None
-        return self.method.attribute(x, target=target, feature_mask=masks, n_samples=self.n_samples)
+        if self.feature_mask is not None:
+            masks=self.feature_mask
+        else:
+            masks = get_super_pixels(x, self.n_segments) if self.super_pixels else None
+        return self.method.attribute(x, target=target, feature_mask=masks, n_samples=self.n_samples, baselines=self.baselines)
 
 
 class DeepShap:
