@@ -41,7 +41,7 @@ class AbstractMetricResult:
                 baseline_mad = baseline_results.sub(baseline_med, axis=0).abs().median(axis=1)
                 return raw_results \
                            .sub(baseline_med, axis=0) \
-                           .div(baseline_mad, axis=0), \
+                           .div(baseline_mad, axis=0).dropna(), \
                        self.inverted
             else:
                 raise ValueError(f"Invalid value for argument mode: {mode}.")

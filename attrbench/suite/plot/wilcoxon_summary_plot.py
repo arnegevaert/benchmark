@@ -22,16 +22,15 @@ class WilcoxonSummaryPlot:
 
         effect_sizes = pd.melt(effect_sizes.reset_index(), id_vars='index')
         effect_sizes.columns = ["method", "metric", "value"]
-        norm_effect_sizes = pd.melt(norm_effect_sizes.reset_index(), id_vars='index')
-        norm_effect_sizes.columns = ["method", "metric", "value"]
+        #norm_effect_sizes = pd.melt(norm_effect_sizes.reset_index(), id_vars='index')
+        #norm_effect_sizes.columns = ["method", "metric", "value"]
 
         return heatmap(
             x=effect_sizes["method"],
             y=effect_sizes["metric"],
-            size=norm_effect_sizes["value"],
-            color=norm_effect_sizes["value"],
+            size=effect_sizes["value"],
+            color=effect_sizes["value"],
             palette=sns.color_palette("rocket_r", n_colors=256),
-            color_min=0, color_max=1,
             figsize=figsize,
             glyph_scale=glyph_scale,
             fontsize=fontsize,

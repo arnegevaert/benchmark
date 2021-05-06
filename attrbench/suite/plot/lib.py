@@ -21,7 +21,7 @@ def effect_size_barplot(effect_sizes, pvalues, labels, alpha):
     return fig, axs
 
 
-def heatmap(x, y, size, color, palette=None, color_min=-1, color_max=1, figsize=(20, 20), glyph_scale=1500,
+def heatmap(x, y, size, color, palette=None, figsize=(20, 20), glyph_scale=1500,
             fontsize=None, title=None):
     sns.set()
     fig = plt.figure(figsize=figsize)
@@ -39,14 +39,14 @@ def heatmap(x, y, size, color, palette=None, color_min=-1, color_max=1, figsize=
         palette = sns.diverging_palette(240, 10, n=256)
 
     def value_to_color(val):
-        val_position = float((val - color_min)) / (color_max - color_min)
+        val_position = float((val - color.min())) / (color.max() - color.min())
         ind = int(val_position * (len(palette) - 1))
         return palette[ind]
 
     ax.scatter(
         x=x.map(x_to_num),  # Use mapping for x
         y=y.map(y_to_num),  # Use mapping for y
-        s=size * glyph_scale,  # Vector of square sizes, proportional to size parameter
+        s=(size * glyph_scale) / (size.max() - size.min()),  # Vector of square sizes, proportional to size parameter
         c=color.apply(value_to_color),
         marker='s'  # Use square as scatterplot marker
     )
@@ -66,7 +66,7 @@ def heatmap(x, y, size, color, palette=None, color_min=-1, color_max=1, figsize=
     legend_ax = fig.add_subplot(plot_grid[:, -1])  # Use the rightmost column of the plot
 
     col_x = [0] * len(palette)  # Fixed x coordinate for the bars
-    bar_y = np.linspace(color_min, color_max, len(palette))  # y coordinates for each of the n_colors bars
+    bar_y = np.linspace(color.min(), color.max(), len(palette))  # y coordinates for each of the n_colors bars
 
     bar_height = bar_y[1] - bar_y[0]
     legend_ax.barh(

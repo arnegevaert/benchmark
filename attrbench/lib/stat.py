@@ -9,7 +9,7 @@ def wilcoxon_tests(df, inverted):
         statistic, pvalue = stats.wilcoxon(method_results,
                                            alternative="less" if inverted else "greater")
         pvalues[method_name] = pvalue
-        effect_sizes[method_name] = np.mean(method_results)
+        effect_sizes[method_name] = np.median(method_results)
     return effect_sizes, pvalues
 
 

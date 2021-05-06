@@ -52,4 +52,5 @@ class InfidelityResult(AbstractMetricResult):
                         loss_fn=[loss_fn],
                         method=["_BASELINE"])
         )[perturbation_generator][activation_fn][loss_fn]["_BASELINE"])
-        return self._get_df(raw_results, baseline_results, mode, include_baseline)
+        res, _ = self._get_df(raw_results, baseline_results, mode, include_baseline)
+        return res, self.inverted[loss_fn]
