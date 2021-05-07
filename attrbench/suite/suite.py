@@ -121,7 +121,7 @@ class Suite:
                     pred = torch.argmax(out, dim=1)
                     binary = False
                 else:
-                    pred = out.squeeze()>0.5 # binary output
+                    pred = out.squeeze()>0. # binary output
                     binary = True
                 if self.multi_label:
                     pred_labels = full_labels[torch.arange(len(pred)), pred]

@@ -19,16 +19,13 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarra
     ds = _DeletionUntilFlipDataset(num_steps, samples, attrs, masker)
     result = torch.tensor([-1 for _ in range(samples.shape[0])]).int()
     flipped = torch.tensor([False for _ in range(samples.shape[0])]).bool()
-
-    orig_predictions = torch.argmax(model(samples), dim=1)
+    orig_predictions = _predict(model,samples)
     it = iter(ds)
     batch = next(it)
     while not torch.all(flipped) and batch is not None:
         masked_samples, mask_size = batch
 
-        with torch.no_grad():
-            masked_output = model(masked_samples)
-        predictions = torch.argmax(masked_output, dim=1)
+        predictions = _predict(model,masked_samples)
         criterion = (predictions != orig_predictions)
         new_flipped = torch.logical_or(flipped, criterion.cpu())
         flipped_this_iteration = (new_flipped != flipped)
@@ -67,3 +64,15 @@ class DeletionUntilFlip(Metric):
                                deletion_until_flip(samples, self.model, attrs_dict[method_name], self.num_steps,
                                                    self.masker, writer=self._get_writer(method_name))
                                )
+
+
+def _predict(model, inputs):
+    with torch.no_grad():
+        orig_outptus = model(inputs)
+        if orig_outptus.shape[1] > 1:
+            orig_predictions = torch.argmax(orig_outptus, dim=1)
+            binary = False
+        else:
+            orig_predictions = orig_outptus.squeeze() > 0
+            binary = True
+        return orig_predictions
