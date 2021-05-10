@@ -102,9 +102,23 @@ def mad_ratio(df):
     return between_mad / within_mad
 
 
+def clusterplots(out_dir):
+    if not path.isdir(out_dir):
+        os.makedirs(out_dir)
+
+    for mode in ("single_dist", "median_dist", "std_dist"):
+        dfs = {
+            metric_name: res.metric_results[metric_name].get_df(mode=mode) for metric_name in res.metric_results.keys()
+        }
+        plot = ClusterPlot(dfs)
+        fig = plot.render()
+        fig.savefig(path.join(out_dir, f"{mode}.png"), bbox_inches="tight")
+
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("in_file", type=str, nargs="?", default="../../../out/fashionmnist.h5")
+    parser.add_argument("in_file", type=str, nargs="?", default="../../../out/caltech_resnet18.h5")
     parser.add_argument("out_dir", type=str, nargs="?", default="out")
     args = parser.parse_args()
 
@@ -117,4 +131,5 @@ if __name__ == "__main__":
     print(list(res.metric_results.keys()))
 
     #wilcoxon_summary_plots(path.join(args.out_dir, "wsp"))
-    krippendorff_plots(path.join(args.out_dir, "alpha"))
+    #krippendorff_plots(path.join(args.out_dir, "alpha"))
+    clusterplots(path.join(args.out_dir, "cluster"))
