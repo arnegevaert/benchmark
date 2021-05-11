@@ -32,7 +32,7 @@ class KrippendorffAlphaBootstrapPlot:
             data[metric_name] = [
                 krippendorff_alpha(
                     pd.DataFrame(
-                        [df.sample(n=bs_size, replace=True).mean(axis=0) for _ in range(bs_samples)]).to_numpy())
+                        [df.sample(n=bs_size, replace=True).median(axis=0) for _ in range(bs_samples)]).to_numpy())
                 for bs_size in range(min, max, step)
             ]
         df = pd.DataFrame(data, index=x_range)
