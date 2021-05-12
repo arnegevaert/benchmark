@@ -20,7 +20,8 @@ def _corr_heatmap(df, figsize=(20, 20), glyph_scale=1500, fontsize=None, title=N
         color=corr['value'],
         figsize=figsize, glyph_scale=glyph_scale,
         fontsize=fontsize,
-        title=title
+        title=title,
+        color_bounds=(-1, 1)
     )
     return fig
 

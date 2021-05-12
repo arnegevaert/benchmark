@@ -22,7 +22,7 @@ def effect_size_barplot(effect_sizes, pvalues, labels, alpha):
 
 
 def heatmap(x, y, size, color, palette=None, figsize=(20, 20), glyph_scale=1500,
-            fontsize=None, title=None):
+            fontsize=None, title=None, color_bounds=None):
     sns.set()
     fig = plt.figure(figsize=figsize)
     fig.suptitle(title, fontsize=16)
@@ -37,9 +37,10 @@ def heatmap(x, y, size, color, palette=None, figsize=(20, 20), glyph_scale=1500,
 
     if palette is None:
         palette = sns.diverging_palette(240, 10, n=256)
+    color_min, color_max = color_bounds if color_bounds is not None else (color.min(), color.max())
 
     def value_to_color(val):
-        val_position = float((val - color.min())) / (color.max() - color.min())
+        val_position = float((val - color_min)) / (color_max - color_min)
         ind = int(val_position * (len(palette) - 1))
         return palette[ind]
 
@@ -66,7 +67,7 @@ def heatmap(x, y, size, color, palette=None, figsize=(20, 20), glyph_scale=1500,
     legend_ax = fig.add_subplot(plot_grid[:, -1])  # Use the rightmost column of the plot
 
     col_x = [0] * len(palette)  # Fixed x coordinate for the bars
-    bar_y = np.linspace(color.min(), color.max(), len(palette))  # y coordinates for each of the n_colors bars
+    bar_y = np.linspace(color_min, color_max, len(palette))  # y coordinates for each of the n_colors bars
 
     bar_height = bar_y[1] - bar_y[0]
     legend_ax.barh(

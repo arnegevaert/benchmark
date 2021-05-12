@@ -35,10 +35,19 @@ class InfidelityResult(AbstractMetricResult):
         result._tree = NDArrayTree.load_from_hdf(["perturbation_generator", "activation_fn", "loss_fn", "method"], group)
         return result
 
-    def get_df(self, mode="raw", include_baseline=False, perturbation_generator="gaussian", activation_fn="linear", loss_fn="mse"):
+    def get_df(self, mode="raw", include_baseline=False, perturbation_generator="gaussian",
+               activation_fn="linear", loss_fn="mse", log=False):
+        def _squeeze(x):
+            return np.squeeze(x, axis=-1)
+
+        def _log_squeeze(x):
+            return np.log(np.squeeze(x, axis=-1))
+
+        postproc_fn = _log_squeeze if log else _squeeze
+
         raw_results = pd.DataFrame.from_dict(
             self.tree.get(
-                postproc_fn=lambda x: np.squeeze(x, axis=-1),
+                postproc_fn=postproc_fn,
                 exclude=dict(method=["_BASELINE"]),
                 select=dict(perturbation_generator=[perturbation_generator],
                             activation_fn=[activation_fn],
@@ -46,7 +55,7 @@ class InfidelityResult(AbstractMetricResult):
             )[perturbation_generator][activation_fn][loss_fn]
         )
         baseline_results = pd.DataFrame(self.tree.get(
-            postproc_fn=lambda x: np.squeeze(x, axis=-1),
+            postproc_fn=postproc_fn,
             select=dict(perturbation_generator=[perturbation_generator],
                         activation_fn=[activation_fn],
                         loss_fn=[loss_fn],

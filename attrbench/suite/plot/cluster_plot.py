@@ -17,6 +17,6 @@ class ClusterPlot:
         df = pd.DataFrame.from_dict(medians)
         normalized = MinMaxScaler().fit_transform(df)
         normalized = pd.DataFrame(normalized, columns=df.columns, index=df.index)
-        fig = sns.clustermap(normalized, figsize=figsize, metric="correlation", method="complete")
+        fig = sns.clustermap(normalized, figsize=figsize, metric="correlation", method="complete").fig
         plt.tight_layout()
         return fig
