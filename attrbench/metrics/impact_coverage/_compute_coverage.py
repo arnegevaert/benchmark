@@ -4,13 +4,16 @@ import numpy as np
 import torch
 
 from attrbench.lib import AttributionWriter
-from attrbench.lib.masking import ConstantMasker
 
 
-def _compute_coverage(attacked_samples: torch.Tensor, method: Callable, patch_mask: torch.Tensor,
-                      targets: torch.Tensor, writer: AttributionWriter = None) -> torch.Tensor:
+def _compute_coverage(attacked_samples: torch.Tensor, patch_mask: torch.Tensor, targets: torch.Tensor, method: Callable = None,
+                      attrs: np.ndarray = None,
+                      writer: AttributionWriter = None) -> torch.Tensor:
+    if method is None and attrs is None:
+        raise ValueError("Specify an attribution method or attributions array")
     # Get attributions
-    attrs = method(attacked_samples, target=targets).detach()
+    if method is not None:
+        attrs = method(attacked_samples, target=targets).detach().cpu().numpy()
     # Check attributions shape
     if attrs.shape[1] not in (1, 3):
         raise ValueError(f"Impact Coverage only works on image data. Attributions must have 1 or 3 color channels."
@@ -19,8 +22,8 @@ def _compute_coverage(attacked_samples: torch.Tensor, method: Callable, patch_ma
     if attrs.shape[1] == 1:
         patch_mask = patch_mask[:, 0, :, :]
     # Get indices of top k attributions
-    flattened_attrs = attrs.flatten(1)
-    sorted_indices = flattened_attrs.argsort().cpu()
+    flattened_attrs = attrs.reshape(attrs.shape[0], -1)
+    sorted_indices = flattened_attrs.argsort()
     # Number of top attributions is equal to number of features masked by the patch
     # We assume here that the mask is the same size for all samples!
     nr_top_attributions = patch_mask[0, ...].long().sum().item()

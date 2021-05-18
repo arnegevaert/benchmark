@@ -2,7 +2,6 @@ from typing import Callable, Dict, Tuple
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
 
 from attrbench.lib.util import ACTIVATION_FNS
 from attrbench.lib import AttributionWriter

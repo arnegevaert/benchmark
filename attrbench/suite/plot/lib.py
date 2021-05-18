@@ -1,14 +1,12 @@
 # Sources:
 # https://towardsdatascience.com/better-heatmaps-and-correlation-matrix-plots-in-python-41445d0f2bec
 # https://seaborn.pydata.org/generated/seaborn.heatmap.html
-import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 import numpy as np
-from scipy.stats import pearsonr
 
 
-def plot_wilcoxon_result(effect_sizes, pvalues, labels, alpha):
+def effect_size_barplot(effect_sizes, pvalues, labels, alpha):
     fig, axs = plt.subplots(ncols=2, gridspec_kw={'width_ratios': [4, 1]})
 
     effect_sizes.plot.barh(figsize=(14, 6), ax=axs[0])
@@ -23,27 +21,11 @@ def plot_wilcoxon_result(effect_sizes, pvalues, labels, alpha):
     return fig, axs
 
 
-def corr_heatmap(df):
-    corr = df.corr(method=lambda x, y: pearsonr(x, y)[0])
-    pvalues = df.corr(method=lambda x, y: pearsonr(x, y)[1]) - np.eye(corr.shape[0])
-    corr[pvalues > 0.01] = 0
-
-    corr = pd.melt(corr.reset_index(),
-                   id_vars='index')  # Unpivot the dataframe, so we can get pair of arrays for x and y
-    corr.columns = ['x', 'y', 'value']
-    fig = heatmap(
-        x=corr['x'],
-        y=corr['y'],
-        size=corr['value'].abs(),
-        color=corr['value']
-    )
-    return fig
-
-
-def heatmap(x, y, size, color):
+def heatmap(x, y, size, color, palette=None, figsize=(20, 20), glyph_scale=1500,
+            fontsize=None, title=None, color_bounds=None):
     sns.set()
-    fig = plt.figure(figsize=(10, 10))
-    fig.tight_layout()
+    fig = plt.figure(figsize=figsize)
+    fig.suptitle(title, fontsize=16)
     plot_grid = plt.GridSpec(1, 15, hspace=0.2, wspace=0.1, figure=fig)  # 1x15 grid
     ax = fig.add_subplot(plot_grid[:, :-1])  # Use leftmost 14 columns for the main plot
 
@@ -53,28 +35,27 @@ def heatmap(x, y, size, color):
     x_to_num = {label: num for num, label in enumerate(x_labels)}
     y_to_num = {label: num for num, label in enumerate(y_labels)}
 
-    n_colors = 256
-    palette = sns.diverging_palette(230, 20, n=n_colors)
-    color_min, color_max = -1, 1
+    if palette is None:
+        palette = sns.diverging_palette(240, 10, n=256)
+    color_min, color_max = color_bounds if color_bounds is not None else (color.min(), color.max())
 
     def value_to_color(val):
         val_position = float((val - color_min)) / (color_max - color_min)
-        ind = int(val_position * (n_colors - 1))
+        ind = int(val_position * (len(palette) - 1))
         return palette[ind]
 
-    size_scale = 10000 / max(len(x_labels), len(y_labels))
     ax.scatter(
         x=x.map(x_to_num),  # Use mapping for x
         y=y.map(y_to_num),  # Use mapping for y
-        s=size * size_scale,  # Vector of square sizes, proportional to size parameter
+        s=(size * glyph_scale) / (size.max() - size.min()),  # Vector of square sizes, proportional to size parameter
         c=color.apply(value_to_color),
-        marker='o'  # Use square as scatterplot marker
+        marker='s'  # Use square as scatterplot marker
     )
     # Show column labels on the axes
     ax.set_xticks([x_to_num[v] for v in x_labels])
-    ax.set_xticklabels(x_labels, rotation=45, horizontalalignment='right')
+    ax.set_xticklabels(x_labels, rotation=45, horizontalalignment='right', fontsize=fontsize)
     ax.set_yticks([y_to_num[v] for v in y_labels])
-    ax.set_yticklabels(y_labels)
+    ax.set_yticklabels(y_labels, fontsize=fontsize)
     ax.grid(False, 'major')
     ax.grid(True, 'minor')
     ax.set_xticks([t + 0.5 for t in ax.get_xticks()], minor=True)
@@ -86,7 +67,7 @@ def heatmap(x, y, size, color):
     legend_ax = fig.add_subplot(plot_grid[:, -1])  # Use the rightmost column of the plot
 
     col_x = [0] * len(palette)  # Fixed x coordinate for the bars
-    bar_y = np.linspace(color_min, color_max, n_colors)  # y coordinates for each of the n_colors bars
+    bar_y = np.linspace(color_min, color_max, len(palette))  # y coordinates for each of the n_colors bars
 
     bar_height = bar_y[1] - bar_y[0]
     legend_ax.barh(

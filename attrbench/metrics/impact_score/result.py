@@ -4,10 +4,10 @@ import h5py
 import numpy as np
 import torch
 
-from attrbench.metrics import MetricResult
+from attrbench.metrics import BasicMetricResult
 
 
-class ImpactScoreResult(MetricResult):
+class ImpactScoreResult(BasicMetricResult):
     inverted = False
 
     def __init__(self, method_names: List[str], strict: bool, tau: float = None):
@@ -39,7 +39,7 @@ class ImpactScoreResult(MetricResult):
         self.data["totals"][method_name].append(total)
 
     @classmethod
-    def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
+    def load_from_hdf(cls, group: h5py.Group) -> BasicMetricResult:
         method_names = list(group.keys())
         tau = group.attrs.get("tau", None)
         result = ImpactScoreResult(method_names, group.attrs["strict"], tau)

@@ -2,6 +2,7 @@ import numpy as np
 from torch.nn.functional import softmax
 from torch import sigmoid
 import warnings
+from collections import defaultdict
 
 
 def corrcoef(a: np.ndarray, b: np.ndarray) -> np.ndarray:
@@ -31,3 +32,7 @@ ACTIVATION_FNS = {
     "softmax": lambda x: softmax(x, dim=1),
     "sigmoid": lambda x: sigmoid(x)
 }
+
+
+def dd_tree():
+    return defaultdict(dd_tree)
