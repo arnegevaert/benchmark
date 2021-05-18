@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     # Wilcoxon summary plots
     if "wsp" in types:
-        print("WSP...")
+        print("Wilcoxon summary plots...")
         if not path.isdir(path.join(args.out_dir, "wsp")):
             os.makedirs(path.join(args.out_dir, "wsp"))
         for metric_name, dfs in metric_dfs.items():
