@@ -73,6 +73,6 @@ def _predict(model, inputs):
             orig_predictions = torch.argmax(orig_outptus, dim=1)
             binary = False
         else:
-            orig_predictions = orig_outptus.squeeze() > 0
+            orig_predictions = orig_outptus.squeeze() > 0.
             binary = True
         return orig_predictions
