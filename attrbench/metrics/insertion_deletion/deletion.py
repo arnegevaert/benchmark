@@ -8,7 +8,7 @@ from attrbench.lib.masking import Masker
 from attrbench.metrics import MaskerMetric
 from ._dataset import _DeletionDataset
 from .result import DeletionResult
-from attrbench.lib.util import ACTIVATION_FNS
+from ._get_predictions import _get_predictions
 
 
 def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
@@ -19,21 +19,7 @@ def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs
     if type(activation_fns) == str:
         activation_fns = [activation_fns]
     ds = _DeletionDataset(mode, start, stop, num_steps, samples, attrs, masker)
-
-    preds = {fn: [] for fn in activation_fns}
-    for i in range(len(ds)):
-        batch = ds[i]
-        with torch.no_grad():
-            predictions = model(batch)
-        if writer is not None:
-            writer.add_images("masked_samples", batch, global_step=i)
-        for fn in activation_fns:
-            preds[fn].append(ACTIVATION_FNS[fn](predictions).gather(dim=1, index=labels.unsqueeze(-1)).cpu())
-
-    for afn in activation_fns:
-        preds[afn] = torch.cat(preds[afn], dim=1).cpu()  # [batch_size, len(mask_range)]
-
-    return preds
+    return _get_predictions(ds, labels, model, activation_fns, writer)
 
 
 class Deletion(MaskerMetric):

@@ -10,7 +10,7 @@ def isin(a: np.ndarray, b: np.ndarray):
     return (a[..., None] == b).any(-1)
 
 
-def mask_segments(images: np.ndarray, seg_images: np.ndarray, segments: List[List[int]], masker: Masker) -> torch.tensor:
+def mask_segments(images: torch.tensor, seg_images: np.ndarray, segments: List[List[int]], masker: Masker) -> torch.tensor:
     if not (images.shape[0] == seg_images.shape[0] and images.shape[0] == len(segments) and
             images.shape[-2:] == seg_images.shape[-2:]):
         raise ValueError(f"Incompatible shapes: {images.shape}, {seg_images.shape}, {len(segments)}")
@@ -20,7 +20,7 @@ def mask_segments(images: np.ndarray, seg_images: np.ndarray, segments: List[Lis
         segs = np.array(segments[i])
         bool_masks.append(isin(seg_img, segs))
     bool_masks = np.stack(bool_masks, axis=0)
-    return masker.mask_boolean(torch.tensor(images), torch.tensor(bool_masks))
+    return masker.mask_boolean(images, torch.tensor(bool_masks))
 
 
 def segment_samples(samples: np.ndarray) -> np.ndarray:
@@ -36,7 +36,7 @@ def segment_attributions(seg_images: np.ndarray, attrs: np.ndarray) -> np.ndarra
     segments = np.unique(seg_images)
     seg_img_flat = seg_images.reshape(seg_images.shape[0], -1)
     attrs_flat = attrs.reshape(attrs.shape[0], -1)
-    avg_attrs = np.zeros((seg_images.shape[0], np.max(segments)))
+    avg_attrs = np.zeros((seg_images.shape[0], np.max(segments) + 1))
     for seg in segments:
         mask = (seg_img_flat == seg).astype(int)
         masked_attrs = mask * attrs_flat

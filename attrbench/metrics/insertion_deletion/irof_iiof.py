@@ -7,7 +7,6 @@ from attrbench.lib.masking import Masker
 from attrbench.lib.attribution_writer import AttributionWriter
 from os import path
 from attrbench.metrics import MaskerMetric
-from ._concat_results import _concat_results
 from ._dataset import _IrofDataset
 from ._get_predictions import _get_predictions
 from .result import IrofResult
@@ -18,28 +17,10 @@ def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np
          mode: str = "morf", start: float = 0., stop: float = 1., num_steps: int = 100,
          writer=None):
     masking_dataset = _IrofDataset(mode, start, stop, num_steps, samples, masker, writer)
-    return _irof(samples, labels, model, attrs, masking_dataset, activation_fns, writer)
-
-
-def _irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
-          masking_dataset, activation_fn: Union[List[str], str] = "linear",
-          writer=None):
-    if type(activation_fn) == str:
-        activation_fn = [activation_fn]
+    if type(activation_fns) == str:
+        activation_fns = [activation_fns]
     masking_dataset.set_attrs(attrs)
-    orig_preds, neutral_preds, inter_preds = _get_predictions(samples, labels, model, masking_dataset, activation_fn,
-                                                              writer)
-    preds = _concat_results(orig_preds, inter_preds, neutral_preds, orig_preds)
-
-    # Calculate AUC for each sample (depends on how many segments each sample had)
-    result = {}
-    for fn in activation_fn:
-        auc = []
-        for i in range(samples.shape[0]):
-            num_segments = len(np.unique(masking_dataset.segmented_images[i, ...].cpu().numpy()))
-            auc.append(np.trapz(preds[fn][i, :num_segments + 1], x=np.linspace(0, 1, num_segments + 1)))
-        result[fn] = torch.tensor(auc).unsqueeze(-1)
-    return result
+    return _get_predictions(masking_dataset, labels, model, activation_fns, writer)
 
 
 class Irof(MaskerMetric):
@@ -64,18 +45,19 @@ class Irof(MaskerMetric):
         methods_result = {masker_name: {afn: {} for afn in self.activation_fns} for masker_name in self.maskers}
         baseline_result = {masker_name: {afn: [] for afn in self.activation_fns} for masker_name in self.maskers}
         for masker_name, masker in self.maskers.items():
-            masking_datasets[masker_name] = _IrofDataset(self.mode, samples, masker, self._get_writer(masker_name))
+            masking_datasets[masker_name] = _IrofDataset(self.mode, self.start, self.stop, self.num_steps,
+                                                         samples, masker, self._get_writer(masker_name))
         for masker_name, masking_dataset in masking_datasets.items():
             for method_name in attrs_dict:
-                result = _irof(samples, labels, self.model, attrs_dict[method_name],
-                               masking_dataset, self.activation_fns,
-                               writer=self._get_writer(method_name))
+                masking_dataset.set_attrs(attrs_dict[method_name])
+                result = _get_predictions(masking_dataset, labels, self.model, self.activation_fns,
+                                          self._get_writer(method_name))
                 for afn in self.activation_fns:
                     methods_result[masker_name][afn][method_name] = result[afn].cpu().detach().numpy()
 
             for i in range(baseline_attrs.shape[0]):
-                bl_result = _irof(samples, labels, self.model, baseline_attrs[i, ...],
-                                  masking_dataset, self.activation_fns)
+                masking_dataset.set_attrs(baseline_attrs[i, ...])
+                bl_result = _get_predictions(masking_dataset, labels, self.model, self.activation_fns)
                 for afn in self.activation_fns:
                     baseline_result[masker_name][afn].append(bl_result[afn].cpu().detach().numpy())
             for afn in self.activation_fns:

@@ -4,8 +4,7 @@ from .masker_metric import MaskerMetric
 from .impact_coverage import impact_coverage, ImpactCoverage, ImpactCoverageResult
 from .impact_score import impact_score, ImpactScore, ImpactScoreResult
 from .infidelity import infidelity, Infidelity, InfidelityResult
-from .insertion_deletion import deletion, Deletion, DeletionResult, irof, iiof, \
-    Irof, Iiof, IrofResult
+from .insertion_deletion import deletion, Deletion, DeletionResult, irof, Irof, IrofResult
 from .max_sensitivity import max_sensitivity, MaxSensitivity, MaxSensitivityResult
 from .sensitivity_n import sensitivity_n, SensitivityN, seg_sensitivity_n, SegSensitivityN, SensitivityNResult, \
     SegSensitivityNResult

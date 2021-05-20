@@ -42,6 +42,10 @@ class Masker:
         return self.mask_boolean(samples, to_mask)
 
     def mask_boolean(self, samples: torch.tensor, bool_mask: torch.tensor):
+        if samples.device != self.baseline.device:
+            samples = samples.to(self.baseline.device)
+        if bool_mask.device != self.baseline.device:
+            bool_mask = bool_mask.to(self.baseline.device)
         return samples - (bool_mask * samples) + (bool_mask * self.baseline)
 
     def initialize_baselines(self, samples):

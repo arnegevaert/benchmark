@@ -3,10 +3,10 @@ wrappers:
     aggregation_fn: avg
 methods:
 #  - Gradient
-  - InputXGradient
+#  - InputXGradient
 #  - GuidedBackprop
 #  - Deconvolution
-#  - GradCAM
+  - GradCAM
 #  - GuidedGradCAM
 #  - DeepLift
 #  - IntegratedGradients:

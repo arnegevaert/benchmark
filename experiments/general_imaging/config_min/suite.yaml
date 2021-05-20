@@ -47,25 +47,35 @@ metrics:
 #  deletion_until_flip:
 #    type: DeletionUntilFlip
 #    num_steps: 100
-#  irof:
-#    type: Irof
+  irof_morf:
+    type: Irof
+    start: 0.
+    stop: 0.1
+    num_steps: 10
+    mode: morf
+  irof_lerf:
+    type: Irof
+    start: 0.
+    stop: 0.1
+    num_steps: 10
+    mode: lerf
 #  iiof:
 #    type: Iiof
 #  insertion:
 #    type: Insertion
 #    num_steps: 100
-  deletion_morf:
-    type: Deletion
-    start: 0.
-    stop: 0.1
-    num_steps: 10
-    mode: morf
-  deletion_lerf:
-    type: Deletion
-    start: 0.
-    stop: 0.1
-    num_steps: 10
-    mode: lerf
+#  deletion_morf:
+#    type: Deletion
+#    start: 0.
+#    stop: 0.1
+#    num_steps: 10
+#    mode: morf
+#  deletion_lerf:
+#    type: Deletion
+#    start: 0.
+#    stop: 0.1
+#    num_steps: 10
+#    mode: lerf
 #  impact_coverage:
 #    type: ImpactCoverage
 ##    max_sensitivity:

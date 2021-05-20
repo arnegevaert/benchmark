@@ -6,13 +6,28 @@ from attrbench.lib import mask_segments, segment_samples, segment_attributions
 from attrbench.lib.masking import Masker
 
 
-class _DeletionDataset:
-    def __init__(self, mode: str, start: float, stop: float, num_steps: int, samples: torch.tensor, attrs: np.ndarray,
-                 masker: Masker):
+class _MaskingDataset:
+    def __init__(self, mode: str, start: float, stop: float, num_steps: int):
         if mode not in ("morf", "lerf"):
             raise ValueError("Mode must be morf or lerf")
         if not ((0. <= start <= 1.) and (0. <= stop <= 1.)):
             raise ValueError("Start and stop must be between 0 and 1")
+        self.mode = mode
+        self.start = start
+        self.stop = stop
+        self.num_steps = num_steps
+
+    def __len__(self):
+        raise NotImplementedError
+
+    def __getitem__(self, item):
+        raise NotImplementedError
+
+
+class _DeletionDataset(_MaskingDataset):
+    def __init__(self, mode: str, start: float, stop: float, num_steps: int, samples: torch.tensor, attrs: np.ndarray,
+                 masker: Masker):
+        super().__init__(mode, start, stop, num_steps)
         self.samples = samples
         self.masker = masker
         self.masker.initialize_baselines(samples)
@@ -38,13 +53,10 @@ class _DeletionDataset:
         return masked_samples
 
 
-class _IrofDataset:
+class _IrofDataset(_MaskingDataset):
     def __init__(self, mode: str, start: float, stop: float, num_steps: int, samples: torch.tensor, masker: Masker,
                  writer: AttributionWriter = None):
-        self.mode = mode
-        self.start = start
-        self.stop = stop
-        self.num_steps = num_steps
+        super().__init__(mode, start, stop, num_steps)
         self.samples = samples
         self.masker = masker
         self.masker.initialize_baselines(samples)
@@ -53,7 +65,7 @@ class _IrofDataset:
         # Override sorted_indices to use segment indices instead of pixel indices
         self.segmented_images = segment_samples(samples.cpu().numpy())
         if writer is not None:
-            writer.add_images("segmented samples", self.segmented_images)
+            writer.add_images("segmented samples", torch.tensor(self.segmented_images))
 
     def set_attrs(self, attrs: np.ndarray):
         avg_attrs = segment_attributions(self.segmented_images, attrs)
@@ -69,7 +81,7 @@ class _IrofDataset:
             sorted_indices.append(cur_sorted_indices if self.mode == "morf" else cur_sorted_indices[::-1])
             # Compute corresponding mask range for this image
             num_segments = len(cur_sorted_indices)
-            mask_ranges[i] = list((np.linspace(self.start, self.stop, self.num_steps) * num_segments).astype(np.int))
+            mask_ranges.append(list((np.linspace(self.start, self.stop, self.num_steps) * num_segments).astype(np.int)))
         self.sorted_indices = sorted_indices  # List[np.ndarray] (varying number of segments for each image)
         self.mask_ranges = mask_ranges
 
@@ -82,5 +94,8 @@ class _IrofDataset:
             # Get number of segments to mask for this image
             num_to_mask = self.mask_ranges[i][item]
             # Get num_segments most important (if morf) or least important (if lerf) segments
-            indices.append(self.sorted_indices[i][-num_to_mask:])
+            if num_to_mask == 0:
+                indices.append([])
+            else:
+                indices.append(self.sorted_indices[i][-num_to_mask:])
         return mask_segments(self.samples, self.segmented_images, indices, self.masker)
