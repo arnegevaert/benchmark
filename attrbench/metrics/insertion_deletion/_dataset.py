@@ -6,11 +6,8 @@ from attrbench.lib import mask_segments, segment_samples, segment_attributions
 from attrbench.lib.masking import Masker
 
 
-class _InsertionDeletionDataset:
-    def __init__(self, mode: str, num_steps: int, samples: torch.tensor, attrs: np.ndarray, masker: Masker):
-        if mode not in ["insertion", "deletion"]:
-            raise ValueError("Mode must be insertion or deletion")
-        self.mode = mode
+class _DeletionDataset:
+    def __init__(self, num_steps: int, samples: torch.tensor, attrs: np.ndarray, masker: Masker):
         self.num_steps = num_steps
         self.samples = samples
         self.masker = masker
@@ -21,15 +18,16 @@ class _InsertionDeletionDataset:
         self.sorted_indices = np.argsort(attrs)
 
         total_features = attrs.shape[1]
-        self.mask_range = list((np.linspace(0, 1, num_steps) * total_features)[1:-1].astype(np.int))
+        self.mask_range = list((np.linspace(0, 1, num_steps) * total_features).astype(np.int))
 
     def __len__(self):
         return len(self.mask_range)
 
     def __getitem__(self, item):
         num_to_mask = self.mask_range[item]
-        indices = self.sorted_indices[:, :-num_to_mask] if self.mode == "insertion" \
-            else self.sorted_indices[:, -num_to_mask:]
+        if num_to_mask == 0:
+            return self.samples.detach().clone()
+        indices = self.sorted_indices[:, -num_to_mask:]
         masked_samples = self.masker.mask(self.samples, indices)
         return masked_samples
 

@@ -10,7 +10,7 @@ from attrbench.metrics import MaskerMetric
 from ._concat_results import _concat_results
 from ._dataset import _IrofIiofDataset
 from ._get_predictions import _get_predictions
-from .result import IrofResult, IiofResult
+from .result import IrofResult
 from attrbench.metrics import MaskerActivationMetricResult
 
 
@@ -118,4 +118,5 @@ class Irof(_IrofIiof):
 class Iiof(_IrofIiof):
     def __init__(self, model: Callable, method_names: List[str], maskers: Dict,
                  activation_fns: Union[Tuple[str], str], writer_dir: str = None):
-        super().__init__(model, method_names, maskers, activation_fns, IiofResult, "insertion", _iiof, writer_dir)
+        pass
+        #super().__init__(model, method_names, maskers, activation_fns, IiofResult, "insertion", _iiof, writer_dir)
