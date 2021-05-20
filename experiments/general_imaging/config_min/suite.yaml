@@ -54,9 +54,14 @@ metrics:
 #  insertion:
 #    type: Insertion
 #    num_steps: 100
-  deletion:
+  deletion_morf:
     type: Deletion
     num_steps: 10
+    mode: morf
+  deletion_lerf:
+    type: Deletion
+    num_steps: 10
+    mode: lerf
 #  impact_coverage:
 #    type: ImpactCoverage
 ##    max_sensitivity:
