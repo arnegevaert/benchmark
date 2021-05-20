@@ -56,10 +56,14 @@ metrics:
 #    num_steps: 100
   deletion_morf:
     type: Deletion
+    start: 0.
+    stop: 0.1
     num_steps: 10
     mode: morf
   deletion_lerf:
     type: Deletion
+    start: 0.
+    stop: 0.1
     num_steps: 10
     mode: lerf
 #  impact_coverage:

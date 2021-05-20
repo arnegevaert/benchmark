@@ -7,10 +7,11 @@ from attrbench.lib.masking import Masker
 
 
 class _DeletionDataset:
-    def __init__(self, mode: str, num_steps: int, samples: torch.tensor, attrs: np.ndarray, masker: Masker):
+    def __init__(self, mode: str, start: float, stop: float, num_steps: int, samples: torch.tensor, attrs: np.ndarray, masker: Masker):
         if mode not in ("morf", "lerf"):
             raise ValueError("Mode must be morf or lerf")
-        self.num_steps = num_steps
+        if not ((0. <= start <= 1.) and (0. <= stop <= 1.)):
+            raise ValueError("Start and stop must be between 0 and 1")
         self.samples = samples
         self.masker = masker
         self.masker.initialize_baselines(samples)
@@ -22,7 +23,7 @@ class _DeletionDataset:
             self.sorted_indices = self.sorted_indices[:, ::-1]
 
         total_features = attrs.shape[1]
-        self.mask_range = list((np.linspace(0, 1, num_steps) * total_features).astype(np.int))
+        self.mask_range = list((np.linspace(start, stop, num_steps) * total_features).astype(np.int))
 
     def __len__(self):
         return len(self.mask_range)

@@ -12,13 +12,13 @@ from attrbench.lib.util import ACTIVATION_FNS
 
 
 def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
-             num_steps: int, masker: Masker,
+             masker: Masker,
              activation_fns: Union[List[str], str] = "linear",
-             mode: str = "morf",
+             mode: str = "morf", start: float = 0., stop: float = 1., num_steps: int = 100,
              writer: AttributionWriter = None) -> Dict:
     if type(activation_fns) == str:
         activation_fns = (activation_fns,)
-    ds = _DeletionDataset(mode, num_steps, samples, attrs, masker)
+    ds = _DeletionDataset(mode, start, stop, num_steps, samples, attrs, masker)
 
     preds = {fn: [] for fn in activation_fns}
     for i in range(len(ds)):
@@ -37,10 +37,13 @@ def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs
 
 
 class Deletion(MaskerMetric):
-    def __init__(self, model: Callable, method_names: List[str], num_steps: int, maskers: Dict,
+    def __init__(self, model: Callable, method_names: List[str], maskers: Dict,
                  activation_fns: Union[Tuple[str], str], mode: str = "morf",
+                 start: float = 0., stop: float = 1., num_steps: int = 100,
                  writer_dir: str = None):
         super().__init__(model, method_names, maskers, writer_dir)
+        self.start = start
+        self.stop = stop
         self.num_steps = num_steps
         self.mode = mode
         self.activation_fns = [activation_fns] if type(activation_fns) == str else list(activation_fns)
@@ -54,16 +57,18 @@ class Deletion(MaskerMetric):
             methods_result[masker_name] = {afn: {} for afn in self.activation_fns}
             for method_name in attrs_dict:
                 result = deletion(samples, labels, self.model,
-                                  attrs_dict[method_name], self.num_steps, masker,
+                                  attrs_dict[method_name], masker,
                                   self.activation_fns, self.mode,
+                                  self.start, self.stop, self.num_steps,
                                   self._get_writer(method_name))
                 for afn in self.activation_fns:
                     methods_result[masker_name][afn][method_name] = result[afn].cpu().detach().numpy()
 
             for i in range(baseline_attrs.shape[0]):
                 bl_result = deletion(samples, labels, self.model,
-                                     baseline_attrs[i, ...], self.num_steps, masker,
-                                     self.activation_fns, self.mode)
+                                     baseline_attrs[i, ...], masker,
+                                     self.activation_fns, self.mode,
+                                     self.start, self.stop, self.num_steps)
                 for afn in self.activation_fns:
                     baseline_result[masker_name][afn].append(bl_result[afn].cpu().detach().numpy())
             for afn in self.activation_fns:
