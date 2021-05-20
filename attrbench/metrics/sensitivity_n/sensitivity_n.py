@@ -147,9 +147,7 @@ class SegSensitivityN(SensitivityN):
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         writer = self.writers["general"] if self.writers is not None else None
         ds = _SegSensNDataset(self.n_range, self.num_subsets, samples)
-        segmented_attrs_dict = {method_name: segment_attributions(ds.segmented_images,
-                                                                  torch.tensor(attrs_dict[method_name],
-                                                                               device=samples.device)).cpu().numpy()
+        segmented_attrs_dict = {method_name: segment_attributions(ds.segmented_images, attrs_dict[method_name])
                                 for method_name in attrs_dict}
         output_diffs_dict, indices_dict = {}, {}
         for masker_name, masker in self.maskers.items():

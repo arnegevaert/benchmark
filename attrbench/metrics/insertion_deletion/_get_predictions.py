@@ -7,7 +7,7 @@ from attrbench.lib.util import ACTIVATION_FNS
 
 def _get_predictions(samples: torch.Tensor, labels: torch.Tensor,
                      model: Callable, ds,
-                     activation_fns: Tuple[str], writer=None) -> Tuple[Dict, Dict, Dict]:
+                     activation_fns: List[str], writer=None) -> Tuple[Dict, Dict, Dict]:
     with torch.no_grad():
         _orig_preds = model(samples)
         orig_preds = {fn: ACTIVATION_FNS[fn](_orig_preds).gather(dim=1, index=labels.unsqueeze(-1)).cpu()

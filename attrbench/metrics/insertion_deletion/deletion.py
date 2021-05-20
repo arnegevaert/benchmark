@@ -17,7 +17,7 @@ def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs
              mode: str = "morf", start: float = 0., stop: float = 1., num_steps: int = 100,
              writer: AttributionWriter = None) -> Dict:
     if type(activation_fns) == str:
-        activation_fns = (activation_fns,)
+        activation_fns = [activation_fns]
     ds = _DeletionDataset(mode, start, stop, num_steps, samples, attrs, masker)
 
     preds = {fn: [] for fn in activation_fns}
