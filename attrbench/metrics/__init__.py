@@ -8,4 +8,4 @@ from .deletion import deletion, Deletion, DeletionResult, irof, Irof, IrofResult
 from .max_sensitivity import max_sensitivity, MaxSensitivity, MaxSensitivityResult
 from .sensitivity_n import sensitivity_n, SensitivityN, seg_sensitivity_n, SegSensitivityN, SensitivityNResult, \
     SegSensitivityNResult
-from .minimal_subset import minimal_subset, MinimalSubset, MinimalSubsetResult
+from .minimal_subset import minimal_subset_deletion, MinimalSubsetDeletion, MinimalSubsetResult, MinimalSubsetInsertion, minimal_subset_insertion

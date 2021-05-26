@@ -21,10 +21,29 @@ class _MinimalSubsetDataset:
         return self.num_steps
 
     def __getitem__(self, item):
+        raise NotImplementedError
+
+
+class _MinimalSubsetDeletionDataset(_MinimalSubsetDataset):
+    def __getitem__(self, item):
+        # Mask the k most important pixels
         num_to_mask = self.step_size * (item + 1)
-        if num_to_mask > self.sorted_indices.shape[1]:
-            raise StopIteration()
+        if num_to_mask >= self.sorted_indices.shape[1]:
+            raise StopIteration
+        # Selecting -num_to_mask: gives the most important pixels
         indices = self.sorted_indices[:, -num_to_mask:]
         masked_samples = self.masker.mask(self.samples, indices)
         return masked_samples, num_to_mask
 
+
+class _MinimalSubsetInsertionDataset(_MinimalSubsetDataset):
+    def __getitem__(self, item):
+        # Mask the n-k least important pixels
+        num_to_insert = self.step_size * (item + 1)
+        num_to_mask = self.sorted_indices.shape[1] - num_to_insert
+        if num_to_mask <= 0:
+            raise StopIteration
+        # Selecting :num_to_mask gives the least important pixels
+        indices = self.sorted_indices[:, :num_to_mask]
+        masked_samples = self.masker.mask(self.samples, indices)
+        return masked_samples, num_to_insert

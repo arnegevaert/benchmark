@@ -40,8 +40,11 @@ metrics:
 #    max_subset_size: 0.5
 #    num_steps: 10
 #    num_subsets: 100
-  minimal_subset:
-    type: MinimalSubset
+  minimal_subset_deletion:
+    type: MinimalSubsetDeletion
+    num_steps: 100
+  minimal_subset_insertion:
+    type: MinimalSubsetInsertion
     num_steps: 100
 #  irof_morf:
 #    type: Irof
