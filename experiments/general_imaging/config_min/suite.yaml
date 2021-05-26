@@ -15,23 +15,19 @@ default:
     - linear
 #    - softmax
 metrics:
-#  infidelity:
-#    type: Infidelity
-#    num_perturbations: 1000
-#    loss_fns:
-#      - mse
-#      - normalized_mse
-#      - corr
-#    perturbation_generators:
-#      segment:
-#        type: SegmentRemovalPerturbationGenerator
-#        num_segments: 10
-#      gaussian:
-#        type: GaussianPerturbationGenerator
-#        sd: 0.2
-#      square:
-#        type: SquareRemovalPerturbationGenerator
-#        square_size: 0.2
+  infidelity:
+    type: Infidelity
+    num_perturbations: 1000
+    perturbation_generators:
+      segment:
+        type: SegmentRemovalPerturbationGenerator
+        num_segments: 10
+      gaussian:
+        type: GaussianPerturbationGenerator
+        sd: 0.2
+      square:
+        type: SquareRemovalPerturbationGenerator
+        square_size: 0.2
 #  seg_sensitivity_n:
 #    type: SegSensitivityN
 #    min_subset_size: 0.1
@@ -47,18 +43,18 @@ metrics:
 #  deletion_until_flip:
 #    type: DeletionUntilFlip
 #    num_steps: 100
-  irof_morf:
-    type: Irof
-    start: 0.
-    stop: 0.1
-    num_steps: 10
-    mode: morf
-  irof_lerf:
-    type: Irof
-    start: 0.
-    stop: 0.1
-    num_steps: 10
-    mode: lerf
+#  irof_morf:
+#    type: Irof
+#    start: 0.
+#    stop: 0.1
+#    num_steps: 10
+#    mode: morf
+#  irof_lerf:
+#    type: Irof
+#    start: 0.
+#    stop: 0.1
+#    num_steps: 10
+#    mode: lerf
 #  iiof:
 #    type: Iiof
 #  insertion:
