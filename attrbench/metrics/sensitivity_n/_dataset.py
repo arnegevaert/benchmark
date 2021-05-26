@@ -48,7 +48,7 @@ class _SegSensNDataset:
         n = self.n_range[item // self.num_subsets]
         indices = [self.rng.choice(self.segments[i], size=n, replace=False)
                    for i in range(self.samples.shape[0])]
-        return mask_segments(self.samples, self.segmented_images, indices, self.masker), indices, n
+        return mask_segments(self.samples, self.segmented_images, indices, self.masker), np.array(indices), n
 
     def set_masker(self, masker: Masker):
         self.masker = masker

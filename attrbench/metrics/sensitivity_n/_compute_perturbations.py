@@ -26,7 +26,7 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, ds,
             fn_orig_out = ACTIVATION_FNS[fn](orig_output)
             fn_out = ACTIVATION_FNS[fn](output)
             output_diffs[fn][n].append((fn_orig_out - fn_out).gather(dim=1, index=labels.unsqueeze(-1)))  # [batch_size, 1]
-        removed_indices[n].append(indices.cpu().numpy())  # [batch_size, n]
+        removed_indices[n].append(indices)  # [batch_size, n]
 
     for n in n_range:
         for fn in activation_fns:
