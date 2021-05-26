@@ -53,7 +53,7 @@ metrics:
     num_steps: 100
     mode: morf
   irof_lerf:
-    type: Iiof
+    type: Irof
     start: 0.
     stop: 1.
     num_steps: 100
