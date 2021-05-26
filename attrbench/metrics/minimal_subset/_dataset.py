@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 
-class _DeletionUntilFlipDataset:
+class _MinimalSubsetDataset:
     def __init__(self, num_steps, samples: torch.tensor, attrs: np.ndarray, masker):
         self.num_steps = num_steps
         self.samples = samples

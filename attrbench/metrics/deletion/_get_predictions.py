@@ -3,7 +3,7 @@ from typing import Callable, List, Dict
 import torch
 
 from attrbench.lib.util import ACTIVATION_FNS
-from attrbench.metrics.insertion_deletion._dataset import _MaskingDataset
+from attrbench.metrics.deletion._dataset import _MaskingDataset
 
 
 def _get_predictions(masking_dataset: _MaskingDataset, labels: torch.Tensor,

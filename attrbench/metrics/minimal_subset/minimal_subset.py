@@ -6,17 +6,17 @@ import torch
 
 from attrbench.lib.masking import Masker
 from attrbench.metrics import MaskerMetric
-from ._dataset import _DeletionUntilFlipDataset
-from .result import DeletionUntilFlipResult
+from ._dataset import _MinimalSubsetDataset
+from .result import MinimalSubsetResult
 
 
 # We assume none of the samples has the same label as the output of the network when given
 # a fully masked image (in which case we might not see a flip)
-def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarray,
-                        num_steps: float, masker: Masker, writer=None):
+def minimal_subset(samples: torch.Tensor, model: Callable, attrs: np.ndarray,
+                   num_steps: float, masker: Masker, writer=None):
     if writer is not None:
         flipped_samples = [None for _ in range(samples.shape[0])]
-    ds = _DeletionUntilFlipDataset(num_steps, samples, attrs, masker)
+    ds = _MinimalSubsetDataset(num_steps, samples, attrs, masker)
     result = torch.tensor([-1 for _ in range(samples.shape[0])]).int()
     flipped = torch.tensor([False for _ in range(samples.shape[0])]).bool()
 
@@ -52,11 +52,11 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarra
     return result.reshape(-1, 1)
 
 
-class DeletionUntilFlip(MaskerMetric):
+class MinimalSubset(MaskerMetric):
     def __init__(self, model, method_names, num_steps, maskers, writer_dir=None):
         super().__init__(model, method_names, maskers, writer_dir)
         self.num_steps = num_steps
-        self._result: DeletionUntilFlipResult = DeletionUntilFlipResult(method_names + ["_BASELINE"], list(maskers.keys()))
+        self._result: MinimalSubsetResult = MinimalSubsetResult(method_names + ["_BASELINE"], list(maskers.keys()))
 
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         batch_result = defaultdict(dict)
@@ -64,14 +64,14 @@ class DeletionUntilFlip(MaskerMetric):
             # Compute results on baseline attributions
             masker_bl_result = []
             for i in range(baseline_attrs.shape[0]):
-                masker_bl_result.append(deletion_until_flip(
+                masker_bl_result.append(minimal_subset(
                     samples, self.model, baseline_attrs[i, ...], self.num_steps,masker
                 ).detach().cpu().numpy())
             batch_result[masker_name]["_BASELINE"] = np.stack(masker_bl_result, axis=1)
 
             # Compute results on actual attributions
             for method_name in attrs_dict:
-                batch_result[masker_name][method_name] = deletion_until_flip(
+                batch_result[masker_name][method_name] = minimal_subset(
                     samples, self.model, attrs_dict[method_name], self.num_steps,
                     masker, writer=self._get_writer(method_name)).detach().cpu().numpy()
         self.result.append(batch_result)

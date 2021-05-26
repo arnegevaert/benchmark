@@ -20,8 +20,8 @@ def get_metric_dfs(res_obj: SuiteResult, mode: str, infid_log=False):
             for afn, masker in product(("linear", "softmax"), ("constant", "random", "blur"))
         }
 
-    del_flip_res = res_obj.metric_results["deletion_until_flip"]
-    dfs["deletion_until_flip"] = {
+    del_flip_res = res_obj.metric_results["minimal_subset"]
+    dfs["minimal_subset"] = {
         f"{masker}": del_flip_res.get_df(mode=mode, masker=masker)
         for masker in ("constant", "random", "blur")
     }

@@ -1,5 +1,5 @@
 default:
-  num_steps: 100  # Used by deletion_until_flip, (strict_)impact_score, insertion, deletion
+  num_steps: 100  # Used by minimal_subset, (strict_)impact_score, insertion, deletion
 metrics:
   # ################### #
   # NON MASKING METRICS #
