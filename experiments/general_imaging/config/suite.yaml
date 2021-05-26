@@ -18,10 +18,6 @@ metrics:
   infidelity:
     type: Infidelity
     num_perturbations: 1000
-    loss_fns:
-      - mse
-      - normalized_mse
-      - corr
     perturbation_generators:
       segment:
         type: SegmentRemovalPerturbationGenerator
@@ -44,19 +40,36 @@ metrics:
     max_subset_size: 0.5
     num_steps: 10
     num_subsets: 100
-  deletion_until_flip:
-    type: DeletionUntilFlip
+  minimal_subset_deletion:
+    type: MinimalSubsetDeletion
     num_steps: 100
-  irof:
+  minimal_subset_insertion:
+    type: MinimalSubsetInsertion
+    num_steps: 100
+  irof_morf:
     type: Irof
-  iiof:
+    start: 0.
+    stop: 1.
+    num_steps: 100
+    mode: morf
+  irof_lerf:
     type: Iiof
-  insertion:
-    type: Insertion
+    start: 0.
+    stop: 1.
     num_steps: 100
-  deletion:
+    mode: lerf
+  deletion_morf:
     type: Deletion
+    start: 0.
+    stop: 1.
     num_steps: 100
+    mode: morf
+  deletion_lerf:
+    type: Deletion
+    start: 0.
+    stop: 1.
+    num_steps: 100
+    mode: lerf
   impact_coverage:
     type: ImpactCoverage
 #    max_sensitivity:
