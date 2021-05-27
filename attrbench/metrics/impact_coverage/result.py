@@ -1,5 +1,5 @@
-from attrbench.metrics import MetricResult
+from attrbench.metrics import BasicMetricResult
 
 
-class ImpactCoverageResult(MetricResult):
+class ImpactCoverageResult(BasicMetricResult):
     inverted = False

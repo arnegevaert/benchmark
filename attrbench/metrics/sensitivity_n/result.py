@@ -1,16 +1,17 @@
-from typing import List, Tuple
+from typing import List
 
 import h5py
 import numpy as np
 
-from attrbench.metrics import MetricResult, ActivationMetricResult
+from attrbench.metrics import MaskerActivationMetricResult
+from attrbench.lib import NDArrayTree
 
 
-class SensitivityNResult(ActivationMetricResult):
+class SensitivityNResult(MaskerActivationMetricResult):
     inverted = False
 
-    def __init__(self, method_names: List[str], activation_fns: Tuple[str], index: np.ndarray):
-        super().__init__(method_names, activation_fns)
+    def __init__(self, method_names: List[str], maskers: List[str], activation_fns: List[str], index: np.ndarray):
+        super().__init__(method_names, maskers, activation_fns)
         self.index = index
 
     def add_to_hdf(self, group: h5py.Group):
@@ -18,16 +19,16 @@ class SensitivityNResult(ActivationMetricResult):
         super().add_to_hdf(group)
 
     @classmethod
-    def load_from_hdf(cls, group: h5py.Group) -> MetricResult:
-        method_names = list(group.keys())
-        activation_fns = tuple(group[method_names[0]].keys())
-        result = cls(method_names, activation_fns, group.attrs["index"])
-        result.data = {m_name: {fn: np.array(group[m_name][fn]) for fn in activation_fns}
-                       for m_name in method_names}
+    def load_from_hdf(cls, group: h5py.Group) -> MaskerActivationMetricResult:
+        maskers = list(group.keys())
+        activation_fns = list(group[maskers[0]].keys())
+        method_names = list(group[maskers[0]][activation_fns[0]].keys())
+        result = cls(method_names, maskers, activation_fns, group.attrs["index"])
+        result._tree = NDArrayTree.load_from_hdf(["masker", "activation_fn", "method"], group)
         return result
 
-    def _aggregate(self, data):
-        return np.mean(data, axis=1)
+    def _postproc_fn(self, x):
+        return np.mean(x, axis=1)
 
 
 class SegSensitivityNResult(SensitivityNResult):

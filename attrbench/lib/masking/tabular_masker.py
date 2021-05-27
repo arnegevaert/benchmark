@@ -5,14 +5,14 @@ import typing
 from typing import List, Union
 
 class TabularMasker(ImageMasker):
-    def __init__(self, samples: np.ndarray, attributions: np.ndarray, mask_value:Union[float, List[float]] =0.):
+    def __init__(self,mask_value:Union[float, List[float]] =0.):
         self.mask_value = mask_value
-        super().__init__(samples, attributions, "channel", None)
-        self.initialize_baselines(samples)
+        super().__init__("channel")
 
     def initialize_baselines(self, samples):
         mask = torch.tensor(self.mask_value, device=samples.device, dtype = samples.dtype)
         self.baseline = torch.ones(samples.shape, device=samples.device, dtype = samples.dtype) * mask
+
     def _check_attribution_shape(self, samples, attributions):
         check1 = super()._check_attribution_shape(samples,attributions)
         if not isinstance(self.mask_value, float):

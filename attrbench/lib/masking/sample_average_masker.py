@@ -2,9 +2,9 @@ from attrbench.lib.masking import ImageMasker
 import torch
 
 class SampleAverageMasker(ImageMasker):
-    def __init__(self, samples, attributions, feature_level, segmented_samples=None):
-        super().__init__(samples, attributions, feature_level, segmented_samples)
-        self.initialize_baselines(samples)
+    def __init__(self, feature_level):
+        super().__init__( feature_level)
+
 
     def initialize_baselines(self, samples: torch.tensor):
         batch_size, num_channels, rows, cols = samples.shape

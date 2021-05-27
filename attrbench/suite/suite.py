@@ -1,12 +1,12 @@
 from attrbench.suite import SuiteResult
 from attrbench.metrics import Metric
 from attrbench.lib import AttributionWriter
-from .config import Config
 from tqdm import tqdm
 import torch
+from torch.utils.data import DataLoader
 import numpy as np
 from os import path
-from typing import Dict
+from typing import Dict, Callable
 import logging
 
 
@@ -17,98 +17,105 @@ class Suite:
     a given model and dataset.
     """
 
-    def __init__(self, model, methods, dataloader, device="cpu",
-                 save_images=False, save_attrs=False, seed=None, patch_folder=None,
-                 log_dir=None, explain_label=None, multi_label=False):
+    def __init__(self, model: torch.nn.Module, methods: Dict[str, Callable], metrics: Dict[str, Metric],
+                 device="cpu", num_baseline_samples=25, log_dir: str = None, explain_label: int = None,
+                 multi_label=False):
         torch.multiprocessing.set_sharing_strategy("file_system")
-        self.metrics: Dict[str, Metric] = {}
+        # Save arguments as properties
         self.model = model.to(device)
-        self.model.eval()
         self.methods = methods
-        self.dataloader = dataloader
+        self.metrics = metrics
+        self.num_baseline_samples = num_baseline_samples
         self.device = device
-        self.patch_folder = patch_folder
-        self.save_images = save_images
-        self.save_attrs = save_attrs
-        self.images = []
-        self.samples_done = 0
-        self.attrs = {method_name: [] for method_name in self.methods}
-        self.seed = seed
         self.log_dir = log_dir
         self.explain_label = explain_label
         self.multi_label = multi_label
+        self.rng = np.random.default_rng()
+        self.attrs_shape = None
+
+        # Construct other properties
+        self.model.eval()
+        self.writer = None
         if self.log_dir is not None:
             logging.info(f"Logging TensorBoard to {self.log_dir}")
-        self.writer = AttributionWriter(path.join(self.log_dir, "images_and_attributions")) \
-            if self.log_dir is not None else None
+            self.writer = AttributionWriter(path.join(self.log_dir, "images_and_attributions"))
 
-    def load_config(self, loc):
-        global_args = {
-            "model": self.model,
-            "patch_folder": self.patch_folder,
-            "methods": self.methods,
-            "method_names": list(self.methods.keys()),
-        }
-        cfg = Config(loc, global_args, log_dir=self.log_dir)
-        self.metrics = cfg.load()
+    def _compute_attrs(self, samples, labels):
+        logging.info("Computing attributions...")
+        attrs = {}
+        for method_name in self.methods.keys():
+            logging.info(method_name)
+            attrs[method_name] = self.methods[method_name](samples, labels).cpu().detach().numpy()
+            if self.attrs_shape is None:
+                self.attrs_shape = attrs[method_name].shape
+        logging.info("Finished.")
+        return attrs
 
-    def run(self, num_samples, verbose=True):
+    def run(self, dataloader: DataLoader, num_samples: int = None, seed: int = None,
+            save_images=False, save_attrs=False, out_filename=None) -> SuiteResult:
+        # Initialization
         samples_done = 0
-        prog = tqdm(total=num_samples) if verbose else None
-        if self.seed:
-            torch.manual_seed(self.seed)
-            np.random.seed(self.seed)
-        it = iter(self.dataloader)
-        batch_size = self.dataloader.batch_size
-        # We will check the output shapes of methods on the first batch
-        # to make sure they are compatible with the masking policy
-        checked_shapes = False
+        prog = tqdm(total=num_samples) if num_samples else tqdm()
+        if seed is not None:
+            torch.manual_seed(seed)
+            np.random.seed(seed)
+
+        # Initialize result object
+        suite_result = SuiteResult(seed=seed)
+
+        it = iter(dataloader)
+        batch_size = dataloader.batch_size
         batch_nr = 0
-        while samples_done < num_samples:
-            labels, samples = self.get_batch(it, batch_size)
-            if samples.size(0) > 0:
-                batch_nr += 1
-                if samples_done + samples.size(0) > num_samples:
-                    diff = num_samples - samples_done
-                    samples = samples[:diff]
-                    labels = labels[:diff]
-                # Save images and attributions if specified
-                if self.save_images:
-                    self.images.append(samples.cpu().detach().numpy())
+        done = False
+        while not done:
+            # Check if we need to truncate our final batch
+            if num_samples is not None and samples_done + batch_size > num_samples:
+                batch_size = num_samples - samples_done
 
-                # We need the attributions, to save them or to check their shapes
-                logging.info("Computing attributions...")
-                attrs = {}
-                for method_name in self.methods.keys():
-                    logging.info(method_name)
-                    attrs[method_name] = self.methods[method_name](samples, labels).cpu().detach().numpy()
-                logging.info("Finished.")
+            # Get batch
+            try:
+                labels, samples = self.get_batch(it, batch_size)
+            except StopIteration:
+                break
+            batch_nr += 1
 
-                if self.writer is not None:
-                    self.writer.add_images("Samples", samples, global_step=batch_nr)
-                    for name in attrs.keys():
-                        self.writer.add_attribution(name, attrs[name], batch_nr)
+            # Calculate all attributions
+            attrs_dict = self._compute_attrs(samples, labels)
+            baseline_attrs = self.rng.random((self.num_baseline_samples, *self.attrs_shape)) * 2 - 1
 
-                # Save attributions if necessary
-                if self.save_attrs:
-                    for method_name in self.methods:
-                        self.attrs[method_name].append(attrs[method_name])
+            # Save samples to writer
+            if self.writer is not None:
+                self.writer.add_images("Samples", samples, global_step=batch_nr)
+                for name in attrs_dict.keys():
+                    self.writer.add_attribution(name, attrs_dict[name], batch_nr)
 
-                # Metric loop
-                for i, metric in enumerate(self.metrics.keys()):
-                    if verbose:
-                        prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
-                    self.metrics[metric].run_batch(samples, labels, attrs)
+            # Save images and attributions
+            if save_images:
+                suite_result.add_images(samples.cpu().detach().numpy())
+            if save_attrs:
+                suite_result.add_attributions(attrs_dict)
 
-                if verbose:
-                    prog.update(samples.size(0))
-                samples_done += samples.size(0)
-        self.samples_done += num_samples
+            # Metric loop
+            for i, metric in enumerate(self.metrics.keys()):
+                prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
+                self.metrics[metric].run_batch(samples, labels, attrs_dict, baseline_attrs)
+            prog.update(samples.size(0))
+            samples_done += samples.size(0)
+
+            if out_filename:
+                suite_result.set_metric_results({metric: self.metrics[metric].result for metric in self.metrics})
+                suite_result.num_samples = samples_done
+                suite_result.save_hdf(out_filename)
+            # If we have a predetermined amount of samples, check if we have enough
+            # Otherwise, we just keep going until there are no samples left
+            if num_samples is not None:
+                done = samples_done >= num_samples
+        return suite_result
 
     def get_batch(self, it, batch_size):
         out_samples, out_labels = [], []
         out_size = 0
-        # collect a full batch
+        # collect a full batch of correctly classified samples
         while out_size < batch_size:
             full_batch, full_labels = next(it)
             full_batch = full_batch.to(self.device)
@@ -143,13 +150,4 @@ class Suite:
         samples=samples[:batch_size].to(self.device)
         return labels, samples
 
-    def save_result(self, loc):
-        metric_results = {metric_name: self.metrics[metric_name].get_result() for metric_name in self.metrics}
-        attrs = None
-        if self.save_attrs:
-            attrs = {}
-            for method_name in self.methods:
-                attrs[method_name] = np.concatenate(self.attrs[method_name])
-        images = np.concatenate(self.images) if self.save_images else None
-        result = SuiteResult(metric_results, self.samples_done, self.seed, images, attrs)
-        result.save_hdf(loc)
+

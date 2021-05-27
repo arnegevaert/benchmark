@@ -13,8 +13,8 @@ class _InsertionDeletionDataset:
         self.mode = mode
         self.num_steps = num_steps
         self.samples = samples
-        masker_constructor, masker_kwargs=masker
-        self.masker = masker_constructor(samples, attrs,**masker_kwargs)
+        self.masker = masker
+        masker.initialize_batch(samples, attrs)
         total_features = self.masker.get_total_features()
         self.mask_range = list((np.linspace(0, 1, num_steps) * total_features)[1:-1].astype(np.int))
 
@@ -36,14 +36,11 @@ class _IrofIiofDataset:
         self.segmented_images = segment_samples(samples.cpu().numpy())
         # self.segmented_images = torch.tensor(segment_samples(samples.cpu().numpy()), device=samples.device)
         # Override masker
-        masker_constructor, masker_kwargs=masker
-        self.masker = masker_constructor(samples, attrs,**masker_kwargs, segmented_samples=self.segmented_images)
+        self.masker=masker
+        self.masker.initialize_batch(samples, attrs, segmented_samples=self.segmented_images)
         if writer is not None:
             writer.add_images("segmented samples", self.segmented_images)
 
-    # def set_attrs(self, attrs: np.ndarray):
-    #     avg_attrs = segment_attributions(self.segmented_images, torch.tensor(attrs, device=self.samples.device))
-    #     self.sorted_indices = avg_attrs.argsort()  # [batch_size, num_segments]
 
     def __len__(self):
         # Exclude fully masked/inserted image

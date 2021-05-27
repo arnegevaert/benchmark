@@ -1,19 +1,35 @@
 import numpy as np
 from os import path, makedirs
 import h5py
-from typing import Dict
-from attrbench.metrics import MetricResult
+from typing import Dict, Optional
+from attrbench.metrics import AbstractMetricResult
 from attrbench import metrics
 
 
 class SuiteResult:
-    def __init__(self, metric_results: Dict[str, MetricResult], num_samples: int, seed: int = None,
-                 images: np.ndarray = None, attributions: Dict[str, np.ndarray] = None):
+    def __init__(self, metric_results: Dict[str, AbstractMetricResult] = None, num_samples: int = None,
+                 seed: int = None, images: np.ndarray = None, attributions: Dict[str, np.ndarray] = None):
         self.metric_results = metric_results
         self.num_samples = num_samples
         self.seed = seed
-        self.images = images
-        self.attributions = attributions
+        self.images: Optional[np.ndarray] = images
+        self.attributions: Optional[Dict[str, np.ndarray]] = attributions
+
+    def set_metric_results(self, metric_results: Dict[str, AbstractMetricResult]):
+        self.metric_results = metric_results
+
+    def add_images(self, images: np.ndarray):
+        if self.images is None:
+            self.images = images
+        else:
+            self.images = np.concatenate([self.images, images], axis=0)
+
+    def add_attributions(self, attrs: Dict[str, np.ndarray]):
+        if self.attributions is None:
+            self.attributions = attrs
+        else:
+            for method_name in self.attributions.keys():
+                self.attributions[method_name] = np.concatenate([self.attributions[method_name], attrs[method_name]])
 
     def save_hdf(self, filename):
         # if dir not exists: create dir
@@ -40,8 +56,9 @@ class SuiteResult:
             result_group = fp.create_group("results")
             for metric_name in self.metric_results:
                 metric_group = result_group.create_group(metric_name)
-                metric_group.attrs["type"] = str(self.metric_results[metric_name].__class__.__name__)
-                self.metric_results[metric_name].add_to_hdf(metric_group)
+                result_obj = self.metric_results[metric_name]
+                metric_group.attrs["type"] = str(result_obj.__class__.__name__)
+                result_obj.add_to_hdf(metric_group)
 
     @staticmethod
     def load_hdf(filename):
@@ -62,7 +79,7 @@ class SuiteResult:
                 result_group = fp["results"]
                 for metric_name in result_group.keys():
                     result_type = result_group[metric_name].attrs["type"]
-                    result_obj: MetricResult = getattr(metrics, result_type).load_from_hdf(result_group[metric_name])
+                    result_obj: AbstractMetricResult = getattr(metrics, result_type).load_from_hdf(result_group[metric_name])
                     metric_results[metric_name] = result_obj
                 return SuiteResult(metric_results, num_samples, seed, images, attributions)
         else:

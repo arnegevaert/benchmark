@@ -7,6 +7,7 @@ from attrbench.metrics import Metric
 from ._compute_coverage import _compute_coverage
 from ._apply_patches import _apply_patches
 from .result import ImpactCoverageResult
+import numpy as np
 
 
 def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable, method: Callable,
@@ -14,7 +15,7 @@ def impact_coverage(samples: torch.Tensor, labels: torch.Tensor, model: Callable
     if len(samples.shape) != 4:
         raise ValueError("Impact Coverage can only be computed for image data and expects 4 input dimensions")
     attacked_samples, patch_mask, targets = _apply_patches(samples, labels, model, patch_folder)
-    return _compute_coverage(attacked_samples, method, patch_mask, targets, writer)
+    return _compute_coverage(attacked_samples, patch_mask, targets, method, writer)
 
 
 class ImpactCoverage(Metric):
@@ -24,13 +25,22 @@ class ImpactCoverage(Metric):
         self.patch_folder = patch_folder
         self.writers = {method_name: path.join(writer_dir, method_name) if writer_dir else None
                         for method_name in methods}
-        self.result = ImpactCoverageResult(list(methods.keys()))
+        self._result: ImpactCoverageResult = ImpactCoverageResult(list(methods.keys()) + ["_BASELINE"])
 
-    def run_batch(self, samples, labels, attrs_dict=None):
+    def run_batch(self, samples, labels, attrs_dict: Dict = None, baseline_attrs: np.ndarray = None):
         attacked_samples, patch_mask, targets = _apply_patches(samples, labels,
                                                                self.model, self.patch_folder)
+        batch_result = {}
+        # Compute results on baseline attributions
+        baseline_result = []
+        for i in range(baseline_attrs.shape[0]):
+            baseline_result.append(
+                _compute_coverage(attacked_samples, patch_mask, targets, attrs=baseline_attrs[i, ...]).reshape(-1, 1))
+        batch_result["_BASELINE"] = np.stack(baseline_result, axis=1)
+
+        # Compute results on actual attributions
         for method_name in self.methods:
-            method = self.methods[method_name]
-            iou = _compute_coverage(attacked_samples, method, patch_mask,
-                                    targets, writer=self._get_writer(method_name)).reshape(-1, 1)
-            self.result.append(method_name, iou)
+            batch_result[method_name] = _compute_coverage(attacked_samples, patch_mask, targets,
+                                                          self.methods[method_name],
+                                                          writer=self._get_writer(method_name)).reshape(-1, 1).cpu().detach().numpy()
+        self.result.append(batch_result)

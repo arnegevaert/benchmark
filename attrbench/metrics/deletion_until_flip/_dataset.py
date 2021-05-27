@@ -6,8 +6,8 @@ class _DeletionUntilFlipDataset:
     def __init__(self, num_steps, samples: torch.tensor, attrs: np.ndarray, masker):
         self.num_steps = num_steps
         self.samples = samples
-        masker_constructor, masker_kwargs=masker
-        self.masker = masker_constructor(samples, attrs,**masker_kwargs)
+        self.masker = masker
+        masker.initialize_batch(samples,attrs)
         self.total_features = self.masker.get_total_features() # get_total_features = sorted_indices.shape[1]
         self.step_size = int(self.total_features / num_steps)
         if num_steps > self.total_features or num_steps < 2:

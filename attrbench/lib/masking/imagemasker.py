@@ -3,27 +3,18 @@ import numpy as np
 import torch
 
 
-
 class ImageMasker(Masker):
-    def __init__(self, samples: torch.tensor, attributions: np.ndarray, feature_level, segmented_samples: torch.tensor =None):
+    def __init__(self, feature_level):
         if feature_level not in ("channel", "pixel"):
             raise ValueError(f"feature_level must be 'channel' or 'pixel'. Found {feature_level}.")
         self.feature_level = feature_level
-        if not self._check_attribution_shape(samples,attributions):
-            raise ValueError(f"samples and attribution shape not compatible for feature level {feature_level}."
-                             f"Found shapes {samples.shape} and {attributions.shape}")
-        super().__init__(samples, attributions)
+        super().__init__()
+        # will be set after initialize_batch:
+        self.segm_samples = None
+        self.use_segments = False
 
-        self.segm_samples=segmented_samples
-        self.use_segments = self.segm_samples is not None
-        if self.segm_samples is not None:
-            self.sorted_indices = self.segment_attributions(self.segm_samples, self.attributions).argsort()
-            assert(self.sorted_indices.shape[1]-1 == segmented_samples.max())
-        else:
-            self.sorted_indices = attributions.reshape(attributions.shape[0], -1).argsort()
-
-
-    def segment_attributions(self,seg_images: torch.tensor, attrs: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def segment_attributions(seg_images: torch.tensor, attrs: np.ndarray) -> np.ndarray:
         segments = np.unique(seg_images)
         seg_img_flat = seg_images.reshape(seg_images.shape[0], -1)
         attrs_flat = attrs.reshape(attrs.shape[0], -1)
@@ -33,7 +24,7 @@ class ImageMasker(Masker):
             masked_attrs = mask * attrs_flat
             mask_size = np.sum(mask, axis=1)
             sum_attrs = np.sum(masked_attrs, axis=1)
-            mean_attrs = np.divide(sum_attrs, mask_size, out=np.zeros_like(sum_attrs), where=mask_size!=0)
+            mean_attrs = np.divide(sum_attrs, mask_size, out=np.zeros_like(sum_attrs), where=mask_size != 0)
             # If seg does not exist for image, mean_attrs will be nan. Replace with -inf.
             avg_attrs[:, i] = np.nan_to_num(mean_attrs, nan=-np.inf)
         return avg_attrs
@@ -54,8 +45,8 @@ class ImageMasker(Masker):
             aggregated_shape[1] = 1
             return aggregated_shape == list(attributions.shape)
 
-    def mask_rand(self,k,return_indices=False):
-        if k==0:
+    def mask_rand(self, k, return_indices=False):
+        if k == 0:
             return self.samples
         rng = np.random.default_rng()
         if not self.use_segments:
@@ -66,7 +57,7 @@ class ImageMasker(Masker):
             # k can be large -> rng.choice raises exception if k > number of segments
             indices = np.stack([rng.choice(np.unique(self.segm_samples[i, ...]), size=k, replace=False)
                                 for i in range(self.segm_samples.shape[0])])
-            masked_samples= self._mask_segments(self.samples, self.segm_samples, indices)
+            masked_samples = self._mask_segments(self.samples, self.segm_samples, indices)
         if return_indices: return masked_samples, indices
         return masked_samples
 
@@ -80,7 +71,7 @@ class ImageMasker(Masker):
             num_indices = indices.shape[1]
             batch_dim = np.tile(range(batch_size), (num_indices, 1)).transpose()
 
-            #to_mask = torch.zeros(samples.shape).flatten(1 if self.feature_level == "channel" else 2)
+            # to_mask = torch.zeros(samples.shape).flatten(1 if self.feature_level == "channel" else 2)
             to_mask = np.zeros(samples.shape)
             if self.feature_level == "channel":
                 to_mask = to_mask.reshape((to_mask.shape[0], -1))
@@ -97,8 +88,6 @@ class ImageMasker(Masker):
             to_mask = to_mask.reshape(samples.shape)
             return self._mask_boolean(samples, to_mask)
 
-
-
     def _mask_segments(self, images: torch.tensor, seg_images: torch.tensor, segments: np.ndarray) -> np.ndarray:
         if not (images.shape[0] == seg_images.shape[0] and images.shape[0] == segments.shape[0] and
                 images.shape[-2:] == seg_images.shape[-2:]):
@@ -112,14 +101,33 @@ class ImageMasker(Masker):
         return self._mask_boolean(images, bool_masks)
 
     def _mask_boolean(self, samples, bool_mask):
-        bool_mask = torch.tensor(bool_mask, dtype=samples.dtype, device = samples.device)
+        bool_mask = torch.tensor(bool_mask, dtype=samples.dtype, device=samples.device)
         return samples - (bool_mask * samples) + (bool_mask * self.baseline)
+
     # why not return samples[bool_mask] = self.baseline[bool_mask] ?
+
+    def initialize_batch(self, samples: torch.tensor, attributions: np.ndarray,segmented_samples: torch.tensor = None):
+        if not self._check_attribution_shape(samples, attributions):
+            raise ValueError(f"samples and attribution shape not compatible for feature level {self.feature_level}."
+                             f"Found shapes {samples.shape} and {attributions.shape}")
+        self.samples = samples
+        self.attributions = attributions
+
+        self.segm_samples = segmented_samples
+        self.use_segments = self.segm_samples is not None
+        if self.segm_samples is not None:
+            self.sorted_indices = self.segment_attributions(self.segm_samples, self.attributions).argsort()
+            assert (self.sorted_indices.shape[1] - 1 == segmented_samples.max())
+        else:
+            self.sorted_indices = attributions.reshape(attributions.shape[0], -1).argsort()
+
+        self.initialize_baselines(self.samples)
 
 
     def initialize_baselines(self, samples):
         raise NotImplementedError
 
+
 def _isin(a: torch.tensor, b: torch.tensor):
-# https://stackoverflow.com/questions/60918304/get-indices-of-elements-in-tensor-a-that-are-present-in-tensor-b
+    # https://stackoverflow.com/questions/60918304/get-indices-of-elements-in-tensor-a-that-are-present-in-tensor-b
     return (a[..., None] == b).any(-1)

@@ -4,15 +4,15 @@ import torch
 
 
 class Masker:
-    def __init__(self, samples: torch.tensor, attributions: np.ndarray):
-        if not self._check_attribution_shape(samples,attributions):
-            raise ValueError(f"samples and attribution shape not compatible."
-                             f"Found shapes {samples.shape} and {attributions.shape}")
+    def __init__(self):
+        # if not self._check_attribution_shape(samples,attributions):
+        #     raise ValueError(f"samples and attribution shape not compatible."
+        #                      f"Found shapes {samples.shape} and {attributions.shape}")
 
         self.baseline = None
-        self.samples=samples
-        self.attributions=attributions
-        self.sorted_indices = attributions.reshape(attributions.shape[0], -1).argsort()
+        self.samples=None
+        self.attributions=None
+        self.sorted_indices = None #attributions.reshape(attributions.shape[0], -1).argsort()
 
     def get_total_features(self):
         return self.sorted_indices.shape[1]
@@ -54,6 +54,9 @@ class Masker:
         raise NotImplementedError
 
     def _mask_boolean(self, samples, bool_mask):
+        raise NotImplementedError
+
+    def initialize_batch(self, samples: torch.tensor, attributions: np.ndarray):
         raise NotImplementedError
 
     def initialize_baselines(self, samples):

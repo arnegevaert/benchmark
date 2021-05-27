@@ -1,11 +1,11 @@
 from typing import Callable
+from collections import defaultdict
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
 
 from attrbench.lib.masking import Masker
-from attrbench.metrics import Metric
+from attrbench.metrics import MaskerMetric
 from ._dataset import _DeletionUntilFlipDataset
 from .result import DeletionUntilFlipResult
 
@@ -13,7 +13,7 @@ from .result import DeletionUntilFlipResult
 # We assume none of the samples has the same label as the output of the network when given
 # a fully masked image (in which case we might not see a flip)
 def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarray,
-                        num_steps: float, masker: Masker, writer=None, num_workers=0):
+                        num_steps: float, masker: Masker, writer=None):
     if writer is not None:
         flipped_samples = [None for _ in range(samples.shape[0])]
     ds = _DeletionUntilFlipDataset(num_steps, samples, attrs, masker)
@@ -49,22 +49,30 @@ def deletion_until_flip(samples: torch.Tensor, model: Callable, attrs: np.ndarra
     return result.reshape(-1, 1)
 
 
-class DeletionUntilFlip(Metric):
-    def __init__(self, model, method_names, num_steps, masker, writer_dir=None):
-        super().__init__(model, method_names, writer_dir)
+class DeletionUntilFlip(MaskerMetric):
+    def __init__(self, model, method_names, num_steps, maskers, writer_dir=None):
+        super().__init__(model, method_names, maskers, writer_dir)
         self.num_steps = num_steps
-        self.masker = masker
-        self.result = DeletionUntilFlipResult(method_names)
+        self._result: DeletionUntilFlipResult = DeletionUntilFlipResult(method_names + ["_BASELINE"], list(maskers.keys()))
 
-    def run_batch(self, samples, labels, attrs_dict: dict):
-        for method_name in attrs_dict:
-            if method_name not in self.result.method_names:
-                raise ValueError(f"Invalid method name: {method_name}")
-            self.result.append(method_name,
-                               deletion_until_flip(samples, self.model, attrs_dict[method_name], self.num_steps,
-                                                   self.masker, writer=self._get_writer(method_name))
-                               )
 
+    def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
+        batch_result = defaultdict(dict)
+        for masker_name, masker in self.maskers.items():
+            # Compute results on baseline attributions
+            masker_bl_result = []
+            for i in range(baseline_attrs.shape[0]):
+                masker_bl_result.append(deletion_until_flip(
+                    samples, self.model, baseline_attrs[i, ...], self.num_steps,masker
+                ).detach().cpu().numpy())
+            batch_result[masker_name]["_BASELINE"] = np.stack(masker_bl_result, axis=1)
+
+            # Compute results on actual attributions
+            for method_name in attrs_dict:
+                batch_result[masker_name][method_name] = deletion_until_flip(
+                    samples, self.model, attrs_dict[method_name], self.num_steps,
+                    masker, writer=self._get_writer(method_name)).detach().cpu().numpy()
+        self.result.append(batch_result)
 
 def _predict(model, inputs):
     with torch.no_grad():

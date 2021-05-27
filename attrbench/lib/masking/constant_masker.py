@@ -5,10 +5,9 @@ import torch
 
 
 class ConstantMasker(ImageMasker):
-    def __init__(self, samples, attributions, feature_level, mask_value=0., segmented_samples: np.ndarray =None):
-        super().__init__(samples, attributions, feature_level, segmented_samples)
+    def __init__(self,feature_level, mask_value=0.):
+        super().__init__( feature_level)
         self.mask_value = mask_value
-        self.initialize_baselines(samples)
 
 
     def initialize_baselines(self, samples: torch.tensor):
