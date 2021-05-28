@@ -63,22 +63,26 @@ class _IrofDataset(_MaskingDataset):
         self.sorted_indices = None
         self.mask_ranges = None
         # Override sorted_indices to use segment indices instead of pixel indices
-        self.segmented_images = segment_samples(samples.cpu().numpy())
+        self.segmented_images = torch.tensor(segment_samples(samples.cpu().numpy()), device=samples.device)
         if writer is not None:
             writer.add_images("segmented samples", torch.tensor(self.segmented_images))
 
     def set_attrs(self, attrs: np.ndarray):
-        avg_attrs = segment_attributions(self.segmented_images, attrs)
+        avg_attrs = segment_attributions(self.segmented_images, torch.tensor(attrs, device=self.samples.device))
         sorted_indices = []
         mask_ranges = []
         for i in range(self.segmented_images.shape[0]):
             # For each image, sort the indices separately
             cur_sorted_indices = avg_attrs[i, ...].argsort()
             # Count how many times -inf was present (these are non-existing segments)
-            num_infs = np.count_nonzero(avg_attrs[i, ...] == -np.inf)
-            # Remove the indices of non-existing segments, these are the first num_infs entries in the sorted indices
-            cur_sorted_indices = cur_sorted_indices[num_infs:]
-            sorted_indices.append(cur_sorted_indices if self.mode == "morf" else cur_sorted_indices[::-1])
+            if (avg_attrs[i, ...] == -np.inf).any().item():
+                # There are -inf values present
+                elements, counts = torch.unique(avg_attrs, return_counts=True)
+                num_infs = counts[0].item()
+                # Remove the indices of non-existing segments,
+                # these are the first num_infs entries in the sorted indices
+                cur_sorted_indices = cur_sorted_indices[num_infs:]
+            sorted_indices.append(cur_sorted_indices if self.mode == "morf" else torch.flip(cur_sorted_indices, dims=(0,)))
             # Compute corresponding mask range for this image
             num_segments = len(cur_sorted_indices)
             mask_ranges.append(list((np.linspace(self.start, self.stop, self.num_steps) * num_segments).astype(np.int)))
@@ -95,7 +99,7 @@ class _IrofDataset(_MaskingDataset):
             num_to_mask = self.mask_ranges[i][item]
             # Get num_segments most important (if morf) or least important (if lerf) segments
             if num_to_mask == 0:
-                indices.append([])
+                indices.append(torch.tensor([], device=self.samples.device))
             else:
                 indices.append(self.sorted_indices[i][-num_to_mask:])
         return mask_segments(self.samples, self.segmented_images, indices, self.masker)

@@ -33,8 +33,9 @@ class _SegSensNDataset:
         self.masker = masker
         if self.masker is not None:
             self.masker.initialize_baselines(samples)
-        self.segmented_images = segment_samples(samples.cpu().numpy())
-        self.segments = [np.unique(self.segmented_images[i, ...]) for i in range(samples.shape[0])]
+        segmented_images = segment_samples(samples.cpu().numpy())
+        self.segmented_images = torch.tensor(segmented_images, device=samples.device)
+        self.segments = [np.unique(segmented_images[i, ...]) for i in range(samples.shape[0])]
         self.rng = np.random.default_rng()
         if writer is not None:
             writer.add_images("segmented samples", self.segmented_images)
@@ -46,9 +47,9 @@ class _SegSensNDataset:
         if self.masker is None:
             raise ValueError("Masker not set")
         n = self.n_range[item // self.num_subsets]
-        indices = [self.rng.choice(self.segments[i], size=n, replace=False)
+        indices = [torch.tensor(self.rng.choice(self.segments[i], size=n, replace=False), device=self.samples.device)
                    for i in range(self.samples.shape[0])]
-        return mask_segments(self.samples, self.segmented_images, indices, self.masker), np.array(indices), n
+        return mask_segments(self.samples, self.segmented_images, indices, self.masker), torch.stack(indices).cpu(), n
 
     def set_masker(self, masker: Masker):
         self.masker = masker
