@@ -95,14 +95,16 @@ class SensitivityN(MaskerMetric):
             self.pool.close()
 
     def compute_and_append_results(self, n_range: List[int], output_diffs_dict: Dict, indices_dict: Dict,
-                                   attrs_dict: Dict, baseline_attrs: np.ndarray, result: SensitivityNResult):
+                                   attrs_dict: Dict[str, np.ndarray], baseline_attrs: np.ndarray,
+                                   result: SensitivityNResult):
         method_results = {masker: {afn: {method_name: None for method_name in self.method_names}
                                    for afn in self.activation_fns}
                           for masker in self.maskers}
         baseline_results = {masker: {afn: [] for afn in self.activation_fns} for masker in self.maskers}
         for masker_name in self.maskers:
             for method_name in self.method_names:
-                res = _compute_correlations(attrs_dict[method_name], n_range, output_diffs_dict[masker_name],
+                res = _compute_correlations(attrs_dict[method_name], n_range,
+                                            output_diffs_dict[masker_name],
                                             indices_dict[masker_name])
                 for afn in self.activation_fns:
                     method_results[masker_name][afn][method_name] = res[afn].cpu().detach().numpy()
@@ -149,8 +151,12 @@ class SegSensitivityN(SensitivityN):
         ds = _SegSensNDataset(self.n_range, self.num_subsets, samples)
         segmented_attrs_dict = {method_name: segment_attributions(ds.segmented_images,
                                                                   torch.tensor(attrs_dict[method_name],
-                                                                               device=samples.device))
+                                                                               device=samples.device)).cpu().detach().numpy()
                                 for method_name in attrs_dict}
+        segmented_baseline_attrs = torch.stack(
+            [segment_attributions(ds.segmented_images, torch.tensor(baseline_attrs[i, ...], device=samples.device))
+             for i in range(baseline_attrs.shape[0])], dim=0).cpu().detach().numpy()
+
         output_diffs_dict, indices_dict = {}, {}
         for masker_name, masker in self.maskers.items():
             # Create pseudo-dataset
@@ -163,14 +169,14 @@ class SegSensitivityN(SensitivityN):
 
         if os.getenv("NO_MULTIPROC"):
             self.compute_and_append_results(self.n_range, output_diffs_dict, indices_dict, segmented_attrs_dict,
-                                            baseline_attrs, self.result)
+                                            segmented_baseline_attrs, self.result)
         else:
             result = self.result
             self.pool = multiprocessing.pool.ThreadPool(processes=1)
             self.pool.apply_async(self.compute_and_append_results,
                                   args=(
                                       self.n_range, output_diffs_dict, indices_dict, segmented_attrs_dict,
-                                      baseline_attrs, result))
+                                      segmented_baseline_attrs, result))
             self.pool.close()
 
     @property
