@@ -22,6 +22,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--multi_label", action="store_true")
     parser.add_argument("--explain_label", type=int, default=None)
+    parser.add_argument("--num_baseline", type=int, default=25)
     # Parse arguments
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
@@ -43,6 +44,7 @@ if __name__ == "__main__":
     metrics = MetricLoader(args.suite_config, model, methods, args.log_dir, patch_folder=patch_folder).load()
 
     # Run BM suite and save result to disk
-    bm_suite = Suite(model, methods, metrics, device, log_dir=args.log_dir, multi_label=args.multi_label, explain_label=args.explain_label)
+    bm_suite = Suite(model, methods, metrics, device, log_dir=args.log_dir, multi_label=args.multi_label,
+                     explain_label=args.explain_label, num_baseline_samples=args.num_baseline)
     bm_suite.run(DataLoader(ds, batch_size=args.batch_size, shuffle=True, num_workers=4), args.num_samples,
                  args.seed, args.save_images, args.save_attrs, args.output)

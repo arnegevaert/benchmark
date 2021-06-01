@@ -159,7 +159,7 @@ class SegSensitivityN(SensitivityN):
                                 for method_name in attrs_dict}
         segmented_baseline_attrs = np.stack(
             [segment_attributions(ds.segmented_images, baseline_attrs[i, ...])
-             for i in range(baseline_attrs.shape[0])], dim=0)
+             for i in range(baseline_attrs.shape[0])], axis=0)
 
         output_diffs_dict, indices_dict = {}, {}
         for masker_name, masker in self.maskers.items():

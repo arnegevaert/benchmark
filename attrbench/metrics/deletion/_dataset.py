@@ -31,8 +31,6 @@ class _DeletionDataset(_MaskingDataset):
         self.samples = samples
         self.masker = masker
         self.masker.initialize_batch(samples, attrs)
-        if mode == "lerf":
-            self.sorted_indices = self.sorted_indices[:, ::-1]
 
         total_features = self.masker.get_total_features()
         self.mask_range = list((np.linspace(start, stop, num_steps) * total_features).astype(np.int))
@@ -41,6 +39,8 @@ class _DeletionDataset(_MaskingDataset):
         return len(self.mask_range)
 
     def __getitem__(self, item):
+        if item >= len(self.mask_range):
+            raise StopIteration
         num_to_mask = self.mask_range[item]
         masked_samples = self.masker.mask_top(num_to_mask)
         return masked_samples
@@ -52,8 +52,8 @@ class _IrofDataset(_MaskingDataset):
         super().__init__(mode, start, stop, num_steps)
         self.samples = samples
         self.masker = masker
+        self.segmented_images = segment_samples(samples.cpu().numpy())
         # Override sorted_indices to use segment indices instead of pixel indices
-        self.segmented_images = torch.tensor(segment_samples(samples.cpu().numpy()), device=samples.device)
         if writer is not None:
             writer.add_images("segmented samples", torch.tensor(self.segmented_images))
 
@@ -61,5 +61,10 @@ class _IrofDataset(_MaskingDataset):
         return self.num_steps
 
     def __getitem__(self, item):
+        if item >= self.num_steps:
+            raise StopIteration
         to_mask = self.start + (item / (self.num_steps - 1)) * (self.stop - self.start)
         return self.masker.mask_top(to_mask)
+
+    def set_attrs(self, attrs: np.ndarray):
+        self.masker.initialize_batch(self.samples, attrs, self.segmented_images)

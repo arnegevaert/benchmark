@@ -8,7 +8,7 @@ class _MinimalSubsetDataset:
         self.samples = samples
         self.masker = masker
         masker.initialize_batch(samples,attrs)
-        self.total_features = self.masker.get_total_features() # get_total_features = sorted_indices.shape[1]
+        self.total_features = self.masker.get_total_features()
         self.step_size = int(self.total_features / num_steps)
         if num_steps > self.total_features or num_steps < 2:
             raise ValueError(f"Number of steps must be between 2 and {self.total_features} (got {num_steps})")

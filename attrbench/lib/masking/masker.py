@@ -25,9 +25,12 @@ class Masker:
         if k == 0:
             return self.samples
         rng = np.random.default_rng()
-        shape = self.sorted_indices.shape
-        indices = np.arange(shape[-1])
-        indices = np.tile(indices, (shape[0], 1))
+
+        num_samples = self.samples.shape[0]
+        num_features = self.get_total_features()
+
+        indices = np.arange(num_features)
+        indices = np.tile(indices, (num_samples, 1))
         rng.shuffle(indices, axis=1)
         indices = indices[:, :k]
         masked_samples = self._mask(self.samples, indices)

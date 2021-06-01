@@ -17,7 +17,7 @@ def segment_samples(samples: np.ndarray) -> np.ndarray:
     return seg_images
 
 
-def segment_attributions(seg_images: torch.tensor, attrs: np.ndarray) -> np.ndarray:
+def segment_attributions(seg_images: np.ndarray, attrs: np.ndarray) -> np.ndarray:
     segments = np.unique(seg_images)
     seg_img_flat = seg_images.reshape(seg_images.shape[0], -1)
     attrs_flat = attrs.reshape(attrs.shape[0], -1)

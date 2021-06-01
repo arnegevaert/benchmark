@@ -19,7 +19,10 @@ class ImageMasker(Masker):
     def get_total_features(self):
         if self.use_segments:
             raise ValueError("When using segments, total number of features varies per image.")
-        return self.sorted_indices.shape[1]
+        if self.feature_level == "channel":
+            return self.samples.flatten(1).shape[-1]
+        if self.feature_level == "pixel":
+            return self.samples.flatten(2).shape[-1]
 
     def _check_attribution_shape(self, samples, attributions):
         if self.feature_level == "channel":
@@ -59,7 +62,7 @@ class ImageMasker(Masker):
         for i in range(self.samples.shape[0]):
             num_segments = len(self.sorted_indices[i])
             num_to_mask = int(num_segments * k)
-            indices.append(self.sorted_indices[i, -num_to_mask:])
+            indices.append(self.sorted_indices[i][-num_to_mask:])
         return self._mask_segments(self.samples, self.segmented_samples, indices)
 
     def mask_bot(self, k):
@@ -99,7 +102,7 @@ class ImageMasker(Masker):
                 except IndexError:
                     raise ValueError("Masking index was out of bounds. "
                                      "Make sure the masking policy is compatible with method output.")
-            to_mask = to_mask.reshape(samples.shape)
+            to_mask = torch.tensor(to_mask.reshape(samples.shape), dtype=torch.bool, device=self.samples.device)
             return self._mask_boolean(samples, to_mask)
 
     def _mask_segments(self, images: torch.tensor, seg_images: torch.tensor,
@@ -112,11 +115,10 @@ class ImageMasker(Masker):
             seg_img = seg_images[i, ...]
             segs = segments[i]
             bool_masks.append(_isin(seg_img, segs))
-        bool_masks = np.stack(bool_masks, axis=0)
+        bool_masks = torch.tensor(np.stack(bool_masks, axis=0).repeat(3, axis=1), device=self.samples.device).bool()
         return self._mask_boolean(images, bool_masks)
 
-    def _mask_boolean(self, samples, bool_mask):
-        bool_mask = torch.tensor(bool_mask, dtype=samples.dtype, device=samples.device)
+    def _mask_boolean(self, samples: torch.tensor, bool_mask: torch.tensor):
         result = torch.clone(samples)
         result[bool_mask] = self.baseline[bool_mask]
         return result
