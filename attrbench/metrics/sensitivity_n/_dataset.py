@@ -11,7 +11,7 @@ class _SensitivityNDataset:
         self.num_subsets = num_subsets
         self.samples = samples
         self.masker = masker
-        self.masker.initialize_batch(samples)
+        self.masker.set_batch(samples)
         self.rng = np.random.default_rng()
 
     def __len__(self):
@@ -19,7 +19,7 @@ class _SensitivityNDataset:
 
     def __getitem__(self, item):
         n = self.n_range[item // self.num_subsets]
-        masked_samples, indices = self.masker.mask_rand(n, True)
+        masked_samples, indices = self.masker.mask_rand(n, return_indices=True)
         return masked_samples, indices, n
 
 
@@ -29,7 +29,7 @@ class _SegSensNDataset:
         self.n_range = n_range
         self.num_subsets = num_subsets
         self.samples = samples
-        self.segmented_images = segment_samples(samples.cpu().numpy())
+        self.segmented_images = torch.tensor(segment_samples(samples.cpu().numpy()), device=self.samples.device)
         self.masker = None
 
         if writer is not None:
@@ -45,4 +45,4 @@ class _SegSensNDataset:
 
     def set_masker(self, masker: ImageMasker):
         self.masker = masker
-        self.masker.initialize_batch(self.samples, segmented_samples=self.segmented_images)
+        self.masker.set_batch(self.samples, segmented_samples=self.segmented_images)

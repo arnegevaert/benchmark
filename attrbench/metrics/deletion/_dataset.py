@@ -30,9 +30,9 @@ class _DeletionDataset(_MaskingDataset):
         super().__init__(mode, start, stop, num_steps)
         self.samples = samples
         self.masker = masker
-        self.masker.initialize_batch(samples, attrs)
+        self.masker.set_batch(samples, attrs)
 
-        total_features = self.masker.get_total_features()
+        total_features = self.masker.get_num_features()
         self.mask_range = list((np.linspace(start, stop, num_steps) * total_features).astype(np.int))
 
     def __len__(self):
@@ -52,7 +52,7 @@ class _IrofDataset(_MaskingDataset):
         super().__init__(mode, start, stop, num_steps)
         self.samples = samples
         self.masker = masker
-        self.segmented_images = segment_samples(samples.cpu().numpy())
+        self.segmented_images = torch.tensor(segment_samples(samples.cpu().numpy()), device=samples.device)
         # Override sorted_indices to use segment indices instead of pixel indices
         if writer is not None:
             writer.add_images("segmented samples", torch.tensor(self.segmented_images))
@@ -67,4 +67,4 @@ class _IrofDataset(_MaskingDataset):
         return self.masker.mask_top(to_mask)
 
     def set_attrs(self, attrs: np.ndarray):
-        self.masker.initialize_batch(self.samples, attrs, self.segmented_images)
+        self.masker.set_batch(self.samples, attrs, self.segmented_images)

@@ -15,25 +15,25 @@ default:
     - linear
     - softmax
 metrics:
-  infidelity:
-    type: Infidelity
-    num_perturbations: 1000
-    perturbation_generators:
-      segment:
-        type: SegmentRemovalPerturbationGenerator
-        num_segments: 10
-      gaussian:
-        type: GaussianPerturbationGenerator
-        sd: 0.2
-      square:
-        type: SquareRemovalPerturbationGenerator
-        square_size: 0.2
-  seg_sensitivity_n:
-    type: SegSensitivityN
-    min_subset_size: 0.1
-    max_subset_size: 0.5
-    num_steps: 10
-    num_subsets: 100
+#  infidelity:
+#    type: Infidelity
+#    num_perturbations: 1000
+#    perturbation_generators:
+#      segment:
+#        type: SegmentRemovalPerturbationGenerator
+#        num_segments: 10
+#      gaussian:
+#        type: GaussianPerturbationGenerator
+#        sd: 0.2
+#      square:
+#        type: SquareRemovalPerturbationGenerator
+#        square_size: 0.2
+#  seg_sensitivity_n:
+#    type: SegSensitivityN
+#    min_subset_size: 0.1
+#    max_subset_size: 0.5
+#    num_steps: 10
+#    num_subsets: 100
   sensitivity_n:
     type: SensitivityN
     min_subset_size: 0.1

@@ -8,7 +8,7 @@ class _ImpactScoreDataset(Dataset):
         self.samples = samples
         masker_constructor, masker_kwargs=masker
         self.masker = masker_constructor(samples, attrs,**masker_kwargs)
-        total_features = self.masker.get_total_features()
+        total_features = self.masker.get_num_features()
         self.mask_range = list((np.linspace(0, 1, num_steps) * total_features)[1:].astype(np.int))
 
     def __len__(self):

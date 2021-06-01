@@ -5,15 +5,13 @@ import torch
 
 
 class BlurringMasker(ImageMasker):
-    def __init__(self,feature_level, kernel_size):
-        super().__init__( feature_level)
+    def __init__(self, feature_level, kernel_size):
+        super().__init__(feature_level)
         if not 0 < kernel_size < 1.0:
             raise ValueError("Kernel size is expressed as a fraction of image height, and must be between 0 and 1.")
         self.kernel_size = kernel_size
 
-
     def initialize_baselines(self, samples: torch.tensor):
-
         kernel_size = int(self.kernel_size * samples.shape[-1])
 
         baseline = []
@@ -25,4 +23,3 @@ class BlurringMasker(ImageMasker):
                 blurred_sample = blurred_sample[..., np.newaxis]
             baseline.append(np.transpose(blurred_sample, (2, 0, 1)))
         self.baseline = torch.tensor(np.stack(baseline, axis=0), device=samples.device)
-

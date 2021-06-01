@@ -154,11 +154,11 @@ class SegSensitivityN(SensitivityN):
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         writer = self.writers["general"] if self.writers is not None else None
         ds = _SegSensNDataset(self.n_range, self.num_steps, samples, writer)
-        segmented_attrs_dict = {method_name: segment_attributions(ds.segmented_images,
+        segmented_attrs_dict = {method_name: segment_attributions(ds.segmented_images.cpu().numpy(),
                                                                   attrs_dict[method_name])
                                 for method_name in attrs_dict}
         segmented_baseline_attrs = np.stack(
-            [segment_attributions(ds.segmented_images, baseline_attrs[i, ...])
+            [segment_attributions(ds.segmented_images.cpu().numpy(), baseline_attrs[i, ...])
              for i in range(baseline_attrs.shape[0])], axis=0)
 
         output_diffs_dict, indices_dict = {}, {}
