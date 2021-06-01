@@ -1,4 +1,6 @@
 from attrbench.lib.masking import Masker
+from attrbench.lib import segment_attributions
+from typing import List, Union
 import numpy as np
 import torch
 
@@ -10,28 +12,13 @@ class ImageMasker(Masker):
         self.feature_level = feature_level
         super().__init__()
         # will be set after initialize_batch:
-        self.segm_samples = None
+        self.segmented_samples = None
+        self.segmented_attributions = None
         self.use_segments = False
-
-    @staticmethod
-    def segment_attributions(seg_images: torch.tensor, attrs: np.ndarray) -> np.ndarray:
-        segments = np.unique(seg_images)
-        seg_img_flat = seg_images.reshape(seg_images.shape[0], -1)
-        attrs_flat = attrs.reshape(attrs.shape[0], -1)
-        avg_attrs = np.zeros((seg_images.shape[0], len(segments)))
-        for i, seg in enumerate(segments):  # Segments should be 0, ..., n, but we use enumerate just in case
-            mask = (seg_img_flat == seg).astype(np.long)
-            masked_attrs = mask * attrs_flat
-            mask_size = np.sum(mask, axis=1)
-            sum_attrs = np.sum(masked_attrs, axis=1)
-            mean_attrs = np.divide(sum_attrs, mask_size, out=np.zeros_like(sum_attrs), where=mask_size != 0)
-            # If seg does not exist for image, mean_attrs will be nan. Replace with -inf.
-            avg_attrs[:, i] = np.nan_to_num(mean_attrs, nan=-np.inf)
-        return avg_attrs
 
     def get_total_features(self):
         if self.use_segments:
-            return self.sorted_indices.shape[1]
+            raise ValueError("When using segments, total number of features varies per image.")
         return self.sorted_indices.shape[1]
 
     def _check_attribution_shape(self, samples, attributions):
@@ -53,19 +40,46 @@ class ImageMasker(Masker):
             return super().mask_rand(k, return_indices)
         else:
             # this is done a little different form super(),
-            # no shuffle here: for each image, only select segments that exsist in that image
+            # no shuffle here: for each image, only select segments that exist in that image
             # k can be large -> rng.choice raises exception if k > number of segments
-            indices = np.stack([rng.choice(np.unique(self.segm_samples[i, ...]), size=k, replace=False)
-                                for i in range(self.segm_samples.shape[0])])
-            masked_samples = self._mask_segments(self.samples, self.segm_samples, indices)
-        if return_indices: return masked_samples, indices
+            indices = [rng.choice(np.unique(self.segmented_samples[i, ...]), size=k, replace=False)
+                       for i in range(self.segmented_samples.shape[0])]
+            masked_samples = self._mask_segments(self.samples, self.segmented_samples, indices)
+        if return_indices:
+            return masked_samples, indices
         return masked_samples
+
+    def mask_top(self, k):
+        if not self.use_segments:
+            return super().mask_top(k)
+        if k == 0:
+            return self.samples
+        # When using segments, k is relative (between 0 and 1)
+        indices = []
+        for i in range(self.samples.shape[0]):
+            num_segments = len(self.sorted_indices[i])
+            num_to_mask = int(num_segments * k)
+            indices.append(self.sorted_indices[i, -num_to_mask:])
+        return self._mask_segments(self.samples, self.segmented_samples, indices)
+
+    def mask_bot(self, k):
+        if not self.use_segments:
+            return super().mask_bot(k)
+        if k == 0:
+            return self.samples
+        # When using segments, k is relative (between 0 and 1)
+        indices = []
+        for i in range(self.samples.shape[0]):
+            num_segments = len(self.sorted_indices[i])
+            num_to_mask = int(num_segments * k)
+            indices.append(self.sorted_indices[i, :num_to_mask])
+        return self._mask_segments(self.samples, self.segmented_samples, indices)
 
     def _mask(self, samples: torch.tensor, indices: np.ndarray):
         if self.baseline is None:
             raise ValueError("Masker was not initialized.")
         if self.use_segments:
-            return self._mask_segments(self.samples, self.segm_samples, indices)
+            return self._mask_segments(self.samples, self.segmented_samples, indices)
         else:
             batch_size, num_channels, rows, cols = samples.shape
             num_indices = indices.shape[1]
@@ -88,41 +102,49 @@ class ImageMasker(Masker):
             to_mask = to_mask.reshape(samples.shape)
             return self._mask_boolean(samples, to_mask)
 
-    def _mask_segments(self, images: torch.tensor, seg_images: torch.tensor, segments: np.ndarray) -> np.ndarray:
-        if not (images.shape[0] == seg_images.shape[0] and images.shape[0] == segments.shape[0] and
+    def _mask_segments(self, images: torch.tensor, seg_images: torch.tensor,
+                       segments: Union[np.ndarray, List[np.ndarray]]) -> torch.tensor:
+        if not (images.shape[0] == seg_images.shape[0] and images.shape[0] == len(segments) and
                 images.shape[-2:] == seg_images.shape[-2:]):
             raise ValueError(f"Incompatible shapes: {images.shape}, {seg_images.shape}, {segments.shape}")
         bool_masks = []
         for i in range(images.shape[0]):
             seg_img = seg_images[i, ...]
-            segs = segments[i, ...]
+            segs = segments[i]
             bool_masks.append(_isin(seg_img, segs))
         bool_masks = np.stack(bool_masks, axis=0)
         return self._mask_boolean(images, bool_masks)
 
     def _mask_boolean(self, samples, bool_mask):
         bool_mask = torch.tensor(bool_mask, dtype=samples.dtype, device=samples.device)
-        return samples - (bool_mask * samples) + (bool_mask * self.baseline)
+        result = torch.clone(samples)
+        result[bool_mask] = self.baseline[bool_mask]
+        return result
 
-    # why not return samples[bool_mask] = self.baseline[bool_mask] ?
-
-    def initialize_batch(self, samples: torch.tensor, attributions: np.ndarray,segmented_samples: torch.tensor = None):
-        if not self._check_attribution_shape(samples, attributions):
+    def initialize_batch(self, samples: torch.tensor, attributions: np.ndarray = None, segmented_samples: torch.tensor = None):
+        if attributions is not None and not self._check_attribution_shape(samples, attributions):
             raise ValueError(f"samples and attribution shape not compatible for feature level {self.feature_level}."
                              f"Found shapes {samples.shape} and {attributions.shape}")
         self.samples = samples
         self.attributions = attributions
+        self.segmented_samples = segmented_samples
+        self.use_segments = self.segmented_samples is not None
 
-        self.segm_samples = segmented_samples
-        self.use_segments = self.segm_samples is not None
-        if self.segm_samples is not None:
-            self.sorted_indices = self.segment_attributions(self.segm_samples, self.attributions).argsort()
-            assert (self.sorted_indices.shape[1] - 1 == segmented_samples.max())
-        else:
-            self.sorted_indices = attributions.reshape(attributions.shape[0], -1).argsort()
+        if self.segmented_samples is not None and self.attributions is not None:
+            self.segmented_attributions = segment_attributions(self.segmented_samples, self.attributions)
+            sorted_indices = self.segmented_attributions.argsort()
+
+            # Filter out the -np.inf values from the sorted indices
+            filtered_sorted_indices = []
+            for i in range(self.segmented_samples.shape[0]):
+                num_infs = np.count_nonzero(self.segmented_attributions[i, ...] == -np.inf)
+                filtered_sorted_indices.append(sorted_indices[i, num_infs:])
+            self.sorted_indices = filtered_sorted_indices
+
+        elif self.attributions is not None:
+            self.sorted_indices = self.attributions.reshape(self.attributions.shape[0], -1).argsort()
 
         self.initialize_baselines(self.samples)
-
 
     def initialize_baselines(self, samples):
         raise NotImplementedError

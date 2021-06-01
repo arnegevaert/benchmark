@@ -6,8 +6,8 @@ import os
 import numpy as np
 import torch
 
-from attrbench.lib import AttributionWriter
-from attrbench.lib.masking import Masker
+from attrbench.lib import AttributionWriter, segment_attributions
+from attrbench.lib.masking import Masker, ImageMasker
 from attrbench.metrics import MaskerMetric
 from ._compute_correlations import _compute_correlations
 from ._compute_perturbations import _compute_perturbations
@@ -26,7 +26,7 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
     num_features = attrs.reshape(attrs.shape[0], -1).shape[1]
     n_range = (np.linspace(min_subset_size, max_subset_size, num_steps) * num_features).astype(np.int)
 
-    ds = _SensitivityNDataset(n_range, num_subsets, samples, attrs, num_features, masker)
+    ds = _SensitivityNDataset(n_range, num_subsets, samples, masker)
 
     output_diffs, indices = _compute_perturbations(samples, labels, ds, model, n_range, activation_fn, writer)
     return _compute_correlations(attrs, n_range, output_diffs, indices)
@@ -34,17 +34,16 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
 
 def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
                       min_subset_size: float, max_subset_size: float, num_steps: int, num_subsets: int,
-                      masker: Masker, activation_fn: Union[Tuple[str], str] = "linear",
+                      masker: ImageMasker, activation_fn: Union[Tuple[str], str] = "linear",
                       writer: AttributionWriter = None):
     # Total number of segments is fixed 100
     if type(activation_fn) == str:
         activation_fn = (activation_fn,)
     n_range = (np.linspace(min_subset_size, max_subset_size, num_steps) * 100).astype(np.int)
-    ds = _SegSensNDataset(n_range, num_subsets, samples, masker, writer)
+    ds = _SegSensNDataset(n_range, num_subsets, samples, writer)
+    ds.set_masker(masker)
 
-    attrs = ds.masker.segment_attributions(ds.segmented_images, attrs)
-    #TODO attrs = ds.masker.sorted_indices ?
-    assert((attrs.argsort() == ds.masker.sorted_indices).all())
+    attrs = segment_attributions(ds.segmented_images, attrs)
 
     output_diffs, indices = _compute_perturbations(samples, labels, ds, model, n_range, activation_fn, writer)
     return _compute_correlations(attrs, n_range, output_diffs, indices)
@@ -81,7 +80,7 @@ class SensitivityN(MaskerMetric):
         output_diffs_dict, indices_dict = {}, {}
         for masker_name, masker in self.maskers.items():
             # Create pseudo-dataset
-            ds = _SensitivityNDataset(n_range, self.num_subsets, samples,attrs, masker)
+            ds = _SensitivityNDataset(n_range, self.num_subsets, samples, masker)
             # Calculate output diffs and removed indices (we will re-use this for each method)
             output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, n_range,
                                                            self.activation_fns,
@@ -101,14 +100,16 @@ class SensitivityN(MaskerMetric):
             self.pool.close()
 
     def compute_and_append_results(self, n_range: List[int], output_diffs_dict: Dict, indices_dict: Dict,
-                                   attrs_dict: Dict, baseline_attrs: np.ndarray, result: SensitivityNResult):
+                                   attrs_dict: Dict[str, np.ndarray], baseline_attrs: np.ndarray,
+                                   result: SensitivityNResult):
         method_results = {masker: {afn: {method_name: None for method_name in self.method_names}
                                    for afn in self.activation_fns}
                           for masker in self.maskers}
         baseline_results = {masker: {afn: [] for afn in self.activation_fns} for masker in self.maskers}
         for masker_name in self.maskers:
             for method_name in self.method_names:
-                res = _compute_correlations(attrs_dict[method_name], n_range, output_diffs_dict[masker_name],
+                res = _compute_correlations(attrs_dict[method_name], n_range,
+                                            output_diffs_dict[masker_name],
                                             indices_dict[masker_name])
                 for afn in self.activation_fns:
                     method_results[masker_name][afn][method_name] = res[afn].cpu().detach().numpy()
@@ -151,32 +152,33 @@ class SegSensitivityN(SensitivityN):
         self.pool = None
 
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
-        attrs = attrs_dict[next(iter(attrs_dict))] # no need real use for attrs, but pass attrs to
-        # dataset as shape info is used to initialize baselines in masker
         writer = self.writers["general"] if self.writers is not None else None
-
+        ds = _SegSensNDataset(self.n_range, self.num_steps, samples, writer)
+        segmented_attrs_dict = {method_name: segment_attributions(ds.segmented_images,
+                                                                  attrs_dict[method_name])
+                                for method_name in attrs_dict}
+        segmented_baseline_attrs = np.stack(
+            [segment_attributions(ds.segmented_images, baseline_attrs[i, ...])
+             for i in range(baseline_attrs.shape[0])], dim=0)
 
         output_diffs_dict, indices_dict = {}, {}
         for masker_name, masker in self.maskers.items():
-            # Create pseudo-dataset
+            ds.set_masker(masker)
             # Calculate output diffs and removed indices (we will re-use this for each method)
-            ds = _SegSensNDataset(self.n_range, self.num_subsets, samples,attrs,masker,writer)
             output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, self.n_range,
                                                            self.activation_fns, writer)
             output_diffs_dict[masker_name] = output_diffs
             indices_dict[masker_name] = indices
-        segmented_attrs_dict = {method_name: masker.segment_attributions(ds.segmented_images,attrs_dict[method_name])
-                                for method_name in attrs_dict}
         if os.getenv("NO_MULTIPROC"):
             self.compute_and_append_results(self.n_range, output_diffs_dict, indices_dict, segmented_attrs_dict,
-                                            baseline_attrs, self.result)
+                                            segmented_baseline_attrs, self.result)
         else:
             result = self.result
             self.pool = multiprocessing.pool.ThreadPool(processes=1)
             self.pool.apply_async(self.compute_and_append_results,
                                   args=(
                                       self.n_range, output_diffs_dict, indices_dict, segmented_attrs_dict,
-                                      baseline_attrs, result))
+                                      segmented_baseline_attrs, result))
             self.pool.close()
 
     @property

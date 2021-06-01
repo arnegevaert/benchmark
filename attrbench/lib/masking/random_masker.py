@@ -8,6 +8,5 @@ class RandomMasker(ImageMasker):
         self.std = std
         self.num_samples = num_samples
 
-
     def initialize_baselines(self, samples: torch.tensor):
         self.baseline = torch.randn(*samples.shape, device=samples.device) * self.std

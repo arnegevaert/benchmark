@@ -1,32 +1,15 @@
-from typing import Tuple, Dict
+from typing import Dict
 
 import numpy as np
 import torch
 
-from attrbench.lib.util import corrcoef
+
+def _mse(a, b):
+    return ((a - b) ** 2).mean(axis=1, keepdims=True)
 
 
-def _normalized_mse(a: np.ndarray, b: np.ndarray):
-    a = (a - np.mean(a, axis=1, keepdims=True))
-    a_std = np.std(a, axis=1, keepdims=True)
-    a = np.divide(a, a_std, out=a, where=a_std != 0)
-
-    b = (b - np.mean(b, axis=1, keepdims=True))
-    b_std = np.std(b, axis=1, keepdims=True)
-    b = np.divide(b, b_std, out=b, where=b_std != 0)
-
-    return ((a - b)**2).mean(axis=1, keepdims=True)
-
-
-_LOSS_FNS = {
-    "mse": lambda a, b: ((a - b) ** 2).mean(axis=1, keepdims=True),
-    "normalized_mse": _normalized_mse,
-    "corr": lambda a, b: corrcoef(a, b)[..., np.newaxis]
-}
-
-
-def _compute_result(pert_vectors: np.ndarray, pred_diffs: Dict[str, np.ndarray], attrs: np.ndarray,
-                    loss_fns: Tuple[str]) -> Dict[str, Dict[str, torch.tensor]]:
+def _compute_result(pert_vectors: np.ndarray, pred_diffs: Dict[str, np.ndarray],
+                    attrs: np.ndarray) -> Dict[str, torch.tensor]:
     result = {}
 
     if len(attrs.shape) != 2: # if len ==2, then we are using tabular data, there is no channel dimension
@@ -47,7 +30,5 @@ def _compute_result(pert_vectors: np.ndarray, pred_diffs: Dict[str, np.ndarray],
     pert_vectors_flat *= attrs
     dot_product = pert_vectors_flat.sum(dim=-1).detach().cpu().numpy()  # [batch_size, num_perturbations]
     for afn in pred_diffs.keys():
-        result[afn] = {}
-        for loss_fn in loss_fns:
-            result[afn][loss_fn] = torch.tensor(_LOSS_FNS[loss_fn](dot_product, pred_diffs[afn]))
+        result[afn] = torch.tensor(_mse(dot_product, pred_diffs[afn]))
     return result

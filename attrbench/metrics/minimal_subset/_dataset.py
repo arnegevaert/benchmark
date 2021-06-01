@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 
-class _DeletionUntilFlipDataset:
+class _MinimalSubsetDataset:
     def __init__(self, num_steps, samples: torch.tensor, attrs: np.ndarray, masker):
         self.num_steps = num_steps
         self.samples = samples
@@ -17,8 +17,24 @@ class _DeletionUntilFlipDataset:
         return self.num_steps
 
     def __getitem__(self, item):
+        raise NotImplementedError
+
+
+class _MinimalSubsetDeletionDataset(_MinimalSubsetDataset):
+    def __getitem__(self, item):
+        # Mask the k most important pixels
         num_to_mask = self.step_size * (item + 1)
         if num_to_mask > self.total_features:
-            raise StopIteration()
-        masked_samples= self.masker.mask_top(num_to_mask)
+            raise StopIteration
+        masked_samples = self.masker.mask_top(num_to_mask)
+        return masked_samples, num_to_mask
+
+
+class _MinimalSubsetInsertionDataset(_MinimalSubsetDataset):
+    def __getitem__(self, item):
+        # Mask the n-k least important pixels
+        num_to_mask = self.total_features - self.step_size * (item + 1)
+        if num_to_mask > self.total_features:
+            raise StopIteration
+        masked_samples = self.masker.mask_bot(num_to_mask)
         return masked_samples, num_to_mask

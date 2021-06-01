@@ -4,10 +4,9 @@ from os import path
 import numpy as np
 import torch
 
-from attrbench.lib import AttributionWriter, NDArrayTree
+from attrbench.lib import AttributionWriter
 from attrbench.metrics import Metric
 from ._compute_perturbations import _compute_perturbations
-from ._compute_result import _compute_result
 from . import perturbation_generator
 from .result import InfidelityResult
 import logging
@@ -15,18 +14,13 @@ import logging
 
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
                pert_generator: perturbation_generator.PerturbationGenerator, num_perturbations: int,
-               loss_fns: Union[Tuple[str], str] = "mse", activation_fns: Union[Tuple[str], str] = "linear",
+               activation_fns: Union[Tuple[str], str] = "linear",
                writer: AttributionWriter = None) -> Dict:
     if type(activation_fns) == str:
         activation_fns = (activation_fns,)
     pert_vectors, pred_diffs = _compute_perturbations(samples, labels, model, pert_generator,
                                                       num_perturbations, activation_fns, writer)
-    if type(loss_fns) == str:
-        loss_fns = (loss_fns,)
-    for m in loss_fns:
-        if m not in ("mse", "corr"):
-            raise ValueError(f"Invalid mode: {m}")
-    return _compute_result(pert_vectors, pred_diffs, attrs, loss_fns)
+    return _compute_result(pert_vectors, pred_diffs, attrs)
 
 
 def _parse_pert_generator(d):
@@ -37,13 +31,11 @@ def _parse_pert_generator(d):
 class Infidelity(Metric):
     def __init__(self, model: Callable, method_names: List[str], perturbation_generators: Dict,
                  num_perturbations: int,
-                 loss_fns: Union[Tuple[str], str] = "mse",
                  activation_fns: Union[Tuple[str], str] = "linear", writer_dir: str = None):
         super().__init__(model, method_names)  # We don't pass writer_dir to super because we only use 1 general writer
         self.writers = {"general": AttributionWriter(path.join(writer_dir, "general"))} \
             if writer_dir is not None else None
         self.num_perturbations = num_perturbations
-        self.loss_fns: Tuple[str] = (loss_fns,) if type(loss_fns) == str else loss_fns
         self.activation_fns = (activation_fns,) if type(activation_fns) == str else activation_fns
         # Process "perturbation-generators" argument: either it is a dictionary of PerturbationGenerator objects,
         # or it is a dictionary that needs to be parsed.
@@ -56,42 +48,26 @@ class Infidelity(Metric):
 
         self._result: InfidelityResult = InfidelityResult(method_names + ["_BASELINE"],
                                                           list(perturbation_generators.keys()),
-                                                          list(self.activation_fns),
-                                                          list(self.loss_fns))
+                                                          list(self.activation_fns))
 
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
         writer = self.writers["general"] if self.writers is not None else None
 
-        pert_vectors, pred_diffs = {}, {}
-        for key, pert_gen in self.perturbation_generators.items():
-            p_vectors, p_diffs = _compute_perturbations(samples, labels, self.model, pert_gen,
-                                                        self.num_perturbations, self.activation_fns,
-                                                        writer)
-            pert_vectors[key] = p_vectors
-            pred_diffs[key] = p_diffs
-
-        # Compute and append results
-        for pert_gen in self.perturbation_generators:
-            # Calculate baseline results
-            baseline_result = {afn: {loss: [] for loss in self.loss_fns} for afn in self.activation_fns}
+        for pert_gen, pert_gen_fn in self.perturbation_generators.items():
+            # Calculate dot products and prediction differences
+            extended_attrs_dict = {key: value for key, value in attrs_dict.items()}
             for i in range(baseline_attrs.shape[0]):
-                bl_result = _compute_result(pert_vectors[pert_gen], pred_diffs[pert_gen], baseline_attrs[i, ...],
-                                            self.loss_fns)
-                for afn in self.activation_fns:
-                    for loss in self.loss_fns:
-                        baseline_result[afn][loss].append(bl_result[afn][loss].cpu().detach().numpy())
-            for afn in self.activation_fns:
-                for loss in self.loss_fns:
-                    baseline_result[afn][loss] = np.stack(baseline_result[afn][loss], axis=1)
-            self.result.append(baseline_result, perturbation_generator=pert_gen, method="_BASELINE")
-
-            # Calculate actual method results
+                extended_attrs_dict[f"_BASELINE_{i}"] = baseline_attrs[i, ...]
+            result = _compute_perturbations(samples, labels, self.model, extended_attrs_dict,
+                                            pert_gen_fn, self.num_perturbations,
+                                            self.activation_fns, writer)
+            # Append method results
             for method_name in attrs_dict.keys():
-                method_result = _compute_result(pert_vectors[pert_gen], pred_diffs[pert_gen],
-                                                attrs_dict[method_name], self.loss_fns)
-                for afn in self.activation_fns:
-                    for loss in self.loss_fns:
-                        method_result[afn][loss] = method_result[afn][loss].cpu().detach().numpy()
+                method_result = {afn: result[afn][method_name] for afn in self.activation_fns}
                 self.result.append(method_result, perturbation_generator=pert_gen, method=method_name)
-        logging.info(f"Appended Infidelity")
+
+            # Append baseline results
+            bl_result = {afn: np.stack([result[afn][f"_BASELINE_{i}"] for i in range(baseline_attrs.shape[0])], axis=1)
+                         for afn in self.activation_fns}
+            self.result.append(bl_result, perturbation_generator=pert_gen, method="_BASELINE")
