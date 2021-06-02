@@ -42,7 +42,7 @@ class _DeletionDataset(_MaskingDataset):
         if item >= len(self.mask_range):
             raise StopIteration
         num_to_mask = self.mask_range[item]
-        masked_samples = self.masker.mask_top(num_to_mask)
+        masked_samples = self.masker.mask_top(num_to_mask) if self.mode == "morf" else self.masker.mask_bot(num_to_mask)
         return masked_samples
 
 
@@ -64,7 +64,7 @@ class _IrofDataset(_MaskingDataset):
         if item >= self.num_steps:
             raise StopIteration
         to_mask = self.start + (item / (self.num_steps - 1)) * (self.stop - self.start)
-        return self.masker.mask_top(to_mask)
+        return self.masker.mask_top(to_mask) if self.mode == "morf" else self.masker.mask_bot(to_mask)
 
     def set_attrs(self, attrs: np.ndarray):
         self.masker.set_batch(self.samples, attrs, self.segmented_images)

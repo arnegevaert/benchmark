@@ -21,8 +21,8 @@ def segment_attributions(seg_images: np.ndarray, attrs: np.ndarray) -> np.ndarra
     segments = np.unique(seg_images)
     seg_img_flat = seg_images.reshape(seg_images.shape[0], -1)
     attrs_flat = attrs.reshape(attrs.shape[0], -1)
-    avg_attrs = np.zeros((seg_images.shape[0], len(segments)))
-    for i, seg in enumerate(segments):  # Segments should be 0, ..., n, but we use enumerate just in case
+    result = np.zeros((seg_images.shape[0], len(segments)))
+    for seg in segments:
         mask = (seg_img_flat == seg).astype(np.long)
         masked_attrs = mask * attrs_flat
         mask_size = np.sum(mask, axis=1)
@@ -30,4 +30,5 @@ def segment_attributions(seg_images: np.ndarray, attrs: np.ndarray) -> np.ndarra
         mean_attrs = np.divide(sum_attrs, mask_size, out=np.zeros_like(sum_attrs), where=mask_size != 0)
         # If seg does not exist for image, mask_size == 0. Set to -inf.
         mean_attrs[mask_size == 0] = -np.inf
-    return avg_attrs
+        result[:, seg] = mean_attrs
+    return result

@@ -141,7 +141,7 @@ class SegSensitivityN(SensitivityN):
                  num_steps: int, num_subsets: int, maskers: Dict, activation_fns: Union[Tuple[str], str],
                  writer_dir: str = None):
         super().__init__(model, method_names, min_subset_size, max_subset_size, num_steps, num_subsets, maskers,
-                         activation_fns)
+                         activation_fns, writer_dir)
         # Total number of segments is fixed 100
         self.n_range = (np.linspace(self.min_subset_size, self.max_subset_size, self.num_steps) * 100).astype(np.int)
         self._result: SegSensitivityNResult = SegSensitivityNResult(method_names + ["_BASELINE"],

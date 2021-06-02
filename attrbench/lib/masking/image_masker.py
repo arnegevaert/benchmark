@@ -83,7 +83,7 @@ class ImageMasker(Masker):
         for i in range(self.samples.shape[0]):
             num_segments = len(self.sorted_indices[i])
             num_to_mask = int(num_segments * k)
-            indices.append(self.sorted_indices[i, :num_to_mask])
+            indices.append(self.sorted_indices[i][:num_to_mask])
         return self._mask_segments(indices)
 
     def mask_rand(self, k, return_indices=False):
@@ -155,8 +155,6 @@ class ImageMasker(Masker):
         return self._mask_boolean(bool_masks)
 
     def _mask_boolean(self, bool_mask: torch.tensor):
-        #result = torch.clone(self.samples)
-        #result[bool_mask] = self.baseline[bool_mask]
         return self.samples - (bool_mask * self.samples) + (bool_mask * self.baseline)
 
     def initialize_baselines(self, samples: torch.Tensor):
