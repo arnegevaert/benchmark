@@ -1,10 +1,10 @@
-from attrbench.lib.masking import Masker
+from attrbench.lib.masking import ImageMasker
 from cv2 import blur
 import numpy as np
 import torch
 
 
-class BlurringMasker(Masker):
+class BlurringMasker(ImageMasker):
     def __init__(self, feature_level, kernel_size):
         super().__init__(feature_level)
         if not 0 < kernel_size < 1.0:
@@ -23,4 +23,3 @@ class BlurringMasker(Masker):
                 blurred_sample = blurred_sample[..., np.newaxis]
             baseline.append(np.transpose(blurred_sample, (2, 0, 1)))
         self.baseline = torch.tensor(np.stack(baseline, axis=0), device=samples.device)
-

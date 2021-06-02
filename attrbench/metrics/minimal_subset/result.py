@@ -6,7 +6,7 @@ import h5py
 from typing import List, Tuple
 
 
-class DeletionUntilFlipResult(AbstractMetricResult):
+class MinimalSubsetResult(AbstractMetricResult):
     inverted = True
 
     def __init__(self, method_names: List[str], maskers: List[str]):

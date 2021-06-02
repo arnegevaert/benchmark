@@ -1,8 +1,8 @@
-from attrbench.lib.masking import Masker
+from attrbench.lib.masking import ImageMasker
 import torch
 
 
-class RandomMasker(Masker):
+class RandomMasker(ImageMasker):
     def __init__(self, feature_level, std=1, num_samples=1):
         super().__init__(feature_level)
         self.std = std

@@ -1,10 +1,12 @@
 import argparse
 import torch
-from experiments.general_imaging.lib.dataset_models import get_dataset_model
+from experiments.tabular_data.lib.dataset_models import get_dataset_model
 from experiments.lib import MethodLoader
 from attrbench.suite import Suite, MetricLoader
 from torch.utils.data import DataLoader
+import time
 import logging
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -22,7 +24,6 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--multi_label", action="store_true")
     parser.add_argument("--explain_label", type=int, default=None)
-    parser.add_argument("--num_baseline", type=int, default=25)
     # Parse arguments
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
@@ -37,14 +38,13 @@ if __name__ == "__main__":
 
     # Get dataset, model, methods
     ds, model, patch_folder = get_dataset_model(args.dataset, model_name=args.model)
-    methods = MethodLoader(model=model, last_conv_layer=model.get_last_conv_layer(),
+    methods = MethodLoader(model=model, last_conv_layer=None,
                            reference_dataset=ds).load_config(args.method_config)
 
     # Get metrics
     metrics = MetricLoader(args.suite_config, model, methods, args.log_dir, patch_folder=patch_folder).load()
 
     # Run BM suite and save result to disk
-    bm_suite = Suite(model, methods, metrics, device, log_dir=args.log_dir, multi_label=args.multi_label,
-                     explain_label=args.explain_label, num_baseline_samples=args.num_baseline)
+    bm_suite = Suite(model, methods, metrics, device, log_dir=args.log_dir, multi_label=args.multi_label, explain_label=args.explain_label)
     bm_suite.run(DataLoader(ds, batch_size=args.batch_size, shuffle=True, num_workers=4), args.num_samples,
                  args.seed, args.save_images, args.save_attrs, args.output)

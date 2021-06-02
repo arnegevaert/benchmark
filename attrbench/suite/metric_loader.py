@@ -6,6 +6,7 @@ from attrbench.metrics import Metric
 from attrbench import metrics
 
 
+
 class MetricLoader:
     def __init__(self, filename: str, model: Callable, methods: Dict[str, Callable],
                  log_dir: str = None, **kwargs):

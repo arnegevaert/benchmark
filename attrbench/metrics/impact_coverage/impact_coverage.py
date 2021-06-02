@@ -23,8 +23,6 @@ class ImpactCoverage(Metric):
         self.methods = methods
         super().__init__(model, list(methods.keys()), writer_dir)
         self.patch_folder = patch_folder
-        self.writers = {method_name: path.join(writer_dir, method_name) if writer_dir else None
-                        for method_name in methods}
         self._result: ImpactCoverageResult = ImpactCoverageResult(list(methods.keys()) + ["_BASELINE"])
 
     def run_batch(self, samples, labels, attrs_dict: Dict = None, baseline_attrs: np.ndarray = None):

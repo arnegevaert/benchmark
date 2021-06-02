@@ -1,49 +1,50 @@
 import numpy as np
 import torch
+from typing import Optional
 
 
-# TODO masker should take attributions as constructor argument and then implement the necessary
-#      functions (mask_highest, keep_highest, mask_lowest, keep_lowest, mask_random, mask_all)
 class Masker:
-    def __init__(self, feature_level):
-        if feature_level not in ("channel", "pixel"):
-            raise ValueError(f"feature_level must be 'channel' or 'pixel'. Found {feature_level}.")
-        self.feature_level = feature_level
-        self.baseline = None
+    def __init__(self):
+        self.baseline: Optional[torch.Tensor] = None
+        self.samples: Optional[torch.Tensor] = None
+        self.attributions: Optional[np.ndarray] = None
+        self.sorted_indices: Optional[np.ndarray] = None
+        self.rng = np.random.default_rng()
 
-    def check_attribution_shape(self, samples, attributions: np.ndarray):
-        if self.feature_level == "channel":
-            # Attributions should be same shape as samples
-            return list(samples.shape) == list(attributions.shape)
-        elif self.feature_level == "pixel":
-            # attributions should have the same shape as samples,
-            # except the channel dimension must be 1
-            aggregated_shape = list(samples.shape)
-            aggregated_shape[1] = 1
-            return aggregated_shape == list(attributions.shape)
+    def set_batch(self, samples: torch.tensor, attributions: np.ndarray = None):
+        raise NotImplementedError
 
-    def mask(self, samples: torch.tensor, indices: np.ndarray):
-        if self.baseline is None:
-            raise ValueError("Masker was not initialized.")
-        batch_size, num_channels, rows, cols = samples.shape
-        num_indices = indices.shape[1]
-        batch_dim = np.tile(range(batch_size), (num_indices, 1)).transpose()
+    def get_num_features(self):
+        return self.sorted_indices.shape[1]
 
-        to_mask = torch.zeros(samples.shape, device=samples.device).flatten(1 if self.feature_level == "channel" else 2)
-        if self.feature_level == "channel":
-            to_mask[batch_dim, indices.copy()] = 1.
+    def mask_top(self, k):
+        if k == 0:
+            return self.samples
         else:
-            try:
-                to_mask[batch_dim, :, indices.copy()] = 1.
-            except IndexError:
-                raise ValueError("Masking index was out of bounds. "
-                                 "Make sure the masking policy is compatible with method output.")
-        to_mask = to_mask.reshape(samples.shape)
-        return self.mask_boolean(samples, to_mask)
+            return self._mask(self.sorted_indices[:, -k:])
 
-    def mask_boolean(self, samples: torch.tensor, bool_mask: torch.tensor):
-        return samples - (bool_mask * samples) + (bool_mask * self.baseline)
+    def mask_bot(self, k):
+        return self._mask(self.sorted_indices[:, :k])
 
-    def initialize_baselines(self, samples):
+    def mask_rand(self, k, return_indices=False):
+        if k == 0:
+            return self.samples
+
+        num_samples = self.samples.shape[0]
+        num_features = self.get_num_features()
+
+        indices = np.tile(self.rng.choice(num_features, size=k, replace=False), (num_samples, 1))
+        masked_samples = self._mask(indices)
+        if return_indices:
+            return masked_samples, indices
+        return masked_samples
+
+    def _check_attribution_shape(self, samples, attributions):
+        raise NotImplementedError
+
+    def _mask(self, indices: np.ndarray):
+        raise NotImplementedError
+
+    def _mask_boolean(self, bool_mask):
         raise NotImplementedError
 

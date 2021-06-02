@@ -6,11 +6,9 @@ class _ImpactScoreDataset(Dataset):
     def __init__(self, num_steps, samples: np.ndarray, attrs: np.ndarray, masker):
         self.num_steps = num_steps
         self.samples = samples
-        self.masker = masker
-        self.masker.initialize_baselines(samples)
-        attrs = attrs.reshape(attrs.shape[0], -1)
-        self.sorted_indices = np.argsort(attrs)
-        total_features = attrs.shape[1]
+        masker_constructor, masker_kwargs=masker
+        self.masker = masker_constructor(samples, attrs,**masker_kwargs)
+        total_features = self.masker.get_num_features()
         self.mask_range = list((np.linspace(0, 1, num_steps) * total_features)[1:].astype(np.int))
 
     def __len__(self):
@@ -18,7 +16,6 @@ class _ImpactScoreDataset(Dataset):
 
     def __getitem__(self, item):
         num_to_mask = self.mask_range[item]
-        indices = self.sorted_indices[:, -num_to_mask:]
-        masked_samples = self.masker.mask(self.samples, indices)
+        masked_samples = self.masker.mask_top(num_to_mask)
         return masked_samples
 
