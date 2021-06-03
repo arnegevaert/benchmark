@@ -35,7 +35,7 @@ class Irof(MaskerMetric):
         self.mode = mode
         self.activation_fns = [activation_fns] if type(activation_fns) == str else activation_fns
         self._result = IrofResult(method_names + ["_BASELINE"], list(self.maskers.keys()),
-                                  self.activation_fns)
+                                  self.activation_fns, mode)
         if self.writer_dir is not None:
             for key in self.maskers:
                 self.writers[key] = AttributionWriter(path.join(self.writer_dir, key))

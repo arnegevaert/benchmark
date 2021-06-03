@@ -38,16 +38,19 @@ class MaskerActivationMetricResult(AbstractMetricResult):
     def _postproc_fn(self, x):
         return np.squeeze(x, axis=-1)
 
-    def get_df(self, mode="raw", include_baseline=False, masker: str = "constant", activation_fn: str = "linear") -> Tuple[pd.DataFrame, bool]:
+    def get_df(self, mode="raw", include_baseline=False, masker: str = "constant", activation_fn: str = "linear",
+               postproc_fn=None) -> Tuple[pd.DataFrame, bool]:
+        if postproc_fn is None:
+            postproc_fn = self._postproc_fn
         raw_results = pd.DataFrame.from_dict(
             self.tree.get(
-                postproc_fn=self._postproc_fn,
+                postproc_fn=postproc_fn,
                 exclude=dict(method=["_BASELINE"]),
                 select=dict(masker=[masker], activation_fn=[activation_fn])
             )[masker][activation_fn]
         )
         baseline_results = pd.DataFrame(self.tree.get(
-            postproc_fn=self._postproc_fn,
+            postproc_fn=postproc_fn,
             select=dict(method=["_BASELINE"], masker=[masker], activation_fn=[activation_fn])
         )[masker][activation_fn]["_BASELINE"])
         return self._get_df(raw_results, baseline_results, mode, include_baseline)
