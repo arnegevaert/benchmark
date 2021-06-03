@@ -34,7 +34,7 @@ class Deletion(MaskerMetric):
         self.mode = mode
         self.activation_fns = [activation_fns] if type(activation_fns) == str else list(activation_fns)
         self._result: DeletionResult = DeletionResult(method_names + ["_BASELINE"], list(self.maskers.keys()),
-                                                      self.activation_fns)
+                                                      self.activation_fns, mode)
 
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         methods_result = {masker_name: {afn: {} for afn in self.activation_fns} for masker_name in self.maskers}

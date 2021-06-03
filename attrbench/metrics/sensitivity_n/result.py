@@ -27,8 +27,14 @@ class SensitivityNResult(MaskerActivationMetricResult):
         result._tree = NDArrayTree.load_from_hdf(["masker", "activation_fn", "method"], group)
         return result
 
-    def _postproc_fn(self, x):
-        return np.mean(x, axis=1)
+    def get_df(self, mode="raw", include_baseline=False, masker="constant",
+               activation_fn="linear", columns=None):
+        def _postproc_fn(x):
+            if columns is not None:
+                x = x[..., columns]
+            return np.mean(x, axis=-1)
+        return super().get_df(mode, include_baseline, masker, activation_fn,
+                              postproc_fn=_postproc_fn)
 
 
 class SegSensitivityNResult(SensitivityNResult):
