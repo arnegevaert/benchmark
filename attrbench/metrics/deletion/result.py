@@ -8,8 +8,8 @@ from attrbench.lib import NDArrayTree
 
 def _aoc(x: np.ndarray, columns: np.ndarray = None):
     if columns is not None:
-        x = x[:, columns]
-    return x[..., 0] - np.trapz(x, np.linspace(0, 1, x.shape[-1]))
+        x = x[..., columns]
+    return x[..., 0] - np.trapz(x, np.linspace(0, 1, x.shape[-1]), axis=-1)
 
 
 def _auc(x: np.ndarray, columns: np.ndarray = None):
@@ -54,10 +54,3 @@ class DeletionResult(MaskerActivationMetricResult):
 
 class IrofResult(DeletionResult):
     pass
-
-if __name__ == "__main__":
-    from attrbench.suite import SuiteResult
-
-    res = SuiteResult.load_hdf("../../../out/imagenet.h5")
-    m_res = res.metric_results["deletion_morf"]
-    df, inverted = m_res.get_df(agg_fn="auc", mode="median_dist")
