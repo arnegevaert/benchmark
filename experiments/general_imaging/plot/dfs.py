@@ -11,28 +11,29 @@ def get_default_dfs(res_obj: SuiteResult, mode: str, infid_log=False):
     return res
 
 
-def get_metric_dfs(res_obj: SuiteResult, mode: str, infid_log=False):
+def get_all_dfs(res_obj: SuiteResult, mode: str, infid_log=False):
     dfs = {}
-    for m_name in ("deletion", "insertion", "irof", "iiof", "sensitivity_n", "seg_sensitivity_n"):
+    for m_name in ("deletion_morf", "irof_morf", "deletion_lerf", "irof_lerf", "sensitivity_n", "seg_sensitivity_n"):
         m_res = res_obj.metric_results[m_name]
         dfs[m_name] = {
             f"{afn} - {masker}": m_res.get_df(mode=mode, activation_fn=afn, masker=masker)
             for afn, masker in product(("linear", "softmax"), ("constant", "random", "blur"))
         }
 
-    del_flip_res = res_obj.metric_results["minimal_subset"]
-    dfs["minimal_subset"] = {
-        f"{masker}": del_flip_res.get_df(mode=mode, masker=masker)
-        for masker in ("constant", "random", "blur")
-    }
+    # Minimal subset insertion/deletion
+    for m_name in ("minimal_subset_insertion", "minimal_subset_deletion"):
+        del_flip_res = res_obj.metric_results[m_name]
+        dfs[m_name] = {
+            f"{masker}": del_flip_res.get_df(mode=mode, masker=masker)
+            for masker in ("constant", "random", "blur")
+        }
 
     infid_res = res_obj.metric_results["infidelity"]
     dfs["infidelity"] = {
-        f"{pert_gen} - {afn} - {loss_fn}": infid_res.get_df(mode=mode, perturbation_generator=pert_gen,
-                                                            activation_fn=afn, loss_fn=loss_fn, log=infid_log if loss_fn == "mse" else False)
-        for (pert_gen, afn, loss_fn) in product(("gaussian", "square", "segment"),
-                                                ("linear", "softmax"),
-                                                ("mse", "normalized_mse", "corr"))
+        f"{pert_gen} - {afn}": infid_res.get_df(mode=mode, perturbation_generator=pert_gen,
+                                                activation_fn=afn,
+                                                log=infid_log)
+        for (pert_gen, afn) in product(("gaussian", "square", "segment"),
+                                       ("linear", "softmax"))
     }
     return dfs
-

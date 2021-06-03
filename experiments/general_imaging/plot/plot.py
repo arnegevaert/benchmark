@@ -1,7 +1,7 @@
 from attrbench.suite import SuiteResult
 import numpy as np
 from attrbench.suite.plot import *
-from experiments.general_imaging.plot.dfs import get_default_dfs, get_metric_dfs
+from experiments.general_imaging.plot.dfs import get_default_dfs, get_all_dfs
 import matplotlib.pyplot as plt
 import argparse
 import os
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     res = SuiteResult.load_hdf(args.in_file)
     print(list(res.metric_results.keys()))
 
-    metric_dfs = get_metric_dfs(res, mode="median_dist", infid_log=args.infid_log)
+    all_dfs = get_all_dfs(res, mode="median_dist", infid_log=args.infid_log)
     default_dfs = get_default_dfs(res, mode="median_dist", infid_log=args.infid_log)
 
     # Wilcoxon summary plots
@@ -38,7 +38,7 @@ if __name__ == "__main__":
         print("Wilcoxon summary plots...")
         if not path.isdir(path.join(args.out_dir, "wsp")):
             os.makedirs(path.join(args.out_dir, "wsp"))
-        for metric_name, dfs in metric_dfs.items():
+        for metric_name, dfs in all_dfs.items():
             fig = WilcoxonSummaryPlot(dfs).render(figsize=(20, 20), glyph_scale=1500)
             fig.savefig(path.join(args.out_dir, "wsp", f"{metric_name}.png"), bbox_inches="tight")
             plt.close(fig)
@@ -48,19 +48,9 @@ if __name__ == "__main__":
         print("Krippendorff...")
         if not path.isdir(path.join(args.out_dir, "krip")):
             os.makedirs(path.join(args.out_dir, "krip"))
-        for metric_name, dfs in metric_dfs.items():
+        for metric_name, dfs in all_dfs.items():
             fig = KrippendorffAlphaPlot(dfs).render()
             fig.savefig(path.join(args.out_dir, "krip", f"{metric_name}.png"), bbox_inches="tight")
-            plt.close(fig)
-
-    # Krippendorff bootstrap plots
-    if "krip_bs" in types:
-        print("Krippendorff Bootstrap...")
-        if not path.isdir(path.join(args.out_dir, "krip_bs")):
-            os.makedirs(path.join(args.out_dir, "krip_bs"))
-        for metric_name, dfs in metric_dfs.items():
-            fig = KrippendorffAlphaBootstrapPlot(dfs).render()
-            fig.savefig(path.join(args.out_dir, "krip_bs", f"{metric_name}.png"), bbox_inches="tight")
             plt.close(fig)
 
     # MAD barplots
@@ -68,7 +58,7 @@ if __name__ == "__main__":
         print("MAD ratio...")
         if not path.isdir(path.join(args.out_dir, "mad")):
             os.makedirs(path.join(args.out_dir, "mad"))
-        for metric_name, dfs in metric_dfs.items():
+        for metric_name, dfs in all_dfs.items():
             fig = MADRatioPlot(dfs).render()
             fig.savefig(path.join(args.out_dir, "mad", f"{metric_name}.png"), bbox_inches="tight")
             plt.close(fig)
