@@ -30,8 +30,8 @@ if __name__ == "__main__":
     res = SuiteResult.load_hdf(args.in_file)
     print(list(res.metric_results.keys()))
 
-    all_dfs = get_all_dfs(res, mode="median_dist", infid_log=args.infid_log)
-    default_dfs = get_default_dfs(res, mode="median_dist", infid_log=args.infid_log)
+    all_dfs = get_all_dfs(res, mode=args.mode, infid_log=args.infid_log)
+    default_dfs = get_default_dfs(res, mode=args.mode, infid_log=args.infid_log)
 
     # Wilcoxon summary plots
     if "wsp" in types:
