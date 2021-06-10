@@ -40,11 +40,10 @@ class SquarePerturbationGenerator(PerturbationGenerator):
     def _generate_perturbed_samples(self):
         height = self.samples.shape[2]
         width = self.samples.shape[3]
-        square_size_int = int(self.square_size * height)
-        x_loc = self.rng.integers(0, width - square_size_int, size=1).item()
-        y_loc = self.rng.integers(0, height - square_size_int, size=1).item()
+        x_loc = self.rng.integers(0, width - self.square_size, size=1).item()
+        y_loc = self.rng.integers(0, height - self.square_size, size=1).item()
         perturbation_mask = torch.zeros(self.samples.shape, device=self.samples.device)
-        perturbation_mask[:, :, x_loc:x_loc + square_size_int, y_loc:y_loc + square_size_int] = 1
+        perturbation_mask[:, :, x_loc:x_loc + self.square_size, y_loc:y_loc + self.square_size] = 1
         perturbation_vector = self.samples * perturbation_mask
         return perturbation_vector
 

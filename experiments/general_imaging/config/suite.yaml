@@ -19,12 +19,12 @@ metrics:
     type: Infidelity
     num_perturbations: 1000
     perturbation_generators:
-      gaussian:
+      noisy_bl:
         type: NoisyBaselinePerturbationGenerator
         sd: 0.2
       square:
         type: SquarePerturbationGenerator
-        square_size: 0.2
+        square_size: 5
 #  seg_sensitivity_n:
 #    type: SegSensitivityN
 #    min_subset_size: 0.1
