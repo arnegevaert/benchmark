@@ -19,11 +19,11 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
                            activation_fns: Tuple[str],
                            writer: AttributionWriter = None) -> Dict[str, Dict[str, np.ndarray]]:
     # Move attributions to samples device
-    t_attrs: Dict[str, torch.tensor] = {}
+    tensor_attrs: Dict[str, torch.tensor] = {}
     for key, value in attrs.items():
         if value.shape[1] != samples.shape[1]:
             value = np.repeat(value, samples.shape[1], axis=1)
-        t_attrs[key] = torch.tensor(value, device=samples.device).flatten(1)
+        tensor_attrs[key] = torch.tensor(value, device=samples.device).flatten(1)
 
     # Get original model output
     orig_output = {}
@@ -33,11 +33,10 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
                                                                         index=labels.unsqueeze(-1))  # [batch_size, 1]
 
     perturbation_generator.set_samples(samples)
-    squared_errors: Dict[str, Dict[str, list]] = {afn: {m_name: [] for m_name in t_attrs} for afn in activation_fns}
-    for i_pert in range(num_perturbations):
-        pred_diffs = {}
-        dot_products = {}
 
+    dot_products: Dict[str, list] = {m_name: [] for m_name in tensor_attrs}
+    pred_diffs: Dict[str, list] = {afn: [] for afn in activation_fns}
+    for i_pert in range(num_perturbations):
         # Get perturbation vector I and perturbed samples (x - I)
         perturbation_vector = perturbation_generator()
         perturbed_samples = samples - perturbation_vector
@@ -51,20 +50,28 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
         # Save the prediction difference and perturbation vector
         for fn in activation_fns:
             act_pert_out = ACTIVATION_FNS[fn](perturbed_output).gather(dim=1, index=labels.unsqueeze(-1))
-            pred_diffs[fn] = orig_output[fn] - act_pert_out
+            # [batch_size]
+            pred_diffs[fn].append(torch.squeeze(orig_output[fn] - act_pert_out))
 
         # Compute dot products of perturbation vectors with all attributions for each sample
-        for key, value in t_attrs.items():
+        for key, value in tensor_attrs.items():
             # [batch_size]
-            dot_products[key] = (perturbation_vector.flatten(1) * value).sum(dim=-1, keepdim=True)
+            dot_products[key].append((perturbation_vector.flatten(1) * value).sum(dim=-1))
 
-        # Compute squared error for each combination of activation function and method
+    # For each method and activation function, compute infidelity
+    # Result: activation_function -> method_name -> [batch_size, 1]
+    result: Dict[str, Dict[str, np.ndarray]] = {afn: {m_name: None for m_name in tensor_attrs} for afn in activation_fns}
+    # activation_function -> [num_perturbations, batch_size]
+    tensor_pred_diffs = {afn: torch.stack(pred_diffs[afn], dim=0) for afn in pred_diffs.keys()}
+    for m_name in tensor_attrs.keys():
+        # Dot products for this method
+        m_dot_products = torch.stack(dot_products[m_name])  # [num_perturbations, batch_size]
+        # Denominator for normalizing constant beta
+        beta_den = torch.mean(m_dot_products**2, dim=0, keepdim=True)  # [1, batch_size]
         for afn in activation_fns:
-            for m_name, dot_product in dot_products.items():
-                squared_errors[afn][m_name].append((dot_product - pred_diffs[afn])**2)
-
-    result = {afn: {} for afn in activation_fns}
-    for afn in activation_fns:
-        for m_name, sq_errors in squared_errors[afn].items():
-            result[afn][m_name] = torch.cat(sq_errors, dim=1).mean(dim=1, keepdim=True).cpu().detach().numpy()
+            # Numerator for normalizing constant beta depends on activation function
+            beta_num = torch.mean(m_dot_products * tensor_pred_diffs[afn], dim=0, keepdim=True)  # [1, batch_size]
+            beta = beta_num / beta_den  # [1, batch_size]
+            infid = torch.mean((beta * m_dot_products - tensor_pred_diffs[afn])**2, dim=0, keepdim=True)
+            result[afn][m_name] = infid.cpu().detach().numpy()
     return result
