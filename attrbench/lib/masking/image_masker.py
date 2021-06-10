@@ -151,7 +151,9 @@ class ImageMasker(Masker):
             seg_img = self.segmented_samples[i, ...]
             segs = segments[i]
             bool_masks.append(_isin(seg_img, torch.tensor(segs, device=seg_img.device)))
-        bool_masks = torch.stack(bool_masks, dim=0).repeat(1, 3, 1, 1)
+        bool_masks = torch.stack(bool_masks, dim=0)
+        if self.samples.shape[1] == 3:
+            bool_masks = bool_masks.repeat(1, 3, 1, 1)
         return self._mask_boolean(bool_masks)
 
     def _mask_boolean(self, bool_mask: torch.tensor):
