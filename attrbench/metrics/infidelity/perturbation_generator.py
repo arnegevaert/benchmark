@@ -20,17 +20,18 @@ class PerturbationGenerator:
         raise NotImplementedError
 
 
-class GaussianPerturbationGenerator(PerturbationGenerator):
+class NoisyBaselinePerturbationGenerator(PerturbationGenerator):
     def __init__(self, sd):
         super().__init__()
         self.sd = sd
 
     # perturbation_size is stdev of noise
     def _generate_perturbed_samples(self):
-        return torch.randn(*self.samples.shape, device=self.samples.device) * self.sd
+        # I = x - (x_0 + \epsilon) where x_0 = 0
+        return self.samples - torch.randn(*self.samples.shape, device=self.samples.device) * self.sd
 
 
-class SquareRemovalPerturbationGenerator(PerturbationGenerator):
+class SquarePerturbationGenerator(PerturbationGenerator):
     def __init__(self, square_size):
         super().__init__()
         self.square_size = square_size
