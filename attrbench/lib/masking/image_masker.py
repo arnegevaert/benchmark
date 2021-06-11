@@ -124,12 +124,9 @@ class ImageMasker(Masker):
             num_indices = indices.shape[1]
             batch_dim = np.tile(range(batch_size), (num_indices, 1)).transpose()
 
-            # to_mask = torch.zeros(samples.shape).flatten(1 if self.feature_level == "channel" else 2)
-            to_mask = np.zeros(self.samples.shape)
-            if self.feature_level == "channel":
-                to_mask = to_mask.reshape((to_mask.shape[0], -1))
-            else:
-                to_mask = to_mask.reshape((to_mask.shape[0], to_mask.shape[1], -1))
+            to_mask = torch.zeros(self.samples.shape, device=self.samples.device)\
+                .flatten(1 if self.feature_level == "channel" else 2)
+            #to_mask = np.zeros(self.samples.shape)
             if self.feature_level == "channel":
                 to_mask[batch_dim, indices] = 1.
             else:
@@ -138,8 +135,7 @@ class ImageMasker(Masker):
                 except IndexError:
                     raise ValueError("Masking index was out of bounds. "
                                      "Make sure the masking policy is compatible with method output.")
-            to_mask = torch.tensor(to_mask.reshape(self.samples.shape), dtype=torch.bool, device=self.samples.device)
-            return self._mask_boolean(to_mask)
+            return self._mask_boolean(to_mask.view(self.samples.shape).bool())
 
     def _mask_segments(self, segments: Union[np.ndarray, List[np.ndarray]]) -> torch.tensor:
         if not self.segmented_samples.shape[0] == len(segments):

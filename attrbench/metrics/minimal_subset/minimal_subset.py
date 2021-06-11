@@ -12,7 +12,8 @@ from .result import MinimalSubsetResult
 
 def ms_loop(samples: torch.Tensor, attrs: np.ndarray, ds: _MinimalSubsetDataset, model: Callable,
             orig_predictions: torch.Tensor, flipped: torch.Tensor, result: torch.Tensor, criterion_fn: Callable,
-            writer=None, flipped_samples: torch.Tensor = None):
+            writer=None):
+    flipped_samples = None if writer is None else [None for _ in range(samples.shape[0])]
     it = iter(ds)
     batch = next(it)
     while not torch.all(flipped) and batch is not None:
@@ -47,7 +48,6 @@ def ms_loop(samples: torch.Tensor, attrs: np.ndarray, ds: _MinimalSubsetDataset,
 
 def minimal_subset_deletion(samples: torch.Tensor, model: Callable, attrs: np.ndarray,
                             num_steps: float, masker: Masker, writer=None):
-    flipped_samples = None if writer is None else [None for _ in range(samples.shape[0])]
     ds = _MinimalSubsetDeletionDataset(num_steps, samples, attrs, masker)
     result = torch.tensor([-1 for _ in range(samples.shape[0])]).int()
     flipped = torch.tensor([False for _ in range(samples.shape[0])]).bool()
@@ -55,7 +55,7 @@ def minimal_subset_deletion(samples: torch.Tensor, model: Callable, attrs: np.nd
     orig_predictions = torch.argmax(model(samples), dim=1)
 
     result = ms_loop(samples, attrs, ds, model, orig_predictions, flipped, result,
-                     criterion_fn=lambda pred, orig: pred != orig, writer=writer, flipped_samples=flipped_samples)
+                     criterion_fn=lambda pred, orig: pred != orig, writer=writer)
     return result
 
 
@@ -79,7 +79,7 @@ def minimal_subset_insertion(samples: torch.Tensor, model: Callable, attrs: np.n
                 flipped_samples = ds.masker.baseline[i].cpu()
 
     result = ms_loop(samples, attrs, ds, model, orig_predictions, flipped, result,
-                     criterion_fn=lambda pred, orig: pred == orig, writer=writer, flipped_samples=flipped_samples)
+                     criterion_fn=lambda pred, orig: pred == orig, writer=writer)
     return result
 
 
