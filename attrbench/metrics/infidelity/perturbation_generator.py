@@ -20,17 +20,18 @@ class PerturbationGenerator:
         raise NotImplementedError
 
 
-class GaussianPerturbationGenerator(PerturbationGenerator):
+class NoisyBaselinePerturbationGenerator(PerturbationGenerator):
     def __init__(self, sd):
         super().__init__()
         self.sd = sd
 
     # perturbation_size is stdev of noise
     def _generate_perturbed_samples(self):
-        return torch.randn(*self.samples.shape, device=self.samples.device) * self.sd
+        # I = x - (x_0 + \epsilon) where x_0 = 0
+        return self.samples - torch.randn(*self.samples.shape, device=self.samples.device) * self.sd
 
 
-class SquareRemovalPerturbationGenerator(PerturbationGenerator):
+class SquarePerturbationGenerator(PerturbationGenerator):
     def __init__(self, square_size):
         super().__init__()
         self.square_size = square_size
@@ -39,11 +40,10 @@ class SquareRemovalPerturbationGenerator(PerturbationGenerator):
     def _generate_perturbed_samples(self):
         height = self.samples.shape[2]
         width = self.samples.shape[3]
-        square_size_int = int(self.square_size * height)
-        x_loc = self.rng.integers(0, width - square_size_int, size=1).item()
-        y_loc = self.rng.integers(0, height - square_size_int, size=1).item()
+        x_loc = self.rng.integers(0, width - self.square_size, size=1).item()
+        y_loc = self.rng.integers(0, height - self.square_size, size=1).item()
         perturbation_mask = torch.zeros(self.samples.shape, device=self.samples.device)
-        perturbation_mask[:, :, x_loc:x_loc + square_size_int, y_loc:y_loc + square_size_int] = 1
+        perturbation_mask[:, :, x_loc:x_loc + self.square_size, y_loc:y_loc + self.square_size] = 1
         perturbation_vector = self.samples * perturbation_mask
         return perturbation_vector
 

@@ -11,7 +11,7 @@ from . import perturbation_generator
 from .result import InfidelityResult
 import logging
 
-
+# TODO this is broken
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
                pert_generator: perturbation_generator.PerturbationGenerator, num_perturbations: int,
                activation_fns: Union[Tuple[str], str] = "linear",
@@ -20,7 +20,7 @@ def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, att
         activation_fns = (activation_fns,)
     pert_vectors, pred_diffs = _compute_perturbations(samples, labels, model, pert_generator,
                                                       num_perturbations, activation_fns, writer)
-    return _compute_result(pert_vectors, pred_diffs, attrs)
+    #return _compute_result(pert_vectors, pred_diffs, attrs)
 
 
 def _parse_pert_generator(d):
