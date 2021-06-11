@@ -14,9 +14,9 @@ class PerturbationGenerator:
     def __call__(self):
         if self.samples is None:
             raise ValueError("Base samples must be set to generate perturbations")
-        return self._generate_perturbed_samples()
+        return self._generate_perturbation_vectors()
 
-    def _generate_perturbed_samples(self):
+    def _generate_perturbation_vectors(self):
         raise NotImplementedError
 
 
@@ -26,9 +26,20 @@ class NoisyBaselinePerturbationGenerator(PerturbationGenerator):
         self.sd = sd
 
     # perturbation_size is stdev of noise
-    def _generate_perturbed_samples(self):
+    def _generate_perturbation_vectors(self):
         # I = x - (x_0 + \epsilon) where x_0 = 0
         return self.samples - torch.randn(*self.samples.shape, device=self.samples.device) * self.sd
+
+
+class GaussianPerturbationGenerator(PerturbationGenerator):
+    def __init__(self, sd):
+        super().__init__()
+        self.sd = sd
+
+    # perturbation_size is stdev of noise
+    def _generate_perturbation_vectors(self):
+        # I \sim \mathcal{N}(0, self.sd)
+        return torch.randn(*self.samples.shape, device=self.samples.device) * self.sd
 
 
 class SquarePerturbationGenerator(PerturbationGenerator):
@@ -37,7 +48,7 @@ class SquarePerturbationGenerator(PerturbationGenerator):
         self.square_size = square_size
 
     # perturbation_size is (square height)/(image height)
-    def _generate_perturbed_samples(self):
+    def _generate_perturbation_vectors(self):
         height = self.samples.shape[2]
         width = self.samples.shape[3]
         x_loc = self.rng.integers(0, width - self.square_size, size=1).item()
@@ -61,7 +72,7 @@ class SegmentRemovalPerturbationGenerator(PerturbationGenerator):
         self.segments = [np.unique(segmented_images[i, ...]) for i in range(samples.shape[0])]
         self.rng = np.random.default_rng()
 
-    def _generate_perturbed_samples(self):
+    def _generate_perturbation_vectors(self):
         perturbation_vectors = []
         # Select segments to mask for each sample
         segments_to_mask = torch.tensor(
