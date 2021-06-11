@@ -22,6 +22,9 @@ metrics:
       noisy_bl:
         type: NoisyBaselinePerturbationGenerator
         sd: 0.2
+      gaussian:
+        type: GaussianPerturbationGenerator
+        sd: 0.2
       square:
         type: SquarePerturbationGenerator
         square_size: 5
