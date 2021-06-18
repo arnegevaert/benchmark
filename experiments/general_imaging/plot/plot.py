@@ -1,4 +1,5 @@
 from attrbench.suite import SuiteResult
+import warnings
 import numpy as np
 from attrbench.suite.plot import *
 from experiments.general_imaging.plot.dfs import get_default_dfs, get_all_dfs
@@ -13,7 +14,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("in_file", type=str)
     parser.add_argument("out_dir", type=str)
-    parser.add_argument("mode", type=str)
+    parser.add_argument("mode", type=str, choices=["raw", "single", "median", "std"], default="raw")
     parser.add_argument("-p", "--plot_types", type=str, nargs="*")
     parser.add_argument("--infid-log", action="store_true")
     args = parser.parse_args()
@@ -26,6 +27,9 @@ if __name__ == "__main__":
 
     if not path.isdir(args.out_dir):
         os.makedirs(args.out_dir)
+
+    if args.mode == "raw" and "wsp" in types:
+        warnings.warn("Wilcoxon tests don't work with raw results")
 
     res = SuiteResult.load_hdf(args.in_file)
     print(list(res.metric_results.keys()))
@@ -42,6 +46,9 @@ if __name__ == "__main__":
             fig = WilcoxonSummaryPlot(dfs).render(figsize=(20, 20), glyph_scale=1500)
             fig.savefig(path.join(args.out_dir, "wsp", f"{metric_name}.png"), bbox_inches="tight")
             plt.close(fig)
+        def_fig = WilcoxonSummaryPlot(default_dfs).render(figsize=(20, 20), glyph_scale=1500)
+        def_fig.savefig(path.join(args.out_dir, "wsp_general.png"), bbox_inches="tight")
+        plt.close(def_fig)
 
     # Krippendorff barplots
     if "krip" in types:

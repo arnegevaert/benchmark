@@ -7,7 +7,9 @@ def get_default_dfs(res_obj: SuiteResult, mode: str, infid_log=False):
         metric_name: res_obj.metric_results[metric_name].get_df(mode=mode)
         for metric_name in res_obj.metric_results.keys() if metric_name != "infidelity"
     }
-    res["infidelity"] = res_obj.metric_results["infidelity"].get_df(mode=mode, log=infid_log)
+    for infid_type in ("square", "noisy_bl", "gaussian"):
+        res[f"infidelity-{infid_type}"] = res_obj.metric_results["infidelity"].get_df(mode=mode, log=infid_log,
+                                                                                      perturbation_generator=infid_type)
     return res
 
 
@@ -28,12 +30,20 @@ def get_all_dfs(res_obj: SuiteResult, mode: str, infid_log=False):
             for masker in ("constant", "random", "blur")
         }
 
+    # Infidelity
     infid_res = res_obj.metric_results["infidelity"]
     dfs["infidelity"] = {
         f"{pert_gen} - {afn}": infid_res.get_df(mode=mode, perturbation_generator=pert_gen,
                                                 activation_fn=afn,
                                                 log=infid_log)
-        for (pert_gen, afn) in product(("gaussian", "square", "segment"),
+        for (pert_gen, afn) in product(("gaussian", "square", "noisy_bl"),
                                        ("linear", "softmax"))
     }
+
+    # Impact Coverage (if present)
+    if "impact_coverage" in res_obj.metric_results.keys():
+        ic_res = res_obj.metric_results["impact_coverage"]
+        dfs["impact_coverage"] = {
+            "Impact Coverage": ic_res.get_df(mode=mode)
+        }
     return dfs

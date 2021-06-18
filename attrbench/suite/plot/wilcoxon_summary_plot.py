@@ -17,8 +17,11 @@ class WilcoxonSummaryPlot:
             pvalues[metric_name] = mpv
         pvalues = pd.DataFrame(pvalues)
         effect_sizes = pd.DataFrame(effect_sizes).abs()
-        norm_effect_sizes = (effect_sizes - effect_sizes.min()) / (effect_sizes.max() - effect_sizes.min())
         effect_sizes[pvalues > 0.01] = 0
+
+        # Normalize each column of the effect sizes dataframe
+        effect_sizes = (effect_sizes - effect_sizes.min()) / (effect_sizes.max() - effect_sizes.min())
+        effect_sizes = effect_sizes.fillna(0)
 
         effect_sizes = pd.melt(effect_sizes.reset_index(), id_vars='index')
         effect_sizes.columns = ["method", "metric", "value"]

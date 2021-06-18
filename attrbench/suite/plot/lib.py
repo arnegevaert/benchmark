@@ -4,6 +4,7 @@
 import seaborn as sns
 from matplotlib import pyplot as plt
 import numpy as np
+import math
 
 
 def effect_size_barplot(effect_sizes, pvalues, labels, alpha):
@@ -41,6 +42,8 @@ def heatmap(x, y, size, color, palette=None, figsize=(20, 20), glyph_scale=1500,
 
     def value_to_color(val):
         val_position = float((val - color_min)) / (color_max - color_min)
+        if math.isnan(val_position):  # Might be nan if colors are all 0 (ie if nothing is significant)
+            val_position = 0
         ind = int(val_position * (len(palette) - 1))
         return palette[ind]
 

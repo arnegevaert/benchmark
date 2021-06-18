@@ -31,13 +31,13 @@ class AbstractMetricResult:
             raw_results["Baseline"] = baseline_results.iloc[:, 0]
         if mode == "raw":
             return raw_results, self.inverted
-        elif mode == "single_dist":
+        elif mode == "single":
             return raw_results.sub(baseline_results.iloc[:, 0], axis=0), self.inverted
         else:
             baseline_med = baseline_results.median(axis=1)
-            if mode == "median_dist":
+            if mode == "median":
                 return raw_results.sub(baseline_med, axis=0), self.inverted
-            elif mode == "std_dist":
+            elif mode == "std":
                 baseline_mad = baseline_results.sub(baseline_med, axis=0).abs().median(axis=1)
                 return raw_results \
                            .sub(baseline_med, axis=0) \
