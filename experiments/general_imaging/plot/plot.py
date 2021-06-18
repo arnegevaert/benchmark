@@ -42,11 +42,13 @@ if __name__ == "__main__":
         print("Wilcoxon summary plots...")
         if not path.isdir(path.join(args.out_dir, "wsp")):
             os.makedirs(path.join(args.out_dir, "wsp"))
+        """
         for metric_name, dfs in all_dfs.items():
             fig = WilcoxonSummaryPlot(dfs).render(figsize=(20, 20), glyph_scale=1500)
             fig.savefig(path.join(args.out_dir, "wsp", f"{metric_name}.png"), bbox_inches="tight")
             plt.close(fig)
-        def_fig = WilcoxonSummaryPlot(default_dfs).render(figsize=(20, 20), glyph_scale=1500)
+        """
+        def_fig = WilcoxonSummaryPlot(default_dfs).render(figsize=(10, 10), glyph_scale=1500)
         def_fig.savefig(path.join(args.out_dir, "wsp_general.png"), bbox_inches="tight")
         plt.close(def_fig)
 

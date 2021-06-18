@@ -3,6 +3,8 @@ import pandas as pd
 from attrbench.suite.plot.lib import heatmap
 from attrbench.lib.stat import wilcoxon_tests
 import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 class WilcoxonSummaryPlot:
@@ -22,7 +24,45 @@ class WilcoxonSummaryPlot:
         # Normalize each column of the effect sizes dataframe
         effect_sizes = (effect_sizes - effect_sizes.min()) / (effect_sizes.max() - effect_sizes.min())
         effect_sizes = effect_sizes.fillna(0)
+        effect_sizes = effect_sizes.transpose()
+        cbarlabel = "Normalized effect size"
 
+        columns = list(effect_sizes.columns)
+        rows = list(effect_sizes.index)
+
+        # Plot heatmap
+        fig, ax = plt.subplots(figsize=figsize)
+        im = ax.imshow(np.ma.masked_where(effect_sizes == 0, effect_sizes), cmap="Greens")
+
+        # Create colorbar
+        cbar = ax.figure.colorbar(im, ax=ax)
+        cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom")
+
+        # Show all ticks
+        ax.set_xticks(np.arange(len(columns)))
+        ax.set_yticks(np.arange(len(rows)))
+        # Label ticks
+        ax.set_xticklabels(columns)
+        ax.set_yticklabels(rows)
+
+        # Rotate the tick labels and set their alignment.
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+                 rotation_mode="anchor")
+
+        # Turn spines off and create white grid.
+        for key in ax.spines:
+            ax.spines[key].set_visible(False)
+
+        # Loop over data dimensions and create text annotations.
+        for i in range(len(rows)):
+            for j in range(len(columns)):
+                es = effect_sizes.iloc[i, j]
+                if es > 0:
+                    color = "black" if es < 0.9 else "white"
+                    text = ax.text(j, i, f"{es:.2f}",
+                                   ha="center", va="center", color=color)
+        return fig
+        """
         effect_sizes = pd.melt(effect_sizes.reset_index(), id_vars='index')
         effect_sizes.columns = ["method", "metric", "value"]
         #norm_effect_sizes = pd.melt(norm_effect_sizes.reset_index(), id_vars='index')
@@ -39,3 +79,4 @@ class WilcoxonSummaryPlot:
             fontsize=fontsize,
             title=title
         )
+        """
