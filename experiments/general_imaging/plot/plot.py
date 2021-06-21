@@ -32,7 +32,6 @@ if __name__ == "__main__":
         warnings.warn("Wilcoxon tests don't work with raw results")
 
     res = SuiteResult.load_hdf(args.in_file)
-    print(list(res.metric_results.keys()))
 
     all_dfs = get_all_dfs(res, mode=args.mode, infid_log=args.infid_log)
     default_dfs = get_default_dfs(res, mode=args.mode, infid_log=args.infid_log)

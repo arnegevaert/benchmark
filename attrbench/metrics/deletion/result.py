@@ -14,7 +14,7 @@ def _aoc(x: np.ndarray, columns: np.ndarray = None):
 
 def _auc(x: np.ndarray, columns: np.ndarray = None):
     if columns is not None:
-        x = x[:, columns]
+        x = x[..., columns]
     return np.trapz(x, np.linspace(0, 1, x.shape[-1]))
 
 
@@ -42,7 +42,7 @@ class DeletionResult(MaskerActivationMetricResult):
         return result
 
     def get_df(self, mode="raw", include_baseline=False, masker: str = "constant",
-               activation_fn: str = "linear", columns=None, agg_fn="aoc") -> Tuple[pd.DataFrame, bool]:
+               activation_fn: str = "linear", columns=None, agg_fn="auc") -> Tuple[pd.DataFrame, bool]:
         if agg_fn not in ("aoc", "auc"):
             raise ValueError("agg_fn must be aoc or auc")
         postproc_fn = _aoc if agg_fn == "aoc" else _auc

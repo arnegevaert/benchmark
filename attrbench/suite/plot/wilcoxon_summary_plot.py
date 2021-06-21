@@ -35,8 +35,8 @@ class WilcoxonSummaryPlot:
         im = ax.imshow(np.ma.masked_where(effect_sizes == 0, effect_sizes), cmap="Greens")
 
         # Create colorbar
-        cbar = ax.figure.colorbar(im, ax=ax)
-        cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom")
+        #cbar = ax.figure.colorbar(im, ax=ax)
+        #cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom")
 
         # Show all ticks
         ax.set_xticks(np.arange(len(columns)))
