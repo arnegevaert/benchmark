@@ -30,25 +30,20 @@ class InfidelityResult(AbstractMetricResult):
         return result
 
     def get_df(self, mode="raw", include_baseline=False, perturbation_generator="gaussian",
-               activation_fn="linear", log=False):
+               activation_fn="linear"):
         def _squeeze(x):
             return np.squeeze(x, axis=-1)
 
-        def _log_squeeze(x):
-            return np.log(np.squeeze(x, axis=-1))
-
-        postproc_fn = _log_squeeze if log else _squeeze
-
         raw_results = pd.DataFrame.from_dict(
             self.tree.get(
-                postproc_fn=postproc_fn,
+                postproc_fn=_squeeze,
                 exclude=dict(method=["_BASELINE"]),
                 select=dict(perturbation_generator=[perturbation_generator],
                             activation_fn=[activation_fn])
             )[perturbation_generator][activation_fn]
         )
         baseline_results = pd.DataFrame(self.tree.get(
-            postproc_fn=postproc_fn,
+            postproc_fn=_squeeze,
             select=dict(perturbation_generator=[perturbation_generator],
                         activation_fn=[activation_fn],
                         method=["_BASELINE"])
