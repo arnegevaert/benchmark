@@ -2,15 +2,13 @@ import argparse
 import pandas as pd
 from attrbench.lib import krippendorff_alpha
 from attrbench.suite import SuiteResult
-from attrbench.suite.plot import InterMethodCorrelationPlot
 from experiments.general_imaging.plot.dfs import get_default_dfs
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from os import path
-import os
 import glob
-from tqdm import tqdm
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
