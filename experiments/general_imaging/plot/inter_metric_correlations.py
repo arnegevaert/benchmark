@@ -1,13 +1,13 @@
 import argparse
 from attrbench.suite import SuiteResult
-from attrbench.suite.plot import WilcoxonSummaryPlot
+from attrbench.suite.plot import InterMetricCorrelationPlot
+from experiments.general_imaging.plot.dfs import get_default_dfs
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from os import path
 import os
 import glob
-from experiments.general_imaging.plot.dfs import get_default_dfs
 from tqdm import tqdm
 
 
@@ -32,6 +32,6 @@ if __name__ == "__main__":
 
         res_obj = SuiteResult.load_hdf(file)
         dfs = get_default_dfs(res_obj, mode="single")
-        fig = WilcoxonSummaryPlot(dfs).render(figsize=(10, 10), glyph_scale=1000)
+        fig = InterMetricCorrelationPlot(dfs).render(figsize=(10, 10), glyph_scale=750)
         fig.savefig(path.join(args.out_dir, f"{ds_name}.png"), bbox_inches="tight")
         plt.close(fig)
