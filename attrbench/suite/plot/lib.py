@@ -54,6 +54,10 @@ def heatmap(x, y, size, color, palette=None, figsize=(20, 20), glyph_scale=1500,
         c=color.apply(value_to_color),
         marker='s'  # Use square as scatterplot marker
     )
+
+    # Force equal aspect such that all glyphs are square
+    ax.set_aspect("equal", "box")
+
     # Show column labels on the axes
     ax.set_xticks([x_to_num[v] for v in x_labels])
     ax.set_xticklabels(x_labels, rotation=45, horizontalalignment='right', fontsize=fontsize)

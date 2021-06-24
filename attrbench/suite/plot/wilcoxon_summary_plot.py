@@ -24,7 +24,7 @@ class WilcoxonSummaryPlot:
         # Normalize each column of the effect sizes dataframe
         effect_sizes = (effect_sizes - effect_sizes.min()) / (effect_sizes.max() - effect_sizes.min())
         effect_sizes = effect_sizes.fillna(0)
-        effect_sizes = effect_sizes.transpose()
+        """
         cbarlabel = "Normalized effect size"
 
         columns = list(effect_sizes.columns)
@@ -63,6 +63,7 @@ class WilcoxonSummaryPlot:
                                    ha="center", va="center", color=color)
         return fig
         """
+
         effect_sizes = pd.melt(effect_sizes.reset_index(), id_vars='index')
         effect_sizes.columns = ["method", "metric", "value"]
         #norm_effect_sizes = pd.melt(norm_effect_sizes.reset_index(), id_vars='index')
@@ -73,10 +74,9 @@ class WilcoxonSummaryPlot:
             y=effect_sizes["metric"],
             size=effect_sizes["value"],
             color=effect_sizes["value"],
-            palette=sns.color_palette("rocket_r", n_colors=256),
+            palette=sns.color_palette("Greens", n_colors=256),
             figsize=figsize,
             glyph_scale=glyph_scale,
             fontsize=fontsize,
             title=title
         )
-        """
