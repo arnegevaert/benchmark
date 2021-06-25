@@ -5,6 +5,7 @@ import dash_html_components as html
 import numpy as np
 from dash.dependencies import Input, Output, State
 
+import attrbench.suite.dashboard.util as util
 from attrbench.suite.dashboard.components import SampleAttributionsComponent
 from attrbench.suite.dashboard.components.pages import Page
 
@@ -13,16 +14,17 @@ class SamplesAttributionsPage(Page):
     def __init__(self, result_obj, app):
         super().__init__(result_obj)
         self.app = app
+
         self.add_form = dbc.Form([
             dbc.FormGroup([
                 dcc.Dropdown(options=[{"label": f"Sample {i}", "value": i}
-                                      for i in range(self.result_obj.num_samples)],
+                                      for i in range(len(self.result_obj.images))],
                              placeholder="Select sample...",
                              id="sample-dropdown")
             ]),
             dbc.FormGroup([
                 dcc.Dropdown(options=[{"label": method_name, "value": method_name}
-                                      for method_name in self.result_obj.get_methods()],
+                                      for method_name in self.result_obj.attributions.keys()],
                              placeholder="Select methods...", multi=True,
                              id="method-dropdown")
             ]),

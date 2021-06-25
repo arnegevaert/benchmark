@@ -1,6 +1,6 @@
 import argparse
-from attrbench.suite import Result, Dashboard
-
+from attrbench.suite import SuiteResult, Dashboard
+import attrbench.suite.dashboard.util as util
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -10,6 +10,8 @@ if __name__ == "__main__":
     parser.add_argument("--methods", type=str, nargs="*", default=None)
     args = parser.parse_args()
 
-    hdf_obj = Result.load_hdf(args.file, metrics=args.metrics, methods=args.methods)
-    db = Dashboard(hdf_obj, args.file, port=args.port)
+    sres = SuiteResult.load_hdf(args.file)
+
+    dfs = util.get_dfs(sres,mode='raw',masker='constant',activation='linear')
+    db = Dashboard(sres, args.file, port=args.port)
     db.run()

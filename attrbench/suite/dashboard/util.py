@@ -1,5 +1,43 @@
 import numpy as np
+from itertools import product
+from attrbench.suite import SuiteResult
 
+def get_dfs(res_obj: SuiteResult, mode: str = None, masker: str =None,activation:str = None, infid_log=False):
+    res = {}
+
+    for metric_name,dfs in res_obj.metric_results.items():
+        if metric_name =='infidelity':
+            res[metric_name] = dfs.get_df(mode=mode,log=infid_log) # ignore
+        elif metric_name=='deletion_until_flip':
+            res[metric_name]=dfs.get_df(mode=mode,masker=masker)
+        else:
+            res[metric_name]=dfs.get_df(mode=mode,masker=masker,activation_fn=activation)
+    return res
+
+def get_metric_df(metric_name, res_obj: SuiteResult, mode: str, infid_log=False):
+    m_res = res_obj.metric_results[metric_name]
+    if metric_name == "deletion_until_flip":
+
+        df= {
+            f"{masker}": m_res.get_df(mode=mode, masker=masker)
+            for masker in ("constant", "random", "blur")
+        }
+    elif metric_name == "infidelity":
+        df = {
+            f"{pert_gen} - {afn} - {loss_fn}": m_res.get_df(mode=mode, perturbation_generator=pert_gen,
+                                                                activation_fn=afn, loss_fn=loss_fn,
+                                                                log=infid_log if loss_fn == "mse" else False)
+            for (pert_gen, afn, loss_fn) in product(("gaussian", "square", "segment"),
+                                                    ("linear", "softmax"),
+                                                    ("mse", "normalized_mse", "corr"))
+        }
+    else:
+        df = {
+            f"{afn} - {masker}": m_res.get_df(mode=mode, activation_fn=afn, masker=masker)
+            for afn, masker in product(("linear", "softmax"), ("constant", "random", "blur"))
+        }
+
+    return df
 
 def _interval_metric(a, b):
     return (a - b) ** 2

@@ -25,14 +25,12 @@ class Dashboard:
         self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
         self.app.config["suppress_callback_exceptions"] = True
         self.pages = {
-            "/overview": (OverviewPage(self.result_obj), "Overview"),
-            "/correlations": (CorrelationsPage(self.result_obj), "Correlations"),
+            "/overview": (OverviewPage(self.result_obj,self.app), "Overview"),
+            "/correlations": (CorrelationsPage(self.result_obj,self.app), "Correlations"),
             "/clustering": (ClusteringPage(self.result_obj), "Clustering"),
             "/samples_attributions": (SamplesAttributionsPage(self.result_obj, self.app), "Samples/Attributions"),
-            "/detail": (DetailPage(self.result_obj, self.app), "Detail"),
+            # "/detail": (DetailPage(self.result_obj, self.app), "Detail"),
             "/metric_detail": (MetricDetailPage(self.result_obj, self.app), "Metric Detail"),
-            "/effect_size": (EffectSizePage(self.result_obj), "Effect Size"),
-            "/normality": (NormalityPage(self.result_obj), "Normality")
         }
 
         self.root = "/overview"
@@ -43,6 +41,7 @@ class Dashboard:
         self.app.callback(
             Output("page-content", "children"),
             [Input("url", "pathname")])(self.render_page_content)
+
 
     def render_page_content(self, pathname):
         content = [html.H1(self.title)]

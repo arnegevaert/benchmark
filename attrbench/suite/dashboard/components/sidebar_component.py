@@ -37,7 +37,7 @@ class SidebarComponent(Component):
 
     def render(self):
         navlinks = [
-            dbc.NavLink(self.path_titles[key], href=key, id=self.path_ids[key]) for key in self.path_titles
+            dbc.NavLink(self.path_titles[key], href=key, id=self.path_ids[key],external_link=True) for key in self.path_titles
         ]
         return html.Div(
             [
