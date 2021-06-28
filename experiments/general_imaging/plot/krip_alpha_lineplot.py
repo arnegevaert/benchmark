@@ -10,7 +10,7 @@ import os
 
 
 def generate_plot(_x_range, _metric_name):
-    fig, ax = plt.subplots(figsize=(10,10))
+    fig, ax = plt.subplots(figsize=(10, 10))
 
     for ds_name, res in result_objects.items():
         k_alphas = []

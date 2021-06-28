@@ -24,9 +24,9 @@ def get_default_dfs(res_obj: SuiteResult, mode: str):
     limit = 50
     res["irof_morf"] = res_obj.metric_results["irof_morf"].get_df(mode=mode, columns=np.arange(limit))
     res["irof_lerf"] = res_obj.metric_results["irof_lerf"].get_df(mode=mode, columns=np.arange(limit))
-    iiof_morf = res_obj.metric_results["irof_lerf"].get_df( mode=mode, columns=np.arange(100-limit, 100))
+    iiof_morf = res_obj.metric_results["irof_lerf"].get_df(mode=mode, columns=np.arange(100-limit, 100))
     res["iiof_morf"] = (iiof_morf[0][::-1], iiof_morf[1])
-    iiof_lerf = res_obj.metric_results["irof_morf"].get_df( mode=mode, columns=np.arange(100-limit, 100))
+    iiof_lerf = res_obj.metric_results["irof_morf"].get_df(mode=mode, columns=np.arange(100-limit, 100))
     res["iiof_lerf"] = (iiof_lerf[0][::-1], iiof_lerf[1])
 
     for infid_type in ("square", "noisy_bl", "gaussian"):

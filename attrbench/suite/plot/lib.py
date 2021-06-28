@@ -50,7 +50,7 @@ def heatmap(x, y, size, color, palette=None, figsize=(20, 20), glyph_scale=1500,
     ax.scatter(
         x=x.map(x_to_num),  # Use mapping for x
         y=y.map(y_to_num),  # Use mapping for y
-        s=(size * glyph_scale) / (size.max() - size.min()),  # Vector of square sizes, proportional to size parameter
+        s=(size * glyph_scale),  # Vector of square sizes
         c=color.apply(value_to_color),
         marker='s'  # Use square as scatterplot marker
     )
