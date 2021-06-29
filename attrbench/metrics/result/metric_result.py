@@ -68,7 +68,7 @@ class BasicMetricResult(AbstractMetricResult):
         result._tree = NDArrayTree.load_from_hdf(["method"], group)
         return result
 
-    def get_df(self, mode="raw", include_baseline=False) -> Tuple[pd.DataFrame, bool]:
+    def get_df(self, mode="raw", include_baseline=False, **kwargs) -> Tuple[pd.DataFrame, bool]:
         raw_results = pd.DataFrame.from_dict(
             self.tree.get(
                 postproc_fn=lambda x: np.squeeze(x, axis=-1),
