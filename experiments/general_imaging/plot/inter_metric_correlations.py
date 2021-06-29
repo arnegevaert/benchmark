@@ -29,9 +29,10 @@ if __name__ == "__main__":
         basename = path.basename(file)
         ds_name, ext = basename.split(".")
         prog.set_postfix_str(ds_name)
+        for mode in ("raw", "single"):
+            res_obj = SuiteResult.load_hdf(file)
+            dfs = get_default_dfs(res_obj, mode=mode)
 
-        res_obj = SuiteResult.load_hdf(file)
-        dfs = get_default_dfs(res_obj, mode="single")
-        fig = InterMetricCorrelationPlot(dfs).render(figsize=(10, 10), glyph_scale=750)
-        fig.savefig(path.join(args.out_dir, f"{ds_name}.png"), bbox_inches="tight")
-        plt.close(fig)
+            fig = InterMetricCorrelationPlot(dfs).render(figsize=(10, 10), glyph_scale=750)
+            fig.savefig(path.join(args.out_dir, f"{ds_name}_{mode}.png"), bbox_inches="tight")
+            plt.close(fig)

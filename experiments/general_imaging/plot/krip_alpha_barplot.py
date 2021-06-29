@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from os import path
 import glob
+import seaborn as sns
 
 
 if __name__ == "__main__":
@@ -19,6 +20,7 @@ if __name__ == "__main__":
 
     mpl.use("Agg")
     np.seterr(all="raise")
+    sns.set()
 
     if args.datasets is None:
         result_files = glob.glob(path.join(args.in_dir, "*.h5"))
@@ -34,7 +36,31 @@ if __name__ == "__main__":
     }
     k_a = pd.DataFrame(k_a)
 
-    fig, ax = plt.subplots(figsize=(10,10))
-    k_a.plot.barh(ax=ax)
+    k_a = k_a.reindex(["mnist", "fashionmnist", "cifar10", "cifar100", "svhn", "imagenet", "caltech", "places"], axis=1)
+    color_list = [
+        "#036d08",
+        "#9de78c",
+        "#08036d",
+        "#845eb3",
+        "#e7c3ff",
+        "#6d012a",
+        "#b65a73",
+        "#ffaac4"
+    ]
+
+    color_dict = {
+        "mnist": "#036d08",
+        "fashionmnist": "#9de78c",
+        "cifar10": "#08036d",
+        "cifar100": "#845eb3",
+        "svhn": "#e7c3ff",
+        "imagenet": "#6d012a",
+        "caltech": "#b65a73",
+        "places": "#ffaac4"
+    }
+
+    fig, ax = plt.subplots(figsize=(16,8))
+    k_a.plot.bar(ax=ax, color=color_list, width=0.7)
+    plt.xticks(rotation=45, ha="right", rotation_mode="anchor")
     plt.grid(axis="x")
     fig.savefig(args.out_file, bbox_inches="tight")
