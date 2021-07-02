@@ -9,7 +9,7 @@ def runtime(samples: torch.Tensor, labels: torch.Tensor, method: Callable, singl
     res = []
     if single_image:
         for i in range(samples.shape[0]):
-            timer = Timer(lambda: method(samples[i, ...].unsqueeze(0), labels[i]))
+            timer = Timer(lambda: method(samples[i, ...].unsqueeze(0), labels[i].unsqueeze(0)))
             res.append(timer.timeit(1))
     else:
         timer = Timer(lambda: method(samples, labels))
