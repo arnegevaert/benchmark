@@ -10,11 +10,18 @@ def runtime(samples: torch.Tensor, labels: torch.Tensor, method: Callable, singl
     if single_image:
         for i in range(samples.shape[0]):
             timer = Timer(lambda: method(samples[i, ...].unsqueeze(0), labels[i].unsqueeze(0)))
-            res.append(timer.timeit(1))
+            t = timer.timeit(1)
+            # If time is very small, re-run to get more accurate measurements
+            if t < 0.01:
+                t = timer.timeit(number=100) / 100
+            res.append(t)
     else:
         timer = Timer(lambda: method(samples, labels))
-        time = timer.timeit(1)
-        res = [time / samples.shape[0]] * samples.shape[0]
+        t = timer.timeit(1)
+        # If time is very small, re-run to get more accurate measurements
+        if t < 0.01:
+            t = timer.timeit(number=100) / 100
+        res = [t / samples.shape[0]] * samples.shape[0]
     return torch.tensor(res).reshape(-1, 1)
 
 
