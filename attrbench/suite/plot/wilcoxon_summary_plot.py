@@ -22,7 +22,8 @@ class WilcoxonSummaryPlot:
         effect_sizes[pvalues > 0.01] = 0
 
         # Normalize each column of the effect sizes dataframe
-        effect_sizes = (effect_sizes - effect_sizes.min()) / (effect_sizes.max() - effect_sizes.min())
+        #effect_sizes = (effect_sizes - effect_sizes.min()) / (effect_sizes.max() - effect_sizes.min())
+        effect_sizes = effect_sizes / effect_sizes.max()
         effect_sizes = effect_sizes.fillna(0)
         """
         cbarlabel = "Normalized effect size"
