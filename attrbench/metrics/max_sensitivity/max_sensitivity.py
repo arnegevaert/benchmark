@@ -57,3 +57,7 @@ class MaxSensitivity(Metric):
             max_sens = max_sensitivity(samples, labels, method, attrs_dict[method_name], self.radius,
                                        self.num_perturbations, writer=self._get_writer(method_name))
             self.result.append({method_name: max_sens.cpu().detach().numpy()})
+
+        # Baseline is a constant by definition, since baseline attributions are independent of the original sample
+        # So we just store 0
+        self.result.append({"_BASELINE": np.zeros((samples.shape[0], baseline_attrs.shape[0], 1))})

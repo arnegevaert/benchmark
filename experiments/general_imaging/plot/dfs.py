@@ -1,4 +1,3 @@
-from itertools import product
 from attrbench.suite import SuiteResult
 import numpy as np
 
@@ -8,7 +7,8 @@ def get_default_dfs(res_obj: SuiteResult, mode: str, activation_fn="linear", mas
     res = {
         metric_name: res_obj.metric_results[metric_name].get_df(mode=mode, activation_fn=activation_fn, masker=masker)
         for metric_name in ["impact_coverage", "minimal_subset_deletion", "minimal_subset_insertion",
-                            "sensitivity_n", "seg_sensitivity_n"] if metric_name in res_obj.metric_results.keys()
+                            "sensitivity_n", "seg_sensitivity_n", "max_sensitivity"]
+        if metric_name in res_obj.metric_results.keys()
     }
 
     # Add deletion/insertion
