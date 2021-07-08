@@ -32,4 +32,6 @@ methods:
   - ExpectedGradients:
       type: ExpectedGradients
       num_samples: 100
-
+  - LIME:
+      type: ImageLime
+      num_samples: 300
