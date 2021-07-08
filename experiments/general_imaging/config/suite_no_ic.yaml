@@ -70,4 +70,8 @@ metrics:
     stop: 1.
     num_steps: 100
     mode: lerf
+  max_sensitivity:
+    type: MaxSensitivity
+    num_perturbations: 50
+    radius: 0.1
 

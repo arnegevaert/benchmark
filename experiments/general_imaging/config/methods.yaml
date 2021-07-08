@@ -34,4 +34,4 @@ methods:
       num_samples: 100
   - LIME:
       type: ImageLime
-      num_samples: 300
+      n_samples: 300
