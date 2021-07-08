@@ -33,6 +33,6 @@ if __name__ == "__main__":
             res_obj = SuiteResult.load_hdf(file)
             dfs = get_default_dfs(res_obj, mode=mode)
 
-            fig = InterMetricCorrelationPlot(dfs).render(figsize=(10, 10), glyph_scale=750)
+            fig = InterMetricCorrelationPlot(dfs).render(figsize=(10, 10), glyph_scale=750, fontsize=20)
             fig.savefig(path.join(args.out_dir, f"{ds_name}_{mode}.png"), bbox_inches="tight")
             plt.close(fig)
