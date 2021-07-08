@@ -7,9 +7,10 @@ import math
 
 
 class ImageLime:
-    def __init__(self, model):
+    def __init__(self, model, n_samples):
         self.model = model
         self.method = None
+        self.n_samples = n_samples
 
     def __call__(self, x, target):
         # If this is the first call, the method hasn't been set yet.
@@ -34,5 +35,5 @@ class ImageLime:
         masks = torch.tensor(data=masks, device=x.device, dtype=torch.long)
         masks = masks.unsqueeze(dim=1).expand(-1, num_channels, -1, -1)
 
-        # Next, compute LIME. Default value for n_samples of 1000 comes from official LIME implementation
-        return self.method.attribute(x, target=target, feature_mask=masks, n_samples=25)
+        # Next, compute LIME.
+        return self.method.attribute(x, target=target, feature_mask=masks, n_samples=self.n_samples)
