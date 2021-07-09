@@ -7,10 +7,11 @@ import math
 
 
 class ImageLime:
-    def __init__(self, model, n_samples):
+    def __init__(self, model, n_samples, n_segments):
         self.model = model
         self.method = None
         self.n_samples = n_samples
+        self.n_segments = n_segments
 
     def __call__(self, x, target):
         # If this is the first call, the method hasn't been set yet.
@@ -31,7 +32,7 @@ class ImageLime:
         masks = []
         for i in range(images.shape[0]):
             img = np.transpose(images[i], (1,2,0))
-            mask = segmentation.slic(img, start_label=0)
+            mask = segmentation.slic(img, start_label=0, n_segments=self.n_segments)
             masks.append(mask)
         masks = torch.tensor(data=masks, device=x.device, dtype=torch.long)
         masks = masks.unsqueeze(dim=1).expand(-1, num_channels, -1, -1)
