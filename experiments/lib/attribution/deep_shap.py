@@ -1,5 +1,6 @@
 from captum import attr
 from torch.utils.data import Dataset, DataLoader
+import torch
 
 
 class DeepShap:
@@ -16,4 +17,7 @@ class DeepShap:
 
     def __call__(self, x, target):
         ref_batch = next(iter(self.ref_sampler))[0].to(x.device)
-        return self.method.attribute(x, baselines=ref_batch, target=target)
+        # Compute per sample to reduce VRAM usage
+        return torch.cat([
+            self.method.attribute(x[i].unsqueeze(0), baselines=ref_batch, target=target[i]) for i in range(x.shape[0])
+        ])
