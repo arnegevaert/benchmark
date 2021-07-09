@@ -19,5 +19,6 @@ class DeepShap:
         ref_batch = next(iter(self.ref_sampler))[0].to(x.device)
         # Compute per sample to reduce VRAM usage
         return torch.cat([
-            self.method.attribute(x[i].unsqueeze(0), baselines=ref_batch, target=target[i]) for i in range(x.shape[0])
+            self.method.attribute(x[i].unsqueeze(0), baselines=ref_batch, target=target[i]).detach()
+            for i in range(x.shape[0])
         ])
