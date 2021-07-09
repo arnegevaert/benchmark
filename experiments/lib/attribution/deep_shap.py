@@ -11,7 +11,7 @@ class DeepShap:
         self.ref_sampler = DataLoader(
             dataset=self.reference_dataset,
             batch_size=self.n_baseline_samples,
-            shuffle=False, drop_last=True
+            shuffle=True, drop_last=True
         )
 
     def __call__(self, x, target):
