@@ -61,15 +61,27 @@ metrics:
   deletion_morf:
     type: Deletion
     start: 0.
-    stop: 1.
+    stop: 0.15
     num_steps: 100
     mode: morf
   deletion_lerf:
     type: Deletion
     start: 0.
-    stop: 1.
+    stop: 0.15
     num_steps: 100
     mode: lerf
+  insertion_morf:
+    type: Deletion
+    start: 1.
+    stop: 0.85
+    num_steps: 100
+    mode: lerf
+  insertion_lerf:
+    type: Deletion
+    start: 1.
+    stop: 0.85
+    num_steps: 100
+    mode: morf
   max_sensitivity:
     type: MaxSensitivity
     num_perturbations: 50
