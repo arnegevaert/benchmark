@@ -38,7 +38,7 @@ class InterMetricCorrelationPlot:
             for metric_name, (df, inverted) in self.dfs.items():
                 data[metric_name] = -df[method_name].to_numpy() if inverted else df[method_name].to_numpy()
             df = pd.DataFrame(data)
-            corr_dfs.append(df.corr(method="pearson"))
+            corr_dfs.append(df.corr(method="spearman"))
         corr = pd.concat(corr_dfs).mean(level=0)
 
         corr = pd.melt(corr.reset_index(),
@@ -80,3 +80,24 @@ class InterMethodCorrelationPlot:
             color_bounds=(-1, 1)
         )
         return fig
+
+    def render_all(self, figsize=(20, 20), glyph_scale=1500, fontsize=None):
+        figs = {}
+        for name, (df, inverted) in self.dfs.items():
+            if inverted:
+                df = -df
+            corr = df.corr(method="pearson")
+            corr = pd.melt(corr.reset_index(),
+                           id_vars='index')  # Unpivot the dataframe, so we can get pair of arrays for x and y
+            corr.columns = ['x', 'y', 'value']
+            fig = heatmap(
+                x=corr['x'],
+                y=corr['y'],
+                size=corr['value'].abs(),
+                color=corr['value'],
+                figsize=figsize, glyph_scale=glyph_scale,
+                fontsize=fontsize,
+                color_bounds=(-1, 1)
+            )
+            figs[name] = fig
+        return figs

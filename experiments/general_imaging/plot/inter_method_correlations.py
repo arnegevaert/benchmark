@@ -28,6 +28,7 @@ if __name__ == "__main__":
     for file in prog:
         basename = path.basename(file)
         ds_name, ext = basename.split(".")
+        os.makedirs(path.join(args.out_dir, ds_name))
         prog.set_postfix_str(ds_name)
         for mode in ("raw", "single"):
             res_obj = SuiteResult.load_hdf(file)
@@ -36,3 +37,8 @@ if __name__ == "__main__":
             fig = InterMethodCorrelationPlot(dfs).render(figsize=(10, 10), glyph_scale=750)
             fig.savefig(path.join(args.out_dir, f"{ds_name}_{mode}.png"), bbox_inches="tight")
             plt.close(fig)
+
+            figs = InterMethodCorrelationPlot(dfs).render_all(figsize=(10, 10), glyph_scale=750)
+            for name, fig in figs.items():
+                fig.savefig(path.join(args.out_dir, ds_name, f"{name}_{mode}.png"), bbox_inches="tight")
+                plt.close(fig)

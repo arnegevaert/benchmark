@@ -2,17 +2,9 @@ from attrbench.suite import SuiteResult
 import numpy as np
 
 
-def get_default_dfs(res_obj: SuiteResult, mode: str, activation_fn="linear", masker="constant"):
-    # Add simple metrics
-    res = {
-        metric_name: res_obj.metric_results[metric_name].get_df(mode=mode, activation_fn=activation_fn, masker=masker)
-        for metric_name in ["impact_coverage", "minimal_subset_deletion", "minimal_subset_insertion",
-                            "sensitivity_n", "seg_sensitivity_n", "max_sensitivity"]
-        if metric_name in res_obj.metric_results.keys()
-    }
-
-    # Add deletion/insertion
-    limit = 50
+# Derive Deletion/Insertion from single Deletion run with full pixel range
+def _derive_del_ins(res_obj: SuiteResult, mode: str, activation_fn="linear", masker="constant", limit=50):
+    res = {}
     res["deletion_morf"] = res_obj.metric_results["deletion_morf"].get_df(mode=mode, columns=np.arange(limit),
                                                                           activation_fn=activation_fn, masker=masker)
     res["deletion_lerf"] = res_obj.metric_results["deletion_lerf"].get_df(mode=mode, columns=np.arange(limit),
@@ -36,6 +28,17 @@ def get_default_dfs(res_obj: SuiteResult, mode: str, activation_fn="linear", mas
     iiof_lerf = res_obj.metric_results["irof_morf"].get_df(mode=mode, columns=np.arange(100-limit, 100),
                                                            activation_fn=activation_fn, masker=masker)
     res["iiof_lerf"] = (iiof_lerf[0][::-1], iiof_lerf[1])
+
+
+def get_default_dfs(res_obj: SuiteResult, mode: str, activation_fn="linear", masker="constant"):
+    # Add simple metrics
+    res = {
+        metric_name: res_obj.metric_results[metric_name].get_df(mode=mode, activation_fn=activation_fn, masker=masker)
+        for metric_name in ["impact_coverage", "minimal_subset_deletion", "minimal_subset_insertion",
+                            "sensitivity_n", "seg_sensitivity_n", "max_sensitivity", "deletion_morf", "deletion_lerf",
+                            "insertion_morf", "insertion_lerf", "irof_morf", "irof_lerf"]
+        if metric_name in res_obj.metric_results.keys()
+    }
 
     for infid_type in ("square", "noisy_bl"):
         res[f"infidelity_{infid_type}"] = res_obj.metric_results["infidelity"].get_df(mode=mode,
