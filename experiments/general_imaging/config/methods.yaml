@@ -26,7 +26,7 @@ methods:
       n_baseline_samples: 100
   - KernelShap:
       type: KernelShap
-      n_segments: 32
+      n_segments: 50
       n_samples: 300
       super_pixels: True
   - ExpectedGradients:
@@ -34,4 +34,5 @@ methods:
       num_samples: 100
   - LIME:
       type: ImageLime
+      n_segments: 50
       n_samples: 300
