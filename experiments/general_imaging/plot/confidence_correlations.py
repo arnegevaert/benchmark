@@ -1,6 +1,6 @@
 from attrbench.suite import SuiteResult
 import os
-from experiments.general_imaging.plot.dfs import get_default_dfs
+from experiments.general_imaging.plot.dfs import get_default_dfs, get_all_dfs
 from os import path
 import numpy as np
 from scipy.special import softmax
@@ -24,11 +24,9 @@ if __name__ == "__main__":
     ]
     method = "spearman"
     use_softmax = False
+    all_dfs = True
 
     mpl.use("Agg")
-    if (not path.isdir("out/conf_corr/single")) or (not path.isdir("out/conf_corr/raw")):
-        os.makedirs("out/conf_corr/raw")
-        os.makedirs("out/conf_corr/single")
 
     for ds_name, filename in params:
         hdf_name = filename + ".h5"
@@ -36,7 +34,10 @@ if __name__ == "__main__":
         res_obj = SuiteResult.load_hdf(path.join(out_dir, hdf_name))
 
         for mode in "single", "raw":
-            dfs = get_default_dfs(res_obj, mode=mode)
+            if all_dfs:
+                dfs = get_all_dfs(res_obj, mode=mode)
+            else:
+                dfs = get_default_dfs(res_obj, mode=mode)
             logits = np.loadtxt(path.join(out_dir, "confidence", csv_name), delimiter=",")
             if use_softmax:
                 confidences = np.max(softmax(logits, axis=1), axis=1)
@@ -51,9 +52,10 @@ if __name__ == "__main__":
                 corrs[key] = df.corrwith(pd.Series(confidences), method=method)
             df = pd.DataFrame(corrs)
 
-            fig, ax = plt.subplots(figsize=(15, 15))
+            figsize = (15, 15) if not all_dfs else (100, 15)
+            fig, ax = plt.subplots(figsize=figsize)
             sns.heatmap(df, annot=True, vmin=-1, vmax=1, cmap=sns.diverging_palette(220, 20, as_cmap=True), ax=ax)
             ax.set_title(ds_name)
             ax.set_aspect("equal")
-            fig.savefig(path.join("out", "conf_corr", mode, f"{filename}.png"), bbox_inches="tight")
+            fig.savefig(path.join("out", "conf_corr", f"{filename}_{mode}.png"), bbox_inches="tight")
             plt.close(fig)
