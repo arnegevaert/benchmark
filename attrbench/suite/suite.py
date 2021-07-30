@@ -74,7 +74,7 @@ class Suite:
 
             # Get batch
             try:
-                labels, samples = self.get_batch(it, batch_size)
+                labels, samples, predictions = self.get_batch(it, batch_size)
             except StopIteration:
                 break
             batch_nr += 1
@@ -95,6 +95,9 @@ class Suite:
             if save_attrs:
                 suite_result.add_attributions(attrs_dict)
 
+            # Save predictions
+            suite_result.add_predictions(predictions)
+
             # Metric loop
             for i, metric in enumerate(self.metrics.keys()):
                 prog.set_postfix_str(f"{metric} ({i + 1}/{len(self.metrics)})")
@@ -113,7 +116,7 @@ class Suite:
         return suite_result
 
     def get_batch(self, it, batch_size):
-        out_samples, out_labels = [], []
+        out_samples, out_labels, predictions = [], [], []
         out_size = 0
         # collect a full batch of correctly classified samples
         while out_size < batch_size:
@@ -153,10 +156,13 @@ class Suite:
 
             out_labels.append(labels.detach().cpu())
             out_samples.append(samples.detach().cpu())
+            predictions.append(out.detach().cpu())
             out_size += samples.size(0)
         labels = torch.cat(out_labels, dim=0)
         samples = torch.cat(out_samples, dim=0)
+        predictions = torch.cat(predictions, dim=0)
         labels = labels[:batch_size].to(self.device) if not binary else torch.zeros_like(labels[:batch_size],
                                                                                          device=self.device)
         samples = samples[:batch_size].to(self.device)
-        return labels, samples
+        predictions = predictions[:batch_size].numpy()
+        return labels, samples, predictions
