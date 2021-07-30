@@ -38,6 +38,7 @@ if __name__ == "__main__":
         else:
             dfs = get_default_dfs(res_obj, mode=args.mode)
         figsize = (10, 25) if args.all else (10, 10)
-        fig = WilcoxonSummaryPlot(dfs).render(figsize=figsize, glyph_scale=100)
+        glyph_scale = 100 if args.all else 1000
+        fig = WilcoxonSummaryPlot(dfs).render(figsize=figsize, glyph_scale=glyph_scale)
         fig.savefig(path.join(args.out_dir, f"{ds_name}.png"), bbox_inches="tight")
         plt.close(fig)
