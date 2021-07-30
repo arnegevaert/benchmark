@@ -1,34 +1,59 @@
 from attrbench.suite import SuiteResult
+import os
 from experiments.general_imaging.plot.dfs import get_default_dfs
 from os import path
 import numpy as np
 from scipy.special import softmax
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 
 if __name__ == "__main__":
     out_dir = "../../../out"
-    params = [("ImageNet", "imagenet")]
-    mode = "single"
+    params = [
+        ("MNIST", "mnist"),
+        ("FashionMNIST", "fashionmnist"),
+        ("CIFAR10", "cifar10"),
+        ("CIFAR100", "cifar100"),
+        ("SVHN", "svhn"),
+        ("Places365", "places"),
+        ("Caltech256", "caltech"),
+        ("ImageNet", "imagenet")
+    ]
     method = "spearman"
-    use_softmax = True
+    use_softmax = False
+
+    mpl.use("Agg")
+    if (not path.isdir("out/conf_corr/single")) or (not path.isdir("out/conf_corr/raw")):
+        os.makedirs("out/conf_corr/raw")
+        os.makedirs("out/conf_corr/single")
 
     for ds_name, filename in params:
         hdf_name = filename + ".h5"
         csv_name = filename + ".csv"
         res_obj = SuiteResult.load_hdf(path.join(out_dir, hdf_name))
-        dfs = get_default_dfs(res_obj, mode=mode)
-        logits = np.loadtxt(path.join(out_dir, "confidence", csv_name), delimiter=",")
-        if use_softmax:
-            confidences = np.max(softmax(logits, axis=1), axis=1)
-        else:
-            confidences = np.max(logits, axis=1)
 
-        corrs = {}
-        for key, (df, inverted) in dfs.items():
-            df = -df if inverted else df
-            corrs[key] = df.corrwith(pd.Series(confidences), method=method)
-        df = pd.DataFrame(corrs)
+        for mode in "single", "raw":
+            dfs = get_default_dfs(res_obj, mode=mode)
+            logits = np.loadtxt(path.join(out_dir, "confidence", csv_name), delimiter=",")
+            if use_softmax:
+                confidences = np.max(softmax(logits, axis=1), axis=1)
+            else:
+                confidences = np.max(logits, axis=1)
 
-        sns.heatmap(df, annot=True, vmin=-1, vmax=1, cmap=sns.diverging_palette(220, 20, as_cmap=True))
+            corrs = {}
+            for key, (df, inverted) in dfs.items():
+                df = -df if inverted else df
+                if key in ("deletion_morf", "deletion_lerf", "insertion_morf", "insertion_lerf"):
+                    df = df.div(pd.Series(confidences), axis=0)
+                corrs[key] = df.corrwith(pd.Series(confidences), method=method)
+            df = pd.DataFrame(corrs)
+
+            fig, ax = plt.subplots(figsize=(15, 15))
+            sns.heatmap(df, annot=True, vmin=-1, vmax=1, cmap=sns.diverging_palette(220, 20, as_cmap=True), ax=ax)
+            ax.set_title(ds_name)
+            ax.set_aspect("equal")
+            fig.savefig(path.join("out", "conf_corr", mode, f"{filename}.png"), bbox_inches="tight")
+            plt.close(fig)
