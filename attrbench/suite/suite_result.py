@@ -11,6 +11,8 @@ class SuiteResult:
                  seed: int = None, images: np.ndarray = None, attributions: Dict[str, np.ndarray] = None,
                  predictions: np.ndarray = None):
         self.metric_results = metric_results
+        for key, metric_result in metric_results.items():
+            metric_result.register_suite_result(self)
         self.num_samples = num_samples
         self.seed = seed
         self.images: Optional[np.ndarray] = images

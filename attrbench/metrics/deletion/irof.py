@@ -3,7 +3,7 @@ from typing import Callable, List, Union, Dict
 import numpy as np
 import torch
 
-from attrbench.lib.masking import Masker
+from attrbench.lib.masking import ImageMasker
 from attrbench.lib.attribution_writer import AttributionWriter
 from os import path
 from attrbench.metrics import MaskerMetric
@@ -13,7 +13,7 @@ from .result import IrofResult
 
 
 def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
-         masker: Masker, activation_fns: Union[List[str], str] = "linear",
+         masker: ImageMasker, activation_fns: Union[List[str], str] = "linear",
          mode: str = "morf", start: float = 0., stop: float = 1., num_steps: int = 100,
          writer=None):
     masking_dataset = _IrofDataset(mode, start, stop, num_steps, samples, masker, writer)

@@ -11,6 +11,7 @@ class AbstractMetricResult:
 
     def __init__(self, method_names: List[str]):
         self.method_names = method_names
+        self.suite_result = None
         self._tree: Optional[NDArrayTree] = None
 
     @property
@@ -45,6 +46,9 @@ class AbstractMetricResult:
                        self.inverted
             else:
                 raise ValueError(f"Invalid value for argument mode: {mode}.")
+
+    def register_suite_result(self, suite_result):
+        self.suite_result = suite_result
 
     @classmethod
     def load_from_hdf(cls, group: h5py.Group) -> AbstractMetricResult:
