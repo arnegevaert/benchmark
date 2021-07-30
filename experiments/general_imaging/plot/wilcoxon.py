@@ -7,7 +7,7 @@ import numpy as np
 from os import path
 import os
 import glob
-from experiments.general_imaging.plot.dfs import get_default_dfs
+from experiments.general_imaging.plot.dfs import get_default_dfs, get_all_dfs
 from tqdm import tqdm
 
 
@@ -15,6 +15,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("in_dir", type=str)
     parser.add_argument("out_dir", type=str)
+    parser.add_argument("--all", action="store_true")
+    parser.add_argument("--mode", type=str, choices=["single", "raw"], default="single")
     args = parser.parse_args()
 
     mpl.use("Agg")
@@ -31,7 +33,11 @@ if __name__ == "__main__":
         prog.set_postfix_str(ds_name)
 
         res_obj = SuiteResult.load_hdf(file)
-        dfs = get_default_dfs(res_obj, mode="single")
-        fig = WilcoxonSummaryPlot(dfs).render(figsize=(10, 10), glyph_scale=1000)
+        if args.all:
+            dfs = get_all_dfs(res_obj, mode=args.mode)
+        else:
+            dfs = get_default_dfs(res_obj, mode=args.mode)
+        figsize = (10, 25) if args.all else (10, 10)
+        fig = WilcoxonSummaryPlot(dfs).render(figsize=figsize, glyph_scale=100)
         fig.savefig(path.join(args.out_dir, f"{ds_name}.png"), bbox_inches="tight")
         plt.close(fig)

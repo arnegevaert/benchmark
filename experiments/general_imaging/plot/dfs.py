@@ -45,3 +45,33 @@ def get_default_dfs(res_obj: SuiteResult, mode: str, activation_fn="linear", mas
                                                                                       perturbation_generator=infid_type,
                                                                                       activation_fn=activation_fn)
     return res
+
+
+def get_all_dfs(res_obj: SuiteResult, mode: str):
+    res = dict()
+    if "impact_coverage" in res_obj.metric_results.keys():
+        res["impact_coverage"] = res_obj.metric_results["impact_coverage"].get_df(mode=mode)
+    res["max_sensitivity"] = res_obj.metric_results["max_sensitivity"].get_df(mode=mode)
+    for metric_name in ["deletion_morf", "deletion_lerf", "insertion_morf", "insertion_lerf", "irof_morf", "irof_lerf",
+                        "sensitivity_n", "seg_sensitivity_n"]:
+        for masker in ["blur", "constant", "random"]:
+            for activation in ["linear", "softmax"]:
+                if metric_name not in ["sensitivity_n", "seg_sensitivity_n"]:
+                    res[f"{metric_name}_{masker}_{activation}_norm"] = res_obj.metric_results[metric_name].get_df(
+                        masker=masker, activation_fn=activation, mode=mode, normalize=True)
+                    res[f"{metric_name}_{masker}_{activation}"] = res_obj.metric_results[metric_name].get_df(
+                        masker=masker, activation_fn=activation, mode=mode, normalize=False)
+                else:
+                    res[f"{metric_name}_{masker}_{activation}"] = res_obj.metric_results[metric_name].get_df(
+                        masker=masker, activation_fn=activation, mode=mode)
+
+    for infid_type in ["square", "noisy_bl"]:
+        for activation in ["linear", "softmax"]:
+            res[f"infidelity_{infid_type}_{activation}"] = res_obj.metric_results["infidelity"].get_df(
+                perturbation_generator=infid_type, activation_fn=activation, mode=mode
+            )
+
+    for metric_name in ["minimal_subset_insertion", "minimal_subset_deletion"]:
+        for masker in ["blur", "constant", "random"]:
+            res[f"{metric_name}_{masker}"] = res_obj.metric_results[metric_name].get_df(masker=masker, mode=mode)
+    return res
