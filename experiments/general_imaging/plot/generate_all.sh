@@ -1,19 +1,25 @@
 source ../../../venv/bin/activate
 
-# python wilcoxon.py ../../../out out/wilcoxon
-python wilcoxon.py --all ../../../out out/wilcoxon_all
+# USAGE: ./generate_all.sh H5_DIR OUT_DIR
 
-# python krip_alpha_barplot.py ../../../out out/krip_bar.png
-python krip_alpha_barplot.py --all ../../../out out/krip_bar_all.png
+# Create output directory if it doesn't exist yet
+[ -d "$2" ] || mkdir -p "$2"
 
-# python krip_alpha_lineplot.py ../../../out out/krip_line
-# python krip_alpha_variants.py ../../../out out/krip_variants
+# WILCOXON PLOTS
+python wilcoxon.py "$1" "$2"/wilcoxon
+python wilcoxon.py --all "$1" "$2"/wilcoxon_all
 
-# python inter_method_correlations.py ../../../out out/method_corr
+# KRIPPENDORFF ALPHA PLOTS
+python krip_alpha_barplot.py "$1" "$2"/krip_bar.png
+python krip_alpha_barplot.py --all "$1" "$2"/krip_bar_all.png
+python krip_alpha_variants.py "$1" "$2"/krip_variants
 
-# python inter_metric_correlations.py ../../../out out/metric_corr
-python inter_metric_correlations.py --all ../../../out out/metric_corr_all
+# CORRELATIONS
+python inter_method_correlations.py "$1" "$2"/method_corr
+python inter_metric_correlations.py "$1" "$2"/metric_corr
+python inter_metric_correlations.py --all "$1" "$2"/metric_corr_all
+python confidence_correlations.py "$1" "$2"/conf_corr
+python confidence_correlations.py --all "$1" "$2"/conf_corr_all
 
-# python cluster.py ../../../out out/cluster
-
-python confidence_correlations.py --all ../../../out out/conf_corr
+# CLUSTERING
+python cluster.py "$1" "$2"/cluster

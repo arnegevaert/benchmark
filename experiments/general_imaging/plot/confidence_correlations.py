@@ -1,4 +1,5 @@
 from attrbench.suite import SuiteResult
+import os
 import argparse
 from tqdm import tqdm
 from experiments.general_imaging.plot.dfs import get_default_dfs, get_all_dfs
@@ -32,6 +33,9 @@ if __name__ == "__main__":
     use_softmax = False
 
     mpl.use("Agg")
+
+    if not path.isdir(args.out_dir):
+        os.makedirs(args.out_dir)
 
     prog = tqdm(params)
     for ds_name, filename in prog:
