@@ -33,8 +33,9 @@ class _MinimalSubsetDeletionDataset(_MinimalSubsetDataset):
 class _MinimalSubsetInsertionDataset(_MinimalSubsetDataset):
     def __getitem__(self, item):
         # Mask the n-k least important pixels
-        num_to_mask = self.total_features - self.step_size * (item + 1)
+        num_to_insert = self.step_size * (item + 1)
+        num_to_mask = self.total_features - num_to_insert
         if num_to_mask > self.total_features:
             raise StopIteration
         masked_samples = self.masker.mask_bot(num_to_mask)
-        return masked_samples, num_to_mask
+        return masked_samples, num_to_insert

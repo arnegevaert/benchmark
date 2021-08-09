@@ -4,6 +4,7 @@
 import seaborn as sns
 from matplotlib import pyplot as plt
 import numpy as np
+import math
 
 
 def effect_size_barplot(effect_sizes, pvalues, labels, alpha):
@@ -41,16 +42,22 @@ def heatmap(x, y, size, color, palette=None, figsize=(20, 20), glyph_scale=1500,
 
     def value_to_color(val):
         val_position = float((val - color_min)) / (color_max - color_min)
+        if math.isnan(val_position):  # Might be nan if colors are all 0 (ie if nothing is significant)
+            val_position = 0
         ind = int(val_position * (len(palette) - 1))
         return palette[ind]
 
     ax.scatter(
         x=x.map(x_to_num),  # Use mapping for x
         y=y.map(y_to_num),  # Use mapping for y
-        s=(size * glyph_scale) / (size.max() - size.min()),  # Vector of square sizes, proportional to size parameter
+        s=(size * glyph_scale),  # Vector of square sizes
         c=color.apply(value_to_color),
         marker='s'  # Use square as scatterplot marker
     )
+
+    # Force equal aspect such that all glyphs are square
+    ax.set_aspect("equal", "box")
+
     # Show column labels on the axes
     ax.set_xticks([x_to_num[v] for v in x_labels])
     ax.set_xticklabels(x_labels, rotation=45, horizontalalignment='right', fontsize=fontsize)

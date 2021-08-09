@@ -11,6 +11,7 @@ class AbstractMetricResult:
 
     def __init__(self, method_names: List[str]):
         self.method_names = method_names
+        self.suite_result = None
         self._tree: Optional[NDArrayTree] = None
 
     @property
@@ -31,13 +32,13 @@ class AbstractMetricResult:
             raw_results["Baseline"] = baseline_results.iloc[:, 0]
         if mode == "raw":
             return raw_results, self.inverted
-        elif mode == "single_dist":
+        elif mode == "single":
             return raw_results.sub(baseline_results.iloc[:, 0], axis=0), self.inverted
         else:
             baseline_med = baseline_results.median(axis=1)
-            if mode == "median_dist":
+            if mode == "median":
                 return raw_results.sub(baseline_med, axis=0), self.inverted
-            elif mode == "std_dist":
+            elif mode == "std":
                 baseline_mad = baseline_results.sub(baseline_med, axis=0).abs().median(axis=1)
                 return raw_results \
                            .sub(baseline_med, axis=0) \
@@ -45,6 +46,9 @@ class AbstractMetricResult:
                        self.inverted
             else:
                 raise ValueError(f"Invalid value for argument mode: {mode}.")
+
+    def register_suite_result(self, suite_result):
+        self.suite_result = suite_result
 
     @classmethod
     def load_from_hdf(cls, group: h5py.Group) -> AbstractMetricResult:
@@ -68,7 +72,7 @@ class BasicMetricResult(AbstractMetricResult):
         result._tree = NDArrayTree.load_from_hdf(["method"], group)
         return result
 
-    def get_df(self, mode="raw", include_baseline=False) -> Tuple[pd.DataFrame, bool]:
+    def get_df(self, mode="raw", include_baseline=False, **kwargs) -> Tuple[pd.DataFrame, bool]:
         raw_results = pd.DataFrame.from_dict(
             self.tree.get(
                 postproc_fn=lambda x: np.squeeze(x, axis=-1),

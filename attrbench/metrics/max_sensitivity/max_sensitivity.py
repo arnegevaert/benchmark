@@ -47,6 +47,7 @@ class MaxSensitivity(Metric):
         self.radius = radius
         self.num_perturbations = num_perturbations
         self._result: MaxSensitivityResult = MaxSensitivityResult(method_names=list(methods.keys()) + ["_BASELINE"], radius=radius)
+        self.rng = np.random.default_rng()
 
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         """
@@ -57,3 +58,11 @@ class MaxSensitivity(Metric):
             max_sens = max_sensitivity(samples, labels, method, attrs_dict[method_name], self.radius,
                                        self.num_perturbations, writer=self._get_writer(method_name))
             self.result.append({method_name: max_sens.cpu().detach().numpy()})
+
+        baseline_result = []
+        for i in range(baseline_attrs.shape[0]):
+            baseline_result.append(
+                max_sensitivity(samples, labels, lambda x, _: torch.tensor(self.rng.random(baseline_attrs.shape[1:])) * 2 - 1,
+                                baseline_attrs[i, ...], self.radius, self.num_perturbations)
+            )
+        self.result.append({"_BASELINE": np.stack(baseline_result, axis=1)})

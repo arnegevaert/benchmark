@@ -5,29 +5,33 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
+
 class TabularShap:
-    def __init__(self, model, n_samples, baselines=None,feature_mask=None):
+    def __init__(self, model, n_samples, baselines=None, feature_mask=None):
         self.method = attr.ShapleyValueSampling(model)
         self.n_samples = n_samples
         if isinstance(baselines, list):
             baselines = torch.Tensor(baselines)[None]
-        self.baselines=baselines
-        self.feature_mask=feature_mask
+        self.baselines = baselines
+        self.feature_mask = feature_mask
 
-    def __call__(self,x, target):
-        return self.method.attribute(x,baselines=self.baselines,target=target,feature_mask=self.feature_mask)
+    def __call__(self, x, target):
+        return self.method.attribute(x, baselines=self.baselines, target=target, feature_mask=self.feature_mask)
+
 
 class TabularLime:
     def __init__(self, model, n_samples, baselines=None, feature_mask=None):
-        self.method = attr.Lime(model,interpretable_model=SkLearnLinearModel("linear_model.LinearRegression")) # defaolt lasso model always learns to output 0.
+        self.method = attr.Lime(model, interpretable_model=SkLearnLinearModel(
+            "linear_model.LinearRegression"))  # defaolt lasso model always learns to output 0.
         self.n_samples = n_samples
         if isinstance(baselines, list):
             baselines = torch.Tensor(baselines)[None]
-        self.baselines=baselines
-        self.feature_mask=feature_mask
+        self.baselines = baselines
+        self.feature_mask = feature_mask
 
-    def __call__(self,x, target):
-        return self.method.attribute(x,baselines=self.baselines,target=target,feature_mask=self.feature_mask)
+    def __call__(self, x, target):
+        return self.method.attribute(x, baselines=self.baselines, target=target, feature_mask=self.feature_mask)
+
 
 class KernelShap:
     def __init__(self, model, n_samples, super_pixels=True, n_segments=None, feature_mask=None, baselines=None):
@@ -40,38 +44,21 @@ class KernelShap:
         self.feature_mask = feature_mask
         if isinstance(baselines, list):
             baselines = torch.Tensor(baselines)[None]
-        self.baselines=baselines
+        self.baselines = baselines
 
     def __call__(self, x, target):
         if self.feature_mask is not None:
-            masks=self.feature_mask
+            masks = self.feature_mask
         else:
             masks = get_super_pixels(x, self.n_segments) if self.super_pixels else None
-        return self.method.attribute(x, target=target, feature_mask=masks, n_samples=self.n_samples, baselines=self.baselines)
-
-
-class DeepShap:
-    def __init__(self, model, reference_dataset, n_baseline_samples):
-        self.method = attr.DeepLift(model)
-        self.n_baseline_samples = n_baseline_samples
-        self.reference_dataset = reference_dataset
-        self.ref_sampler = DataLoader(
-            dataset=self.reference_dataset,
-            batch_size=self.n_baseline_samples,
-            shuffle=True, drop_last=True)
-
-    def _get_reference_batch(self):
-        return next(iter(self.ref_sampler))[0]
-
-    def __call__(self, x, target):
-        baseline = self._get_reference_batch().to(x.device)
-
-        dl_attr = (x * 0).cpu()
-        for base in baseline:
-            dl_attr += self.method.attribute(x, target=target, baselines=base[None]).detach().cpu()
-        attr = dl_attr / self.n_baseline_samples
-
-        return attr
+        # Compute KernelSHAP this per-sample to avoid warnings. If we run KernelSHAP on multiple samples,
+        # captum runs it per sample in a for loop anyway.
+        return torch.cat([
+            self.method.attribute(x[i, ...].unsqueeze(0),
+                                  target=target[i],
+                                  feature_mask=masks[i, ...].unsqueeze(0),
+                                  n_samples=self.n_samples)
+            for i in range(x.shape[0])], dim=0)
 
 
 def get_super_pixels(x, k):

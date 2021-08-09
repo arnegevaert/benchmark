@@ -4,6 +4,7 @@ import h5py
 import numpy as np
 
 from attrbench.metrics import BasicMetricResult
+from attrbench.lib import NDArrayTree
 
 
 class MaxSensitivityResult(BasicMetricResult):
@@ -22,5 +23,5 @@ class MaxSensitivityResult(BasicMetricResult):
     def load_from_hdf(cls, group: h5py.Group) -> BasicMetricResult:
         method_names = list(group.keys())
         result = cls(method_names, radius=group.attrs["radius"])
-        result.data = {m_name: np.array(group[m_name]) for m_name in method_names}
+        result._tree = NDArrayTree.load_from_hdf(["method"], group)
         return result

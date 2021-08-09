@@ -25,7 +25,7 @@ class MinimalSubsetResult(AbstractMetricResult):
         result._tree = NDArrayTree.load_from_hdf(["masker", "method"], group)
         return result
 
-    def get_df(self, mode="raw", include_baseline=False, masker: str = "constant") -> Tuple[pd.DataFrame, bool]:
+    def get_df(self, mode="raw", include_baseline=False, masker: str = "constant", **kwargs) -> Tuple[pd.DataFrame, bool]:
         raw_results = pd.DataFrame.from_dict(
             self.tree.get(
                 postproc_fn=lambda x: np.squeeze(x, axis=-1),

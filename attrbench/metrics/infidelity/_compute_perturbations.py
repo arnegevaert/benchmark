@@ -72,6 +72,8 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
             # Numerator for normalizing constant beta depends on activation function
             beta_num = torch.mean(m_dot_products * tensor_pred_diffs[afn], dim=0, keepdim=True)  # [1, batch_size]
             beta = beta_num / beta_den  # [1, batch_size]
+            # If attribution map is constant 0, dot products will be 0 and beta will be nan. Set to 0.
+            beta[torch.isnan(beta)] = 0
             infid = torch.mean((beta * m_dot_products - tensor_pred_diffs[afn])**2, dim=0).unsqueeze(-1)
             result[afn][m_name] = infid.cpu().detach().numpy()
     return result
