@@ -30,10 +30,12 @@ def _derive_del_ins(res_obj: SuiteResult, mode: str, activation_fn="linear", mas
     res["iiof_lerf"] = (iiof_lerf[0][::-1], iiof_lerf[1])
 
 
-def get_default_dfs(res_obj: SuiteResult, mode: str, activation_fn="linear", masker="constant"):
+def get_default_dfs(res_obj: SuiteResult, mode: str, activation_fn="linear", masker="constant",
+                    include_baseline=False):
     # Add simple metrics
     res = {
-        metric_name: res_obj.metric_results[metric_name].get_df(mode=mode, activation_fn=activation_fn, masker=masker)
+        metric_name: res_obj.metric_results[metric_name].get_df(mode=mode, activation_fn=activation_fn, masker=masker,
+                                                                include_baseline=include_baseline)
         for metric_name in ["impact_coverage", "minimal_subset_deletion", "minimal_subset_insertion",
                             "sensitivity_n", "seg_sensitivity_n", "max_sensitivity", "deletion_morf", "deletion_lerf",
                             "insertion_morf", "insertion_lerf", "irof_morf", "irof_lerf"]
@@ -43,7 +45,8 @@ def get_default_dfs(res_obj: SuiteResult, mode: str, activation_fn="linear", mas
     for infid_type in ("square", "noisy_bl"):
         res[f"infidelity_{infid_type}"] = res_obj.metric_results["infidelity"].get_df(mode=mode,
                                                                                       perturbation_generator=infid_type,
-                                                                                      activation_fn=activation_fn)
+                                                                                      activation_fn=activation_fn,
+                                                                                      include_baseline=include_baseline)
     return res
 
 
@@ -58,10 +61,8 @@ def get_all_dfs(res_obj: SuiteResult, mode: str):
         for masker in ["blur", "constant", "random"]:
             for activation in activation_fns:
                 if metric_name not in ["sensitivity_n", "seg_sensitivity_n"]:
-                    res[f"{metric_name}_{masker}_{activation}_norm"] = res_obj.metric_results[metric_name].get_df(
+                    res[f"{metric_name}_{masker}_{activation}"] = res_obj.metric_results[metric_name].get_df(
                         masker=masker, activation_fn=activation, mode=mode, normalize=True)
-                    #res[f"{metric_name}_{masker}_{activation}"] = res_obj.metric_results[metric_name].get_df(
-                    #    masker=masker, activation_fn=activation, mode=mode, normalize=False)
                 else:
                     res[f"{metric_name}_{masker}_{activation}"] = res_obj.metric_results[metric_name].get_df(
                         masker=masker, activation_fn=activation, mode=mode)
