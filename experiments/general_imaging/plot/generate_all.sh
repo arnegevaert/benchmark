@@ -23,3 +23,8 @@ python confidence_correlations.py --all "$1" "$2"/conf_corr_all
 
 # CLUSTERING
 python cluster.py "$1" "$2"/cluster
+
+# PAIRWISE COMPARISONS
+python pairwise_tests.py "$1"/mnist.h5 DeepShap DeepLift "$2"/cles_mnist.png
+python pairwise_tests.py "$1"/cifar10.h5 DeepShap DeepLift "$2"/cles_cifar10.png
+python pairwise_tests.py "$1"/imagenet.h5 DeepShap DeepLift "$2"/cles_imagenet.png
