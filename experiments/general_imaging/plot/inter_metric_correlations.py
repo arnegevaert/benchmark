@@ -39,6 +39,6 @@ if __name__ == "__main__":
 
             figsize = (35, 35) if args.all else (10, 10)
             glyph_scale = 250 if args.all else 750
-            fig = InterMetricCorrelationPlot(dfs).render(figsize=figsize, glyph_scale=glyph_scale, fontsize=20)
+            fig = InterMetricCorrelationPlot(dfs).render(figsize=figsize)
             fig.savefig(path.join(args.out_dir, f"{ds_name}_{mode}.png"), bbox_inches="tight")
             plt.close(fig)
