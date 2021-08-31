@@ -1,7 +1,6 @@
 absl-py==0.11.0
 appdirs==1.4.3
 astroid==2.4.2
--e git+git@github.com:zoeparman/benchmark.git@60cfff1fc0c9a020e2eecfac7d8d48773e12be6a#egg=attrbench
 attrs==19.3.0
 backcall==0.1.0
 bandit==1.6.2
@@ -10,7 +9,7 @@ bokeh==2.2.1
 Brotli==1.0.9
 CacheControl==0.12.6
 cachetools==4.2.0
-captum==0.3.1
+captum==0.4.0
 certifi==2020.4.5.1
 chardet==3.0.4
 click==7.1.2
@@ -68,6 +67,7 @@ jupyterlab-server==1.1.1
 kiwisolver==1.2.0
 lazy-object-proxy==1.4.3
 lime==0.2.0.0
+littleutils==0.2.2
 livereload==2.6.3
 llvmlite==0.35.0
 lockfile==0.12.2
@@ -89,17 +89,21 @@ numexpr==2.7.1
 numpy==1.18.2
 oauthlib==3.1.0
 opencv-python==4.2.0.34
+outdated==0.2.1
 packaging==20.4
 pandas==1.0.3
+pandas-flavor==0.2.0
 pandocfilters==1.4.2
 panel==0.9.7
 param==1.9.3
 parso==0.7.0
+patsy==0.5.1
 pbr==5.5.1
 pep517==0.8.2
 pexpect==4.8.0
 pickleshare==0.7.5
 Pillow==7.2.0
+pingouin==0.3.12
 plotly==4.14.1
 ppscore==1.1.1
 progress==1.5
@@ -134,15 +138,17 @@ retrying==1.3.3
 rsa==4.7
 scikit-image==0.18.1
 scikit-learn==0.24.1
-scipy==1.4.1
+scipy==1.7.1
 seaborn==0.10.0
 Send2Trash==1.5.0
 Shapely==1.7.0
 six==1.14.0
 sklearn==0.0
 smmap==3.0.4
+statsmodels==0.12.2
 stevedore==3.2.2
 tables==3.6.1
+tabulate==0.8.9
 tensorboard==2.4.1
 tensorboard-plugin-wit==1.7.0
 terminado==0.8.3
@@ -164,4 +170,5 @@ webencodings==0.5.1
 Werkzeug==1.0.1
 widgetsnbextension==3.5.1
 wrapt==1.12.1
+xarray==0.18.2
 zipp==3.1.0
