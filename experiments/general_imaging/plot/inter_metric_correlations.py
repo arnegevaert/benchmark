@@ -30,15 +30,15 @@ if __name__ == "__main__":
         basename = path.basename(file)
         ds_name, ext = basename.split(".")
         prog.set_postfix_str(ds_name)
-        for mode in ("raw", "single"):
-            res_obj = SuiteResult.load_hdf(file)
-            if args.all:
-                dfs = get_all_dfs(res_obj, mode=mode)
-            else:
-                dfs = get_default_dfs(res_obj, mode=mode)
+        mode = "raw"
+        res_obj = SuiteResult.load_hdf(file)
+        if args.all:
+            dfs = get_all_dfs(res_obj, mode=mode)
+        else:
+            dfs = get_default_dfs(res_obj, mode=mode)
 
-            figsize = (35, 35) if args.all else (10, 10)
-            glyph_scale = 250 if args.all else 750
-            fig = InterMetricCorrelationPlot(dfs).render(figsize=figsize)
-            fig.savefig(path.join(args.out_dir, f"{ds_name}_{mode}.png"), bbox_inches="tight")
-            plt.close(fig)
+        figsize = (35, 35) if args.all else (10, 10)
+        glyph_scale = 250 if args.all else 750
+        fig = InterMetricCorrelationPlot(dfs).render(figsize=figsize)
+        fig.savefig(path.join(args.out_dir, f"{ds_name}.png"), bbox_inches="tight")
+        plt.close(fig)

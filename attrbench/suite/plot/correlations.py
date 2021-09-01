@@ -6,7 +6,8 @@ import seaborn as sns
 
 def _create_fig(df, figsize):
     fig, ax = plt.subplots(figsize=figsize)
-    sns.heatmap(df, annot=True, vmin=-1, vmax=1, cmap=sns.diverging_palette(220, 20, as_cmap=True), ax=ax)
+    sns.heatmap(df, annot=True, vmin=-1, vmax=1, cmap=sns.diverging_palette(220, 20, as_cmap=True), ax=ax, fmt=".2f",
+                cbar=False)
     ax.set_aspect("equal")
     return fig
 

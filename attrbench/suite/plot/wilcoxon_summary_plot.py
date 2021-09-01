@@ -79,5 +79,6 @@ class WilcoxonSummaryPlot:
             figsize=figsize,
             glyph_scale=glyph_scale,
             fontsize=fontsize,
-            title=title
+            title=title,
+            cbar=False
         )
