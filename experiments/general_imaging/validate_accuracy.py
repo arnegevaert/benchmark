@@ -1,6 +1,6 @@
 import argparse
 import torch
-from experiments.general_imaging.dataset_models import get_dataset_model
+from experiments.general_imaging.lib.dataset_models import get_dataset_model
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
@@ -42,7 +42,8 @@ if __name__ == "__main__":
 
     # Get dataset, model, methods
     ds, model, sample_shape = get_dataset_model(args.dataset, args.model)
-    dl = DataLoader(ds, batch_size=args.batch_size, shuffle=False, num_workers=1)
+    model.eval()
+    dl = DataLoader(ds, batch_size=args.batch_size, shuffle=False, num_workers=4)
     acc,balanced_acc, auc = test_epoch(model, dl)
     print("validation set results:\n"
           "accuracy: {:f} \n"
