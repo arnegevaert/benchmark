@@ -34,7 +34,7 @@ def test_epoch(model, dl):
         top_one_acc = sum(top_one) / len(top_one)
         top_five_acc = sum(top_five) / len(top_five)
         balanced_acc = metrics.balanced_accuracy_score(true_labels, predictions.argmax(axis=1))
-        auc = metrics.roc_auc_score(true_labels, predictions, average="macro", multi_class='ovr')
+        auc = metrics.roc_auc_score(true_labels, predictions, average="macro", multi_class='ovo', labels=np.arange(predictions.shape[1]))
     return top_one_acc, top_five_acc, balanced_acc, auc
 
 
