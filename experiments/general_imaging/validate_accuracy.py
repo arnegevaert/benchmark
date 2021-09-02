@@ -27,7 +27,7 @@ def test_epoch(model, dl):
             # If final 5 indices contain label, top-five is correct
             top_five.extend((index_order[:, -5:] == labels.view(-1, 1)).any(dim=1).cpu().numpy())
 
-            predictions.extend(out.argmax(dim=1))
+            predictions.extend(torch.softmax(out, dim=1).cpu().numpy())
             true_labels.extend(labels.cpu().numpy())
         predictions = np.vstack(predictions)
 
