@@ -11,21 +11,31 @@ def test_epoch(model, dl):
     model.to(device)
     model.eval()
     with torch.no_grad():
-        predictions=[]
-        true_labels=[]
+        top_one = []
+        top_five = []
+
+        predictions = []
+        true_labels = []
         for batch, labels in tqdm(dl):
+            labels = labels.to(device)
             batch = batch.to(device)
-            out = model(batch)
-            out = torch.softmax(out,1).cpu().numpy()
-            predictions.append(out)
+            out = model(batch)  # Get model output
+
+            index_order = torch.argsort(out, dim=1)  # Get the indices from low to high
+            # If final index matches label, top-one is correct
+            top_one.extend((index_order[:, -1] == labels.view(-1, 1)).any(dim=1).cpu().numpy())
+            # If final 5 indices contain label, top-five is correct
+            top_five.extend((index_order[:, -5:] == labels.view(-1, 1)).any(dim=1).cpu().numpy())
+
+            predictions.extend(out.argmax(dim=1))
             true_labels.extend(labels.numpy())
         predictions = np.vstack(predictions)
 
-        acc = metrics.accuracy_score(true_labels, predictions.argmax(axis=1))
+        top_one_acc = sum(top_one) / len(top_one)
+        top_five_acc = sum(top_five) / len(top_five)
         balanced_acc = metrics.balanced_accuracy_score(true_labels, predictions.argmax(axis=1))
-        auc = metrics.roc_auc_score(true_labels,predictions,average="macro",multi_class='ovr')
-
-    return acc,balanced_acc, auc
+        auc = metrics.roc_auc_score(true_labels, predictions, average="macro", multi_class='ovr')
+    return top_one_acc, top_five_acc, balanced_acc, auc
 
 
 
@@ -44,8 +54,9 @@ if __name__ == "__main__":
     ds, model, sample_shape = get_dataset_model(args.dataset, args.model)
     model.eval()
     dl = DataLoader(ds, batch_size=args.batch_size, shuffle=False, num_workers=4)
-    acc,balanced_acc, auc = test_epoch(model, dl)
+    top_one, top_five,balanced_acc, auc = test_epoch(model, dl)
     print("validation set results:\n"
-          "accuracy: {:f} \n"
+          "top-one accuracy: {:f} \n"
+          "top-five accuracy: {:f} \n"
           "balanced accuracy: {:f} \n"
-          "AUC: {:f}".format(acc,balanced_acc,auc))
+          "AUC: {:f}".format(top_one, top_five, balanced_acc, auc))
