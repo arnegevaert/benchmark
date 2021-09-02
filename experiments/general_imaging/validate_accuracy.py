@@ -28,7 +28,7 @@ def test_epoch(model, dl):
             top_five.extend((index_order[:, -5:] == labels.view(-1, 1)).any(dim=1).cpu().numpy())
 
             predictions.extend(out.argmax(dim=1))
-            true_labels.extend(labels.numpy())
+            true_labels.extend(labels.cpu().numpy())
         predictions = np.vstack(predictions)
 
         top_one_acc = sum(top_one) / len(top_one)
