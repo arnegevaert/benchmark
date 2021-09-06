@@ -1,4 +1,5 @@
 import argparse
+import os
 import pandas as pd
 from attrbench.lib import krippendorff_alpha
 from attrbench.suite import SuiteResult
@@ -9,6 +10,7 @@ import numpy as np
 from os import path
 import glob
 import seaborn as sns
+from tqdm import tqdm
 
 
 if __name__ == "__main__":
@@ -30,7 +32,7 @@ if __name__ == "__main__":
     result_objects = {path.basename(file).split(".")[0]: SuiteResult.load_hdf(file) for file in result_files}
 
     k_a = dict()
-    for ds_name, res in result_objects.items():
+    for ds_name, res in tqdm(result_objects.items()):
         if args.all:
             dfs = get_all_dfs(res, mode="single").items()
         else:
@@ -64,9 +66,19 @@ if __name__ == "__main__":
         "places": "#ffaac4"
     }
 
-    figsize = (16, 8) if not args.all else (100, 8)
-    fig, ax = plt.subplots(figsize=figsize)
-    k_a.plot.bar(ax=ax, color=color_list, width=0.7)
-    plt.xticks(rotation=45, ha="right", rotation_mode="anchor")
-    plt.grid(axis="x")
-    fig.savefig(args.out_file, bbox_inches="tight")
+    if args.all:
+        fig, axs = plt.subplots(nrows=3, figsize=(18, 25), constrained_layout=True)
+
+        for i in range(3):
+            end = min((i+1)*12, k_a.shape[0])
+            k_a[i*12:end].plot.bar(ax=axs[i], color=color_list, width=0.7)
+            #plt.xticks(rotation=45, ha="right", rotation_mode="anchor")
+            axs[i].set_xticklabels(axs[i].get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+            plt.grid(axis="x")
+        fig.savefig(args.out_file, bbox_inches="tight")
+    else:
+        fig, ax = plt.subplots(figsize=(16, 6))
+        k_a.plot.bar(ax=ax, color=color_list, width=0.7)
+        plt.xticks(rotation=45, ha="right", rotation_mode="anchor")
+        plt.grid(axis="x")
+        fig.savefig(args.out_file, bbox_inches="tight")
