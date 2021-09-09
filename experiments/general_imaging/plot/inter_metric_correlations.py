@@ -37,10 +37,11 @@ if __name__ == "__main__":
         else:
             dfs = get_default_dfs(res_obj, mode=mode)
 
-        figsize = (10, 10) if args.all else (7, 7)
+        figsize = (17, 17) if args.all else (7, 7)
+        fontsize = 15 if args.all else 17
         fig = InterMetricCorrelationPlot(dfs).render(figsize=figsize, annot=args.all)
         ax = fig.axes[0]
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor", fontsize=17)
-        ax.set_yticklabels(ax.get_yticklabels(), fontsize=17)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor", fontsize=fontsize)
+        ax.set_yticklabels(ax.get_yticklabels(), fontsize=fontsize)
         fig.savefig(path.join(args.out_dir, f"{ds_name}.png"), bbox_inches="tight", dpi=250)
         plt.close(fig)

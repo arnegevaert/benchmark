@@ -1,6 +1,53 @@
 from attrbench.suite import SuiteResult
 import numpy as np
 
+METRICS = {
+    "deletion_morf": "Del - MoRF",
+    "insertion_morf": "Ins - MoRF",
+    "deletion_lerf": "Del - LeRF",
+    "insertion_lerf": "Ins - LeRF",
+    "minimal_subset_insertion": "MSIns",
+    "minimal_subset_deletion": "MSDel",
+    "irof_morf": "IROF - MoRF",
+    "irof_lerf": "IROF - LeRF",
+    "sensitivity_n": "SensN",
+    "seg_sensitivity_n": "SegSensN",
+    "infidelity_square": "INFD - SQ",
+    "infidelity_noisy_bl": "INFD - BL",
+    "max_sensitivity": "MaxSens",
+    "impact_coverage": "Cov"
+}
+
+METHODS = {
+    "Gradient": "Grad",
+    "InputXGradient": "IxG",
+    "Deconvolution": "Dec",
+    "GuidedBackprop": "GBP",
+    "DeepLift": "DL",
+    "GradCAM": "GC",
+    "GuidedGradCAM": "GGC",
+    "IntegratedGradients": "IG",
+    "ExpectedGradients": "EG",
+    "SmoothGrad": "SG",
+    "VarGrad": "VG",
+    "DeepShap": "DS",
+    "KernelShap": "KS",
+    "LIME": "LIME"
+}
+
+
+def _translate(dfs):
+    res = {}
+    for key in dfs:
+        df, inverted = dfs[key]
+        new_key = key
+        for alt_key in METRICS:
+            if key.startswith(alt_key):
+                new_key = key.replace(alt_key, METRICS[alt_key])
+        df = df.rename(columns=METHODS)
+        res[new_key] = (df, inverted)
+    return res
+
 
 # Derive Deletion/Insertion from single Deletion run with full pixel range
 def _derive_del_ins(res_obj: SuiteResult, mode: str, activation_fn="linear", masker="constant", limit=50):
@@ -47,7 +94,7 @@ def get_default_dfs(res_obj: SuiteResult, mode: str, activation_fn="linear", mas
                                                                                       perturbation_generator=infid_type,
                                                                                       activation_fn=activation_fn,
                                                                                       include_baseline=include_baseline)
-    return res
+    return _translate(res)
 
 
 def get_all_dfs(res_obj: SuiteResult, mode: str):
@@ -74,4 +121,4 @@ def get_all_dfs(res_obj: SuiteResult, mode: str):
     for metric_name in ["minimal_subset_insertion", "minimal_subset_deletion"]:
         for masker in ["blur", "constant", "random"]:
             res[f"{metric_name} - {masker}"] = res_obj.metric_results[metric_name].get_df(masker=masker, mode=mode)
-    return res
+    return _translate(res)

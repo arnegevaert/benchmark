@@ -11,8 +11,6 @@ import matplotlib as mpl
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("hdf_file", type=str)
-    parser.add_argument("mth1", type=str)
-    parser.add_argument("mth2", type=str)
     parser.add_argument("out_file")
     args = parser.parse_args()
     mpl.use("Agg")
@@ -26,7 +24,7 @@ if __name__ == "__main__":
         df, inverted = dfs[key]
         df = -df if inverted else df
 
-        res = wilcoxon(x=df[args.mth1], y=df[args.mth2], tail="two-sided")
+        res = wilcoxon(x=df["DS"], y=df["DL"], tail="two-sided")
         pvalue = res["p-val"]["Wilcoxon"]
         cles = res["CLES"]["Wilcoxon"]
         out_str = f"{key}: p={pvalue:.3f} CLES={cles:.3f}"
@@ -42,6 +40,6 @@ if __name__ == "__main__":
     #ax.set_xticklabels(ax.get_xticklabels(), size=10)
     #ax.set_yticklabels(ax.get_yticklabels(), size=15)
     ax.set(xlim=(0, 1))
-    ax.set_title(f"P({args.mth1} > {args.mth2})")
+    ax.set_title(f"P(DeepSHAP > DeepLIFT)")
     fig.savefig(args.out_file, bbox_inches="tight", dpi=250)
     plt.close(fig)
