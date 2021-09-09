@@ -67,18 +67,25 @@ if __name__ == "__main__":
     }
 
     if args.all:
-        fig, axs = plt.subplots(nrows=3, figsize=(18, 25), constrained_layout=True)
+        fig, axs = plt.subplots(nrows=3, figsize=(10, 12), constrained_layout=True)
 
         for i in range(3):
-            end = min((i+1)*12, k_a.shape[0])
+            end = min((i+1)*14, k_a.shape[0])
             k_a[i*12:end].plot.bar(ax=axs[i], color=color_list, width=0.7)
             #plt.xticks(rotation=45, ha="right", rotation_mode="anchor")
             axs[i].set_xticklabels(axs[i].get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+            if i > 0:
+                axs[i].legend().set_visible(False)
+            else:
+                axs[i].legend(loc='upper center', bbox_to_anchor=(0.5, 1.4),
+                          fancybox=True, shadow=True, ncol=4)
             plt.grid(axis="x")
-        fig.savefig(args.out_file, bbox_inches="tight")
+        fig.savefig(args.out_file, bbox_inches="tight", dpi=250)
     else:
-        fig, ax = plt.subplots(figsize=(16, 6))
+        fig, ax = plt.subplots(figsize=(10, 4))
         k_a.plot.bar(ax=ax, color=color_list, width=0.7)
         plt.xticks(rotation=45, ha="right", rotation_mode="anchor")
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.25),
+                      fancybox=True, shadow=True, ncol=4)
         plt.grid(axis="x")
-        fig.savefig(args.out_file, bbox_inches="tight")
+        fig.savefig(args.out_file, bbox_inches="tight", dpi=250)

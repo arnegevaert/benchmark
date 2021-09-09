@@ -34,8 +34,8 @@ if __name__ == "__main__":
             dfs[masker] = res_obj.metric_results[metric_name].get_df(
                 masker=masker, activation_fn="linear", mode="raw", normalize=True)
 
-        fig = InterMetricCorrelationPlot(dfs).render(figsize=(3,3))
-        fig.savefig(path.join(args.out_dir, "general", f"{metric_name}.png"), bbox_inches="tight")
+        fig = InterMetricCorrelationPlot(dfs).render(figsize=(2,2))
+        fig.savefig(path.join(args.out_dir, "general", f"{metric_name}.png"), bbox_inches="tight", dpi=250)
         plt.close(fig)
         prog.update(1)
 
@@ -51,7 +51,7 @@ if __name__ == "__main__":
                 dfs[masker] = res_obj.metric_results[metric_name].get_df(
                     masker=masker, activation_fn="linear", mode="raw")
 
-            fig = InterMetricCorrelationPlot(dfs).render(figsize=(3, 3))
-            fig.savefig(path.join(args.out_dir, "sens_n", f"{ds_name}_{metric_name}.png"), bbox_inches="tight")
+            fig = InterMetricCorrelationPlot(dfs).render(figsize=(2, 2))
+            fig.savefig(path.join(args.out_dir, "sens_n", f"{ds_name}_{metric_name}.png"), bbox_inches="tight", dpi=250)
             plt.close(fig)
             prog.update(1)

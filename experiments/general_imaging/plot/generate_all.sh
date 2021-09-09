@@ -28,3 +28,6 @@ python inter_metric_correlations.py --all "$1" "$2"/metric_corr_all
 python pairwise_tests.py "$1"/mnist.h5 DeepShap DeepLift "$2"/cles_mnist.png
 python pairwise_tests.py "$1"/cifar10.h5 DeepShap DeepLift "$2"/cles_cifar10.png
 python pairwise_tests.py "$1"/imagenet.h5 DeepShap DeepLift "$2"/cles_imagenet.png
+
+# MASKING CORRELATIONS
+python metric_corr_compare_masking.py "$1" "$2"/metric_corr_masking
