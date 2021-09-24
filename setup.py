@@ -14,6 +14,12 @@ setuptools.setup(
         "tqdm==4.46.1",
         "tensorboard==2.4.1",
         "krippendorff==0.4.0",
-        "opencv-python==4.2.0.34"
+        "opencv-python==4.2.0.34",
+        "dash==1.18.1",
+        "dash-bootstrap-components==0.10.7",
+        "dash-core-components==1.14.1",
+        "dash-html-components==1.1.1",
+        "dash-renderer==1.8.3",
+        "dash-table==4.11.1"
     ]
 )
