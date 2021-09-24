@@ -11,6 +11,7 @@ setuptools.setup(
     install_requires=[
         "torch>=1.5.0",
         "h5py==2.10.0",
-        "tqdm==4.46.1"
+        "tqdm==4.46.1",
+        "tensorboard==2.4.1"
     ]
 )
