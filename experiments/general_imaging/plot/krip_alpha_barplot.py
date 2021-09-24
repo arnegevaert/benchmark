@@ -1,4 +1,5 @@
 import argparse
+import os
 import pandas as pd
 from attrbench.lib import krippendorff_alpha
 from attrbench.suite import SuiteResult
@@ -9,6 +10,7 @@ import numpy as np
 from os import path
 import glob
 import seaborn as sns
+from tqdm import tqdm
 
 
 if __name__ == "__main__":
@@ -30,7 +32,7 @@ if __name__ == "__main__":
     result_objects = {path.basename(file).split(".")[0]: SuiteResult.load_hdf(file) for file in result_files}
 
     k_a = dict()
-    for ds_name, res in result_objects.items():
+    for ds_name, res in tqdm(result_objects.items()):
         if args.all:
             dfs = get_all_dfs(res, mode="single").items()
         else:
@@ -64,9 +66,26 @@ if __name__ == "__main__":
         "places": "#ffaac4"
     }
 
-    figsize = (16, 8) if not args.all else (100, 8)
-    fig, ax = plt.subplots(figsize=figsize)
-    k_a.plot.bar(ax=ax, color=color_list, width=0.7)
-    plt.xticks(rotation=45, ha="right", rotation_mode="anchor")
-    plt.grid(axis="x")
-    fig.savefig(args.out_file, bbox_inches="tight")
+    if args.all:
+        fig, axs = plt.subplots(nrows=3, figsize=(10, 12), constrained_layout=True)
+
+        for i in range(3):
+            end = min((i+1)*14, k_a.shape[0])
+            k_a[i*12:end].plot.bar(ax=axs[i], color=color_list, width=0.7)
+            #plt.xticks(rotation=45, ha="right", rotation_mode="anchor")
+            axs[i].set_xticklabels(axs[i].get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+            if i > 0:
+                axs[i].legend().set_visible(False)
+            else:
+                axs[i].legend(loc='upper center', bbox_to_anchor=(0.5, 1.4),
+                          fancybox=True, shadow=True, ncol=4)
+            plt.grid(axis="x")
+        fig.savefig(args.out_file, bbox_inches="tight", dpi=250)
+    else:
+        fig, ax = plt.subplots(figsize=(10, 4))
+        k_a.plot.bar(ax=ax, color=color_list, width=0.7)
+        plt.xticks(rotation=45, ha="right", rotation_mode="anchor")
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.25),
+                      fancybox=True, shadow=True, ncol=4)
+        plt.grid(axis="x")
+        fig.savefig(args.out_file, bbox_inches="tight", dpi=250)

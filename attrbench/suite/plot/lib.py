@@ -23,12 +23,16 @@ def effect_size_barplot(effect_sizes, pvalues, labels, alpha):
 
 
 def heatmap(x, y, size, color, palette=None, figsize=(20, 20), glyph_scale=1500,
-            fontsize=None, title=None, color_bounds=None):
+            fontsize=None, title=None, color_bounds=None,
+            cbar=True):
     sns.set()
     fig = plt.figure(figsize=figsize)
     fig.suptitle(title, fontsize=16)
     plot_grid = plt.GridSpec(1, 15, hspace=0.2, wspace=0.1, figure=fig)  # 1x15 grid
-    ax = fig.add_subplot(plot_grid[:, :-1])  # Use leftmost 14 columns for the main plot
+    if cbar:
+        ax = fig.add_subplot(plot_grid[:, :-1])  # Use leftmost 14 columns for the main plot
+    else:
+        ax = fig.add_subplot()  # Use everything for the main plot
 
     # Mapping from colnames to integer coordinates
     x_labels = list(sorted(x.unique()))
@@ -71,24 +75,25 @@ def heatmap(x, y, size, color, palette=None, figsize=(20, 20), glyph_scale=1500,
     ax.set_ylim([-0.5, max(y_to_num.values()) + 0.5])
 
     # Add color legend on the right side of the plot
-    legend_ax = fig.add_subplot(plot_grid[:, -1])  # Use the rightmost column of the plot
+    if cbar:
+        legend_ax = fig.add_subplot(plot_grid[:, -1])  # Use the rightmost column of the plot
 
-    col_x = [0] * len(palette)  # Fixed x coordinate for the bars
-    bar_y = np.linspace(color_min, color_max, len(palette))  # y coordinates for each of the n_colors bars
+        col_x = [0] * len(palette)  # Fixed x coordinate for the bars
+        bar_y = np.linspace(color_min, color_max, len(palette))  # y coordinates for each of the n_colors bars
 
-    bar_height = bar_y[1] - bar_y[0]
-    legend_ax.barh(
-        y=bar_y,
-        width=[5] * len(palette),  # Make bars 5 units wide
-        left=col_x,  # Make bars start at 0
-        height=bar_height,
-        color=palette,
-        linewidth=0
-    )
-    legend_ax.set_xlim(1, 2)  # Bars are going from 0 to 5, so lets crop the plot somewhere in the middle
-    legend_ax.grid(False)  # Hide grid
-    legend_ax.set_facecolor('white')  # Make background white
-    legend_ax.set_xticks([])  # Remove horizontal ticks
-    legend_ax.set_yticks(np.linspace(min(bar_y), max(bar_y), 3))  # Show vertical ticks for min, middle and max
-    legend_ax.yaxis.tick_right()  # Show vertical ticks on the right
+        bar_height = bar_y[1] - bar_y[0]
+        legend_ax.barh(
+            y=bar_y,
+            width=[5] * len(palette),  # Make bars 5 units wide
+            left=col_x,  # Make bars start at 0
+            height=bar_height,
+            color=palette,
+            linewidth=0
+        )
+        legend_ax.set_xlim(1, 2)  # Bars are going from 0 to 5, so lets crop the plot somewhere in the middle
+        legend_ax.grid(False)  # Hide grid
+        legend_ax.set_facecolor('white')  # Make background white
+        legend_ax.set_xticks([])  # Remove horizontal ticks
+        legend_ax.set_yticks(np.linspace(min(bar_y), max(bar_y), 3))  # Show vertical ticks for min, middle and max
+        legend_ax.yaxis.tick_right()  # Show vertical ticks on the right
     return fig

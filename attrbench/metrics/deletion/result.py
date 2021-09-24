@@ -58,7 +58,7 @@ class DeletionResult(MaskerActivationMetricResult):
             predictions = self.suite_result.predictions
             if activation_fn == "softmax":
                 predictions = softmax(predictions, axis=1)
-            confidences = np.max(predictions, axis=1)
+            confidences = np.abs(np.max(predictions, axis=1))
             df = df.div(pd.Series(confidences), axis=0)
         return df, inverted
 

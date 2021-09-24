@@ -30,15 +30,18 @@ if __name__ == "__main__":
         basename = path.basename(file)
         ds_name, ext = basename.split(".")
         prog.set_postfix_str(ds_name)
-        for mode in ("raw", "single"):
-            res_obj = SuiteResult.load_hdf(file)
-            if args.all:
-                dfs = get_all_dfs(res_obj, mode=mode)
-            else:
-                dfs = get_default_dfs(res_obj, mode=mode)
+        mode = "raw"
+        res_obj = SuiteResult.load_hdf(file)
+        if args.all:
+            dfs = get_all_dfs(res_obj, mode=mode)
+        else:
+            dfs = get_default_dfs(res_obj, mode=mode)
 
-            figsize = (35, 35) if args.all else (10, 10)
-            glyph_scale = 250 if args.all else 750
-            fig = InterMetricCorrelationPlot(dfs).render(figsize=figsize, glyph_scale=glyph_scale, fontsize=20)
-            fig.savefig(path.join(args.out_dir, f"{ds_name}_{mode}.png"), bbox_inches="tight")
-            plt.close(fig)
+        figsize = (17, 17) if args.all else (7, 7)
+        fontsize = 15 if args.all else 17
+        fig = InterMetricCorrelationPlot(dfs).render(figsize=figsize, annot=args.all)
+        ax = fig.axes[0]
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor", fontsize=fontsize)
+        ax.set_yticklabels(ax.get_yticklabels(), fontsize=fontsize)
+        fig.savefig(path.join(args.out_dir, f"{ds_name}.png"), bbox_inches="tight", dpi=250)
+        plt.close(fig)
