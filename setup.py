@@ -20,6 +20,7 @@ setuptools.setup(
         "dash-core-components==1.14.1",
         "dash-html-components==1.1.1",
         "dash-renderer==1.8.3",
-        "dash-table==4.11.1"
+        "dash-table==4.11.1",
+        "scikit-learn==0.24.1"
     ]
 )
