@@ -44,7 +44,7 @@ def _translate(dfs):
         for alt_key in METRICS:
             if key.startswith(alt_key):
                 new_key = key.replace(alt_key, METRICS[alt_key])
-        df = df.rename(columns=METHODS)
+        #df = df.rename(columns=METHODS)
         res[new_key] = (df, inverted)
     return res
 
