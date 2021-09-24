@@ -10,6 +10,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         "torch>=1.5.0",
-        "h5py==2.10.0"
+        "h5py==2.10.0",
+        "tqdm==4.46.1"
     ]
 )
