@@ -7,12 +7,12 @@ from attrbench import metrics
 
 
 class SuiteResult:
-    def __init__(self, metric_results: Dict[str, AbstractMetricResult] = None, num_samples: int = None,
+    def __init__(self, metric_results: Optional[Dict[str, AbstractMetricResult]] = None, num_samples: Optional[int] = None,
                  seed: int = None, images: np.ndarray = None, attributions: Dict[str, np.ndarray] = None,
                  predictions: np.ndarray = None):
-        self.metric_results = metric_results
-        for key, metric_result in metric_results.items():
-            metric_result.register_suite_result(self)
+        self.metric_results = None
+        if metric_results is not None:
+            self.set_metric_results(metric_results)
         self.num_samples = num_samples
         self.seed = seed
         self.images: Optional[np.ndarray] = images
@@ -21,6 +21,8 @@ class SuiteResult:
 
     def set_metric_results(self, metric_results: Dict[str, AbstractMetricResult]):
         self.metric_results = metric_results
+        for key, metric_result in self.metric_results.items():
+            metric_result.register_suite_result(self)
 
     def add_images(self, images: np.ndarray):
         if self.images is None:
