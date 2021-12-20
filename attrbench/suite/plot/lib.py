@@ -24,7 +24,7 @@ def effect_size_barplot(effect_sizes, pvalues, labels, alpha):
 
 def heatmap(x, y, size, color, palette=None, figsize=(20, 20), glyph_scale=1500,
             fontsize=None, title=None, color_bounds=None,
-            cbar=True):
+            cbar=True, x_labels=None, y_labels=None):
     sns.set()
     fig = plt.figure(figsize=figsize)
     fig.suptitle(title, fontsize=16)
@@ -35,8 +35,16 @@ def heatmap(x, y, size, color, palette=None, figsize=(20, 20), glyph_scale=1500,
         ax = fig.add_subplot()  # Use everything for the main plot
 
     # Mapping from colnames to integer coordinates
-    x_labels = list(sorted(x.unique()))
-    y_labels = list(sorted(y.unique()))[::-1]
+    if x_labels is None:
+        x_labels = list(sorted(x.unique()))
+    elif list(sorted(x_labels)) != list(sorted(x.unique())):
+        raise ValueError("Invalid X labels")
+
+    if y_labels is None:
+        y_labels = list(sorted(y.unique()))[::-1]
+    elif list(sorted(y_labels)) != list(sorted(y.unique())):
+        raise ValueError("Invalid Y labels")
+
     x_to_num = {label: num for num, label in enumerate(x_labels)}
     y_to_num = {label: num for num, label in enumerate(y_labels)}
 

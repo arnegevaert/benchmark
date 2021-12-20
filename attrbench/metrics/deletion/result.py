@@ -10,13 +10,17 @@ from scipy.special import softmax
 def _aoc(x: np.ndarray, columns: np.ndarray = None):
     if columns is not None:
         x = x[..., columns]
-    return x[..., 0] - np.trapz(x, np.linspace(0, 1, x.shape[-1]), axis=-1)
+    return x[..., 0] - _auc(x, columns)
+    #return x[..., 0] - np.sum(x, axis=-1) / (len(columns) + 1)
+    #return x[..., 0] - np.trapz(x, np.linspace(0, 1, x.shape[-1]), axis=-1)
 
 
 def _auc(x: np.ndarray, columns: np.ndarray = None):
     if columns is not None:
         x = x[..., columns]
-    return np.trapz(x, np.linspace(0, 1, x.shape[-1]))
+    l = x.shape[-1] if columns is None else columns.shape[0]
+    return np.sum(x, axis=-1) / l
+    # return np.trapz(x, np.linspace(0, 1, x.shape[-1]))
 
 
 class DeletionResult(MaskerActivationMetricResult):
