@@ -1,71 +1,27 @@
-# ML Interpretability Benchmark
-Benchmark for ML interpretability techniques.
+# AttrBench: Metrics for Feature Attribution Techniques
+This repository contains the source code for the `attrbench` package, which provides a [Pytorch]()-based implementation of several metrics for the evaluation of feature attribution maps and methods. The package is currently mainly focused on image data, but we plan to generalize the code to work for any type of data.
 
-## Techniques
+## Installation
+To install the project, run:
+```bash
+pip install attrbench
+```
 
-#### Feature Attribution (FA) techniques
-- Implemented: :heavy_check_mark:
-- Work in progress: :construction:
-- Not implemented: :x:
+## Available metrics
+- Deletion
+- Insertion
+- IROF
+- IIOF
+- Impact Coverage
+- Impact Score
+- Infidelity
+- Max-Sensitivity
+- Minimal Subset
+- Sensitivity-n
+- Seg-Sensitivity-n
 
-| Name | Paper | Source | Model requirements | Data type | Implemented |
-| ---- | ----- | ------ | ------------------ | --------- | ----------- |
-| Gradient | [link](https://arxiv.org/abs/1312.6034) | [Captum](https://captum.ai/api/saliency.html) | Differentiable | Any | :heavy_check_mark: |
-| InputXGradient | [link](https://arxiv.org/abs/1611.07270) | [Captum](https://captum.ai/api/input_x_gradient.html) | Differentiable | Any | :heavy_check_mark: |
-| IntegratedGradients | [link](http://arxiv.org/abs/1703.01365) | [Captum](https://captum.ai/api/integrated_gradients.html) | Differentiable | Any | :heavy_check_mark: |
-| Guided Backprop | [link](https://arxiv.org/abs/1412.6806) | [Captum](https://captum.ai/api/guided_backprop.html) | DNN | Image | :heavy_check_mark: |
-| Deconvolution | [link](https://arxiv.org/abs/1311.2901) | [Captum](https://captum.ai/api/deconvolution.html) | CNN | Image | :heavy_check_mark: |
-| CAM | [link](http://cnnlocalization.csail.mit.edu/Zhou_Learning_Deep_Features_CVPR_2016_paper.pdf) | [Github](https://github.com/zhoubolei/CAM) | CNN (GAP layer) | Image | :construction: |
-| Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Github](https://github.com/ramprs/grad-cam/) | CNN | Image | :heavy_check_mark: |
-| Guided Grad-CAM | [link](https://arxiv.org/abs/1610.02391) | [Captum](https://captum.ai/api/guided_grad_cam.html) | CNN | Image | :heavy_check_mark: |
-| Grad-CAM++ | [link](https://arxiv.org/abs/1710.11063) | None | CNN | Image | :heavy_check_mark: |
-| Score-CAM | [link](https://arxiv.org/abs/1910.01279) | None | CNN | Image | :heavy_check_mark: |
-| Feature Ablation | None | [Captum](https://captum.ai/api/feature_ablation.html) | None | Any | :construction: |
-| DeepLIFT<sup>1</sup> | [link](https://arxiv.org/abs/1704.02685) | [Captum **(UNR)**](https://captum.ai/api/deep_lift.html) | DNN | Image | :construction: |
-| Occlusion | [link](https://arxiv.org/abs/1311.2901) | [Captum](https://captum.ai/api/occlusion.html) | none | Any | :construction: |
-| LIME | [link](https://www.kdd.org/kdd2016/papers/files/rfp0573-ribeiroA.pdf) | [PyPi](https://pypi.org/project/lime/) | None | Any | :heavy_check_mark: |
-| SHAP | [link](https://arxiv.org/abs/1705.07874) | [PyPi](https://pypi.org/project/shap/) | None | Any | :construction: |
-| CGI | [link](https://arxiv.org/abs/1905.12152) | None | Differentiable | Any | :x: |
-| XRAI | [link](https://arxiv.org/abs/1906.02825) | [Github](https://github.com/PAIR-code/saliency) | Differentiable | Image | :x: |
-| Masking model | [link](https://arxiv.org/abs/1705.07857) | None | Differentiable | Image | :x: |
-| SmoothGrad | [link](https://arxiv.org/abs/1706.03825) | None | Differentiable | Any | :heavy_check_mark: |
-| Expected Gradients | [link](https://arxiv.org/abs/1906.10670) | None | Differentiable | Any | :heavy_check_mark: |
-
-<sup>1</sup>: DeepLIFT has 3 assignment rules (Linear, RC, RS), so should be split in DeepLIFT-{Linear,RC,RS}.
-
-## Evaluation metrics
-We provide a list of metrics that can be used to assess the quality of explainability techniques.
-:heavy_check_mark: means the metric is already implemented, :x: means it is not.
-
-| Name | Paper | Implemented |
-| ---- | ----- | ----------- |
-| Dataset masking accuracy | None | :heavy_check_mark: |
-| Model masking accuracy | None | :heavy_check_mark: |
-| Noise invariance | None | :heavy_check_mark: |
-| Insertion curves | [Arxiv](https://arxiv.org/abs/1806.07421) | :x: |
-| Deletion curves | [Arxiv](https://arxiv.org/abs/1806.07421) | :heavy_check_mark: |
-| Sensitivity-n | [Arxiv](https://arxiv.org/abs/1711.06104) | :heavy_check_mark: |
-| Infidelity | [Arxiv](https://arxiv.org/abs/1901.09392) | :heavy_check_mark: |
-| Max-sensitivity | [Arxiv](https://arxiv.org/abs/1901.09392) | :heavy_check_mark: |
-| Impact Score | [Arxiv](https://arxiv.org/abs/1910.07387) | :construction: |
-| Impact Coverage | [Arxiv](https://arxiv.org/abs/1910.07387) | :construction: |
-| Sanity Checks | [Arxiv](https://arxiv.org/abs/1810.03292) | :construction: |
-| AIC | [Arxiv](https://arxiv.org/abs/1906.02825) | :x: |
-| SIC | [Arxiv](https://arxiv.org/abs/1906.02825) | :x: |
-| BAM | [Arxiv](https://arxiv.org/abs/1907.09701) | :x: |
-
-## Datasets
-- MNIST
-- CIFAR10
-- Aptos
-- ImageNette
-
-## Models
-### MNIST
-- Basic CNN
-
-### CIFAR10
-
-### Aptos
-
-### ImageNette
+## Future work
+We are mainly working in 3 general directions for the near future:
+- Generalization of the benchmark to other data modalities than images.
+- Optimization of GPU usage.
+- Inclusion of new metrics
