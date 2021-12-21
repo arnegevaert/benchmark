@@ -2,11 +2,10 @@
 This repository contains the source code for the `attrbench` package, which provides a [Pytorch]()-based implementation of several metrics for the evaluation of feature attribution maps and methods. The package is currently mainly focused on image data, but we plan to generalize the code to work for any type of data.
 
 ## Installation
+TODO
 
 ## Usage
-### Functional API
-
-### The `Suite` class
+TODO
 
 ## Available metrics
 | Name | Paper | Implemented |
