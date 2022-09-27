@@ -14,7 +14,7 @@ def get_dataloader():
                              std=[0.229, 0.224, 0.225])
     ])
     dataset = ImagenetSubset(path.join("data", "imagenette2", "val"), transform=transform)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=64, shuffle=True)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True)
     return dataloader
 
 
