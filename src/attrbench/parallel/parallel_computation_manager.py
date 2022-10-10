@@ -1,39 +1,31 @@
+from attrbench.parallel import PartialResultMessage, DoneMessage, ParallelEvalSampler, IndexDataset
 import torch.distributed as dist
 import torch.multiprocessing as mp
+from torch.utils.data import Dataset, DataLoader
+from typing import Callable, Tuple, List
+import torch
 import os
 
-from attrbench.metrics import Metric
-from attrbench.parallel.message import PartialResultMessage, DoneMessage
-from typing import Tuple
-import torch
-from torch.utils.data import Dataset, Sampler, DataLoader
 
-
-class ParallelMetric:
-    def __init__(self, metric: Metric, dataset: Dataset, address="localhost", port="12355", devices: Tuple[int] = None):
-        # Attrbench metric object
-        self.metric = metric
-        # Address and port for multiprocessing
+class ParallelComputationManager:
+    def __init__(self, address="localhost", port="12355", devices: Tuple[int] = None):
         self.address = address
         self.port = port
-        # Dataset to evaluate metric on
-        self.dataset = dataset
         self.devices = devices if devices is not None else list(range(torch.cuda.device_count()))
         self.world_size = len(devices)
 
-    def _compute_metric(self, rank):
+    def _worker(self, queue: mp.Queue, rank: int):
+        raise NotImplementedError
+
+    def _handle_result(self, result: PartialResultMessage):
+        raise NotImplementedError
+
+    def _worker_setup(self, queue: mp.Queue, rank: int):
         dist.init_process_group("gloo", rank=rank, world_size=self.world_size)
-
-        sampler = ParallelEvalSampler(self.dataset, self.world_size, rank)
-        dataloader = DataLoader(self.dataset, sampler=sampler)
-
-        it = iter(dataloader)
-        for batch_indices, batch_x, batch_y in dataloader:
-            pass  # TODO
-
+        self._worker(queue, rank)
         dist.destroy_process_group()
 
-    def evaluate(self):
+    def start(self):
         # Initialize multiproc parameters
         os.environ["MASTER_ADDR"] = self.address
         os.environ["MASTER_PORT"] = self.port
@@ -45,7 +37,7 @@ class ParallelMetric:
 
         # Start all processes
         for rank in range(self.world_size):
-            p = mp.Process(target=self._compute_metric, args=(rank,))
+            p = mp.Process(target=self._worker_setup, args=(rank,))
             p.start()
             processes.append(p)
 
@@ -65,3 +57,5 @@ class ParallelMetric:
         for p in processes:
             p.join()
 
+        # Merge and return results
+        return self._merge_results(results)
