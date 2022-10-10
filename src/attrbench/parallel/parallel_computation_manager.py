@@ -12,7 +12,7 @@ class ParallelComputationManager:
         self.address = address
         self.port = port
         self.devices = devices if devices is not None else list(range(torch.cuda.device_count()))
-        self.world_size = len(devices)
+        self.world_size = len(self.devices)
 
     def _worker(self, queue: mp.Queue, rank: int):
         raise NotImplementedError
@@ -37,25 +37,21 @@ class ParallelComputationManager:
 
         # Start all processes
         for rank in range(self.world_size):
-            p = mp.Process(target=self._worker_setup, args=(rank,))
+            p = mp.Process(target=self._worker_setup, args=(queue, rank))
             p.start()
             processes.append(p)
 
         # Gather results
         # This is not busy waiting: queue.get will block until a result is passed
-        results = []
         done_processes = [False for _ in processes]
         while not all(done_processes):
             res = queue.get()  # res is a PartialResultMessage or a DoneMessage
             if type(res) == DoneMessage:
                 done_processes[res.rank] = True
             else:
-                results.append(res)
+                self._handle_result(res)
 
         # Processes are now allowed to terminate
         global_done_event.set()
         for p in processes:
             p.join()
-
-        # Merge and return results
-        return self._merge_results(results)
