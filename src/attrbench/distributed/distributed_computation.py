@@ -1,29 +1,29 @@
-from attrbench.distributed import PartialResultMessage, DoneMessage, ParallelEvalSampler, IndexDataset
+from attrbench.distributed import PartialResultMessage, DoneMessage
 import torch.distributed as dist
 import torch.multiprocessing as mp
-from torch.utils.data import Dataset, DataLoader
-from typing import Callable, Tuple, List
+from typing import Tuple
 import torch
 import os
 
 
-class ParallelComputationManager:
+class DistributedComputation:
     def __init__(self, address="localhost", port="12355", devices: Tuple[int] = None):
         self.address = address
         self.port = port
         self.devices = devices if devices is not None else list(range(torch.cuda.device_count()))
         self.world_size = len(self.devices)
 
-    def _worker(self, queue: mp.Queue, rank: int):
+    def _worker(self, queue: mp.Queue, rank: int, **kwargs):
         raise NotImplementedError
 
     def _handle_result(self, result: PartialResultMessage):
         raise NotImplementedError
 
-    def _worker_setup(self, queue: mp.Queue, rank: int):
+    def _worker_setup(self, queue: mp.Queue, rank: int, done_event: mp.Event):
         dist.init_process_group("gloo", rank=rank, world_size=self.world_size)
         self._worker(queue, rank)
-        dist.destroy_process_group()
+        done_event.wait()
+        dist.destroy_process_group()  # TODO if we destroy the process group in the start() method, is the event still necessary?
 
     def start(self):
         # Initialize multiproc parameters
@@ -37,7 +37,7 @@ class ParallelComputationManager:
 
         # Start all processes
         for rank in range(self.world_size):
-            p = mp.Process(target=self._worker_setup, args=(queue, rank))
+            p = mp.Process(target=self._worker_setup, args=(queue, rank, global_done_event))
             p.start()
             processes.append(p)
 

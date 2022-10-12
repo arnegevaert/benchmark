@@ -1,6 +1,6 @@
 from captum.attr import Saliency
 from util.get_dataset_model import get_model
-from attrbench.distributed import ParallelAttributionManager
+from attrbench.distributed import AttributionsComputation
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from util.imagenet_subset import ImagenetSubset
@@ -34,8 +34,8 @@ def method_factory(model):
 
 
 if __name__ == "__main__":
-    pam = ParallelAttributionManager(get_model, method_factory, LimitedImagenetSubset(), batch_size=32,
-                                     sample_shape=(3, 224, 224), filename="test.h5", method_name="Saliency")
+    pam = AttributionsComputation(get_model, method_factory, LimitedImagenetSubset(), batch_size=32,
+                                  sample_shape=(3, 224, 224), filename="test.h5", method_name="Saliency")
     pam.start()
 
     with h5py.File("test.h5", "r") as fp:

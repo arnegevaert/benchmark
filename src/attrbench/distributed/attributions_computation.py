@@ -1,4 +1,4 @@
-from attrbench.distributed import PartialResultMessage, DoneMessage, ParallelEvalSampler, ParallelComputationManager
+from attrbench.distributed import PartialResultMessage, DoneMessage,  DistributedComputation, DistributedSampler
 import torch.multiprocessing as mp
 from torch.utils.data import Dataset, DataLoader
 from typing import Callable, Tuple
@@ -15,9 +15,9 @@ class AttributionResult:
         self.attributions = attributions
 
 
-class ParallelAttributionManager(ParallelComputationManager):
+class AttributionsComputation(DistributedComputation):
     def __init__(self, model_factory: Callable[[], Model], method_factory: Callable[[Model], AttributionMethod], dataset: Dataset, batch_size: int, sample_shape: Tuple,
-                 filename: str, method_name: str, address="localhost", port="12355", devices: Tuple[int] = None):
+                 filename: str, method_name: str, address="localhost", port="12355", devices: Tuple = None):
         super().__init__(address, port, devices)
         self.model_factory = model_factory
         self.method_factory = method_factory
@@ -28,7 +28,7 @@ class ParallelAttributionManager(ParallelComputationManager):
         self.method_name = method_name
 
     def _worker(self, queue: mp.Queue, rank: int):
-        sampler = ParallelEvalSampler(self.dataset, self.world_size, rank)
+        sampler = DistributedSampler(self.dataset, self.world_size, rank)
         dataloader = DataLoader(self.dataset, sampler=sampler, batch_size=self.batch_size)
         device = torch.device(rank)
         model = self.model_factory()

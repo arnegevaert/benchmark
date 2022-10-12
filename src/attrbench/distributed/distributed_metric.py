@@ -3,14 +3,14 @@ import torch.multiprocessing as mp
 import os
 
 from attrbench.metrics import Metric
-from attrbench.distributed import PartialResultMessage, DoneMessage, ParallelComputationManager
+from attrbench.distributed import PartialResultMessage, DoneMessage, DistributedComputation
 from attrbench.typing import Model
-from typing import Tuple, Callable, NewType
+from typing import Tuple, Callable
 import torch
 from torch.utils.data import Dataset, Sampler, DataLoader
 
 
-class ParallelMetric(ParallelComputationManager):
+class DistributedMetric(DistributedComputation):
     def __init__(self, model_factory: Callable[[], Model], metric: Metric, dataset: Dataset, address="localhost", port="12355", devices: Tuple[int] = None):
         super().__init__(address, port, devices)
         # Attrbench metric object
