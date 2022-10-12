@@ -1,7 +1,7 @@
 from attrbench.distributed import PartialResultMessage, DoneMessage
 import torch.distributed as dist
 import torch.multiprocessing as mp
-from typing import Tuple
+from typing import Tuple, Callable
 import torch
 import os
 
@@ -12,32 +12,28 @@ class DistributedComputation:
         self.port = port
         self.devices = devices if devices is not None else list(range(torch.cuda.device_count()))
         self.world_size = len(self.devices)
-
-    def _worker(self, queue: mp.Queue, rank: int, **kwargs):
-        raise NotImplementedError
+        self.ctx = mp.get_context("spawn")
 
     def _handle_result(self, result: PartialResultMessage):
         raise NotImplementedError
 
-    def _worker_setup(self, queue: mp.Queue, rank: int, done_event: mp.Event):
-        dist.init_process_group("gloo", rank=rank, world_size=self.world_size)
-        self._worker(queue, rank)
-        done_event.wait()
-        dist.destroy_process_group()  # TODO if we destroy the process group in the start() method, is the event still necessary?
+    def _create_worker(self, queue: mp.Queue, rank: int, global_done_event: mp.Event):
+        raise NotImplementedError
 
     def start(self):
         # Initialize multiproc parameters
         os.environ["MASTER_ADDR"] = self.address
         os.environ["MASTER_PORT"] = self.port
-        mp.set_start_method("spawn")
+        ctx = mp.get_context("spawn")
 
-        queue = mp.Queue()  # Will store results from metric
-        global_done_event = mp.Event()  # Used for signaling processes that they can terminate
+        queue = ctx.Queue()  # Will store results from metric
+        all_processes_done = ctx.Event()  # Used for signaling processes that they can terminate
         processes = []  # Used for joining all processes
 
         # Start all processes
         for rank in range(self.world_size):
-            p = mp.Process(target=self._worker_setup, args=(queue, rank, global_done_event))
+            #p = ctx.Process(target=self.worker, args=(queue, rank, global_done_event))
+            p = self._create_worker(queue, rank, all_processes_done)
             p.start()
             processes.append(p)
 
@@ -52,6 +48,6 @@ class DistributedComputation:
                 self._handle_result(res)
 
         # Processes are now allowed to terminate
-        global_done_event.set()
+        all_processes_done.set()
         for p in processes:
             p.join()

@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset, Sampler
 from torch.utils.data.sampler import T_co
 from typing import Iterator
+import random
 
 
 class DistributedSampler(Sampler):
@@ -8,7 +9,6 @@ class DistributedSampler(Sampler):
         """
         DistributedSampler is an alternative to the PyTorch DistributedSampler that
         does not add extra samples to make the total count evenly divisible.
-        It also does not shuffle the data.
         Credit: https://github.com/SeungjunNah/DeepDeblur-PyTorch/blob/master/src/data/sampler.py
         """
         super().__init__(None)
@@ -18,6 +18,7 @@ class DistributedSampler(Sampler):
 
         ds_size = len(dataset)
         self.indices = list(range(ds_size))[self.rank:ds_size:self.world_size]
+        random.shuffle(self.indices)
 
     def __iter__(self) -> Iterator[T_co]:
         return iter(self.indices)

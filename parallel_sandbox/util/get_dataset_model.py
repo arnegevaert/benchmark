@@ -5,7 +5,7 @@ from .imagenet_subset import ImagenetSubset
 from os import path
 
 
-def get_dataloader():
+def get_dataset():
     transform = transforms.Compose([
         transforms.Resize(256),
         transforms.CenterCrop(224),
@@ -13,9 +13,13 @@ def get_dataloader():
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                              std=[0.229, 0.224, 0.225])
     ])
-    dataset = ImagenetSubset(path.join("data", "imagenette2", "val"), transform=transform)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True)
-    return dataloader
+    return ImagenetSubset(path.join("data", "imagenette2", "val"), transform=transform)
+
+
+
+def get_dataloader():
+    dataset = get_dataset()
+    return torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True)
 
 
 def get_model():
