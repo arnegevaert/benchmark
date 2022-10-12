@@ -1,19 +1,17 @@
-from attrbench.parallel import PartialResultMessage, DoneMessage, ParallelEvalSampler, IndexDataset, ParallelComputationManager
+from attrbench.distributed import PartialResultMessage, DoneMessage, ParallelEvalSampler, ParallelComputationManager
 import torch.multiprocessing as mp
 from torch.utils.data import Dataset, DataLoader
-from typing import Callable, Tuple, NewType
+from typing import Callable, Tuple
 import torch
 import h5py
-import numpy as np
-
-
-Model = NewType("Model", Callable[[torch.Tensor], torch.Tensor])
-AttributionMethod = NewType("AttributionMethod", Callable[[torch.Tensor, torch.Tensor], torch.Tensor])
+from numpy import typing as npt
+from attrbench.typing import Model, AttributionMethod
 
 
 class AttributionResult:
-    def __init__(self, indices: torch.Tensor, attributions: torch.Tensor):
-        self.indices = indices
+    def __init__(self, images: npt.NDArray, labels: npt.NDArray, attributions: npt.NDArray):
+        self.images = images
+        self.labels = labels
         self.attributions = attributions
 
 
@@ -23,7 +21,7 @@ class ParallelAttributionManager(ParallelComputationManager):
         super().__init__(address, port, devices)
         self.model_factory = model_factory
         self.method_factory = method_factory
-        self.dataset = IndexDataset(dataset)
+        self.dataset = dataset
         self.batch_size = batch_size
         self.sample_shape = sample_shape
         self.filename = filename
@@ -41,7 +39,8 @@ class ParallelAttributionManager(ParallelComputationManager):
             batch_x = batch_x.to(device)
             batch_y = batch_y.to(device)
             attrs = method(batch_x, batch_y)
-            queue.put(PartialResultMessage(rank, AttributionResult(batch_indices.cpu().numpy(), attrs.cpu().numpy())))
+            result = AttributionResult(batch_x.cpu().numpy(), batch_y.cpu().numpy(), attrs.cpu().numpy())
+            queue.put(PartialResultMessage(rank, result))
         queue.put(DoneMessage(rank))
 
     def start(self):

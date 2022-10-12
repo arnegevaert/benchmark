@@ -1,6 +1,6 @@
 from captum.attr import Saliency
 from util.get_dataset_model import get_model
-from attrbench.parallel import ParallelAttributionManager
+from attrbench.distributed import ParallelAttributionManager
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from util.imagenet_subset import ImagenetSubset
