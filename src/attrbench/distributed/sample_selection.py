@@ -22,15 +22,17 @@ def _sample_selection_worker(model_factory: Callable[[], Model], dataset: Datase
     dist.init_process_group("gloo", rank=rank, world_size=world_size)
 
     sampler = DistributedSampler(dataset, world_size, rank)
-    dataloader = DataLoader(dataset, sampler=sampler, batch_size=batch_size)
+    dataloader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=4, pin_memory=True)
     device = torch.device(rank)
     model = model_factory()
     model.to(device)
+    it = iter(dataloader)
 
-    for batch_x, batch_y in dataloader:
+    for batch_x, batch_y in it:
         batch_x = batch_x.to(device)
         batch_y = batch_y.to(device)
-        output = torch.argmax(model(batch_x), dim=1)
+        with torch.no_grad():
+            output = torch.argmax(model(batch_x), dim=1)
         correct_samples = batch_x[output == batch_y, ...]
         correct_labels = batch_y[output == batch_y]
         result = SamplesResult(correct_samples.cpu().numpy(), correct_labels.cpu().numpy())

@@ -32,7 +32,6 @@ class DistributedComputation:
 
         # Start all processes
         for rank in range(self.world_size):
-            #p = ctx.Process(target=self.worker, args=(queue, rank, global_done_event))
             p = self._create_worker(queue, rank, all_processes_done)
             p.start()
             processes.append(p)
