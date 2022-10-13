@@ -1,4 +1,4 @@
-from attrbench.distributed import DistributedSampler, DistributedComputation, PartialResultMessage, DoneMessage
+from attrbench.distributed import DistributedSampler, DistributedComputation, PartialResultMessage, DoneMessage, Worker
 from tqdm import tqdm
 from attrbench.typing import Model
 from attrbench.data import HDF5DatasetWriter
@@ -7,6 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 import torch.multiprocessing as mp
 import torch
 from numpy import typing as npt
+from torch import nn
 import torch.distributed as dist
 
 
@@ -16,33 +17,37 @@ class SamplesResult:
         self.labels = labels
 
 
-def _sample_selection_worker(model_factory: Callable[[], Model], dataset: Dataset, queue: mp.Queue, rank: int,
-                             world_size: int, batch_size: int, sufficient_samples: mp.Event,
-                             all_processes_done: mp.Event):
-    dist.init_process_group("gloo", rank=rank, world_size=world_size)
+class SampleSelectionWorker(Worker):
+    def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, all_processes_done: mp.Event,
+                 sufficient_samples: mp.Event, batch_size: int, dataset: Dataset,
+                 model_factory: Callable[[], nn.Module]):
+        super().__init__(result_queue, rank, world_size, all_processes_done)
+        self.sufficient_samples = sufficient_samples
+        self.model_factory = model_factory
+        self.dataset = dataset
+        self.batch_size = batch_size
 
-    sampler = DistributedSampler(dataset, world_size, rank)
-    dataloader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=4, pin_memory=True)
-    device = torch.device(rank)
-    model = model_factory()
-    model.to(device)
-    it = iter(dataloader)
+    def work(self):
+        sampler = DistributedSampler(self.dataset, self.world_size, self.rank)
+        dataloader = DataLoader(self.dataset, sampler=sampler, batch_size=self.batch_size,
+                                num_workers=4, pin_memory=True)
+        device = torch.device(self.rank)
+        model = self.model_factory()
+        model.to(device)
+        it = iter(dataloader)
 
-    for batch_x, batch_y in it:
-        batch_x = batch_x.to(device)
-        batch_y = batch_y.to(device)
-        with torch.no_grad():
-            output = torch.argmax(model(batch_x), dim=1)
-        correct_samples = batch_x[output == batch_y, ...]
-        correct_labels = batch_y[output == batch_y]
-        result = SamplesResult(correct_samples.cpu().numpy(), correct_labels.cpu().numpy())
-        queue.put(PartialResultMessage(rank, result))
-        if sufficient_samples.is_set():
-            break
-    queue.put(DoneMessage(rank))
-
-    all_processes_done.wait()
-    dist.destroy_process_group()
+        for batch_x, batch_y in it:
+            batch_x = batch_x.to(device)
+            batch_y = batch_y.to(device)
+            with torch.no_grad():
+                output = torch.argmax(model(batch_x), dim=1)
+            correct_samples = batch_x[output == batch_y, ...]
+            correct_labels = batch_y[output == batch_y]
+            result = SamplesResult(correct_samples.cpu().numpy(), correct_labels.cpu().numpy())
+            self.result_queue.put(PartialResultMessage(self.rank, result))
+            if self.sufficient_samples.is_set():
+                break
+        self.result_queue.put(DoneMessage(self.rank))
 
 
 class SampleSelection(DistributedComputation):
@@ -62,9 +67,8 @@ class SampleSelection(DistributedComputation):
         self.prog = None
 
     def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event):
-        args = (self.model_factory, self.dataset, queue, rank, self.world_size, self.batch_size,
-                self.sufficient_samples, all_processes_done)
-        return self.ctx.Process(target=_sample_selection_worker, args=args)
+        return SampleSelectionWorker(queue, rank, self.world_size, all_processes_done, self.sufficient_samples,
+                                     self.batch_size, self.dataset, self.model_factory)
 
     def start(self):
         self.prog = tqdm(total=self.num_samples)

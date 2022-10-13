@@ -1,7 +1,6 @@
-from attrbench.distributed import PartialResultMessage, DoneMessage
-import torch.distributed as dist
+from attrbench.distributed import PartialResultMessage, DoneMessage, Worker
 import torch.multiprocessing as mp
-from typing import Tuple, Callable
+from typing import Tuple
 import torch
 import os
 
@@ -17,7 +16,7 @@ class DistributedComputation:
     def _handle_result(self, result: PartialResultMessage):
         raise NotImplementedError
 
-    def _create_worker(self, queue: mp.Queue, rank: int, global_done_event: mp.Event):
+    def _create_worker(self, queue: mp.Queue, rank: int, global_done_event: mp.Event) -> Worker:
         raise NotImplementedError
 
     def start(self):
@@ -32,7 +31,8 @@ class DistributedComputation:
 
         # Start all processes
         for rank in range(self.world_size):
-            p = self._create_worker(queue, rank, all_processes_done)
+            worker = self._create_worker(queue, rank, all_processes_done)
+            p = ctx.Process(target=worker.run)
             p.start()
             processes.append(p)
 
