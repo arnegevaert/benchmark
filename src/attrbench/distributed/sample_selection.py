@@ -1,14 +1,13 @@
 from attrbench.distributed import DistributedSampler, DistributedComputation, PartialResultMessage, DoneMessage, Worker
 from tqdm import tqdm
-from attrbench.typing import Model
 from attrbench.data import HDF5DatasetWriter
 from typing import Callable, Tuple
 from torch.utils.data import Dataset, DataLoader
 import torch.multiprocessing as mp
 import torch
+from torch import nn
 from numpy import typing as npt
 from torch import nn
-import torch.distributed as dist
 
 
 class SamplesResult:
@@ -51,15 +50,14 @@ class SampleSelectionWorker(Worker):
 
 
 class SampleSelection(DistributedComputation):
-    def __init__(self, model_factory: Callable[[], Model], dataset: Dataset, path: str,
-                 num_samples: int, sample_shape: Tuple, batch_size: int,
+    def __init__(self, model_factory: Callable[[], nn.Module], dataset: Dataset, writer: HDF5DatasetWriter,
+                 num_samples: int, batch_size: int,
                  address: str = "localhost",
                  port: str = "12355", devices: Tuple = None):
         super().__init__(address, port, devices)
         self.model_factory = model_factory
         self.dataset = dataset
-        self.path = path
-        self.writer = HDF5DatasetWriter(path, (num_samples, *sample_shape))
+        self.writer = writer
         self.num_samples = num_samples
         self.batch_size = batch_size
         self.sufficient_samples = self.ctx.Event()

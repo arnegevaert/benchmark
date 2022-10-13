@@ -5,7 +5,7 @@ import random
 
 
 class DistributedSampler(Sampler):
-    def __init__(self, dataset: Dataset, world_size: int, rank: int):
+    def __init__(self, dataset: Dataset, world_size: int, rank: int, shuffle=True):
         """
         DistributedSampler is an alternative to the PyTorch DistributedSampler that
         does not add extra samples to make the total count evenly divisible.
@@ -18,7 +18,8 @@ class DistributedSampler(Sampler):
 
         ds_size = len(dataset)
         self.indices = list(range(ds_size))[self.rank:ds_size:self.world_size]
-        random.shuffle(self.indices)
+        if shuffle:
+            random.shuffle(self.indices)
 
     def __iter__(self) -> Iterator[T_co]:
         return iter(self.indices)

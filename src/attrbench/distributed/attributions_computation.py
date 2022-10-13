@@ -1,60 +1,75 @@
-from attrbench.distributed import PartialResultMessage, DoneMessage,  DistributedComputation, DistributedSampler
+from attrbench.distributed import PartialResultMessage, DoneMessage,  DistributedComputation, DistributedSampler, Worker
+from attrbench.data import AttributionsDatasetWriter, IndexDataset
 import torch.multiprocessing as mp
 from torch.utils.data import Dataset, DataLoader
-from typing import Callable, Tuple
+from typing import Callable, Tuple, Dict
 import torch
-import h5py
+from torch import nn
 from numpy import typing as npt
-from attrbench.typing import Model, AttributionMethod
+from attrbench.typing import AttributionMethod
+from tqdm import tqdm
 
 
 class AttributionResult:
-    def __init__(self, images: npt.NDArray, labels: npt.NDArray, attributions: npt.NDArray):
-        self.images = images
-        self.labels = labels
+    def __init__(self, indices: npt.NDArray, attributions: npt.NDArray, method_name: str):
+        self.indices = indices
         self.attributions = attributions
-
-
-class AttributionsComputation(DistributedComputation):
-    def __init__(self, model_factory: Callable[[], Model], method_factory: Callable[[Model], AttributionMethod], dataset: Dataset, batch_size: int, sample_shape: Tuple,
-                 filename: str, method_name: str, address="localhost", port="12355", devices: Tuple = None):
-        super().__init__(address, port, devices)
-        self.model_factory = model_factory
-        self.method_factory = method_factory
-        self.dataset = dataset
-        self.batch_size = batch_size
-        self.sample_shape = sample_shape
-        self.filename = filename
         self.method_name = method_name
 
-    def _worker(self, queue: mp.Queue, rank: int):
-        sampler = DistributedSampler(self.dataset, self.world_size, rank)
+
+class AttributionsWorker(Worker):
+    def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, all_processes_done: mp.Event,
+                 model_factory: Callable[[], nn.Module], method_factory: Callable[[nn.Module], AttributionMethod],
+                 dataset: IndexDataset, batch_size: int):
+        super().__init__(result_queue, rank, world_size, all_processes_done)
+        self.batch_size = batch_size
+        self.dataset = dataset
+        self.method_factory = method_factory
+        self.model_factory = model_factory
+
+    def work(self):
+        sampler = DistributedSampler(self.dataset, self.world_size, self.rank, shuffle=False)
         dataloader = DataLoader(self.dataset, sampler=sampler, batch_size=self.batch_size)
-        device = torch.device(rank)
+        device = torch.device(self.rank)
         model = self.model_factory()
         model.to(device)
-        method = self.method_factory(model)
+        method_dict = self.method_factory(model)
 
         for batch_indices, batch_x, batch_y in dataloader:
             batch_x = batch_x.to(device)
             batch_y = batch_y.to(device)
-            attrs = method(batch_x, batch_y)
-            result = AttributionResult(batch_x.cpu().numpy(), batch_y.cpu().numpy(), attrs.cpu().numpy())
-            queue.put(PartialResultMessage(rank, result))
-        queue.put(DoneMessage(rank))
+            for method_name, method in method_dict.items():
+                with torch.no_grad():
+                    attrs = method(batch_x, batch_y)
+                    result = AttributionResult(batch_indices.cpu().numpy(), attrs.cpu().numpy(), method_name)
+                    self.result_queue.put(PartialResultMessage(self.rank, result))
+        self.result_queue.put(DoneMessage(self.rank))
+
+
+class AttributionsComputation(DistributedComputation):
+    def __init__(self, model_factory: Callable[[], nn.Module],
+                 method_factory: Callable[[nn.Module], Dict[str, AttributionMethod]],
+                 dataset: Dataset, batch_size: int,
+                 writer: AttributionsDatasetWriter, address="localhost", port="12355", devices: Tuple = None):
+        super().__init__(address, port, devices)
+        self.model_factory = model_factory
+        self.method_factory = method_factory
+        self.dataset = IndexDataset(dataset)
+        self.batch_size = batch_size
+        self.writer = writer
+        self.prog = None
 
     def start(self):
-        # Allocate space in the HDF5 file
-        with h5py.File(self.filename, "a") as fp:
-            if self.method_name in fp:
-                del fp[self.method_name]
-            fp.create_dataset(self.method_name, shape=(len(self.dataset), *self.sample_shape))
-        # Start attributions
+        self.prog = tqdm()
         super().start()
 
+    def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> Worker:
+        return AttributionsWorker(queue, rank, self.world_size, all_processes_done, self.model_factory,
+                                  self.method_factory, self.dataset, self.batch_size)
+
     def _handle_result(self, result_message: PartialResultMessage[AttributionResult]):
-        with h5py.File(self.filename, "a") as fp:
-            result = result_message.data
-            if result.attributions.shape[1:] != self.sample_shape:
-                raise ValueError(f"Shape of attributions does not match: expected {self.sample_shape}, received {result.attributions.shape[1:]}")
-            fp[self.method_name][result.indices, ...] = result.attributions
+        indices = result_message.data.indices
+        attributions = result_message.data.attributions
+        method_name = result_message.data.method_name
+        self.writer.write(indices, attributions, method_name)
+        self.prog.update(len(indices))

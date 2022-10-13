@@ -1,36 +1,31 @@
 from torch.utils.data import Dataset
 import h5py
-from typing import Optional
 
 
 class AttributionsDataset(Dataset):
     """
     File
-    - samples: [num_samples, *sample_shape]
-    - labels: [num_samples]
-    - attributions:
-        - method_1: [num_samples, *attr_shape]
-        - method_2: [num_samples, *attr_shape]
-        - ...
+    - method_1: [num_samples, *sample_shape]
+    - method_2: [num_samples, *sample_shape]
+    - ...
     """
 
-    def __init__(self, path: str):
+    def __init__(self, samples_dataset: Dataset, path: str):
         self.path = path
-        self.file: Optional[h5py.File] = None
+        self.samples_dataset: Dataset = samples_dataset
+        self.attributions_file: h5py.File | None = None
         with h5py.File(path, "r") as fp:
-            self.num_samples = fp["samples"].shape[0]
-            self.attribution_methods = list(fp["attributions"].keys())
+            self.num_samples = fp.attrs["num_samples"]
+            self.attribution_methods = list(fp.keys())
 
     def __getitem__(self, index):
-        if self.file is None:
-            self.file = h5py.File(self.path, "r")
+        if self.attributions_file is None:
+            self.attributions_file = h5py.File(self.path, "r")
         method_name = self.attribution_methods[index // self.num_samples]
         sample_idx = index % self.num_samples
-        return sample_idx, \
-               self.file["samples"][sample_idx], \
-               self.file["labels"][sample_idx], \
-               self.file["attributions"][method_name][sample_idx], \
-               method_name
+        sample, label = self.samples_dataset[sample_idx]
+        attrs = self.attributions_file[method_name][sample_idx]
+        return sample_idx, sample, label, attrs, method_name
 
     def __len__(self):
         if self.file is None:

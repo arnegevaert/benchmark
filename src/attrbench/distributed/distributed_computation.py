@@ -16,7 +16,7 @@ class DistributedComputation:
     def _handle_result(self, result: PartialResultMessage):
         raise NotImplementedError
 
-    def _create_worker(self, queue: mp.Queue, rank: int, global_done_event: mp.Event) -> Worker:
+    def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> Worker:
         raise NotImplementedError
 
     def start(self):
