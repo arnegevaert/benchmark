@@ -5,7 +5,6 @@ from typing import Callable, Tuple
 from torch.utils.data import Dataset, DataLoader
 import torch.multiprocessing as mp
 import torch
-from torch import nn
 from numpy import typing as npt
 from torch import nn
 

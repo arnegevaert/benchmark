@@ -8,7 +8,16 @@ from attrbench.metrics.deletion._dataset import _MaskingDataset
 
 def _get_predictions(masking_dataset: _MaskingDataset, labels: torch.Tensor,
                      model: Callable,
-                     activation_fns: List[str], writer=None) -> Dict:
+                     activation_fns: List[str], writer=None) -> Dict[str, torch.Tensor]:
+    """
+
+    :param masking_dataset:
+    :param labels:
+    :param model:
+    :param activation_fns:
+    :param writer:
+    :return: Dictionary containing results for each activation function
+    """
     preds = {fn: [] for fn in activation_fns}
     for i, batch in enumerate(masking_dataset):
         with torch.no_grad():
