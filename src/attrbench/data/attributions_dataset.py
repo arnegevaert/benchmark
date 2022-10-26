@@ -28,6 +28,6 @@ class AttributionsDataset(Dataset):
         return sample_idx, sample, label, attrs, method_name
 
     def __len__(self):
-        if self.file is None:
-            self.file = h5py.File(self.path, "r")
+        if self.attributions_file is None:
+            self.attributions_file = h5py.File(self.path, "r")
         return self.num_samples * len(self.attribution_methods)

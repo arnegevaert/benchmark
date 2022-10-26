@@ -27,7 +27,6 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output-file", type=str, default="attributions.h5")
     args = parser.parse_args()
 
-
     dataset = HDF5Dataset(args.dataset)
     writer = AttributionsDatasetWriter(args.output_file, truncate=True, num_samples=len(dataset),
                                        sample_shape=dataset.sample_shape)
