@@ -48,7 +48,7 @@ class DeletionWorker(Worker):
             batch_y = batch_y.to(device)
             batch_result = {}
             for masker_name, masker in self.maskers.items():
-                batch_result[masker_name] = deletion(batch_x, batch_y, model, batch_attr.to_numpy(), masker,
+                batch_result[masker_name] = deletion(batch_x, batch_y, model, batch_attr.numpy(), masker,
                                                      self.activation_fns, self.mode, self.start, self.stop,
                                                      self.num_steps)
             self.result_queue.put(PartialResultMessage(self.rank,

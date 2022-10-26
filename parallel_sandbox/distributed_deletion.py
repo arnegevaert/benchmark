@@ -15,6 +15,6 @@ if __name__ == "__main__":
 
     dataset = AttributionsDataset(HDF5Dataset(args.samples_dataset), args.attrs_dataset)
     deletion = DistributedDeletion(get_model, dataset, args.batch_size,
-                                   maskers={"constant": ConstantMasker(feature_level="pixel")},
+                                   maskers={"constant": ConstantMasker(feature_level="channel")},
                                    activation_fns="linear")
     deletion.start()
