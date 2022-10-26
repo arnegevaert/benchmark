@@ -6,6 +6,10 @@ import argparse
 import numpy as np
 
 
+def agg(a):
+    return np.mean(a, axis=0, keepdims=True)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--samples-dataset", type=str, default="samples.h5")
@@ -15,9 +19,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     dataset = AttributionsDataset(HDF5Dataset(args.samples_dataset), args.attrs_dataset,
-                                  aggregate_fn=lambda a: np.mean(a, axis=0))
+                                  aggregate_fn=agg)
     deletion = DistributedDeletion(get_model, dataset, args.batch_size,
-                                   maskers={"constant": ConstantMasker(feature_level="channel")},
+                                   maskers={"constant": ConstantMasker(feature_level="pixel")},
                                    activation_fns="linear")
     deletion.run()
     print("Done")
