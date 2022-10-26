@@ -19,7 +19,7 @@ class DistributedComputation:
     def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> Worker:
         raise NotImplementedError
 
-    def start(self):
+    def run(self):
         # Initialize multiproc parameters
         os.environ["MASTER_ADDR"] = self.address
         os.environ["MASTER_PORT"] = self.port

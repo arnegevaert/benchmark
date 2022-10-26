@@ -16,7 +16,7 @@ class DistributedMetric(DistributedComputation):
     def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> Worker:
         pass
 
-    def start(self):
+    def run(self):
         pass
 
     def _handle_result(self, result: PartialResultMessage):

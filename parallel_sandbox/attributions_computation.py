@@ -31,4 +31,4 @@ if __name__ == "__main__":
     writer = AttributionsDatasetWriter(args.output_file, truncate=True, num_samples=len(dataset),
                                        sample_shape=dataset.sample_shape)
     computation = AttributionsComputation(get_model, MethodFactory(args.batch_size), dataset, batch_size=args.batch_size, writer=writer)
-    computation.start()
+    computation.run()

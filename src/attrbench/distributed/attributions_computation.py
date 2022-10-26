@@ -59,9 +59,9 @@ class AttributionsComputation(DistributedComputation):
         self.writer = writer
         self.prog = None
 
-    def start(self):
+    def run(self):
         self.prog = tqdm()
-        super().start()
+        super().run()
 
     def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> Worker:
         return AttributionsWorker(queue, rank, self.world_size, all_processes_done, self.model_factory,

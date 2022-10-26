@@ -67,9 +67,9 @@ class SampleSelection(DistributedComputation):
         return SampleSelectionWorker(queue, rank, self.world_size, all_processes_done, self.sufficient_samples,
                                      self.batch_size, self.dataset, self.model_factory)
 
-    def start(self):
+    def run(self):
         self.prog = tqdm(total=self.num_samples)
-        super().start()
+        super().run()
 
     def _handle_result(self, result: PartialResultMessage[SamplesResult]):
         samples = result.data.samples

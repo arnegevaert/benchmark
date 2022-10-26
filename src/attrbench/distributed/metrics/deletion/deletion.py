@@ -74,9 +74,9 @@ class DistributedDeletion(DistributedComputation):
         self.batch_size = batch_size
         self.prog = None
 
-    def start(self):
+    def run(self):
         self.prog = tqdm()
-        super().start()
+        super().run()
 
     def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> Worker:
         return DeletionWorker(queue, rank, self.world_size, all_processes_done, self.model_factory, self.dataset,

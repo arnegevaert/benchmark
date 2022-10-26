@@ -13,4 +13,4 @@ if __name__ == "__main__":
 
     writer = HDF5DatasetWriter(path="samples.h5", num_samples=args.num_samples, sample_shape=(3, 224, 224))
     sample_selection = SampleSelection(get_model, get_dataset(), writer, num_samples=args.num_samples, batch_size=args.batch_size)
-    sample_selection.start()
+    sample_selection.run()
