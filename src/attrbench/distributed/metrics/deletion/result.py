@@ -52,7 +52,8 @@ class DeletionResult:
                     method_indices = [i for i, name in enumerate(batch_result.method_names) if name == method_name]
                     self._tree.write(
                         batch_result.indices[method_indices],
-                        data[masker_name][activation_fn][method_indices])
+                        data[masker_name][activation_fn][method_indices],
+                        masker=masker_name, activation_fn=activation_fn, method=method_name)
 
     def save(self, path: str):
         """

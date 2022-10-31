@@ -32,7 +32,7 @@ class DeletionWorker(Worker):
 
     def work(self):
         sampler = DistributedSampler(self.dataset, self.world_size, self.rank, shuffle=False)
-        dataloader = DataLoader(self.dataset, sampler=sampler, batch_size=self.batch_size)
+        dataloader = DataLoader(self.dataset, sampler=sampler, batch_size=self.batch_size, num_workers=4)
         device = torch.device(self.rank)
         model = self.model_factory()
         model.to(device)
@@ -71,9 +71,14 @@ class DistributedDeletion(DistributedComputation):
         self._result = DeletionResult(dataset.method_names, list(maskers.keys()),
                                       self.activation_fns, mode, shape=(dataset.num_samples, num_steps))
 
-    def run(self):
+    def run(self, result_path: str = None):
         self.prog = tqdm()
         super().run()
+        if result_path is not None:
+            self.save_result(result_path)
+
+    def save_result(self, path: str):
+        self._result.save(path)
 
     def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> Worker:
         return DeletionWorker(queue, rank, self.world_size, all_processes_done, self.model_factory, self.dataset,
@@ -81,5 +86,5 @@ class DistributedDeletion(DistributedComputation):
                               self._start, self.stop, self.num_steps)
 
     def _handle_result(self, result_message: PartialResultMessage[DeletionBatchResult]):
-        print(f"Received indices {result_message.data.indices} from rank {result_message.rank}")
         self._result.add(result_message.data)
+        self.prog.update(len(result_message.data.indices))

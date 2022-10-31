@@ -26,6 +26,3 @@ class AttributionsDatasetWriter:
         if method_name not in self.file.keys():
             self.file.create_dataset(method_name, shape=(self.num_samples, *self.sample_shape))
         self.file[method_name][indices, ...] = attributions
-
-    def __del__(self):
-        self.file.close()

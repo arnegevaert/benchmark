@@ -6,7 +6,10 @@ from typing import List
 
 
 def _max_abs(arr: npt.NDArray, axis: int):
-    return np.max(np.abs(arr), axis=axis)
+    return np.max(np.abs(arr), axis=axis, keepdims=True)
+
+def _mean(arr: npt.NDArray, axis: int):
+    return np.mean(arr, axis=axis, keepdims=True)
 
 
 class AttributionsDataset(Dataset):
@@ -26,7 +29,7 @@ class AttributionsDataset(Dataset):
         self.aggregate_axis = aggregate_axis
         if aggregate_method is not None:
             agg_fns = {
-                "mean": np.mean,
+                "mean": _mean,
                 "max_abs": _max_abs
             }
             self.aggregate_fn = agg_fns[aggregate_method]
@@ -41,6 +44,7 @@ class AttributionsDataset(Dataset):
 
     def __getitem__(self, index):
         if self.attributions_file is None:
+        #if not hasattr(self, "attributions_file"):
             self.attributions_file = h5py.File(self.path, "r")
         method_idx = index // self.num_samples
         method_name = self.method_names[method_idx]
@@ -52,6 +56,4 @@ class AttributionsDataset(Dataset):
         return sample_idx, sample, label, attrs, method_name
 
     def __len__(self):
-        if self.attributions_file is None:
-            self.attributions_file = h5py.File(self.path, "r")
         return self.num_samples * len(self.method_names)

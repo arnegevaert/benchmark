@@ -16,17 +16,17 @@ class MethodFactory:
         ig = attr.IntegratedGradients(model)
         # TODO define a "AttributionMethod" wrapper class that contains a function and an is_baseline property
         return {
-            "Gradient": (saliency.attribute, False),
-            "InputXGradient": (ixg.attribute, False),
-            "IntegratedGradients": (lambda x, y: ig.attribute(inputs=x, target=y, internal_batch_size=self.batch_size), False),
-            "Random": (lambda x, _: torch.rand_like(x), True)
+            "Gradient": saliency.attribute,
+            "InputXGradient": ixg.attribute,
+            "IntegratedGradients": lambda x, y: ig.attribute(inputs=x, target=y, internal_batch_size=self.batch_size),
+            "Random": lambda x, _: torch.rand_like(x)
         }
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dataset", type=str, default="samples.h5")
-    parser.add_argument("-b", "--batch-size", type=int, default=16)
+    parser.add_argument("-b", "--batch-size", type=int, default=32)
     parser.add_argument("-o", "--output-file", type=str, default="attributions.h5")
     args = parser.parse_args()
 
