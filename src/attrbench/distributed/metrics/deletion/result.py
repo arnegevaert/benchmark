@@ -1,7 +1,8 @@
 import numpy as np
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from attrbench.lib import NDArrayTree
 import pandas as pd
+import torch
 
 
 def _aoc(x: np.ndarray, columns: np.ndarray = None):
@@ -15,6 +16,15 @@ def _auc(x: np.ndarray, columns: np.ndarray = None):
         x = x[..., columns]
     l = x.shape[-1] if columns is None else columns.shape[0]
     return np.sum(x, axis=-1) / l
+
+
+class DeletionBatchResult:
+    def __init__(self, indices: torch.Tensor, results: Dict[str, Dict[str, torch.Tensor]], method_names: List[str],
+                 is_baseline: List[bool]):
+        self.method_names = method_names
+        self.results = results
+        self.indices = indices
+        self.is_baseline = is_baseline
 
 
 class DeletionResult:
