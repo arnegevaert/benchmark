@@ -15,7 +15,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     dataset = AttributionsDataset(HDF5Dataset(args.samples_dataset), args.attrs_dataset,
-                                  aggregate_fn=lambda a: np.mean(a, axis=0))
+                                  aggregate_axis=0, aggregate_method="mean")
     deletion = DistributedDeletion(get_model, dataset, args.batch_size,
                                    maskers={"constant": ConstantMasker(feature_level="channel")},
                                    activation_fns="linear")

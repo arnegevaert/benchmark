@@ -24,7 +24,6 @@ class NDArrayTree:
     def append(self, new_data: Dict, axis=0, **kwargs):
         def _append_rec(_data, _new_data, depth=0):
             level_name = self.levels[depth][0]
-            # If the level name is found in kwargs,
             if level_name in kwargs.keys():
                 # If level name found in kwargs, descend down the corresponding branch
                 # In this case we pass _new_data instead of _new_data[key], since this level is not present

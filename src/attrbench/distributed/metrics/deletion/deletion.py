@@ -8,15 +8,17 @@ from torch.utils.data import DataLoader
 
 from attrbench.lib.masking import Masker
 from attrbench.distributed import Worker, DistributedSampler, DoneMessage, DistributedComputation, PartialResultMessage
-from attrbench.metrics.deletion import deletion
+from attrbench.metrics.deletion import deletion, DeletionResult
 from attrbench.data import AttributionsDataset
 
 
-class DeletionResult:
-    def __init__(self, indices: torch.Tensor, results: Dict[str, Dict[str, torch.Tensor]], method_names: List[str]):
+class PartialDeletionResult:
+    def __init__(self, indices: torch.Tensor, results: Dict[str, Dict[str, torch.Tensor]], method_names: List[str],
+                 is_baseline: List[bool]):
         self.method_names = method_names
         self.results = results
         self.indices = indices
+        self.is_baseline = is_baseline
 
 
 class DeletionWorker(Worker):
@@ -43,7 +45,7 @@ class DeletionWorker(Worker):
         model = self.model_factory()
         model.to(device)
 
-        for batch_indices, batch_x, batch_y, batch_attr, method_names in dataloader:
+        for batch_indices, batch_x, batch_y, batch_attr, method_names, is_baseline in dataloader:
             batch_x = batch_x.to(device)
             batch_y = batch_y.to(device)
             batch_result = {}
@@ -51,8 +53,9 @@ class DeletionWorker(Worker):
                 batch_result[masker_name] = deletion(batch_x, batch_y, model, batch_attr.numpy(), masker,
                                                      self.activation_fns, self.mode, self.start, self.stop,
                                                      self.num_steps)
-            self.result_queue.put(PartialResultMessage(self.rank,
-                                                       DeletionResult(batch_indices, batch_result, method_names)))
+            self.result_queue.put(
+                PartialResultMessage(self.rank, PartialDeletionResult(batch_indices, batch_result, method_names, is_baseline))
+            )
         self.result_queue.put(DoneMessage(self.rank))
 
 
@@ -73,6 +76,7 @@ class DistributedDeletion(DistributedComputation):
         self.dataset = dataset
         self.batch_size = batch_size
         self.prog = None
+        self._result = DeletionResult()
 
     def run(self):
         self.prog = tqdm()
@@ -83,8 +87,10 @@ class DistributedDeletion(DistributedComputation):
                               self.batch_size, self.maskers, self.activation_fns, self.mode,
                               self._start, self.stop, self.num_steps)
 
-    def _handle_result(self, result_message: PartialResultMessage[DeletionResult]):
+    def _handle_result(self, result_message: PartialResultMessage[PartialDeletionResult]):
+        # TODO
         indices = result_message.data.indices
         results = result_message.data.results
         method_names = result_message.data.method_names
+        is_baseline = result_message.data.is_baseline
         print(f"Received indices {indices} from rank {result_message.rank}")

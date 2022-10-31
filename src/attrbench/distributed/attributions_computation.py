@@ -11,15 +11,17 @@ from tqdm import tqdm
 
 
 class AttributionResult:
-    def __init__(self, indices: npt.NDArray, attributions: npt.NDArray, method_name: str):
+    def __init__(self, indices: npt.NDArray, attributions: npt.NDArray, method_name: str, is_baseline: bool):
         self.indices = indices
         self.attributions = attributions
         self.method_name = method_name
+        self.is_baseline = is_baseline
 
 
 class AttributionsWorker(Worker):
     def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, all_processes_done: mp.Event,
-                 model_factory: Callable[[], nn.Module], method_factory: Callable[[nn.Module], AttributionMethod],
+                 model_factory: Callable[[], nn.Module],
+                 method_factory: Callable[[nn.Module], Dict[str, Tuple[AttributionMethod, bool]]],
                  dataset: IndexDataset, batch_size: int):
         super().__init__(result_queue, rank, world_size, all_processes_done)
         self.batch_size = batch_size
@@ -38,10 +40,10 @@ class AttributionsWorker(Worker):
         for batch_indices, batch_x, batch_y in dataloader:
             batch_x = batch_x.to(device)
             batch_y = batch_y.to(device)
-            for method_name, method in method_dict.items():
+            for method_name, (method, is_baseline) in method_dict.items():
                 with torch.no_grad():
                     attrs = method(batch_x, batch_y)
-                    result = AttributionResult(batch_indices.cpu().numpy(), attrs.cpu().numpy(), method_name)
+                    result = AttributionResult(batch_indices.cpu().numpy(), attrs.cpu().numpy(), method_name, is_baseline)
                     self.result_queue.put(PartialResultMessage(self.rank, result))
         self.result_queue.put(DoneMessage(self.rank))
 
@@ -71,5 +73,6 @@ class AttributionsComputation(DistributedComputation):
         indices = result_message.data.indices
         attributions = result_message.data.attributions
         method_name = result_message.data.method_name
-        self.writer.write(indices, attributions, method_name)
+        is_baseline = result_message.data.is_baseline
+        self.writer.write(indices, attributions, method_name, is_baseline)
         self.prog.update(len(indices))

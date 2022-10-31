@@ -2,6 +2,7 @@ from util.get_dataset_model import get_model
 from attrbench.distributed import AttributionsComputation
 from attrbench.data import HDF5Dataset, AttributionsDatasetWriter
 from captum import attr
+import torch
 import argparse
 
 
@@ -13,10 +14,12 @@ class MethodFactory:
         saliency = attr.Saliency(model)
         ixg = attr.InputXGradient(model)
         ig = attr.IntegratedGradients(model)
+        # TODO define a "AttributionMethod" wrapper class that contains a function and an is_baseline property
         return {
-            "Gradient": saliency.attribute,
-            "InputXGradient": ixg.attribute,
-            "IntegratedGradients": lambda x, y: ig.attribute(inputs=x, target=y, internal_batch_size=self.batch_size)
+            "Gradient": (saliency.attribute, False),
+            "InputXGradient": (ixg.attribute, False),
+            "IntegratedGradients": (lambda x, y: ig.attribute(inputs=x, target=y, internal_batch_size=self.batch_size), False),
+            "Random": (lambda x: torch.rand_like(x), True)
         }
 
 
