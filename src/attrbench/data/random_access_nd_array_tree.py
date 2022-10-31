@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Union
 import numpy as np
 from numpy import typing as npt
 import h5py
@@ -49,7 +49,7 @@ class RandomAccessNDArrayTree:
         """
         if set(level_keys.keys()) != set(self.levels.keys()):
             raise ValueError(f"Must provide key for all levels: {list(self.levels.keys())}")
-        dest: Dict | npt.NDArray = self._data
+        dest: Union[Dict, npt.NDArray] = self._data
         # Find the relevant NDArray
         for level_name in self.level_names:
             dest = dest[level_keys[level_name]]
@@ -73,7 +73,7 @@ class RandomAccessNDArrayTree:
 
     @classmethod
     def load_from_hdf(cls, group: h5py.Group) -> "RandomAccessNDArrayTree":
-        def _load_metadata(node: h5py.Group | h5py.Dataset, cur_levels) -> Tuple[Dict, Tuple[int, ...]]:
+        def _load_metadata(node: Union[h5py.Group, h5py.Dataset], cur_levels) -> Tuple[Dict, Tuple[int, ...]]:
             """
             Loads the necessary metadata from the tree: level names, level keys, NDArray shape.
             :return: the necessary arguments to instantiate an NDArrayTree from this file.

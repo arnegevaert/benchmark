@@ -1,4 +1,4 @@
-from typing import Callable, Union, Tuple, Dict
+from typing import Callable, Union, Tuple, Dict, List
 from tqdm import tqdm
 
 import torch
@@ -16,7 +16,7 @@ from attrbench.data import AttributionsDataset
 class DeletionWorker(Worker):
     def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, all_processes_done: mp.Event,
                  model_factory: Callable[[], nn.Module], dataset: AttributionsDataset, batch_size: int,
-                 maskers: Dict[str, Masker], activation_fns: Union[Tuple[str], str], mode: str = "morf",
+                 maskers: Dict[str, Masker], activation_fns: List[str], mode: str = "morf",
                  start: float = 0., stop: float = 1., num_steps: int = 100):
         super().__init__(result_queue, rank, world_size, all_processes_done)
         self.model_factory = model_factory
@@ -24,7 +24,7 @@ class DeletionWorker(Worker):
         self.batch_size = batch_size
 
         self.maskers = maskers
-        self.activation_fns = [activation_fns] if type(activation_fns) == str else list(activation_fns)
+        self.activation_fns = activation_fns
         self.mode = mode
         self.start = start
         self.stop = stop
@@ -37,7 +37,7 @@ class DeletionWorker(Worker):
         model = self.model_factory()
         model.to(device)
 
-        for batch_indices, batch_x, batch_y, batch_attr, method_names, is_baseline in dataloader:
+        for batch_indices, batch_x, batch_y, batch_attr, method_names in dataloader:
             batch_x = batch_x.to(device)
             batch_y = batch_y.to(device)
             batch_result = {}
@@ -46,7 +46,7 @@ class DeletionWorker(Worker):
                                                      self.activation_fns, self.mode, self.start, self.stop,
                                                      self.num_steps)
             self.result_queue.put(
-                PartialResultMessage(self.rank, DeletionBatchResult(batch_indices, batch_result, method_names, is_baseline))
+                PartialResultMessage(self.rank, DeletionBatchResult(batch_indices, batch_result, method_names))
             )
         self.result_queue.put(DoneMessage(self.rank))
 
@@ -62,13 +62,14 @@ class DistributedDeletion(DistributedComputation):
         self.stop = stop
         self._start = start
         self.mode = mode
-        self.activation_fns = activation_fns
+        self.activation_fns = [activation_fns] if isinstance(activation_fns, str) else list(activation_fns)
         self.maskers = maskers
         self.model_factory = model_factory
         self.dataset = dataset
         self.batch_size = batch_size
         self.prog = None
-        self._result = DeletionResult()
+        self._result = DeletionResult(dataset.method_names, list(maskers.keys()),
+                                      self.activation_fns, mode, shape=(dataset.num_samples, num_steps))
 
     def run(self):
         self.prog = tqdm()
@@ -80,9 +81,5 @@ class DistributedDeletion(DistributedComputation):
                               self._start, self.stop, self.num_steps)
 
     def _handle_result(self, result_message: PartialResultMessage[DeletionBatchResult]):
-        # TODO
-        indices = result_message.data.indices
-        results = result_message.data.results
-        method_names = result_message.data.method_names
-        is_baseline = result_message.data.is_baseline
-        print(f"Received indices {indices} from rank {result_message.rank}")
+        print(f"Received indices {result_message.data.indices} from rank {result_message.rank}")
+        self._result.add(result_message.data)
