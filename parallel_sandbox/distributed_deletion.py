@@ -3,7 +3,6 @@ from attrbench.distributed.metrics.deletion import DistributedDeletion
 from attrbench.data import AttributionsDataset, HDF5Dataset
 from attrbench.lib.masking import ConstantMasker
 import argparse
-import numpy as np
 
 
 if __name__ == "__main__":
@@ -17,7 +16,7 @@ if __name__ == "__main__":
     dataset = AttributionsDataset(HDF5Dataset(args.samples_dataset), args.attrs_dataset,
                                   aggregate_axis=0, aggregate_method="mean")
     deletion = DistributedDeletion(get_model, dataset, args.batch_size,
-                                   maskers={"constant": ConstantMasker(feature_level="channel")},
+                                   maskers={"constant": ConstantMasker(feature_level="pixel")},
                                    activation_fns="linear")
     deletion.run()
     print("Done")
