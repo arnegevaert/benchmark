@@ -19,7 +19,7 @@ class MethodFactory:
             "Gradient": (saliency.attribute, False),
             "InputXGradient": (ixg.attribute, False),
             "IntegratedGradients": (lambda x, y: ig.attribute(inputs=x, target=y, internal_batch_size=self.batch_size), False),
-            "Random": (lambda x: torch.rand_like(x), True)
+            "Random": (lambda x, _: torch.rand_like(x), True)
         }
 
 

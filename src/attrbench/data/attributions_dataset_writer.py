@@ -18,24 +18,16 @@ class AttributionsDatasetWriter:
             self.file.attrs["sample_shape"] = self.sample_shape
             self.file.create_group("methods")
             self.file.create_group("baselines")
-            self.method_names = []
-            self.baseline_names = []
         else:
             # Derive metadata from existing file
             self.file = h5py.File(self.path, "a")
             self.num_samples = self.file.attrs["num_samples"]
             self.sample_shape = self.file.attrs["sample_shape"]
-            self.method_names = list(self.file["methods"].keys())
-            self.baseline_names = list(self.file["baselines"].keys())
 
     def write(self, indices: npt.NDArray, attributions: npt.NDArray, method_name: str, is_baseline: bool):
         root_key = "baselines" if is_baseline else "methods"
-        if method_name not in self.method_names:
+        if method_name not in self.file[root_key].keys():
             self.file[root_key].create_dataset(method_name, shape=(self.num_samples, *self.sample_shape))
-            if is_baseline:
-                self.baseline_names.append(method_name)
-            else:
-                self.method_names.append(method_name)
         self.file[root_key][method_name][indices, ...] = attributions
 
     def __del__(self):
