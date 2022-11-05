@@ -1,6 +1,6 @@
 from util.get_dataset_model import get_dataset, get_model
 from attrbench.data import HDF5DatasetWriter
-from attrbench.distributed import SampleSelection
+from attrbench import SampleSelection
 import argparse
 
 

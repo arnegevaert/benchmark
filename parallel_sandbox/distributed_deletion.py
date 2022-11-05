@@ -1,7 +1,7 @@
 from util.get_dataset_model import get_model
-from attrbench.distributed.metrics.deletion import DistributedDeletion
+from attrbench.distributed.metrics import DistributedDeletion
 from attrbench.data import AttributionsDataset, HDF5Dataset
-from attrbench.lib.masking import ConstantMasker
+from attrbench.util import ConstantMasker
 import argparse
 
 

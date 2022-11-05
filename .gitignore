@@ -148,7 +148,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+attrbench/util/
 lib64/
 parts/
 sdist/
