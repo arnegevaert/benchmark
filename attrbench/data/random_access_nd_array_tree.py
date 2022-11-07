@@ -64,11 +64,11 @@ class RandomAccessNDArrayTree:
         def _add_rec(cur_data, cur_group, depth=0):
             for key in cur_data:
                 cur_group.attrs["level_name"] = self.level_names[depth]
-                if type(cur_data[key]) == npt.NDArray:
-                    cur_group.create_dataset(key, data=cur_data[key])
-                elif type(cur_data[key]) == dict:
+                if depth < len(self.level_names) - 1:
                     next_group = cur_group.create_group(key)
                     _add_rec(cur_data[key], next_group, depth+1)
+                else:
+                    cur_group.create_dataset(key, data=cur_data[key])
         _add_rec(self._data, group)
 
     @classmethod
