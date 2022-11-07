@@ -3,8 +3,7 @@ from typing import Callable, List, Union, Tuple, Dict
 import numpy as np
 import torch
 
-from attrbench.util import AttributionWriter
-from masking import Masker
+from attrbench.masking import Masker
 from attrbench.metrics import MaskerMetric
 from ._dataset import _DeletionDataset
 from .result import DeletionResult
@@ -14,20 +13,18 @@ from ._get_predictions import _get_predictions
 def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
              masker: Masker,
              activation_fns: Union[List[str], str] = "linear",
-             mode: str = "morf", start: float = 0., stop: float = 1., num_steps: int = 100,
-             writer: AttributionWriter = None) -> Dict:
+             mode: str = "morf", start: float = 0., stop: float = 1., num_steps: int = 100) -> Dict:
     if type(activation_fns) == str:
         activation_fns = [activation_fns]
     ds = _DeletionDataset(mode, start, stop, num_steps, samples, attrs, masker)
-    return _get_predictions(ds, labels, model, activation_fns, writer)
+    return _get_predictions(ds, labels, model, activation_fns)
 
 
 class Deletion(MaskerMetric):
     def __init__(self, model: Callable, method_names: List[str], maskers: Dict,
                  activation_fns: Union[Tuple[str], str], mode: str = "morf",
-                 start: float = 0., stop: float = 1., num_steps: int = 100,
-                 writer_dir: str = None):
-        super().__init__(model, method_names, maskers, writer_dir)
+                 start: float = 0., stop: float = 1., num_steps: int = 100):
+        super().__init__(model, method_names, maskers)
         self.start = start
         self.stop = stop
         self.num_steps = num_steps
@@ -45,8 +42,7 @@ class Deletion(MaskerMetric):
                 result = deletion(samples, labels, self.model,
                                   attrs_dict[method_name], masker,
                                   self.activation_fns, self.mode,
-                                  self.start, self.stop, self.num_steps,
-                                  self._get_writer(method_name))
+                                  self.start, self.stop, self.num_steps)
                 for afn in self.activation_fns:
                     methods_result[masker_name][afn][method_name] = result[afn].cpu().detach().numpy()
 

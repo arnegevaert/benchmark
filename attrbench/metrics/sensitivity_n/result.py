@@ -4,7 +4,7 @@ import h5py
 import numpy as np
 
 from attrbench.metrics import MaskerActivationMetricResult
-from attrbench.util import NDArrayTree
+from attrbench.data import NDArrayTree
 
 
 class SensitivityNResult(MaskerActivationMetricResult):

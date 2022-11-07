@@ -1,5 +1,5 @@
 from attrbench.metrics import AbstractMetricResult
-from attrbench.util import NDArrayTree
+from attrbench.data import NDArrayTree
 import pandas as pd
 import numpy as np
 import h5py

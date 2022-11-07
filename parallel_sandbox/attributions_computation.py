@@ -1,5 +1,5 @@
 from util.get_dataset_model import get_model
-from attrbench import AttributionsComputation
+from attrbench.distributed import AttributionsComputation
 from attrbench.data import HDF5Dataset, AttributionsDatasetWriter
 from captum import attr
 import torch

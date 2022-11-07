@@ -4,7 +4,6 @@ from os import path
 import numpy as np
 import torch
 
-from attrbench.util import AttributionWriter
 from attrbench.metrics import Metric
 from ._compute_perturbations import _compute_perturbations
 from . import perturbation_generator
@@ -14,12 +13,11 @@ from .result import InfidelityResult
 # TODO this is broken
 def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
                pert_generator: perturbation_generator.PerturbationGenerator, num_perturbations: int,
-               activation_fns: Union[Tuple[str], str] = "linear",
-               writer: AttributionWriter = None) -> Dict:
+               activation_fns: Union[Tuple[str], str] = "linear") -> Dict:
     if type(activation_fns) == str:
         activation_fns = (activation_fns,)
     pert_vectors, pred_diffs = _compute_perturbations(samples, labels, model, pert_generator,
-                                                      num_perturbations, activation_fns, writer)
+                                                      num_perturbations, activation_fns)
     #return _compute_result(pert_vectors, pred_diffs, attrs)
 
 
@@ -31,10 +29,8 @@ def _parse_pert_generator(d):
 class Infidelity(Metric):
     def __init__(self, model: Callable, method_names: List[str], perturbation_generators: Dict,
                  num_perturbations: int,
-                 activation_fns: Union[Tuple[str], str] = "linear", writer_dir: str = None):
+                 activation_fns: Union[Tuple[str], str] = "linear"):
         super().__init__(model, method_names)  # We don't pass writer_dir to super because we only use 1 general writer
-        self.writers = {"general": AttributionWriter(path.join(writer_dir, "general"))} \
-            if writer_dir is not None else None
         self.num_perturbations = num_perturbations
         self.activation_fns = (activation_fns,) if type(activation_fns) == str else activation_fns
         # Process "perturbation-generators" argument: either it is a dictionary of PerturbationGenerator objects,
@@ -52,8 +48,6 @@ class Infidelity(Metric):
 
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
-        writer = self.writers["general"] if self.writers is not None else None
-
         for pert_gen, pert_gen_fn in self.perturbation_generators.items():
             # Calculate dot products and prediction differences
             extended_attrs_dict = {key: value for key, value in attrs_dict.items()}
@@ -61,7 +55,7 @@ class Infidelity(Metric):
                 extended_attrs_dict[f"_BASELINE_{i}"] = baseline_attrs[i, ...]
             result = _compute_perturbations(samples, labels, self.model, extended_attrs_dict,
                                             pert_gen_fn, self.num_perturbations,
-                                            self.activation_fns, writer)
+                                            self.activation_fns)
             # Append method results
             for method_name in attrs_dict.keys():
                 method_result = {afn: result[afn][method_name] for afn in self.activation_fns}

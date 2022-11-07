@@ -4,7 +4,7 @@ import torch
 from torch.nn.functional import softmax, sigmoid
 from torch.utils.data import DataLoader
 
-from masking import Masker
+from attrbench.masking import Masker
 from attrbench.metrics import Metric
 from ._dataset import _ImpactScoreDataset
 from .result import ImpactScoreResult
@@ -52,8 +52,8 @@ def impact_score(samples: torch.Tensor, labels: torch.Tensor, model: Callable, a
 
 class ImpactScore(Metric):
     def __init__(self, model: Callable, method_names: List[str], num_steps: int, strict: bool,
-                 masker: Masker, tau: float = None, writer_dir: str = None):
-        super().__init__(model, method_names, writer_dir)
+                 masker: Masker, tau: float = None):
+        super().__init__(model, method_names)
         self.num_steps = num_steps
         self.strict = strict
         self.masker = masker
@@ -65,6 +65,6 @@ class ImpactScore(Metric):
             if method_name not in self.result.method_names:
                 raise ValueError(f"Invalid method name: {method_name}")
             flipped, total = impact_score(samples, labels, self.model, attrs_dict[method_name], self.num_steps,
-                                          self.strict, self.masker, self.tau, writer=self._get_writer(method_name))
+                                          self.strict, self.masker, self.tau)
             self.result.append(method_name, (flipped, total))
 

@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 
-from attrbench.util import segment_samples, AttributionWriter
-from masking import ImageMasker, Masker
+from attrbench.masking import ImageMasker, Masker
+from attrbench.util import segment_samples
 
 
 class _SensitivityNDataset:
@@ -24,16 +24,12 @@ class _SensitivityNDataset:
 
 
 class _SegSensNDataset:
-    def __init__(self, n_range: np.ndarray, num_subsets: int, samples: torch.tensor,
-                 writer: AttributionWriter = None):
+    def __init__(self, n_range: np.ndarray, num_subsets: int, samples: torch.tensor):
         self.n_range = n_range
         self.num_subsets = num_subsets
         self.samples = samples
         self.segmented_images = torch.tensor(segment_samples(samples.cpu().numpy()), device=self.samples.device)
         self.masker = None
-
-        if writer is not None:
-            writer.add_images("segmented samples", self.segmented_images)
 
     def __len__(self):
         return self.n_range.shape[0] * self.num_subsets

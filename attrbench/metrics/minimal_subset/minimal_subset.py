@@ -4,7 +4,7 @@ from collections import defaultdict
 import numpy as np
 import torch
 
-from masking import Masker
+from attrbench.masking import Masker
 from attrbench.metrics import MaskerMetric
 from ._dataset import _MinimalSubsetDataset, _MinimalSubsetDeletionDataset, _MinimalSubsetInsertionDataset
 from .result import MinimalSubsetResult

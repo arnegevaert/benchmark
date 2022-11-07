@@ -6,7 +6,7 @@ from torch import nn
 from torch import multiprocessing as mp
 from torch.utils.data import DataLoader
 
-from masking import Masker
+from attrbench.masking import Masker
 from attrbench.distributed import Worker, DistributedSampler, DoneMessage, DistributedComputation, PartialResultMessage
 from attrbench.distributed.metrics.deletion import DeletionBatchResult, DeletionResult
 from attrbench.metrics.deletion import deletion

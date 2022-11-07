@@ -1,11 +1,16 @@
+from typing import Dict, Callable, Union, Tuple
 import torch
+from torch import nn
 from torch import multiprocessing as mp
 from torch.utils.data import DataLoader
 
 from attrbench.masking import ImageMasker
 from attrbench.metrics.deletion import irof
 from attrbench.distributed import Worker, DistributedSampler, DoneMessage, PartialResultMessage
-from attrbench.distributed.metrics.deletion import DistributedDeletion, DeletionWorker, DeletionBatchResult
+from attrbench.distributed.metrics.deletion import DistributedDeletion, DeletionBatchResult
+from attrbench.data import AttributionsDataset
+
+from .deletion import DeletionWorker
 
 
 class IrofWorker(DeletionWorker):
@@ -33,6 +38,14 @@ class IrofWorker(DeletionWorker):
 
 
 class DistributedIrof(DistributedDeletion):
+    def __init__(self, model_factory: Callable[[], nn.Module],
+                 dataset: AttributionsDataset, batch_size: int,
+                 maskers: Dict[str, ImageMasker], activation_fns: Union[Tuple[str], str], mode: str = "morf",
+                 start: float = 0., stop: float = 1., num_steps: int = 100,
+                 address="localhost", port="12355", devices: Tuple = None):
+        super().__init__(model_factory, dataset, batch_size, maskers, activation_fns, mode,
+                         start, stop, num_steps, address, port, devices)
+
     def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> Worker:
         return IrofWorker(queue, rank, self.world_size, all_processes_done, self.model_factory, self.dataset,
                           self.batch_size, self.maskers, self.activation_fns, self.mode,

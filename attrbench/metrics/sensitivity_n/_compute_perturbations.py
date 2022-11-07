@@ -4,11 +4,10 @@ import numpy as np
 import torch
 
 from attrbench.util.util import ACTIVATION_FNS
-from attrbench.util import AttributionWriter
 
 
 def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, ds,
-                           model: Callable, n_range, activation_fns: Tuple[str], writer: AttributionWriter = None) \
+                           model: Callable, n_range, activation_fns: Tuple[str]) \
         -> Tuple[Dict[str, Dict[int, np.ndarray]], Dict[int, np.ndarray]]:
     with torch.no_grad():
         orig_output = model(samples)
@@ -20,8 +19,6 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, ds,
         n = n.item()
         with torch.no_grad():
             output = model(batch)
-        if writer is not None:
-            writer.add_images(f"Masked samples N={n}", batch, global_step=i)
         for fn in activation_fns:
             fn_orig_out = ACTIVATION_FNS[fn](orig_output)
             fn_out = ACTIVATION_FNS[fn](output)

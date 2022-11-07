@@ -3,7 +3,7 @@ from typing import List, Dict
 import numpy as np
 import torch
 
-from attrbench.util.util import corrcoef
+from attrbench.stat import corrcoef
 
 # TODO also handle just np array for attrs (for functional)
 def _compute_correlations(attrs: np.ndarray, n_range: List[int],

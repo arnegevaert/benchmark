@@ -1,9 +1,8 @@
 import numpy as np
 import torch
 
-from attrbench.util import AttributionWriter
 from attrbench.util import segment_samples
-from masking import Masker, ImageMasker
+from attrbench.masking import Masker, ImageMasker
 
 
 class _MaskingDataset:
@@ -47,15 +46,11 @@ class _DeletionDataset(_MaskingDataset):
 
 
 class _IrofDataset(_MaskingDataset):
-    def __init__(self, mode: str, start: float, stop: float, num_steps: int, samples: torch.tensor, masker: ImageMasker,
-                 writer: AttributionWriter = None):
+    def __init__(self, mode: str, start: float, stop: float, num_steps: int, samples: torch.tensor, masker: ImageMasker):
         super().__init__(mode, start, stop, num_steps)
         self.samples = samples
         self.masker = masker
         self.segmented_images = torch.tensor(segment_samples(samples.cpu().numpy()), device=samples.device)
-        # Override sorted_indices to use segment indices instead of pixel indices
-        if writer is not None:
-            writer.add_images("segmented samples", torch.tensor(self.segmented_images))
 
     def __len__(self):
         return self.num_steps

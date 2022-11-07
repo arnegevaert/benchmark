@@ -3,12 +3,9 @@ from typing import Callable
 import numpy as np
 import torch
 
-from attrbench.util import AttributionWriter
-
 
 def _compute_coverage(attacked_samples: torch.Tensor, patch_mask: torch.Tensor, targets: torch.Tensor, method: Callable = None,
-                      attrs: np.ndarray = None,
-                      writer: AttributionWriter = None) -> torch.Tensor:
+                      attrs: np.ndarray = None) -> torch.Tensor:
     if method is None and attrs is None:
         raise ValueError("Specify an attribution method or attributions array")
     # Get attributions
@@ -41,8 +38,5 @@ def _compute_coverage(attacked_samples: torch.Tensor, patch_mask: torch.Tensor, 
     intersection = (patch_mask_flattened & critical_factor_mask).sum(axis=1)
     union = (patch_mask_flattened | critical_factor_mask).sum(axis=1)
     iou = intersection.astype(np.float) / union.astype(np.float)
-    if writer:
-        writer.add_images("Attacked samples", attacked_samples)
-        writer.add_attribution('Attacked attributions', attrs)
     # [batch_size]
     return torch.tensor(iou)

@@ -6,9 +6,9 @@ import os
 import numpy as np
 import torch
 
-from attrbench.util import AttributionWriter, segment_attributions
-from masking import Masker, ImageMasker
+from attrbench.masking import Masker, ImageMasker
 from attrbench.metrics import MaskerMetric
+from attrbench.util import segment_attributions
 from ._compute_correlations import _compute_correlations
 from ._compute_perturbations import _compute_perturbations
 from ._dataset import _SensitivityNDataset, _SegSensNDataset
@@ -19,8 +19,7 @@ import time
 
 def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
                   min_subset_size: float, max_subset_size: float, num_steps: int, num_subsets: int,
-                  masker: Masker, activation_fn: Union[Tuple[str], str] = "linear",
-                  writer: AttributionWriter = None):
+                  masker: Masker, activation_fn: Union[Tuple[str], str] = "linear"):
     if type(activation_fn) == str:
         activation_fn = (activation_fn,)
     num_features = attrs.reshape(attrs.shape[0], -1).shape[1]
@@ -34,13 +33,12 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
 
 def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
                       min_subset_size: float, max_subset_size: float, num_steps: int, num_subsets: int,
-                      masker: ImageMasker, activation_fn: Union[Tuple[str], str] = "linear",
-                      writer: AttributionWriter = None):
+                      masker: ImageMasker, activation_fn: Union[Tuple[str], str] = "linear"):
     # Total number of segments is fixed 100
     if type(activation_fn) == str:
         activation_fn = (activation_fn,)
     n_range = (np.linspace(min_subset_size, max_subset_size, num_steps) * 100).astype(np.int)
-    ds = _SegSensNDataset(n_range, num_subsets, samples, writer)
+    ds = _SegSensNDataset(n_range, num_subsets, samples)
     ds.set_masker(masker)
 
     # TODO using tensors here could improve GPU usage
@@ -52,12 +50,9 @@ def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callab
 
 class SensitivityN(MaskerMetric):
     def __init__(self, model: Callable, method_names: List[str], min_subset_size: float, max_subset_size: float,
-                 num_steps: int, num_subsets: int, maskers: Dict, activation_fns: Union[Tuple[str], str],
-                 writer_dir: str = None):
+                 num_steps: int, num_subsets: int, maskers: Dict, activation_fns: Union[Tuple[str], str]):
         super().__init__(model, method_names,
                          maskers)  # We don't pass writer_dir to super because we only use 1 general writer
-        self.writers = {"general": AttributionWriter(path.join(writer_dir, "general"))} \
-            if writer_dir is not None else None
         self.min_subset_size = min_subset_size
         self.max_subset_size = max_subset_size
         self.num_steps = num_steps
@@ -76,7 +71,6 @@ class SensitivityN(MaskerMetric):
         # Calculate n_range
         n_range = (np.linspace(self.min_subset_size, self.max_subset_size, self.num_steps) * num_features).astype(
             np.int)
-        writer = self.writers["general"] if self.writers is not None else None
 
         output_diffs_dict, indices_dict = {}, {}
         for masker_name, masker in self.maskers.items():
@@ -84,8 +78,7 @@ class SensitivityN(MaskerMetric):
             ds = _SensitivityNDataset(n_range, self.num_subsets, samples, masker)
             # Calculate output diffs and removed indices (we will re-use this for each method)
             output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, n_range,
-                                                           self.activation_fns,
-                                                           writer)
+                                                           self.activation_fns)
             output_diffs_dict[masker_name] = output_diffs
             indices_dict[masker_name] = indices
 
@@ -142,7 +135,7 @@ class SegSensitivityN(SensitivityN):
                  num_steps: int, num_subsets: int, maskers: Dict, activation_fns: Union[Tuple[str], str],
                  writer_dir: str = None):
         super().__init__(model, method_names, min_subset_size, max_subset_size, num_steps, num_subsets, maskers,
-                         activation_fns, writer_dir)
+                         activation_fns)
         # Total number of segments is fixed 100
         self.n_range = (np.linspace(self.min_subset_size, self.max_subset_size, self.num_steps) * 100).astype(np.int)
         self._result: SegSensitivityNResult = SegSensitivityNResult(method_names + ["_BASELINE"],
@@ -153,8 +146,7 @@ class SegSensitivityN(SensitivityN):
         self.pool = None
 
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
-        writer = self.writers["general"] if self.writers is not None else None
-        ds = _SegSensNDataset(self.n_range, self.num_steps, samples, writer)
+        ds = _SegSensNDataset(self.n_range, self.num_steps, samples)
         # TODO using tensors here could improve GPU usage
         segmented_attrs_dict = {method_name: segment_attributions(ds.segmented_images.cpu().numpy(),
                                                                   attrs_dict[method_name])
@@ -168,7 +160,7 @@ class SegSensitivityN(SensitivityN):
             ds.set_masker(masker)
             # Calculate output diffs and removed indices (we will re-use this for each method)
             output_diffs, indices = _compute_perturbations(samples, labels, ds, self.model, self.n_range,
-                                                           self.activation_fns, writer)
+                                                           self.activation_fns)
             output_diffs_dict[masker_name] = output_diffs
             indices_dict[masker_name] = indices
         if os.getenv("NO_MULTIPROC"):

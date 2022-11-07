@@ -1,13 +1,12 @@
 from attrbench.metrics import Metric
-import masking
+from attrbench import masking
 from typing import Callable, List, Dict
 import numpy as np
 
 
 class MaskerMetric(Metric):
-    def __init__(self, model: Callable, method_names: List[str], maskers: Dict,
-                 writer_dir: str = None):
-        super().__init__(model, method_names, writer_dir)
+    def __init__(self, model: Callable, method_names: List[str], maskers: Dict):
+        super().__init__(model, method_names)
         # Process "maskers" argument: either the keys are Masker objects,
         # or they are dictionaries that need to be parsed.
         self.maskers = {}

@@ -1,4 +1,4 @@
-from masking import ImageMasker
+from attrbench.masking import ImageMasker
 import torch
 import numpy as np
 from typing import List, Union

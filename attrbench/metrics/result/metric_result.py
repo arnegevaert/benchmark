@@ -3,7 +3,7 @@ import numpy as np
 import h5py
 from typing import List, Dict, Tuple, Optional
 import pandas as pd
-from attrbench.util import NDArrayTree
+from attrbench.data import NDArrayTree
 
 
 class AbstractMetricResult:

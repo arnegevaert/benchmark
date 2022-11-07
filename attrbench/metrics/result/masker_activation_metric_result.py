@@ -4,7 +4,7 @@ from typing import List, Tuple, Dict
 import pandas as pd
 import numpy as np
 from attrbench.metrics.result import AbstractMetricResult
-from attrbench.util import NDArrayTree
+from attrbench.data import NDArrayTree
 
 
 class MaskerActivationMetricResult(AbstractMetricResult):

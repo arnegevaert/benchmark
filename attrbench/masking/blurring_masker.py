@@ -1,4 +1,4 @@
-from masking import ImageMasker
+from attrbench.masking import ImageMasker
 from cv2 import blur
 import numpy as np
 import torch

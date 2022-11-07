@@ -3,7 +3,7 @@ import pandas as pd
 from typing import Tuple, List
 import numpy as np
 import h5py
-from attrbench.util import NDArrayTree
+from attrbench.data import NDArrayTree
 from scipy.special import softmax
 
 

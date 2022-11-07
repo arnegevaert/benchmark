@@ -5,7 +5,7 @@ import numpy as np
 import h5py
 
 from attrbench.metrics import AbstractMetricResult
-from attrbench.util import NDArrayTree
+from attrbench.data import NDArrayTree
 
 
 class InfidelityResult(AbstractMetricResult):

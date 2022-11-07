@@ -3,7 +3,6 @@ from typing import Callable, Tuple, Dict
 import torch
 import numpy as np
 
-from attrbench.util import AttributionWriter
 from attrbench.util.util import ACTIVATION_FNS
 from .perturbation_generator import PerturbationGenerator
 
@@ -16,8 +15,7 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
                            attrs: Dict[str, np.ndarray],
                            perturbation_generator: PerturbationGenerator,
                            num_perturbations: int,
-                           activation_fns: Tuple[str],
-                           writer: AttributionWriter = None) -> Dict[str, Dict[str, np.ndarray]]:
+                           activation_fns: Tuple[str]) -> Dict[str, Dict[str, np.ndarray]]:
     # Move attributions to samples device
     tensor_attrs: Dict[str, torch.tensor] = {}
     for key, value in attrs.items():
@@ -40,9 +38,6 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
         # Get perturbation vector I and perturbed samples (x - I)
         perturbation_vector = perturbation_generator()
         perturbed_samples = samples - perturbation_vector
-        if writer:
-            writer.add_images("perturbation_vector", perturbation_vector, global_step=i_pert)
-            writer.add_images("perturbed_samples", perturbed_samples, global_step=i_pert)
 
         # Get output of model on perturbed sample
         with torch.no_grad():

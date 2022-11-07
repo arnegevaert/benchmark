@@ -1,1 +1,1 @@
-from .deletion.deletion import DistributedDeletion
+from .deletion import DistributedDeletion, DistributedIrof

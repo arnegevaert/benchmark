@@ -1,4 +1,4 @@
-from masking import ImageMasker
+from attrbench.masking import ImageMasker
 import torch
 
 
