@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from attrbench.masking import Masker
 from attrbench.distributed import Worker, DistributedSampler, DoneMessage, DistributedComputation, PartialResultMessage
 from attrbench.distributed.metrics.deletion import DeletionBatchResult, DeletionResult
+from attrbench.distributed.metrics import DistributedMetric
 from attrbench.metrics.deletion import deletion
 from attrbench.data import AttributionsDataset
 
@@ -51,40 +52,23 @@ class DeletionWorker(Worker):
         self.result_queue.put(DoneMessage(self.rank))
 
 
-class DistributedDeletion(DistributedComputation):
+class DistributedDeletion(DistributedMetric):
     def __init__(self, model_factory: Callable[[], nn.Module],
                  dataset: AttributionsDataset, batch_size: int,
                  maskers: Dict[str, Masker], activation_fns: Union[Tuple[str], str], mode: str = "morf",
                  start: float = 0., stop: float = 1., num_steps: int = 100,
                  address="localhost", port="12355", devices: Tuple = None):
-        super().__init__(address, port, devices)
+        super().__init__(model_factory, dataset, batch_size, address, port, devices)
         self.num_steps = num_steps
         self.stop = stop
         self._start = start
         self.mode = mode
         self.activation_fns = [activation_fns] if isinstance(activation_fns, str) else list(activation_fns)
         self.maskers = maskers
-        self.model_factory = model_factory
-        self.dataset = dataset
-        self.batch_size = batch_size
-        self.prog = None
         self._result = DeletionResult(dataset.method_names, list(maskers.keys()),
                                       self.activation_fns, mode, shape=(dataset.num_samples, num_steps))
-
-    def run(self, result_path: str = None):
-        self.prog = tqdm()
-        super().run()
-        if result_path is not None:
-            self.save_result(result_path)
-
-    def save_result(self, path: str):
-        self._result.save(path)
 
     def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> Worker:
         return DeletionWorker(queue, rank, self.world_size, all_processes_done, self.model_factory, self.dataset,
                               self.batch_size, self.maskers, self.activation_fns, self.mode,
                               self._start, self.stop, self.num_steps)
-
-    def _handle_result(self, result_message: PartialResultMessage[DeletionBatchResult]):
-        self._result.add(result_message.data)
-        self.prog.update(len(result_message.data.indices))

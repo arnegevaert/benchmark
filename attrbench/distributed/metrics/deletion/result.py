@@ -3,6 +3,7 @@ import numpy as np
 from numpy import typing as npt
 from typing import List, Tuple, Dict
 from attrbench.data import RandomAccessNDArrayTree
+from attrbench.distributed.metrics.result import BatchResult
 import pandas as pd
 import torch
 
@@ -20,13 +21,6 @@ def _auc(x: np.ndarray, columns: npt.NDArray = None):
     return np.sum(x, axis=-1) / l
 
 
-class DeletionBatchResult:
-    def __init__(self, indices: torch.Tensor, results: Dict[str, Dict[str, torch.Tensor]], method_names: List[str]):
-        self.method_names = method_names
-        self.results = results
-        self.indices = indices
-
-
 class DeletionResult:
     def __init__(self, method_names: List[str],
                  maskers: List[str], activation_fns: List[str], mode: str,
@@ -36,24 +30,24 @@ class DeletionResult:
         self.method_names = method_names
         self.maskers = maskers
 
-        levels = {"masker": maskers, "activation_fn": activation_fns, "method": method_names}
+        levels = {"method": method_names, "masker": maskers, "activation_fn": activation_fns}
         self._tree = RandomAccessNDArrayTree(levels, shape)
 
-    def add(self, batch_result: DeletionBatchResult):
+    def add(self, batch_result: BatchResult):
         """
         Adds a DeletionBatchResult to the result object.
         A DeletionBatchResult can contain results from multiple methods and arbitrary sample indices,
         so this method uses the random access functionality of the RandomAccessNDArrayTree to save it.
         """
         data = batch_result.results
-        for masker_name in data.keys():
-            for activation_fn in data[masker_name].keys():
-                for method_name in set(batch_result.method_names):
-                    method_indices = [i for i, name in enumerate(batch_result.method_names) if name == method_name]
+        for method_name in set(batch_result.method_names):
+            method_indices = [i for i, name in enumerate(batch_result.method_names) if name == method_name]
+            for masker_name in data.keys():
+                for activation_fn in data[masker_name].keys():
                     self._tree.write(
                         batch_result.indices[method_indices],
-                        data[masker_name][activation_fn][method_indices],
-                        masker=masker_name, activation_fn=activation_fn, method=method_name)
+                        data[method_indices][masker_name][activation_fn],
+                        method=method_name, masker=masker_name, activation_fn=activation_fn)
 
     def save(self, path: str):
         """

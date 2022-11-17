@@ -41,7 +41,6 @@ def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callab
     ds = _SegSensNDataset(n_range, num_subsets, samples)
     ds.set_masker(masker)
 
-    # TODO using tensors here could improve GPU usage
     attrs = segment_attributions(ds.segmented_images.cpu().numpy(), attrs)
 
     output_diffs, indices = _compute_perturbations(samples, labels, ds, model, n_range, activation_fn, writer)
@@ -147,7 +146,6 @@ class SegSensitivityN(SensitivityN):
 
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         ds = _SegSensNDataset(self.n_range, self.num_steps, samples)
-        # TODO using tensors here could improve GPU usage
         segmented_attrs_dict = {method_name: segment_attributions(ds.segmented_images.cpu().numpy(),
                                                                   attrs_dict[method_name])
                                 for method_name in attrs_dict}
