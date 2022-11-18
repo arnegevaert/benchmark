@@ -29,12 +29,3 @@ class MetricResult:
         Load a result from an HDF5 file (abstract method).
         """
         raise NotImplementedError
-
-    def get_df(self, methods: List[str] = None, *args) -> Tuple[pd.DataFrame, bool]:
-        """
-        Construct a pandas DataFrame for a given list of methods and possible other arguments (abstract method).
-        :param methods: The methods to incude. If None, include all methods.
-        :param args: Possible other arguments (depends on subclass).
-        :return: Dataframe containing results and boolean indicating if higher is better.
-        """
-        raise NotImplementedError

@@ -3,9 +3,8 @@ import numpy as np
 from numpy import typing as npt
 from typing import List, Tuple, Dict
 from attrbench.data import RandomAccessNDArrayTree
-from attrbench.distributed.metrics.result import BatchResult
+from attrbench.distributed.metrics.result import BatchResult, MetricResult
 import pandas as pd
-import torch
 
 
 def _aoc(x: np.ndarray, columns: npt.NDArray = None):
@@ -21,13 +20,13 @@ def _auc(x: np.ndarray, columns: npt.NDArray = None):
     return np.sum(x, axis=-1) / l
 
 
-class DeletionResult:
+class DeletionResult(MetricResult):
     def __init__(self, method_names: List[str],
                  maskers: List[str], activation_fns: List[str], mode: str,
                  shape: Tuple[int, ...]):
+        super().__init__(method_names, shape)
         self.mode = mode
         self.activation_fns = activation_fns
-        self.method_names = method_names
         self.maskers = maskers
 
         levels = {"method": method_names, "masker": maskers, "activation_fn": activation_fns}

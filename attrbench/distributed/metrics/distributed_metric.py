@@ -1,17 +1,12 @@
-import torch.distributed as dist
 from tqdm import tqdm
 from torch import nn
 import torch.multiprocessing as mp
-import os
 
-from attrbench.metrics import Metric, AbstractMetricResult
 from attrbench.data import AttributionsDataset
-from attrbench.distributed import PartialResultMessage, DoneMessage, DistributedComputation, Worker
+from attrbench.distributed import PartialResultMessage, DistributedComputation
+from attrbench.distributed.metrics import MetricWorker
+from attrbench.distributed.metrics.result import MetricResult
 from typing import Tuple, Callable, Optional
-import torch
-from torch.utils.data import Dataset, Sampler, DataLoader
-
-
 
 
 class DistributedMetric(DistributedComputation):
@@ -22,7 +17,7 @@ class DistributedMetric(DistributedComputation):
         self.dataset = dataset
         self.model_factory = model_factory
         self.prog = None  # TQDM progress bar
-        self._result: Optional[AbstractMetricResult] = None
+        self._result: Optional[MetricResult] = None
 
     def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> MetricWorker:
         raise NotImplementedError

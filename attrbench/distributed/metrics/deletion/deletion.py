@@ -1,55 +1,13 @@
-from typing import Callable, Union, Tuple, Dict, List
-from tqdm import tqdm
+from typing import Callable, Union, Tuple, Dict
 
-import torch
 from torch import nn
 from torch import multiprocessing as mp
-from torch.utils.data import DataLoader
 
 from attrbench.masking import Masker
-from attrbench.distributed import Worker, DistributedSampler, DoneMessage, DistributedComputation, PartialResultMessage
-from attrbench.distributed.metrics.deletion import DeletionBatchResult, DeletionResult
+from attrbench.distributed import Worker
+from attrbench.distributed.metrics.deletion import DeletionResult, DeletionWorker
 from attrbench.distributed.metrics import DistributedMetric
-from attrbench.metrics.deletion import deletion
 from attrbench.data import AttributionsDataset
-
-
-class DeletionWorker(Worker):
-    def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, all_processes_done: mp.Event,
-                 model_factory: Callable[[], nn.Module], dataset: AttributionsDataset, batch_size: int,
-                 maskers: Dict[str, Masker], activation_fns: List[str], mode: str = "morf",
-                 start: float = 0., stop: float = 1., num_steps: int = 100):
-        super().__init__(result_queue, rank, world_size, all_processes_done)
-        self.model_factory = model_factory
-        self.dataset = dataset
-        self.batch_size = batch_size
-
-        self.maskers = maskers
-        self.activation_fns = activation_fns
-        self.mode = mode
-        self.start = start
-        self.stop = stop
-        self.num_steps = num_steps
-
-    def work(self):
-        sampler = DistributedSampler(self.dataset, self.world_size, self.rank, shuffle=False)
-        dataloader = DataLoader(self.dataset, sampler=sampler, batch_size=self.batch_size, num_workers=4)
-        device = torch.device(self.rank)
-        model = self.model_factory()
-        model.to(device)
-
-        for batch_indices, batch_x, batch_y, batch_attr, method_names in dataloader:
-            batch_x = batch_x.to(device)
-            batch_y = batch_y.to(device)
-            batch_result = {}
-            for masker_name, masker in self.maskers.items():
-                batch_result[masker_name] = deletion(batch_x, batch_y, model, batch_attr.numpy(), masker,
-                                                     self.activation_fns, self.mode, self.start, self.stop,
-                                                     self.num_steps)
-            self.result_queue.put(
-                PartialResultMessage(self.rank, DeletionBatchResult(batch_indices, batch_result, method_names))
-            )
-        self.result_queue.put(DoneMessage(self.rank))
 
 
 class DistributedDeletion(DistributedMetric):
