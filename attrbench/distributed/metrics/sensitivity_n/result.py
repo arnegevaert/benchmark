@@ -1,31 +1,28 @@
-import h5py
+from typing import Tuple, List
 import numpy as np
-from numpy import typing as npt
-from typing import List, Tuple, Dict
-from attrbench.data import RandomAccessNDArrayTree
-from attrbench.distributed.metrics.result import BatchResult, MetricResult
 import pandas as pd
+from attrbench.distributed.metrics.result import MetricResult, BatchResult
+from attrbench.data import RandomAccessNDArrayTree
+from numpy import typing as npt
+import h5py
 
 
-def _aoc(x: np.ndarray, columns: npt.NDArray = None):
+def _column_avg(x: npt.NDArray, columns: npt.NDArray) -> npt.NDArray:
+    """
+    Returns the average value of x along the specified columns.
+    Used in get_df.
+    """
     if columns is not None:
         x = x[..., columns]
-    return x[..., 0] - _auc(x, columns)
+    return np.mean(x, axis=-1)
 
 
-def _auc(x: np.ndarray, columns: npt.NDArray = None):
-    if columns is not None:
-        x = x[..., columns]
-    l = x.shape[-1] if columns is None else columns.shape[0]
-    return np.sum(x, axis=-1) / l
-
-
-class DeletionResult(MetricResult):
+# TODO loads of code duplication here with DeletionResult
+class SensitivityNResult(MetricResult):
     def __init__(self, method_names: List[str],
-                 maskers: List[str], activation_fns: List[str], mode: str,
+                 maskers: List[str], activation_fns: List[str],
                  shape: Tuple[int, ...]):
         super().__init__(method_names, shape)
-        self.mode = mode
         self.activation_fns = activation_fns
         self.maskers = maskers
 
@@ -50,42 +47,39 @@ class DeletionResult(MetricResult):
 
     def save(self, path: str):
         """
-        Saves the DeletionResult to an HDF5 file.
+        Saves the SensitivityNResult to an HDF5 file.
         """
         with h5py.File(path, mode="w") as fp:
-            fp.attrs["mode"] = self.mode
             self._tree.add_to_hdf(fp)
 
     @classmethod
-    def load(cls, path: str) -> "DeletionResult":
+    def load(cls, path: str) -> "SensitivityNResult":
         """
-        Loads a DeletionResult from an HDF5 file.
+        Loads a SensitivityNResult from an HDF5 file.
         """
         with h5py.File(path, "r") as fp:
             tree = RandomAccessNDArrayTree.load_from_hdf(fp)
-            res = DeletionResult(tree.levels["method"], tree.levels["masker"],
-                                 tree.levels["activation_fn"], fp.attrs["mode"], tree.shape)
+            res = SensitivityNResult(tree.levels["method"], tree.levels["masker"],
+                                     tree.levels["activation_fn"], tree.shape)
             res._tree = tree
         return res
 
-    def get_df(self, masker: str, activation_fn: str, agg_fn="auc", methods: List[str] = None,
-               columns: npt.NDArray = None) -> Tuple[pd.DataFrame, bool]:
+    def get_df(self, masker: str, activation_fn: str,
+               methods: List[str], columns: npt.NDArray) -> Tuple[pd.DataFrame, bool]:
         """
         Retrieves a dataframe from the result for a given masker and activation function.
         The dataframe contains a row for each sample and a column for each method.
-        Each value is the AUC/AOC for the given method on the given sample.
+        Each value is the average Sensitivity-N value for the given method on the given sample,
+        over the specified columns.
         :param masker: the masker to use
         :param activation_fn: the activation function to use
-        :param agg_fn: either "auc" for AUC or "aoc" for AOC
         :param methods: the methods to include. If None, includes all methods.
-        :param columns: the columns used in the AUC/AOC calculation
-        :return: dataframe containing results, and boolean indicating if higher is better
+        :param columns: the columns used in the aggregation
+        :return: dataframe containing results, and boolean indicating if higher is better (always True for this metric)
         """
-        higher_is_better = (self.mode == "morf" and agg_fn == "aoc") or (self.mode == "lerf" and agg_fn == "auc")
         methods = methods if methods is not None else self.method_names
         df_dict = {}
-        agg_fns = {"auc": _auc, "aoc": _aoc}
         for method in methods:
             array = self._tree.get(masker=masker, activation_fn=activation_fn, method=method)
-            df_dict[method] = agg_fns[agg_fn](array, columns)
-        return pd.DataFrame.from_dict(df_dict), higher_is_better
+            df_dict[method] = _column_avg(array, columns)
+        return pd.DataFrame.from_dict(df_dict), True

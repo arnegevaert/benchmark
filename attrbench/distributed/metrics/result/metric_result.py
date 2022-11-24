@@ -1,5 +1,5 @@
 from typing import List, Tuple
-from batch_result import BatchResult
+from attrbench.distributed.metrics.result import BatchResult
 import pandas as pd
 
 
@@ -27,5 +27,13 @@ class MetricResult:
     def load(cls, path: str) -> "MetricResult":
         """
         Load a result from an HDF5 file (abstract method).
+        """
+        raise NotImplementedError
+
+    def get_df(self, *args, **kwargs) -> Tuple[pd.DataFrame, bool]:
+        """
+        Retrieve a dataframe from the result object for some given arguments,
+        along with a boolean indicating if higher is better.
+        These arguments depend on the specific metric.
         """
         raise NotImplementedError

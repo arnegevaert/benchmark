@@ -27,7 +27,7 @@ def sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callable, 
 
     ds = _SensitivityNDataset(n_range, num_subsets, samples, masker)
 
-    output_diffs, indices = _compute_perturbations(samples, labels, ds, model, n_range, activation_fn, writer)
+    output_diffs, indices = _compute_perturbations(samples, labels, ds, model, n_range, activation_fn)
     return _compute_correlations(attrs, n_range, output_diffs, indices)
 
 
@@ -43,7 +43,7 @@ def seg_sensitivity_n(samples: torch.Tensor, labels: torch.Tensor, model: Callab
 
     attrs = segment_attributions(ds.segmented_images.cpu().numpy(), attrs)
 
-    output_diffs, indices = _compute_perturbations(samples, labels, ds, model, n_range, activation_fn, writer)
+    output_diffs, indices = _compute_perturbations(samples, labels, ds, model, n_range, activation_fn)
     return _compute_correlations(attrs, n_range, output_diffs, indices)
 
 

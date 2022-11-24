@@ -7,7 +7,8 @@ from torch.utils.data import DataLoader
 from attrbench.masking import ImageMasker
 from attrbench.metrics.deletion import irof
 from attrbench.distributed import Worker, DistributedSampler, DoneMessage, PartialResultMessage
-from attrbench.distributed.metrics.deletion import DistributedDeletion, DeletionBatchResult
+from attrbench.distributed.metrics.result import BatchResult
+from attrbench.distributed.metrics.deletion import DistributedDeletion
 from attrbench.data import AttributionsDataset
 
 from .deletion import DeletionWorker
@@ -32,7 +33,7 @@ class IrofWorker(DeletionWorker):
                                                  self.activation_fns, self.mode, self.start, self.stop,
                                                  self.num_steps)
             self.result_queue.put(
-                PartialResultMessage(self.rank, DeletionBatchResult(batch_indices, batch_result, method_names))
+                PartialResultMessage(self.rank, BatchResult(batch_indices, batch_result, method_names))
             )
         self.result_queue.put(DoneMessage(self.rank))
 
