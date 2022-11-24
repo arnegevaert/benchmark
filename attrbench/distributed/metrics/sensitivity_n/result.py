@@ -65,7 +65,7 @@ class SensitivityNResult(MetricResult):
         return res
 
     def get_df(self, masker: str, activation_fn: str,
-               methods: List[str], columns: npt.NDArray) -> Tuple[pd.DataFrame, bool]:
+               methods: Tuple[str] = None, columns: npt.NDArray = None) -> Tuple[pd.DataFrame, bool]:
         """
         Retrieves a dataframe from the result for a given masker and activation function.
         The dataframe contains a row for each sample and a column for each method.

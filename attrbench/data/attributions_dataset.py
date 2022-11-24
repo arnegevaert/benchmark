@@ -8,6 +8,7 @@ from typing import Tuple, Optional
 def _max_abs(arr: npt.NDArray, axis: int):
     return np.max(np.abs(arr), axis=axis, keepdims=True)
 
+
 def _mean(arr: npt.NDArray, axis: int):
     return np.mean(arr, axis=axis, keepdims=True)
 
@@ -21,8 +22,11 @@ class AttributionsDataset(Dataset):
     """
 
     def __init__(self, samples_dataset: Dataset, path: str, aggregate_axis: int = 0, aggregate_method: str = None,
-                 methods: Optional[Tuple[str]] = None):
+                 methods: Optional[Tuple[str]] = None, group_attributions=False):
         self.path = path
+        # If True, all attributions for a given sample are returned for a given sample.
+        # This can be useful if some intermediate results using the sample can be re-used (e.g. in Infidelity)
+        self.group_attributions = group_attributions
         self.samples_dataset: Dataset = samples_dataset
         self.attributions_file: Optional[h5py.File] = None
         self.aggregate_fn = None
@@ -42,10 +46,7 @@ class AttributionsDataset(Dataset):
             else:
                 raise ValueError(f"Invalid methods: {methods}")
 
-    def __getitem__(self, index):
-        if self.attributions_file is None:
-        #if not hasattr(self, "attributions_file"):
-            self.attributions_file = h5py.File(self.path, "r")
+    def get_item_nongrouped(self, index):
         method_idx = index // self.num_samples
         method_name = self.method_names[method_idx]
         sample_idx = index % self.num_samples
@@ -55,5 +56,22 @@ class AttributionsDataset(Dataset):
             attrs = self.aggregate_fn(attrs, axis=self.aggregate_axis)
         return sample_idx, sample, label, attrs, method_name
 
+    def get_item_grouped(self, index):
+        sample, label = self.samples_dataset[index]
+        attrs = {method_name: self.attributions_file[method_name] for method_name in self.method_names}
+        if self.aggregate_fn is not None:
+            for method_name in self.method_names:
+                attrs[method_name] = self.aggregate_fn(attrs[method_name], axis=self.aggregate_axis)
+        return index, sample, label, attrs
+
+    def __getitem__(self, index):
+        if self.attributions_file is None:
+            self.attributions_file = h5py.File(self.path, "r")
+        if self.group_attributions:
+            return self.get_item_grouped(index)
+        return self.get_item_nongrouped(index)
+
     def __len__(self):
+        if self.group_attributions:
+            return self.num_samples
         return self.num_samples * len(self.method_names)

@@ -11,6 +11,7 @@ def _mse(a, b):
     return ((a - b) ** 2).mean(axis=1, keepdims=True)
 
 
+#TODO this method name makes no sense anymore, this is just computing the full metric
 def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: Callable,
                            attrs: Dict[str, np.ndarray],
                            perturbation_generator: PerturbationGenerator,
@@ -36,7 +37,7 @@ def _compute_perturbations(samples: torch.Tensor, labels: torch.Tensor, model: C
     pred_diffs: Dict[str, list] = {afn: [] for afn in activation_fns}
     for i_pert in range(num_perturbations):
         # Get perturbation vector I and perturbed samples (x - I)
-        perturbation_vector = perturbation_generator()
+        perturbation_vector = perturbation_generator.generate_perturbation()
         perturbed_samples = samples - perturbation_vector
 
         # Get output of model on perturbed sample

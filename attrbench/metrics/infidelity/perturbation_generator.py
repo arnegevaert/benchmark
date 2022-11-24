@@ -11,7 +11,7 @@ class PerturbationGenerator:
     def set_samples(self, samples):
         self.samples = samples
 
-    def __call__(self):
+    def generate_perturbation(self):
         if self.samples is None:
             raise ValueError("Base samples must be set to generate perturbations")
         return self._generate_perturbation_vectors()
