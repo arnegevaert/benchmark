@@ -5,7 +5,7 @@ import h5py
 
 
 class RandomAccessNDArrayTree:
-    def __init__(self, levels: Dict[str, List[str]], shape: Tuple[int, ...]):
+    def __init__(self, levels: Dict[str, Tuple[str]], shape: Tuple[int, ...]):
         """
         Represents a tree of numpy NDArrays capable of writing in a random-access way
         (as opposed to append-only).

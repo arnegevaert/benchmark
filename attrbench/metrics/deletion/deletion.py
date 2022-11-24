@@ -12,7 +12,7 @@ from ._get_predictions import _get_predictions
 
 def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
              masker: Masker,
-             activation_fns: Union[List[str], str] = "linear",
+             activation_fns: Union[Tuple[str], str] = "linear",
              mode: str = "morf", start: float = 0., stop: float = 1., num_steps: int = 100) -> Dict:
     if type(activation_fns) == str:
         activation_fns = [activation_fns]
@@ -29,9 +29,9 @@ class Deletion(MaskerMetric):
         self.stop = stop
         self.num_steps = num_steps
         self.mode = mode
-        self.activation_fns = [activation_fns] if type(activation_fns) == str else list(activation_fns)
+        self.activation_fns = (activation_fns,) if type(activation_fns) == str else activation_fns
         self._result: DeletionResult = DeletionResult(method_names + ["_BASELINE"], list(self.maskers.keys()),
-                                                      self.activation_fns, mode)
+                                                      list(self.activation_fns), mode)
 
     def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
         methods_result = {masker_name: {afn: {} for afn in self.activation_fns} for masker_name in self.maskers}

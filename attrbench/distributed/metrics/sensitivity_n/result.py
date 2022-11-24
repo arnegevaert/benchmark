@@ -19,8 +19,8 @@ def _column_avg(x: npt.NDArray, columns: npt.NDArray) -> npt.NDArray:
 
 # TODO loads of code duplication here with DeletionResult
 class SensitivityNResult(MetricResult):
-    def __init__(self, method_names: List[str],
-                 maskers: List[str], activation_fns: List[str],
+    def __init__(self, method_names: Tuple[str],
+                 maskers: Tuple[str], activation_fns: Tuple[str],
                  shape: Tuple[int, ...]):
         super().__init__(method_names, shape)
         self.activation_fns = activation_fns

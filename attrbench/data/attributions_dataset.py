@@ -2,7 +2,7 @@ from torch.utils.data import Dataset
 import numpy as np
 import h5py
 from numpy import typing as npt
-from typing import List
+from typing import Tuple, Optional
 
 
 def _max_abs(arr: npt.NDArray, axis: int):
@@ -21,10 +21,10 @@ class AttributionsDataset(Dataset):
     """
 
     def __init__(self, samples_dataset: Dataset, path: str, aggregate_axis: int = 0, aggregate_method: str = None,
-                 methods: List[str] | None = None):
+                 methods: Optional[Tuple[str]] = None):
         self.path = path
         self.samples_dataset: Dataset = samples_dataset
-        self.attributions_file: h5py.File | None = None
+        self.attributions_file: Optional[h5py.File] = None
         self.aggregate_fn = None
         self.aggregate_axis = aggregate_axis
         if aggregate_method is not None:

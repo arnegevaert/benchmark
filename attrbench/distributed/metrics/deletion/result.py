@@ -21,8 +21,8 @@ def _auc(x: np.ndarray, columns: npt.NDArray = None):
 
 
 class DeletionResult(MetricResult):
-    def __init__(self, method_names: List[str],
-                 maskers: List[str], activation_fns: List[str], mode: str,
+    def __init__(self, method_names: Tuple[str],
+                 maskers: Tuple[str], activation_fns: Tuple[str], mode: str,
                  shape: Tuple[int, ...]):
         super().__init__(method_names, shape)
         self.mode = mode
@@ -45,7 +45,7 @@ class DeletionResult(MetricResult):
                 for activation_fn in data[masker_name].keys():
                     self._tree.write(
                         batch_result.indices[method_indices],
-                        data[method_indices][masker_name][activation_fn],
+                        data[masker_name][activation_fn][method_indices],
                         method=method_name, masker=masker_name, activation_fn=activation_fn)
 
     def save(self, path: str):

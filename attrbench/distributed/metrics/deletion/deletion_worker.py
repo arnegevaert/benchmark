@@ -1,5 +1,5 @@
 from attrbench.distributed.metrics import MetricWorker
-from typing import Callable, Dict, List
+from typing import Callable, Dict, Tuple
 
 from torch import nn
 from torch import multiprocessing as mp
@@ -14,7 +14,7 @@ from attrbench.data import AttributionsDataset
 class DeletionWorker(MetricWorker):
     def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, all_processes_done: mp.Event,
                  model_factory: Callable[[], nn.Module], dataset: AttributionsDataset, batch_size: int,
-                 maskers: Dict[str, Masker], activation_fns: List[str], mode: str = "morf",
+                 maskers: Dict[str, Masker], activation_fns: Tuple[str], mode: str = "morf",
                  start: float = 0., stop: float = 1., num_steps: int = 100):
         super().__init__(result_queue, rank, world_size, all_processes_done, model_factory, dataset, batch_size)
         self.maskers = maskers

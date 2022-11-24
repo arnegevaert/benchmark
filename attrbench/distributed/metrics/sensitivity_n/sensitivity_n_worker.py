@@ -1,5 +1,5 @@
 from torch import multiprocessing as mp
-from typing import Callable, Dict, List
+from typing import Callable, Dict, Tuple
 from torch import nn
 from attrbench.data import AttributionsDataset
 from attrbench.masking import Masker
@@ -13,7 +13,7 @@ class SensitivityNWorker(MetricWorker):
     def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, all_processes_done: mp.Event,
                  model_factory: Callable[[], nn.Module], dataset: AttributionsDataset, batch_size: int,
                  min_subset_size: float, max_subset_size: float, num_steps: int, num_subsets: int,
-                 maskers: Dict[str, Masker], activation_fns: List[str]):
+                 maskers: Dict[str, Masker], activation_fns: Tuple[str]):
         super().__init__(result_queue, rank, world_size, all_processes_done, model_factory, dataset, batch_size)
         self.activation_fns = activation_fns
         self.maskers = maskers
@@ -33,6 +33,7 @@ class SensitivityNWorker(MetricWorker):
                 batch_result[masker_name] = sensitivity_n(batch_x, batch_y, model, batch_attr.numpy(),
                                                           self.min_subset_size, self.max_subset_size, self.num_steps,
                                                           self.num_subsets, masker, self.activation_fns)
+            print(method_names)
             self.result_queue.put(
                 PartialResultMessage(self.rank, BatchResult(batch_indices, batch_result, method_names))
             )

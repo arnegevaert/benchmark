@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Tuple
 from attrbench.distributed.metrics.result import BatchResult
 import pandas as pd
 
@@ -7,7 +7,7 @@ class MetricResult:
     """
     Abstract class to represent results of distributed metrics.
     """
-    def __init__(self, method_names: List[str], shape: Tuple[int, ...]):
+    def __init__(self, method_names: Tuple[str], shape: Tuple[int, ...]):
         self.shape = shape
         self.method_names = method_names
 
