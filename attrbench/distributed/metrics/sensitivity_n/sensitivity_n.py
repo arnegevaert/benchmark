@@ -1,4 +1,5 @@
 from attrbench.distributed.metrics import DistributedMetric
+import warnings
 from torch import nn
 from typing import Callable, Dict, Union, Tuple
 from attrbench.data import AttributionsDataset
@@ -12,6 +13,9 @@ class DistributedSensitivityN(DistributedMetric):
                  min_subset_size: float, max_subset_size: float, num_steps: int, num_subsets: int,
                  maskers: Dict[str, Masker], activation_fns: Union[Tuple[str], str]):
         super().__init__(model_factory, dataset, batch_size)
+        if not dataset.group_attributions:
+            warnings.warn("Sensitivity-n expects a dataset group_attributions==True. Setting to True.")
+            dataset.group_attributions = True
         self.activation_fns = (activation_fns,) if isinstance(activation_fns, str) else activation_fns
         self.maskers = maskers
         self.num_subsets = num_subsets

@@ -45,6 +45,7 @@ class AttributionsDataset(Dataset):
                 self.method_names = methods
             else:
                 raise ValueError(f"Invalid methods: {methods}")
+            self.attributions_shape = fp[self.method_names[0]].shape[1:]
 
     def get_item_nongrouped(self, index):
         method_idx = index // self.num_samples

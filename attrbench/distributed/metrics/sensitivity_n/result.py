@@ -42,7 +42,7 @@ class SensitivityNResult(MetricResult):
                 for activation_fn in data[masker_name].keys():
                     self._tree.write(
                         batch_result.indices[method_indices],
-                        data[method_indices][masker_name][activation_fn],
+                        data[masker_name][activation_fn][method_indices],
                         method=method_name, masker=masker_name, activation_fn=activation_fn)
 
     def save(self, path: str):

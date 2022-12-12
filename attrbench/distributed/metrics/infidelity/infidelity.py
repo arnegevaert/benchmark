@@ -1,4 +1,5 @@
 from attrbench.distributed.metrics import DistributedMetric
+import warnings
 from torch import nn
 from typing import Callable, Dict, Tuple
 from attrbench.data import AttributionsDataset
@@ -12,6 +13,9 @@ class DistributedInfidelity(DistributedMetric):
                  perturbation_generators: Dict[str, PerturbationGenerator], num_perturbations: int,
                  activation_fns: Tuple[str]):
         super().__init__(model_factory, dataset, batch_size)
+        if not dataset.group_attributions:
+            warnings.warn("Infidelity expects a dataset group_attributions==True. Setting to True.")
+            dataset.group_attributions = True
         self.activation_fns = activation_fns
         self.num_perturbations = num_perturbations
         self.perturbation_generators = perturbation_generators
