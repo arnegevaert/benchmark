@@ -2,7 +2,7 @@ from attrbench.distributed.metrics import DistributedMetric
 from torch import nn
 from typing import Callable, Dict, Tuple
 from attrbench.data import AttributionsDataset
-from attrbench.distributed.metrics.infidelity import InfidelityWorker
+from attrbench.distributed.metrics.infidelity import InfidelityWorker, InfidelityResult
 from attrbench.metrics.infidelity import PerturbationGenerator
 from torch import multiprocessing as mp
 
@@ -15,6 +15,8 @@ class DistributedInfidelity(DistributedMetric):
         self.activation_fns = activation_fns
         self.num_perturbations = num_perturbations
         self.perturbation_generators = perturbation_generators
+        self._result = InfidelityResult(self.dataset.method_names, tuple(self.perturbation_generators.keys()),
+                                        self.activation_fns, shape=(self.dataset.num_samples, 1))
 
     def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> InfidelityWorker:
         return InfidelityWorker(queue, rank, self.world_size, all_processes_done, self.model_factory,

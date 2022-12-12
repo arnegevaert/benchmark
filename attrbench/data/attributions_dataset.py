@@ -58,7 +58,7 @@ class AttributionsDataset(Dataset):
 
     def get_item_grouped(self, index):
         sample, label = self.samples_dataset[index]
-        attrs = {method_name: self.attributions_file[method_name] for method_name in self.method_names}
+        attrs = {method_name: self.attributions_file[method_name][index] for method_name in self.method_names}
         if self.aggregate_fn is not None:
             for method_name in self.method_names:
                 attrs[method_name] = self.aggregate_fn(attrs[method_name], axis=self.aggregate_axis)

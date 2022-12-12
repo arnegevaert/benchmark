@@ -5,3 +5,4 @@ from .distributed_metric import DistributedMetric
 # Metrics
 from .deletion import DistributedDeletion, DistributedIrof
 from .sensitivity_n import DistributedSensitivityN
+from .infidelity import DistributedInfidelity
