@@ -14,7 +14,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     dataset = AttributionsDataset(HDF5Dataset(args.samples_dataset), args.attrs_dataset,
-                                  aggregate_axis=0, aggregate_method="mean")
+                                  aggregate_axis=0, aggregate_method="mean", group_attributions=True)
     sensn = DistributedSensitivityN(get_model, dataset, args.batch_size,
                                     min_subset_size=0.1, max_subset_size=0.9, num_steps=2,
                                     num_subsets=2, maskers={"constant": ConstantMasker(feature_level="pixel")},

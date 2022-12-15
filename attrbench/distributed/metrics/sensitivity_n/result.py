@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import Tuple, Dict
 import numpy as np
 import pandas as pd
 from attrbench.distributed.metrics.result import MetricResult, BatchResult
@@ -32,17 +32,16 @@ class SensitivityNResult(MetricResult):
     def add(self, batch_result: BatchResult):
         """
         Adds a BatchResult to the result object.
-        A BatchResult can contain results from multiple methods and arbitrary sample indices,
-        so this method uses the random access functionality of the RandomAccessNDArrayTree to save it.
+        Note that Sensitivity-n uses grouped attributions, so the BatchResult contains results for all methods.
         """
-        data = batch_result.results
-        for method_name in set(batch_result.method_names):
-            method_indices = [i for i, name in enumerate(batch_result.method_names) if name == method_name]
-            for masker_name in data.keys():
-                for activation_fn in data[masker_name].keys():
+        # method -> masker -> activation_fn -> [batch_size, 1]
+        data: Dict[str, Dict[str, Dict[str, npt.NDArray]]] = batch_result.results
+        indices = batch_result.indices.detach().cpu().numpy()
+        for method_name in self.method_names:
+            for masker_name in self.maskers:
+                for activation_fn in self.activation_fns:
                     self._tree.write(
-                        batch_result.indices[method_indices],
-                        data[masker_name][activation_fn][method_indices],
+                        indices, data[method_name][masker_name][activation_fn],
                         method=method_name, masker=masker_name, activation_fn=activation_fn)
 
     def save(self, path: str):

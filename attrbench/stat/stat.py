@@ -49,13 +49,15 @@ def corrcoef(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     :return: row-wise correlations between a and b (shape: [num_rows])
     """
     # Subtract mean
+    # [batch_size, num_observations]
     a -= a.mean(axis=1, keepdims=True)
     b -= b.mean(axis=1, keepdims=True)
-    # Calculate covariances
-    cov = (a * b).sum(axis=1) / (a.shape[1] - 1)
-    # Divide by product of standard deviations
+    # Calculate numerator
     # [batch_size]
-    denom = a.std(axis=1) * b.std(axis=1)
+    cov = (a * b).sum(axis=1)
+    # Calculate denominator
+    # [batch_size]
+    denom = np.sqrt((a**2).sum(axis=1)) * np.sqrt((b**2).sum(axis=1))
     denom_zero = (denom == 0.)
     if np.any(denom_zero):
         warnings.warn("Zero standard deviation detected.")

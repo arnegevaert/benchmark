@@ -10,6 +10,7 @@ from attrbench.distributed.metrics.result import BatchResult
 from attrbench.distributed import PartialResultMessage, DoneMessage
 from attrbench.metrics.sensitivity_n._dataset import _SensitivityNDataset
 from attrbench.util.util import ACTIVATION_FNS
+from attrbench.stat import corrcoef
 
 
 class SensitivityNWorker(MetricWorker):
@@ -28,7 +29,7 @@ class SensitivityNWorker(MetricWorker):
     def work(self):
         model = self._get_model()
 
-        for batch_indices, batch_x, batch_y, batch_attr, method_names in self.dataloader:
+        for batch_indices, batch_x, batch_y, batch_attr in self.dataloader:
             batch_x = batch_x.to(self.device)
             batch_y = batch_y.to(self.device)
             activated_orig_output = {}
@@ -41,7 +42,7 @@ class SensitivityNWorker(MetricWorker):
             batch_result: Dict[str, Dict[str, torch.Tensor]] = {
                 method_name: {
                     masker: {
-                        activation_fn: None for activation_fn in self.activation_fns
+                        activation_fn: [] for activation_fn in self.activation_fns
                     } for masker in self.maskers.keys()
                 } for method_name in self.dataset.method_names
             }
@@ -61,6 +62,7 @@ class SensitivityNWorker(MetricWorker):
                 ds = _SensitivityNDataset(n_range, self.num_subsets, batch_x, masker)
 
                 # Calculate differences in output and removed indices (will be re-used for all methods)
+                # activation_fn -> n -> [batch_size, 1]
                 output_diffs = {activation_fn: {n: [] for n in n_range} for activation_fn in self.activation_fns}
                 removed_indices = {n: [] for n in n_range}
                 for i in range(len(ds)):
@@ -70,8 +72,44 @@ class SensitivityNWorker(MetricWorker):
                         output = model(batch)
                     for activation_fn in self.activation_fns:
                         activated_output = ACTIVATION_FNS[activation_fn](output)
+                        # [batch_size, 1]
+                        output_diffs[activation_fn][n].append(
+                            (activated_orig_output[activation_fn] - activated_output)
+                            .gather(dim=1, index=batch_y.unsqueeze(-1))
+                        )
+                    removed_indices[n].append(indices)  # [batch_size, n]
+                # All output differences have been computed. Concatenate/stack all results into numpy arrays
+                for n in n_range:
+                    for activation_fn in self.activation_fns:
+                        # [batch_size, num_subsets]
+                        output_diffs[activation_fn][n] = torch.cat(output_diffs[activation_fn][n], dim=1)\
+                            .detach().cpu().numpy()
+                    # [batch_size, num_subsets, n]
+                    removed_indices[n] = np.stack(removed_indices[n], axis=1)
+
+                # Compute correlations for all methods
+                # TODO this might have to happen in another process, not sure if possible?
+                for method_name in self.dataset.method_names:
+                    attrs = batch_attr[method_name].detach().cpu().numpy()
+                    # [batch_size, 1, -1]
+                    attrs = attrs.reshape((attrs.shape[0], 1, -1))
+                    for n in n_range:
+                        # [batch_size, num_subsets, n]
+                        n_mask_attrs = np.take_along_axis(attrs, axis=-1, indices=removed_indices[n])
+                        for activation_fn in self.activation_fns:
+                            # Compute sum of attributions
+                            n_sum_of_attrs = n_mask_attrs.sum(axis=-1)  # [batch_size, num_subsets]
+                            n_output_diffs = output_diffs[activation_fn][n]
+                            # Compute correlation between output difference and sum of attribution values
+                            batch_result[method_name][masker_name][activation_fn].append(
+                                corrcoef(n_sum_of_attrs, n_output_diffs))
+                    for activation_fn in self.activation_fns:
+                        afn_result = batch_result[method_name][masker_name][activation_fn]
+                        # [batch_size, len(n_range)]
+                        stacked_result = torch.tensor(np.stack(afn_result, axis=1))
+                        batch_result[method_name][masker_name][activation_fn] = stacked_result
 
             self.result_queue.put(
-                PartialResultMessage(self.rank, BatchResult(batch_indices, batch_result, method_names))
+                PartialResultMessage(self.rank, BatchResult(batch_indices, batch_result))
             )
         self.result_queue.put(DoneMessage(self.rank))

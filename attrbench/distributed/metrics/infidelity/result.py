@@ -22,7 +22,7 @@ class InfidelityResult(MetricResult):
     def add(self, batch_result: BatchResult):
         # method -> perturbation_generator -> activation_fn -> [batch_size, 1]
         data: Dict[str, Dict[str, Dict[str, npt.NDArray]]] = batch_result.results
-        indices = batch_result.indices
+        indices = batch_result.indices.detach().cpu().numpy()
         for method_name in self.method_names:
             for perturbation_generator in self.perturbation_generators:
                 for activation_fn in self.activation_fns:
