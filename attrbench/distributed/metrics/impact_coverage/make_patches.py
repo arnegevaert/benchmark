@@ -151,7 +151,7 @@ class MakePatchesWorker(Worker):
             patch, val_loss, percent_successful = make_patch(dataloader, model, self.target_label, device)
             
             # Save patch to disk
-            torch.save(patch, os.path.join(self.path, f"patch_{patch_index}"))
+            torch.save(patch, os.path.join(self.path, f"patch_{patch_index}.pt"))
 
             # Send message to main process
             self.result_queue.put(PartialResultMessage(self.rank, PatchResult(patch_index, val_loss, percent_successful)))
@@ -171,6 +171,8 @@ class MakePatches(DistributedComputation):
         self.dataset = dataset
         self.target_label = target_label
         self.batch_size = batch_size
+        if not os.path.isdir(self.path):
+            os.makedirs(self.path)
 
     def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> Worker:
         return MakePatchesWorker(queue, rank, self.world_size, 
