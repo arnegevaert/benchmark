@@ -1,12 +1,12 @@
 from attrbench.distributed import PartialResultMessage, DoneMessage, Worker
 import torch.multiprocessing as mp
-from typing import Tuple
+from typing import Optional, Tuple
 import torch
 import os
 
 
 class DistributedComputation:
-    def __init__(self, address="localhost", port="12355", devices: Tuple[int] = None):
+    def __init__(self, address="localhost", port="12355", devices: Optional[Tuple[int]] = None):
         self.address = address
         self.port = port
         self.devices = devices if devices is not None else list(range(torch.cuda.device_count()))

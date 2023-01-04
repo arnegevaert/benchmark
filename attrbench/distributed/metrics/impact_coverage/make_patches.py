@@ -122,22 +122,21 @@ def make_patch(dataloader, model, target_label, device, patch_percent=0.1, epoch
 
 
 class PatchResult:
-    def __init__(self, patch_index: int, val_loss: float, percent_successful: float) -> None:
-        self.patch_index = patch_index
+    def __init__(self, patch_label: int, val_loss: float, percent_successful: float) -> None:
+        self.patch_label = patch_label
         self.val_loss = val_loss
         self.percent_successful = percent_successful
 
         
 class MakePatchesWorker(Worker):
     def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, all_processes_done: mp.Event,
-                 target_label: int, path: str, total_num_patches: int, batch_size: int, dataset: Dataset, 
+                 path: str, total_num_patches: int, batch_size: int, dataset: Dataset, 
                  model_factory: Callable[[], nn.Module]):
         super().__init__(result_queue, rank, world_size, all_processes_done)
-        self.patch_indices = list(range(total_num_patches))[self.rank:total_num_patches:self.world_size]
+        self.patch_labels = list(range(total_num_patches))[self.rank:total_num_patches:self.world_size]
         self.dataset = dataset
         self.model_factory = model_factory
         self.batch_size = batch_size
-        self.target_label = target_label
         self.path = path
 
     def work(self):
@@ -145,43 +144,42 @@ class MakePatchesWorker(Worker):
         model = self.model_factory()
         model.to(device)
 
-        for patch_index in self.patch_indices:
+        for patch_label in self.patch_labels:
             # Train patch
             dataloader = DataLoader(self.dataset, batch_size=self.batch_size, num_workers=4, pin_memory=True)
-            patch, val_loss, percent_successful = make_patch(dataloader, model, self.target_label, device)
+            patch, val_loss, percent_successful = make_patch(dataloader, model, patch_label, device)
             
             # Save patch to disk
-            torch.save(patch, os.path.join(self.path, f"patch_{patch_index}.pt"))
+            torch.save(patch, os.path.join(self.path, f"patch_{patch_label}.pt"))
 
             # Send message to main process
-            self.result_queue.put(PartialResultMessage(self.rank, PatchResult(patch_index, val_loss, percent_successful)))
+            self.result_queue.put(PartialResultMessage(self.rank, PatchResult(patch_label, val_loss, percent_successful)))
         self.result_queue.put(DoneMessage(self.rank))
 
 
 class MakePatches(DistributedComputation):
     def __init__(self, model_factory: Callable[[], nn.Module], 
-                 dataset: Dataset, num_patches: int, batch_size: int, target_label: int, path: str, 
+                 dataset: Dataset, num_labels: int, batch_size: int, path: str, 
                  address="localhost", port="12355", 
                  devices: Optional[Tuple[int]] = None):
         super().__init__(address, port, devices)
-        self.num_patches = num_patches
+        self.num_labels = num_labels
         self.path = path
         self.prog = None
         self.model_factory = model_factory
         self.dataset = dataset
-        self.target_label = target_label
         self.batch_size = batch_size
         if not os.path.isdir(self.path):
             os.makedirs(self.path)
 
     def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> Worker:
         return MakePatchesWorker(queue, rank, self.world_size, 
-                                 all_processes_done, self.target_label, self.path,
-                                 self.num_patches, self.batch_size,
+                                 all_processes_done, self.path,
+                                 self.num_labels, self.batch_size,
                                  self.dataset, self.model_factory)
 
     def _handle_result(self, result: PartialResultMessage[PatchResult]):
         # The workers save the files, so no need to do anything except log results
-        print(f"Received patch {result.data.patch_index}.",
+        print(f"Received patch {result.data.patch_label}.",
               f"Loss: {result.data.val_loss:.3f}.",
               f"Acc: {result.data.percent_successful:.3f}.")

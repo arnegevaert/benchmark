@@ -3,14 +3,13 @@ from torch import multiprocessing as mp
 from attrbench.distributed import DistributedSampler
 from typing import Callable
 from torch import nn
-from attrbench.data import AttributionsDataset
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 import torch
 
 
 class MetricWorker(Worker):
     def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, all_processes_done: mp.Event,
-                 model_factory: Callable[[], nn.Module], dataset: AttributionsDataset, batch_size: int):
+                 model_factory: Callable[[], nn.Module], dataset: Dataset, batch_size: int):
         super().__init__(result_queue, rank, world_size, all_processes_done)
         self.batch_size = batch_size
         self.dataset = dataset
