@@ -1,24 +1,21 @@
 from attrbench.distributed.metrics.distributed_metric import \
         DistributedMetric, MetricWorker
-import torch
-from typing import Callable, Tuple, Optional, NewType, Dict
+from typing import Callable, Tuple, Optional
 from torch import nn
 from torch import multiprocessing as mp
-from torch.utils.data import Dataset
+from attrbench.data import IndexDataset
+from attrbench.distributed.metrics.impact_coverage.result import ImpactCoverageResult
+from attrbench.util.method_factory import MethodFactory
 
 from .impact_coverage_worker import ImpactCoverageWorker
 
 
-AttributionMethod = NewType("AttributionMethod",
-                            Callable[[torch.Tensor, torch.Tensor],
-                                     torch.Tensor])
 
 
 class DistributedImpactCoverage(DistributedMetric):
     def __init__(self, model_factory: Callable[[], nn.Module],
-                 dataset: Dataset, batch_size: int,
-                 method_factory: Callable[[nn.Module], 
-                                          Dict[str, AttributionMethod]],
+                 dataset: IndexDataset, batch_size: int,
+                 method_factory: MethodFactory,
                  patch_folder: str,
                  address="localhost",
                  port="12355", devices: Optional[Tuple] = None):
@@ -26,6 +23,8 @@ class DistributedImpactCoverage(DistributedMetric):
                          devices)
         self.method_factory = method_factory
         self.patch_folder = patch_folder
+        self._result = ImpactCoverageResult(method_factory.get_method_names(),
+                                           shape=(len(dataset),))
 
     def _create_worker(self, queue: mp.Queue, rank: int, 
                        all_processes_done: mp.Event) -> MetricWorker:

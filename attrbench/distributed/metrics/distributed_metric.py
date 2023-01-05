@@ -1,4 +1,4 @@
-from torch.utils.data import Dataset
+from attrbench.data import IndexDataset
 from tqdm import tqdm
 from torch import nn
 import torch.multiprocessing as mp
@@ -10,7 +10,7 @@ from typing import Tuple, Callable, Optional
 
 
 class DistributedMetric(DistributedComputation):
-    def __init__(self, model_factory: Callable[[], nn.Module], dataset: Dataset, batch_size: int,
+    def __init__(self, model_factory: Callable[[], nn.Module], dataset: IndexDataset, batch_size: int,
                  address="localhost", port="12355", devices: Optional[Tuple] = None):
         super().__init__(address, port, devices)
         self.batch_size = batch_size

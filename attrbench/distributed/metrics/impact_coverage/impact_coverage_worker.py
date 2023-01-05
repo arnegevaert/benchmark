@@ -1,4 +1,5 @@
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
+from attrbench.data import IndexDataset
 import numpy as np
 import logging
 import random
@@ -10,7 +11,7 @@ from attrbench.distributed.distributed_sampler import DistributedSampler
 from attrbench.distributed.message import DoneMessage, PartialResultMessage
 from attrbench.distributed.metrics.metric_worker import MetricWorker
 from torch import multiprocessing as mp
-from typing import Callable, Dict
+from typing import Callable, Dict, NewType
 from torch import nn
 
 from attrbench.distributed.metrics.result.batch_result import BatchResult
@@ -23,7 +24,7 @@ class ImpactCoverageWorker(MetricWorker):
     def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, 
                  all_processes_done, model_factory: Callable[[], nn.Module],
                  method_factory: Callable[[nn.Module], Dict[str, AttributionMethod]],
-                 dataset: Dataset, batch_size: int,
+                 dataset: IndexDataset, batch_size: int,
                  patch_folder: str):
         super().__init__(result_queue, rank, world_size, all_processes_done, 
                          model_factory, dataset, batch_size)

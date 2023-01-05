@@ -1,3 +1,4 @@
+from attrbench.data import IndexDataset
 from torch.utils.data import Dataset
 import numpy as np
 import h5py
@@ -13,7 +14,7 @@ def _mean(arr: npt.NDArray, axis: int):
     return np.mean(arr, axis=axis, keepdims=True)
 
 
-class AttributionsDataset(Dataset):
+class AttributionsDataset(IndexDataset):
     """
     File
     - method_1: [num_samples, *sample_shape]
@@ -21,8 +22,11 @@ class AttributionsDataset(Dataset):
     - ...
     """
 
-    def __init__(self, samples_dataset: Dataset, path: str, aggregate_axis: int = 0, aggregate_method: str = None,
-                 methods: Optional[Tuple[str]] = None, group_attributions=False):
+    def __init__(self, samples_dataset: Dataset, path: str,
+                 aggregate_axis: int = 0,
+                 aggregate_method: Optional[str] = None,
+                 methods: Optional[Tuple[str]] = None,
+                 group_attributions=False):
         self.path = path
         # If True, all attributions for a given sample are returned for a given sample.
         # This can be useful if some intermediate results using the sample can be re-used (e.g. in Infidelity)
