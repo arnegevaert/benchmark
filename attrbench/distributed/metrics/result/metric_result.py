@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import Tuple
 from attrbench.distributed.metrics.result import BatchResult
 import pandas as pd

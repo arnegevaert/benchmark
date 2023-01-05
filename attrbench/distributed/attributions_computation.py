@@ -22,7 +22,7 @@ class AttributionResult:
 class AttributionsWorker(Worker):
     def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, all_processes_done: mp.Event,
                  model_factory: Callable[[], nn.Module],
-                 method_factory: Callable[[nn.Module], Dict[str, Tuple[AttributionMethod, bool]]],
+                 method_factory: Callable[[nn.Module], Dict[str, AttributionMethod]],
                  dataset: IndexDataset, batch_size: int):
         super().__init__(result_queue, rank, world_size, all_processes_done)
         self.batch_size = batch_size

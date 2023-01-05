@@ -1,4 +1,4 @@
-from typing import Callable, Union, Tuple, Dict
+from typing import Callable, Union, Tuple, Dict, Optional
 
 from torch import nn
 from torch import multiprocessing as mp
@@ -12,10 +12,13 @@ from attrbench.data import AttributionsDataset
 class DistributedDeletion(DistributedMetric):
     def __init__(self, model_factory: Callable[[], nn.Module],
                  dataset: AttributionsDataset, batch_size: int,
-                 maskers: Dict[str, Masker], activation_fns: Union[Tuple[str], str], mode: str = "morf",
+                 maskers: Dict[str, Masker],
+                 activation_fns: Union[Tuple[str], str], mode: str = "morf",
                  start: float = 0., stop: float = 1., num_steps: int = 100,
-                 address="localhost", port="12355", devices: Tuple = None):
-        super().__init__(model_factory, dataset, batch_size, address, port, devices)
+                 address="localhost", port="12355",
+                 devices: Optional[Tuple] = None):
+        super().__init__(model_factory, dataset, batch_size, address, port,
+                         devices)
         self.num_steps = num_steps
         self.stop = stop
         self._start = start

@@ -1,4 +1,4 @@
-from typing import Tuple, List, Dict
+from typing import Tuple, Optional, Dict
 import numpy as np
 import pandas as pd
 from attrbench.distributed.metrics.result import MetricResult, BatchResult
@@ -26,8 +26,10 @@ class InfidelityResult(MetricResult):
         for method_name in self.method_names:
             for perturbation_generator in self.perturbation_generators:
                 for activation_fn in self.activation_fns:
-                    self._tree.write(indices, data[method_name][perturbation_generator][activation_fn],
-                                     method=method_name, perturbation_generator=perturbation_generator,
+                    self._tree.write(indices,
+                                     data[method_name][perturbation_generator][activation_fn],
+                                     method=method_name,
+                                     perturbation_generator=perturbation_generator,
                                      activation_fn=activation_fn)
 
     def save(self, path: str):
@@ -38,13 +40,15 @@ class InfidelityResult(MetricResult):
     def load(cls, path: str) -> "InfidelityResult":
         with h5py.File(path, "r") as fp:
             tree = RandomAccessNDArrayTree.load_from_hdf(fp)
-            res = InfidelityResult(tree.levels["method"], tree.levels["perturbation_generator"],
+            res = InfidelityResult(tree.levels["method"],
+                                   tree.levels["perturbation_generator"],
                                    tree.levels["activation_fn"], tree.shape)
             res._tree = tree
         return res
 
     def get_df(self, perturbation_generator: str, activation_fn: str,
-               methods: Tuple[str] = None) -> Tuple[pd.DataFrame, bool]:
+               methods: Optional[Tuple[str]] = None)\
+                       -> Tuple[pd.DataFrame, bool]:
         methods = methods if methods is not None else self.method_names
         df_dict = {}
         for method in methods:
