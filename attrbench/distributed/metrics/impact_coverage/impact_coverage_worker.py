@@ -11,19 +11,17 @@ from attrbench.distributed.distributed_sampler import DistributedSampler
 from attrbench.distributed.message import DoneMessage, PartialResultMessage
 from attrbench.distributed.metrics.metric_worker import MetricWorker
 from torch import multiprocessing as mp
-from typing import Callable, Dict, NewType
+from typing import Callable, Dict
 from torch import nn
 
 from attrbench.distributed.metrics.result.batch_result import BatchResult
-
-
-AttributionMethod = NewType("AttributionMethod", Callable[[torch.Tensor, torch.Tensor], torch.Tensor])
+from attrbench.util.method_factory import MethodFactory
 
 
 class ImpactCoverageWorker(MetricWorker):
     def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, 
                  all_processes_done, model_factory: Callable[[], nn.Module],
-                 method_factory: Callable[[nn.Module], Dict[str, AttributionMethod]],
+                 method_factory: MethodFactory,
                  dataset: IndexDataset, batch_size: int,
                  patch_folder: str):
         super().__init__(result_queue, rank, world_size, all_processes_done, 
@@ -33,11 +31,6 @@ class ImpactCoverageWorker(MetricWorker):
 
     def work(self):
         model = self._get_model()
-        sampler = DistributedSampler(self.dataset, self.world_size, self.rank)
-        dataloader = DataLoader(self.dataset, sampler=sampler,
-                                batch_size=self.batch_size, num_workers=4,
-                                pin_memory=True)
-        device = torch.device(self.rank)
 
         # Get method dictionary
         method_dict = self.method_factory(model)
@@ -47,9 +40,9 @@ class ImpactCoverageWorker(MetricWorker):
                              if filename.endswith(".pt")])
         target_expr = re.compile(r".*_([0-9]*)\.pt")
 
-        for batch_indices, batch_x, batch_y in dataloader:
+        for batch_indices, batch_x, batch_y in self.dataloader:
             batch_result: Dict[str, torch.Tensor] = {
-                        method_name: None for method_name in method_dict.keys()
+                    method_name: None for method_name in method_dict.keys()
                     }
             batch_x = batch_x.to(self.device)
             batch_y = batch_y.to(self.device)
@@ -73,7 +66,7 @@ class ImpactCoverageWorker(MetricWorker):
                 patch = torch.load(
                         os.path.join(self.patch_folder, patch_name),
                         map_location=lambda storage, _: storage
-                        ).to(device)
+                        ).to(self.device)
                 image_size = batch_x.shape[-1]
                 patch_size = patch.shape[-1]
 
@@ -103,7 +96,7 @@ class ImpactCoverageWorker(MetricWorker):
                     logging.warning(
                         f"Not all samples could be attacked: {torch.sum(successful)}/{batch_x.size(0)} were successful.")
                     break
-            targets = targets.to(device)
+            targets = targets.to(self.device)
 
             # Compute impact coverage for each method
             for method_name, method in method_dict.items():

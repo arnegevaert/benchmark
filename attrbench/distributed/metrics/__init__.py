@@ -8,3 +8,4 @@ from .sensitivity_n import DistributedSensitivityN
 from .infidelity import DistributedInfidelity
 from .minimal_subset import DistributedMinimalSubset
 from .impact_coverage import MakePatches, DistributedImpactCoverage
+from .max_sensitivity import DistributedMaxSensitivity
