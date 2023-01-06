@@ -1,4 +1,4 @@
-from attrbench.distributed.metrics import DeletionResult
+from attrbench.metrics import DeletionResult
 
 
 if __name__ == "__main__":

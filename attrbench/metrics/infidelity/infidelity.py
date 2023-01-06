@@ -1,67 +1,28 @@
-from typing import Callable, List, Union, Tuple, Dict
-from os import path
-
-import numpy as np
-import torch
-
-from attrbench.metrics import Metric
-from ._compute_perturbations import _compute_perturbations
-from . import perturbation_generator
-from .result import InfidelityResult
+from attrbench.metrics import DistributedMetric
+import warnings
+from torch import nn
+from typing import Callable, Dict, Tuple
+from attrbench.data import AttributionsDataset
+from attrbench.metrics.infidelity import InfidelityWorker, InfidelityResult
+from .perturbation_generator import PerturbationGenerator
+from torch import multiprocessing as mp
 
 
-# TODO this is broken
-def infidelity(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
-               pert_generator: perturbation_generator.PerturbationGenerator, num_perturbations: int,
-               activation_fns: Union[Tuple[str], str] = "linear") -> Dict:
-    if type(activation_fns) == str:
-        activation_fns = (activation_fns,)
-    pert_vectors, pred_diffs = _compute_perturbations(samples, labels, model, pert_generator,
-                                                      num_perturbations, activation_fns)
-    #return _compute_result(pert_vectors, pred_diffs, attrs)
-
-
-def _parse_pert_generator(d):
-    constructor = getattr(perturbation_generator, d["type"])
-    return constructor(**{key: value for key, value in d.items() if key != "type"})
-
-
-class Infidelity(Metric):
-    def __init__(self, model: Callable, method_names: List[str], perturbation_generators: Dict,
-                 num_perturbations: int,
-                 activation_fns: Union[Tuple[str], str] = "linear"):
-        super().__init__(model, method_names)  # We don't pass writer_dir to super because we only use 1 general writer
+class Infidelity(DistributedMetric):
+    def __init__(self, model_factory: Callable[[], nn.Module], dataset: AttributionsDataset, batch_size: int,
+                 perturbation_generators: Dict[str, PerturbationGenerator], num_perturbations: int,
+                 activation_fns: Tuple[str]):
+        super().__init__(model_factory, dataset, batch_size)
+        if not dataset.group_attributions:
+            warnings.warn("Infidelity expects a dataset group_attributions==True. Setting to True.")
+            dataset.group_attributions = True
+        self.activation_fns = activation_fns
         self.num_perturbations = num_perturbations
-        self.activation_fns = (activation_fns,) if type(activation_fns) == str else activation_fns
-        # Process "perturbation-generators" argument: either it is a dictionary of PerturbationGenerator objects,
-        # or it is a dictionary that needs to be parsed.
-        self.perturbation_generators = {}
-        for key, value in perturbation_generators.items():
-            if type(value) == perturbation_generator.PerturbationGenerator:
-                self.perturbation_generators[key] = value
-            else:
-                self.perturbation_generators[key] = _parse_pert_generator(value)
+        self.perturbation_generators = perturbation_generators
+        self._result = InfidelityResult(self.dataset.method_names, tuple(self.perturbation_generators.keys()),
+                                        self.activation_fns, shape=(self.dataset.num_samples, 1))
 
-        self._result: InfidelityResult = InfidelityResult(method_names + ["_BASELINE"],
-                                                          list(perturbation_generators.keys()),
-                                                          list(self.activation_fns))
-
-    def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
-        # First calculate perturbation vectors and predictions differences, these can be re-used for all methods
-        for pert_gen, pert_gen_fn in self.perturbation_generators.items():
-            # Calculate dot products and prediction differences
-            extended_attrs_dict = {key: value for key, value in attrs_dict.items()}
-            for i in range(baseline_attrs.shape[0]):
-                extended_attrs_dict[f"_BASELINE_{i}"] = baseline_attrs[i, ...]
-            result = _compute_perturbations(samples, labels, self.model, extended_attrs_dict,
-                                            pert_gen_fn, self.num_perturbations,
-                                            self.activation_fns)
-            # Append method results
-            for method_name in attrs_dict.keys():
-                method_result = {afn: result[afn][method_name] for afn in self.activation_fns}
-                self.result.append(method_result, perturbation_generator=pert_gen, method=method_name)
-
-            # Append baseline results
-            bl_result = {afn: np.stack([result[afn][f"_BASELINE_{i}"] for i in range(baseline_attrs.shape[0])], axis=1)
-                         for afn in self.activation_fns}
-            self.result.append(bl_result, perturbation_generator=pert_gen, method="_BASELINE")
+    def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> InfidelityWorker:
+        return InfidelityWorker(queue, rank, self.world_size, all_processes_done, self.model_factory,
+                                self.dataset, self.batch_size, self.perturbation_generators,
+                                self.num_perturbations, self.activation_fns)

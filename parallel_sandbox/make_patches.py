@@ -1,5 +1,5 @@
 from util.get_dataset_model import get_dataset, get_model
-from attrbench.distributed.metrics import MakePatches
+from attrbench.metrics import MakePatches
 import argparse
 
 

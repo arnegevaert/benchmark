@@ -1,6 +1,6 @@
 from attrbench.util import MethodFactory
 from util.get_dataset_model import get_model
-from attrbench.distributed.metrics import DistributedImpactCoverage
+from attrbench.metrics import ImpactCoverage
 from attrbench.data import HDF5Dataset, IndexDataset
 import argparse
 from captum import attr
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     dataset = IndexDataset(HDF5Dataset(args.dataset))
-    coverage = DistributedImpactCoverage(get_model, dataset, args.batch_size,
-                                         SimpleMethodFactory(args.batch_size),
-                                         args.patch_folder)
+    coverage = ImpactCoverage(get_model, dataset, args.batch_size,
+                              SimpleMethodFactory(args.batch_size),
+                              args.patch_folder)
     coverage.run(result_path=args.output_file)

@@ -1,40 +1,50 @@
-from attrbench.metrics import AbstractMetricResult
-from attrbench.data import NDArrayTree
-import pandas as pd
-import numpy as np
+from typing import Tuple, List
+
 import h5py
-from typing import List, Tuple
+import pandas as pd
+
+from attrbench.metrics.result import BatchResult, MetricResult
+from attrbench.data import RandomAccessNDArrayTree
 
 
-class MinimalSubsetResult(AbstractMetricResult):
-    inverted = True
-
-    def __init__(self, method_names: List[str], maskers: List[str]):
-        super().__init__(method_names)
+class MinimalSubsetResult(MetricResult):
+    def __init__(self, method_names: Tuple[str], maskers: Tuple[str], mode: str, shape: Tuple[int, ...]):
+        super().__init__(method_names, shape)
+        self.shape = shape
+        self.mode = mode
         self.maskers = maskers
-        self._tree = NDArrayTree([
-            ("masker", maskers),
-            ("method", method_names)
-        ])
+        self.method_names = method_names
+
+        levels = {"method": method_names, "masker": maskers}
+        self._tree = RandomAccessNDArrayTree(levels, shape)
+
+    def add(self, batch_result: BatchResult):
+        # masker -> [batch_size, 1]
+        data = batch_result.results
+        for method_name in set(batch_result.method_names):
+            method_indices = [i for i, name in enumerate(batch_result.method_names) if name == method_name]
+            for masker_name in data.keys():
+                self._tree.write(
+                    batch_result.indices[method_indices],
+                    data[masker_name][method_indices],
+                    method=method_name, masker=masker_name
+                )
+
+    def save(self, path: str):
+        with h5py.File(path, mode="w") as fp:
+            fp.attrs["mode"] = self.mode
+            self._tree.add_to_hdf(fp)
 
     @classmethod
-    def load_from_hdf(cls, group: h5py.Group):
-        maskers = list(group.keys())
-        method_names = list(group[maskers[0]].keys())
-        result = cls(method_names, maskers)
-        result._tree = NDArrayTree.load_from_hdf(["masker", "method"], group)
-        return result
+    def load(cls, path: str) -> "MinimalSubsetResult":
+        with h5py.File(path, "r") as fp:
+            tree = RandomAccessNDArrayTree.load_from_hdf(fp)
+            res = MinimalSubsetResult(tree.levels["method"], tree.levels["masker"], fp.attrs["mode"], tree.shape)
+            res._tree = tree
+        return res
 
-    def get_df(self, mode="raw", include_baseline=False, masker: str = "constant", **kwargs) -> Tuple[pd.DataFrame, bool]:
-        raw_results = pd.DataFrame.from_dict(
-            self.tree.get(
-                postproc_fn=lambda x: np.squeeze(x, axis=-1),
-                exclude=dict(method=["_BASELINE"]),
-                select=dict(masker=[masker])
-            )[masker]
-        )
-        baseline_results = pd.DataFrame(self.tree.get(
-            postproc_fn=lambda x: np.squeeze(x, axis=-1),
-            select=dict(method=["_BASELINE"], masker=[masker])
-        )[masker]["_BASELINE"])
-        return self._get_df(raw_results, baseline_results, mode, include_baseline)
+    def get_df(self, masker: str, methods: List[str] = None) -> Tuple[pd.DataFrame, bool]:
+        higher_is_better = False
+        methods = methods if methods is not None else self.method_names
+        df_dict = {method: self._tree.get(masker=masker, method=method) for method in methods}
+        return pd.DataFrame.from_dict(df_dict), higher_is_better

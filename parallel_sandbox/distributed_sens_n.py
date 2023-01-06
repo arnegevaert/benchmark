@@ -1,5 +1,5 @@
 from util.get_dataset_model import get_model
-from attrbench.distributed.metrics import DistributedSensitivityN
+from attrbench.metrics import SensitivityN
 from attrbench.data import AttributionsDataset, HDF5Dataset
 from attrbench.masking import ConstantMasker
 import argparse
@@ -15,8 +15,8 @@ if __name__ == "__main__":
 
     dataset = AttributionsDataset(HDF5Dataset(args.samples_dataset), args.attrs_dataset,
                                   aggregate_axis=0, aggregate_method="mean", group_attributions=True)
-    sensn = DistributedSensitivityN(get_model, dataset, args.batch_size,
-                                    min_subset_size=0.1, max_subset_size=0.9, num_steps=2,
-                                    num_subsets=2, maskers={"constant": ConstantMasker(feature_level="pixel")},
-                                    activation_fns="linear")
+    sensn = SensitivityN(get_model, dataset, args.batch_size,
+                         min_subset_size=0.1, max_subset_size=0.9, num_steps=2,
+                         num_subsets=2, maskers={"constant": ConstantMasker(feature_level="pixel")},
+                         activation_fns="linear")
     sensn.run(result_path=args.output_file)

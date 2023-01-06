@@ -1,8 +1,8 @@
 from attrbench.data.attributions_dataset import AttributionsDataset
 from attrbench.util import MethodFactory
 from util.get_dataset_model import get_model
-from attrbench.distributed.metrics import DistributedMaxSensitivity
-from attrbench.data import HDF5Dataset, IndexDataset
+from attrbench.metrics import MaxSensitivity
+from attrbench.data import HDF5Dataset
 import argparse
 from captum import attr
 import torch
@@ -39,7 +39,7 @@ if __name__ == "__main__":
                                   args.attrs_dataset,
                                   group_attributions=True)
 
-    maxsens = DistributedMaxSensitivity(get_model, dataset, args.batch_size,
-                                        SimpleMethodFactory(args.batch_size),
-                                        num_perturbations=50, radius=0.01)
+    maxsens = MaxSensitivity(get_model, dataset, args.batch_size,
+                             SimpleMethodFactory(args.batch_size),
+                             num_perturbations=50, radius=0.01)
     maxsens.run(result_path=args.output_file)

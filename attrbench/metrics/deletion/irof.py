@@ -1,14 +1,19 @@
-from typing import Callable, List, Union, Dict
-
-import numpy as np
+from typing import Dict, Callable, Union, Tuple, List
 import torch
+import numpy as np
+from torch import nn
+from torch import multiprocessing as mp
+from torch.utils.data import DataLoader
 
 from attrbench.masking import ImageMasker
-from os import path
-from attrbench.metrics import MaskerMetric
+from attrbench.distributed import Worker, DistributedSampler, DoneMessage, PartialResultMessage
+from attrbench.metrics.result import BatchResult
+from attrbench.metrics.deletion import Deletion
+from attrbench.data import AttributionsDataset
+
+from .deletion import DeletionWorker
 from ._dataset import _IrofDataset
 from ._get_predictions import _get_predictions
-from .result import IrofResult
 
 
 def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
@@ -21,40 +26,40 @@ def irof(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np
     return _get_predictions(masking_dataset, labels, model, activation_fns)
 
 
-class Irof(MaskerMetric):
-    def __init__(self, model: Callable, method_names: List[str], maskers: Dict,
-                 activation_fns: Union[List[str], str],
+class IrofWorker(DeletionWorker):
+    def work(self):
+        sampler = DistributedSampler(self.dataset, self.world_size, self.rank, shuffle=False)
+        dataloader = DataLoader(self.dataset, sampler=sampler, batch_size=self.batch_size, num_workers=4)
+        device = torch.device(self.rank)
+        model = self.model_factory()
+        model.to(device)
+
+        for batch_indices, batch_x, batch_y, batch_attr, method_names in dataloader:
+            batch_x = batch_x.to(device)
+            batch_y = batch_y.to(device)
+            batch_result = {}
+            for masker_name, masker in self.maskers.items():
+                if not isinstance(masker, ImageMasker):
+                    raise ValueError("Invalid masker", masker_name)
+                batch_result[masker_name] = irof(batch_x, batch_y, model, batch_attr.numpy(), masker,
+                                                 self.activation_fns, self.mode, self.start, self.stop,
+                                                 self.num_steps)
+            self.result_queue.put(
+                PartialResultMessage(self.rank, BatchResult(batch_indices, batch_result, method_names))
+            )
+        self.result_queue.put(DoneMessage(self.rank))
+
+
+class Irof(Deletion):
+    def __init__(self, model_factory: Callable[[], nn.Module],
+                 dataset: AttributionsDataset, batch_size: int,
+                 maskers: Dict[str, ImageMasker], activation_fns: Union[Tuple[str], str], mode: str = "morf",
                  start: float = 0., stop: float = 1., num_steps: int = 100,
-                 mode: str = "morf"):
-        super().__init__(model, method_names, maskers)
-        self.start = start
-        self.stop = stop
-        self.num_steps = num_steps
-        self.mode = mode
-        self.activation_fns = [activation_fns] if type(activation_fns) == str else activation_fns
-        self._result = IrofResult(method_names + ["_BASELINE"], list(self.maskers.keys()),
-                                  self.activation_fns, mode)
+                 address="localhost", port="12355", devices: Tuple = None):
+        super().__init__(model_factory, dataset, batch_size, maskers, activation_fns, mode,
+                         start, stop, num_steps, address, port, devices)
 
-    def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
-        masking_datasets = {}
-        methods_result = {masker_name: {afn: {} for afn in self.activation_fns} for masker_name in self.maskers}
-        baseline_result = {masker_name: {afn: [] for afn in self.activation_fns} for masker_name in self.maskers}
-        for masker_name, masker in self.maskers.items():
-            masking_datasets[masker_name] = _IrofDataset(self.mode, self.start, self.stop, self.num_steps,
-                                                         samples, masker)
-        for masker_name, masking_dataset in masking_datasets.items():
-            for method_name in attrs_dict:
-                masking_dataset.set_attrs(attrs_dict[method_name])
-                result = _get_predictions(masking_dataset, labels, self.model, self.activation_fns, )
-                for afn in self.activation_fns:
-                    methods_result[masker_name][afn][method_name] = result[afn].cpu().detach().numpy()
-
-            for i in range(baseline_attrs.shape[0]):
-                masking_dataset.set_attrs(baseline_attrs[i, ...])
-                bl_result = _get_predictions(masking_dataset, labels, self.model, self.activation_fns)
-                for afn in self.activation_fns:
-                    baseline_result[masker_name][afn].append(bl_result[afn].cpu().detach().numpy())
-            for afn in self.activation_fns:
-                baseline_result[masker_name][afn] = np.stack(baseline_result[masker_name][afn], axis=1)
-        self.result.append(methods_result)
-        self.result.append(baseline_result, method="_BASELINE")
+    def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> Worker:
+        return IrofWorker(queue, rank, self.world_size, all_processes_done, self.model_factory, self.dataset,
+                          self.batch_size, self.maskers, self.activation_fns, self.mode,
+                          self._start, self.stop, self.num_steps)

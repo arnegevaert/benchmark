@@ -1,13 +1,15 @@
-from typing import Callable
-from collections import defaultdict
+from typing import Callable, Tuple, Dict
 
 import numpy as np
 import torch
+from torch import nn
+from torch import multiprocessing as mp
 
 from attrbench.masking import Masker
-from attrbench.metrics import MaskerMetric
+from attrbench.metrics.minimal_subset import MinimalSubsetResult, MinimalSubsetWorker
+from attrbench.metrics import DistributedMetric
+from attrbench.data import AttributionsDataset
 from ._dataset import _MinimalSubsetDataset, _MinimalSubsetDeletionDataset, _MinimalSubsetInsertionDataset
-from .result import MinimalSubsetResult
 
 
 def ms_loop(attrs: np.ndarray, ds: _MinimalSubsetDataset, model: Callable,
@@ -68,37 +70,23 @@ def minimal_subset_insertion(samples: torch.Tensor, model: Callable, attrs: np.n
     return result
 
 
-class _MinimalSubset(MaskerMetric):
-    def __init__(self, model, method_names, num_steps, maskers, metric_fn):
-        super().__init__(model, method_names, maskers)
+class MinimalSubset(DistributedMetric):
+    def __init__(self, model_factory: Callable[[], nn.Module],
+                 dataset: AttributionsDataset, batch_size: int,
+                 maskers: Dict[str, Masker], mode: str = "deletion",
+                 start: float = 0., stop: float = 1., num_steps: int = 100,
+                 address="localhost", port="12355", devices: Tuple = None):
+        super().__init__(model_factory, dataset, batch_size, address, port, devices)
         self.num_steps = num_steps
-        self._result: MinimalSubsetResult = MinimalSubsetResult(method_names + ["_BASELINE"], list(maskers.keys()))
-        self.metric_fn = metric_fn
+        self.stop = stop
+        self._start = start
+        if mode not in ["deletion", "insertion"]:
+            raise ValueError("Mode must be deletion or insertion. Got:", mode)
+        self.mode = mode
+        self.maskers = maskers
+        self._result = MinimalSubsetResult(dataset.method_names, tuple(maskers.keys()), mode,
+                                           shape=(dataset.num_samples, 1))
 
-    def run_batch(self, samples, labels, attrs_dict: dict, baseline_attrs: np.ndarray):
-        batch_result = defaultdict(dict)
-        for masker_name, masker in self.maskers.items():
-            # Compute results on baseline attributions
-            masker_bl_result = []
-            for i in range(baseline_attrs.shape[0]):
-                masker_bl_result.append(self.metric_fn(
-                    samples, self.model, baseline_attrs[i, ...], self.num_steps,masker
-                ).detach().cpu().numpy())
-            batch_result[masker_name]["_BASELINE"] = np.stack(masker_bl_result, axis=1)
-
-            # Compute results on actual attributions
-            for method_name in attrs_dict:
-                batch_result[masker_name][method_name] = self.metric_fn(
-                    samples, self.model, attrs_dict[method_name], self.num_steps,
-                    masker).detach().cpu().numpy()
-        self.result.append(batch_result)
-
-
-class MinimalSubsetDeletion(_MinimalSubset):
-    def __init__(self, model, method_names, num_steps, maskers):
-        super().__init__(model, method_names, num_steps, maskers, minimal_subset_deletion)
-
-
-class MinimalSubsetInsertion(_MinimalSubset):
-    def __init__(self, model, method_names, num_steps, maskers):
-        super().__init__(model, method_names, num_steps, maskers, minimal_subset_insertion)
+    def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> MinimalSubsetWorker:
+        return MinimalSubsetWorker(queue, rank, self.world_size, all_processes_done, self.model_factory, self.dataset,
+                                   self.batch_size, self.maskers, self.mode, self.num_steps)

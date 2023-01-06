@@ -1,5 +1,5 @@
 from util.get_dataset_model import get_model
-from attrbench.distributed.metrics import DistributedIrof
+from attrbench.metrics import Irof
 from attrbench.data import AttributionsDataset, HDF5Dataset
 from attrbench.masking import ConstantMasker
 import argparse
@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     dataset = AttributionsDataset(HDF5Dataset(args.samples_dataset), args.attrs_dataset,
                                   aggregate_axis=0, aggregate_method="mean")
-    deletion = DistributedIrof(get_model, dataset, args.batch_size,
-                               maskers={"constant": ConstantMasker(feature_level="pixel")},
-                               activation_fns="linear")
+    deletion = Irof(get_model, dataset, args.batch_size,
+                    maskers={"constant": ConstantMasker(feature_level="pixel")},
+                    activation_fns="linear")
     deletion.run(result_path=args.output_file)

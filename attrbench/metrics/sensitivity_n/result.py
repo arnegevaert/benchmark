@@ -1,41 +1,84 @@
-from typing import List
-
-import h5py
+from typing import Tuple, Dict
 import numpy as np
+import pandas as pd
+from attrbench.metrics.result import MetricResult, BatchResult
+from attrbench.data import RandomAccessNDArrayTree
+from numpy import typing as npt
+import h5py
 
-from attrbench.metrics import MaskerActivationMetricResult
-from attrbench.data import NDArrayTree
+
+def _column_avg(x: npt.NDArray, columns: npt.NDArray) -> npt.NDArray:
+    """
+    Returns the average value of x along the specified columns.
+    Used in get_df.
+    """
+    if columns is not None:
+        x = x[..., columns]
+    return np.mean(x, axis=-1)
 
 
-class SensitivityNResult(MaskerActivationMetricResult):
-    inverted = False
+# TODO loads of code duplication here with DeletionResult
+class SensitivityNResult(MetricResult):
+    def __init__(self, method_names: Tuple[str],
+                 maskers: Tuple[str], activation_fns: Tuple[str],
+                 shape: Tuple[int, ...]):
+        super().__init__(method_names, shape)
+        self.activation_fns = activation_fns
+        self.maskers = maskers
 
-    def __init__(self, method_names: List[str], maskers: List[str], activation_fns: List[str], index: np.ndarray):
-        super().__init__(method_names, maskers, activation_fns)
-        self.index = index
+        levels = {"method": method_names, "masker": maskers, "activation_fn": activation_fns}
+        self._tree = RandomAccessNDArrayTree(levels, shape)
 
-    def add_to_hdf(self, group: h5py.Group):
-        group.attrs["index"] = self.index
-        super().add_to_hdf(group)
+    def add(self, batch_result: BatchResult):
+        """
+        Adds a BatchResult to the result object.
+        Note that Sensitivity-n uses grouped attributions, so the BatchResult contains results for all methods.
+        """
+        # method -> masker -> activation_fn -> [batch_size, 1]
+        data: Dict[str, Dict[str, Dict[str, npt.NDArray]]] = batch_result.results
+        indices = batch_result.indices.detach().cpu().numpy()
+        for method_name in self.method_names:
+            for masker_name in self.maskers:
+                for activation_fn in self.activation_fns:
+                    self._tree.write(
+                        indices, data[method_name][masker_name][activation_fn],
+                        method=method_name, masker=masker_name, activation_fn=activation_fn)
+
+    def save(self, path: str):
+        """
+        Saves the SensitivityNResult to an HDF5 file.
+        """
+        with h5py.File(path, mode="w") as fp:
+            self._tree.add_to_hdf(fp)
 
     @classmethod
-    def load_from_hdf(cls, group: h5py.Group) -> MaskerActivationMetricResult:
-        maskers = list(group.keys())
-        activation_fns = list(group[maskers[0]].keys())
-        method_names = list(group[maskers[0]][activation_fns[0]].keys())
-        result = cls(method_names, maskers, activation_fns, group.attrs["index"])
-        result._tree = NDArrayTree.load_from_hdf(["masker", "activation_fn", "method"], group)
-        return result
+    def load(cls, path: str) -> "SensitivityNResult":
+        """
+        Loads a SensitivityNResult from an HDF5 file.
+        """
+        with h5py.File(path, "r") as fp:
+            tree = RandomAccessNDArrayTree.load_from_hdf(fp)
+            res = SensitivityNResult(tree.levels["method"], tree.levels["masker"],
+                                     tree.levels["activation_fn"], tree.shape)
+            res._tree = tree
+        return res
 
-    def get_df(self, mode="raw", include_baseline=False, masker="constant",
-               activation_fn="linear", columns=None):
-        def _postproc_fn(x):
-            if columns is not None:
-                x = x[..., columns]
-            return np.mean(x, axis=-1)
-        return super().get_df(mode, include_baseline, masker, activation_fn,
-                              postproc_fn=_postproc_fn)
-
-
-class SegSensitivityNResult(SensitivityNResult):
-    pass
+    def get_df(self, masker: str, activation_fn: str,
+               methods: Tuple[str] = None, columns: npt.NDArray = None) -> Tuple[pd.DataFrame, bool]:
+        """
+        Retrieves a dataframe from the result for a given masker and activation function.
+        The dataframe contains a row for each sample and a column for each method.
+        Each value is the average Sensitivity-N value for the given method on the given sample,
+        over the specified columns.
+        :param masker: the masker to use
+        :param activation_fn: the activation function to use
+        :param methods: the methods to include. If None, includes all methods.
+        :param columns: the columns used in the aggregation
+        :return: dataframe containing results, and boolean indicating if higher is better (always True for this metric)
+        """
+        methods = methods if methods is not None else self.method_names
+        df_dict = {}
+        for method in methods:
+            array = self._tree.get(masker=masker, activation_fn=activation_fn, method=method)
+            df_dict[method] = _column_avg(array, columns)
+        return pd.DataFrame.from_dict(df_dict), True

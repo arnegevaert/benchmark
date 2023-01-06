@@ -1,2 +1,3 @@
-from .sensitivity_n import sensitivity_n, seg_sensitivity_n, SensitivityN, SegSensitivityN
-from .result import SegSensitivityNResult, SensitivityNResult
+from .result import SensitivityNResult
+from .sensitivity_n_worker import SensitivityNWorker
+from .sensitivity_n import SensitivityN

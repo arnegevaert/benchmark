@@ -1,8 +1,7 @@
 from util.get_dataset_model import get_model
-from attrbench.distributed.metrics import DistributedInfidelity
+from attrbench.metrics import Infidelity
 from attrbench.data import AttributionsDataset, HDF5Dataset
-from attrbench.metrics.infidelity import GaussianPerturbationGenerator, SquarePerturbationGenerator, \
-    NoisyBaselinePerturbationGenerator, SegmentRemovalPerturbationGenerator
+from attrbench.metrics.infidelity import GaussianPerturbationGenerator
 import argparse
 
 
@@ -22,6 +21,6 @@ if __name__ == "__main__":
         #"noisy_bl": NoisyBaselinePerturbationGenerator(sd=0.1),
         #"segment": SegmentRemovalPerturbationGenerator(num_segments=100)
     }
-    infidelity = DistributedInfidelity(get_model, dataset, args.batch_size, pert_gens, num_perturbations=1000,
-                                       activation_fns=("linear",))
+    infidelity = Infidelity(get_model, dataset, args.batch_size, pert_gens, num_perturbations=1000,
+                            activation_fns=("linear",))
     infidelity.run(result_path=args.output_file)

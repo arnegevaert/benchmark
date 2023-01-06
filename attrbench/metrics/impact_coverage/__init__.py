@@ -1,2 +1,3 @@
-from .result import ImpactCoverageResult
-from .impact_coverage import ImpactCoverage, impact_coverage
+from .make_patches import MakePatches
+from .impact_coverage import ImpactCoverage
+

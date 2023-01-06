@@ -1,71 +1,91 @@
-from attrbench.metrics import MaskerActivationMetricResult
-import pandas as pd
-from typing import Tuple, List
-import numpy as np
 import h5py
-from attrbench.data import NDArrayTree
-from scipy.special import softmax
+import numpy as np
+from numpy import typing as npt
+from typing import List, Tuple
+from attrbench.data import RandomAccessNDArrayTree
+from attrbench.metrics.result import BatchResult, MetricResult
+import pandas as pd
 
 
-def _aoc(x: np.ndarray, columns: np.ndarray = None):
+def _aoc(x: np.ndarray, columns: npt.NDArray = None):
     if columns is not None:
         x = x[..., columns]
     return x[..., 0] - _auc(x, columns)
-    #return x[..., 0] - np.sum(x, axis=-1) / (len(columns) + 1)
-    #return x[..., 0] - np.trapz(x, np.linspace(0, 1, x.shape[-1]), axis=-1)
 
 
-def _auc(x: np.ndarray, columns: np.ndarray = None):
+def _auc(x: np.ndarray, columns: npt.NDArray = None):
     if columns is not None:
         x = x[..., columns]
     l = x.shape[-1] if columns is None else columns.shape[0]
     return np.sum(x, axis=-1) / l
-    # return np.trapz(x, np.linspace(0, 1, x.shape[-1]))
 
 
-class DeletionResult(MaskerActivationMetricResult):
-    inverted = None
-
-    def __init__(self, method_names: List[str], maskers: List[str], activation_fns: List[str], mode: str):
-        super().__init__(method_names, maskers, activation_fns)
-        if mode not in ("morf", "lerf"):
-            raise ValueError("Mode must be morf or lerf")
+class DeletionResult(MetricResult):
+    def __init__(self, method_names: Tuple[str],
+                 maskers: Tuple[str], activation_fns: Tuple[str], mode: str,
+                 shape: Tuple[int, ...]):
+        super().__init__(method_names, shape)
         self.mode = mode
+        self.activation_fns = activation_fns
+        self.maskers = maskers
 
-    def add_to_hdf(self, group: h5py.Group):
-        group.attrs["mode"] = self.mode
-        super().add_to_hdf(group)
+        levels = {"method": method_names, "masker": maskers, "activation_fn": activation_fns}
+        self._tree = RandomAccessNDArrayTree(levels, shape)
+
+    def add(self, batch_result: BatchResult):
+        """
+        Adds a BatchResult to the result object.
+        A BatchResult can contain results from multiple methods and arbitrary sample indices,
+        so this method uses the random access functionality of the RandomAccessNDArrayTree to save it.
+        """
+        data = batch_result.results
+        for method_name in set(batch_result.method_names):
+            method_indices = [i for i, name in enumerate(batch_result.method_names) if name == method_name]
+            for masker_name in data.keys():
+                for activation_fn in data[masker_name].keys():
+                    self._tree.write(
+                        batch_result.indices[method_indices],
+                        data[masker_name][activation_fn][method_indices],
+                        method=method_name, masker=masker_name, activation_fn=activation_fn)
+
+    def save(self, path: str):
+        """
+        Saves the DeletionResult to an HDF5 file.
+        """
+        with h5py.File(path, mode="w") as fp:
+            fp.attrs["mode"] = self.mode
+            self._tree.add_to_hdf(fp)
 
     @classmethod
-    def load_from_hdf(cls, group: h5py.Group) -> MaskerActivationMetricResult:
-        maskers = list(group.keys())
-        activation_fns = list(group[maskers[0]].keys())
-        method_names = list(group[maskers[0]][activation_fns[0]].keys())
-        mode = group.attrs["mode"]
+    def load(cls, path: str) -> "DeletionResult":
+        """
+        Loads a DeletionResult from an HDF5 file.
+        """
+        with h5py.File(path, "r") as fp:
+            tree = RandomAccessNDArrayTree.load_from_hdf(fp)
+            res = DeletionResult(tree.levels["method"], tree.levels["masker"],
+                                 tree.levels["activation_fn"], fp.attrs["mode"], tree.shape)
+            res._tree = tree
+        return res
 
-        result = cls(method_names, maskers, activation_fns, mode)
-        result._tree = NDArrayTree.load_from_hdf(["masker", "activation_fn", "method"], group)
-        return result
-
-    def get_df(self, mode="raw", include_baseline=False, masker: str = "constant",
-               activation_fn: str = "linear", columns=None, agg_fn="auc",
-               normalize=False) -> Tuple[pd.DataFrame, bool]:
-        if agg_fn not in ("aoc", "auc"):
-            raise ValueError("agg_fn must be aoc or auc")
-        if normalize and self.suite_result.predictions is None:
-            raise ValueError("Can't normalize: predictions not available")
-        postproc_fn = _aoc if agg_fn == "aoc" else _auc
-        df, _ = super().get_df(mode, include_baseline, masker, activation_fn,
-                               postproc_fn=lambda x: postproc_fn(x, columns))
-        inverted = (self.mode == "morf" and agg_fn == "auc") or (self.mode == "lerf" and agg_fn == "aoc")
-        if normalize:
-            predictions = self.suite_result.predictions
-            if activation_fn == "softmax":
-                predictions = softmax(predictions, axis=1)
-            confidences = np.abs(np.max(predictions, axis=1))
-            df = df.div(pd.Series(confidences), axis=0)
-        return df, inverted
-
-
-class IrofResult(DeletionResult):
-    pass
+    def get_df(self, masker: str, activation_fn: str, agg_fn="auc", methods: List[str] = None,
+               columns: npt.NDArray = None) -> Tuple[pd.DataFrame, bool]:
+        """
+        Retrieves a dataframe from the result for a given masker and activation function.
+        The dataframe contains a row for each sample and a column for each method.
+        Each value is the AUC/AOC for the given method on the given sample.
+        :param masker: the masker to use
+        :param activation_fn: the activation function to use
+        :param agg_fn: either "auc" for AUC or "aoc" for AOC
+        :param methods: the methods to include. If None, includes all methods.
+        :param columns: the columns used in the AUC/AOC calculation
+        :return: dataframe containing results, and boolean indicating if higher is better
+        """
+        higher_is_better = (self.mode == "morf" and agg_fn == "aoc") or (self.mode == "lerf" and agg_fn == "auc")
+        methods = methods if methods is not None else self.method_names
+        df_dict = {}
+        agg_fns = {"auc": _auc, "aoc": _aoc}
+        for method in methods:
+            array = self._tree.get(masker=masker, activation_fn=activation_fn, method=method)
+            df_dict[method] = agg_fns[agg_fn](array, columns)
+        return pd.DataFrame.from_dict(df_dict), higher_is_better
