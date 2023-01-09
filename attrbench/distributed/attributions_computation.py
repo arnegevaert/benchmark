@@ -1,15 +1,13 @@
 from attrbench.distributed import PartialResultMessage, DoneMessage,  DistributedComputation, DistributedSampler, Worker
+from attrbench.util import AttributionMethod
 from attrbench.data import AttributionsDatasetWriter, IndexDataset
 import torch.multiprocessing as mp
 from torch.utils.data import Dataset, DataLoader
-from typing import Callable, Tuple, Dict, NewType
+from typing import Callable, Tuple, Dict
 import torch
 from torch import nn
 from numpy import typing as npt
 from tqdm import tqdm
-
-
-AttributionMethod = NewType("AttributionMethod", Callable[[torch.Tensor, torch.Tensor], torch.Tensor])
 
 
 class AttributionResult:

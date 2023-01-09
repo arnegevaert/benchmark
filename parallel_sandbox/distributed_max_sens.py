@@ -1,30 +1,11 @@
 from attrbench.data.attributions_dataset import AttributionsDataset
 from attrbench.util import MethodFactory
+from attrbench.util.model import Model
+from methods import Gradient, InputXGradient, IntegratedGradients, Random
 from util.get_dataset_model import get_model
 from attrbench.metrics import MaxSensitivity
 from attrbench.data import HDF5Dataset
 import argparse
-from captum import attr
-import torch
-
-class SimpleMethodFactory(MethodFactory):
-    def __init__(self, batch_size):
-        self.batch_size = batch_size
-        self._method_names = ["Gradient", "InputXGradient", "Random"]
-
-    def get_method_names(self):
-        return self._method_names
-
-    def __call__(self, model):
-        saliency = attr.Saliency(model)
-        ixg = attr.InputXGradient(model)
-        # TODO define a "AttributionMethod" wrapper class that contains a
-        # function and an is_baseline property
-        return {
-            "Gradient": saliency.attribute,
-            "InputXGradient": ixg.attribute,
-            "Random": lambda x, target: torch.rand_like(x)
-        }
 
 
 if __name__ == "__main__":
@@ -39,7 +20,16 @@ if __name__ == "__main__":
                                   args.attrs_dataset,
                                   group_attributions=True)
 
-    maxsens = MaxSensitivity(get_model, dataset, args.batch_size,
-                             SimpleMethodFactory(args.batch_size),
+    resnet = get_model()
+    
+    method_factory = MethodFactory({
+        "Gradient": Gradient,
+        "InputXGradient": InputXGradient,
+        "IntegratedGradients": (IntegratedGradients, {"batch_size": args.batch_size}),
+        "Random": Random
+        })
+
+    maxsens = MaxSensitivity(Model(resnet), dataset, args.batch_size,
+                             method_factory,
                              num_perturbations=50, radius=0.01)
     maxsens.run(result_path=args.output_file)

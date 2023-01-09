@@ -1,6 +1,5 @@
 from torchvision import transforms
 from torchvision.models import resnet18, ResNet18_Weights
-import torch
 from .imagenet_subset import ImagenetSubset
 from os import path
 
@@ -14,12 +13,6 @@ def get_dataset():
                              std=[0.229, 0.224, 0.225])
     ])
     return ImagenetSubset(path.join("data", "imagenette2", "val"), transform=transform)
-
-
-
-def get_dataloader():
-    dataset = get_dataset()
-    return torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True)
 
 
 def get_model():

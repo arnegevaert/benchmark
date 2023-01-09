@@ -1,3 +1,4 @@
+from attrbench.util.model import Model
 from util.get_dataset_model import get_model
 from attrbench.metrics import Deletion
 from attrbench.data import AttributionsDataset, HDF5Dataset
@@ -13,9 +14,11 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output-file", type=str, default="deletion.h5")
     args = parser.parse_args()
 
+    resnet = get_model()
+
     dataset = AttributionsDataset(HDF5Dataset(args.samples_dataset), args.attrs_dataset,
                                   aggregate_axis=0, aggregate_method="mean")
-    deletion = Deletion(get_model, dataset, args.batch_size,
+    deletion = Deletion(Model(resnet), dataset, args.batch_size,
                         maskers={"constant": ConstantMasker(feature_level="pixel")},
                         activation_fns="linear")
     deletion.run(result_path=args.output_file)

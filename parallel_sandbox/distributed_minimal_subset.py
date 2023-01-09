@@ -1,3 +1,4 @@
+from attrbench.util.model import Model
 from util.get_dataset_model import get_model
 from attrbench.metrics import MinimalSubset
 from attrbench.data import AttributionsDataset, HDF5Dataset
@@ -15,7 +16,8 @@ if __name__ == "__main__":
 
     dataset = AttributionsDataset(HDF5Dataset(args.samples_dataset), args.attrs_dataset,
                                   aggregate_axis=0, aggregate_method="mean")
-    ms = MinimalSubset(get_model, dataset, args.batch_size,
+    resnet = get_model()
+    ms = MinimalSubset(Model(resnet), dataset, args.batch_size,
                        maskers={"constant": ConstantMasker(feature_level="pixel")},
                        mode="deletion")
     ms.run(result_path=args.output_file)
