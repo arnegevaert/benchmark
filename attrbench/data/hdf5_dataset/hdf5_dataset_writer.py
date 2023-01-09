@@ -16,7 +16,7 @@ class HDF5DatasetWriter:
     def clear(self):
         if self.file is not None:
             self.file.close()
-        with h5py.File(self.path, "w") as fp:
+        with h5py.File(self.path, "x") as fp:
             fp.create_dataset("samples", shape=(self.num_samples, *self.sample_shape), dtype=np.float32)
             fp.create_dataset("labels", shape=(self.num_samples,), dtype=np.int64)
             self.head = 0

@@ -47,7 +47,7 @@ class MetricResult:
         """
         Save the result to an HDF5 file.
         """
-        with h5py.File(path, mode="w") as fp:
+        with h5py.File(path, mode="x") as fp:
             self.tree.add_to_hdf(fp)
 
     @classmethod

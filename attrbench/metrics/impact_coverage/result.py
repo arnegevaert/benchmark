@@ -5,7 +5,6 @@ import pandas as pd
 
 from attrbench.data.nd_array_tree.random_access_nd_array_tree import RandomAccessNDArrayTree
 from attrbench.metrics.result import GroupedMetricResult
-from attrbench.metrics.result.metric_result import MetricResult
 
 
 class ImpactCoverageResult(GroupedMetricResult):
@@ -16,7 +15,7 @@ class ImpactCoverageResult(GroupedMetricResult):
 
     @classmethod
     @override
-    def load(cls, path: str) -> "MetricResult":
+    def load(cls, path: str) -> "ImpactCoverageResult":
         with h5py.File(path, "r") as fp:
             tree = RandomAccessNDArrayTree.load_from_hdf(fp)
         res = ImpactCoverageResult(tree.levels["method"], tree.shape)
@@ -28,5 +27,5 @@ class ImpactCoverageResult(GroupedMetricResult):
         methods = methods if methods is not None else self.method_names
         df_dict = {}
         for method in methods:
-            df_dict[method] = self._tree.get(method=method)
+            df_dict[method] = self.tree.get(method=method)
         return pd.DataFrame.from_dict(df_dict), False

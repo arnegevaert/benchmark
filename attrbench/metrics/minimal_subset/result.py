@@ -18,7 +18,7 @@ class MinimalSubsetResult(MetricResult):
 
     def save(self, path: str):
         super().save(path)
-        with h5py.File(path, mode="w") as fp:
+        with h5py.File(path, mode="a") as fp:
             fp.attrs["mode"] = self.mode
 
     @classmethod

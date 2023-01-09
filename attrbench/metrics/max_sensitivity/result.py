@@ -25,5 +25,5 @@ class MaxSensitivityResult(GroupedMetricResult):
         methods = methods if methods is not None else self.method_names
         df_dict = {}
         for method in methods:
-            df_dict[method] = self._tree.get(method=method)
+            df_dict[method] = self.tree.get(method=method)
         return pd.DataFrame.from_dict(df_dict), False

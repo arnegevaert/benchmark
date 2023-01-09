@@ -36,7 +36,7 @@ class DeletionResult(MetricResult):
         Saves the DeletionResult to an HDF5 file.
         """
         super().save(path)
-        with h5py.File(path, mode="w") as fp:
+        with h5py.File(path, mode="a") as fp:
             fp.attrs["mode"] = self.mode
 
     @classmethod

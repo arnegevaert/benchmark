@@ -44,8 +44,8 @@ class AttributionsDataset(IndexDataset):
         self.method_names: Tuple[str]
         with h5py.File(path, "r") as fp:
             num_samples = fp.attrs["num_samples"]
-            if isinstance(num_samples, int):
-                self.num_samples: int = num_samples
+            if isinstance(num_samples, np.int64):
+                self.num_samples: int = int(num_samples)
             if methods is None:
                 self.method_names = tuple(fp.keys())
             elif all(m in fp for m in methods):

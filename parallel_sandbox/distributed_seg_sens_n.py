@@ -10,7 +10,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--samples-dataset", type=str, default="samples.h5")
     parser.add_argument("-a", "--attrs-dataset", type=str, default="attributions.h5")
     parser.add_argument("-b", "--batch-size", type=int, default=8)
-    parser.add_argument("-o", "--output-file", type=str, default="sensn.h5")
+    parser.add_argument("-o", "--output-file", type=str, default="segsensn.h5")
     args = parser.parse_args()
 
     dataset = AttributionsDataset(HDF5Dataset(args.samples_dataset), args.attrs_dataset,
