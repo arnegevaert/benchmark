@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict, Union
+from typing import List, Tuple, Dict, Union, Optional
 import numpy as np
 from numpy import typing as npt
 import h5py
@@ -16,7 +16,7 @@ class RandomAccessNDArrayTree:
         """
         self.levels = levels
         self.shape = shape
-        self.level_names = sorted(list(levels.keys()))
+        self.level_names: Tuple[str] = tuple(sorted(list(levels.keys())))
 
         def _initialize_data(data, depth=0) -> Dict:
             """
@@ -38,6 +38,99 @@ class RandomAccessNDArrayTree:
             return data
         self._data: Dict = _initialize_data({})
 
+    def write_dict(self, indices: npt.NDArray, data: Dict,
+                   level_order: Optional[Tuple[str]] = None):
+        """
+        Recursively write a dictionary of data to fixed indices.
+        The data dictionary has to follow the same levels structure as the tree.
+        For each combination of levels, data is written to the same indices.
+        This is analogous to recursively looping over all keys in data and 
+        calling tree.write(indices, data[level1][level2]) for each NDArray.
+        :param indices: Indices where data should be written for each NDArray
+        :param data: Dictionary containing the data to be written
+        :param level_order: List of strings indicating in which order the 
+            different levels are encountered in the dictionary.
+            If not specified, alphabetical order is used.
+        """
+        if level_order is None:
+            level_order = self.level_names
+        elif sorted(level_order) != sorted(self.level_names):
+            raise ValueError(f"Invalid level_order: {level_order}")
+
+        def _write_rec(_data, level_keys):
+            depth = len(level_keys.keys())
+            if depth < len(self.level_names):
+                cur_level_name = level_order[depth]
+                for key in _data.keys():
+                # _data is a dictionary, loop over all keys and recurse
+                    level_keys[cur_level_name] = key
+                    _write_rec(_data[key], dict(level_keys))
+            else:
+                # We have reached a leaf, _data is an NDArray.
+                # Write to the specified location.
+                self.write(indices, _data, **level_keys)
+        
+        _write_rec(data, {})
+
+    def write_dict_split(self, indices_dict: Dict[str, npt.NDArray],
+                         target_indices: npt.NDArray,
+                         split_level: str, data: Dict,
+                         level_order: Optional[Tuple[str]] = None):
+        """
+        Same as write_dict, but instead of writing the full NDArray to each
+        location, indices in each NDArray are chosen based on some level.
+        For example: write indices [1,2,4] to all locations with 
+        method_name == "Gradient", and indices [3, 5] to all location with
+        method_name == "InputXGradient".
+        :param indices_dict: Dictionary mapping each level key of the split 
+            level to its corresponding indices in the original data.
+            Do not confuse with indices in write or write_dict: these are
+            target indices (indices where the data should be written to).
+        :param target_indices: NDArray containing the indices where the data
+            should be written to.
+        :param split_level: The level at which the NDArrays must be split.
+            This level is not present in data.
+        :param data: Dictionary containing the data to be written
+        :param level_order: List of strings indicating in which order the 
+            different levels are encountered in the dictionary.
+            If not specified, alphabetical order is used.
+        """
+        # This contains the levels that should be present in the data dict
+        # and in level_order. These are all levels except the split level.
+        data_levels = list(self.level_names)
+        data_levels.remove(split_level)
+        data_levels = tuple(data_levels)
+
+        if level_order is None:
+            level_order = data_levels
+        elif sorted(level_order) != sorted(data_levels):
+            raise ValueError(f"Invalid level_order: {level_order}")
+
+        def _write_rec(_data, level_keys, split_key):
+            depth = len(level_keys.keys())
+            if depth < len(self.level_names):
+                # We index using depth-1 because level_order does not contain
+                # the split level.
+                cur_level_name = level_order[depth-1]
+                for key in _data.keys():
+                # Loop over all keys and recurse
+                    level_keys[cur_level_name] = key
+                    _write_rec(_data[key], dict(level_keys), split_key)
+            else:
+                # We have reached a leaf, _data is an NDArray.
+                # Write to the specified location.
+                cur_indices = indices_dict[split_key]
+                cur_target_indices = target_indices[cur_indices]
+                self.write(cur_target_indices, _data[cur_indices], **level_keys)
+
+        # Write separately for each split key
+        for key in indices_dict.keys():
+            # We basically start at depth 1, the split_level is already set.
+            # This level will not be present in the data dictionary.
+            _write_rec(data, {split_level: key}, split_key=key)
+
+
+
     def write(self, indices: npt.NDArray, data: npt.NDArray, **level_keys) -> None:
         """
         Writes data to the given indices (axis=0) of a certain NDArray.
@@ -48,7 +141,7 @@ class RandomAccessNDArrayTree:
         :param level_keys: a key for each level to indicate the path to the desired NDArray
         """
         if set(level_keys.keys()) != set(self.levels.keys()):
-            raise ValueError(f"Must provide key for all levels: {list(self.levels.keys())}")
+            raise ValueError(f"Must provide key for all levels: {list(self.levels.keys())} (received {level_keys})")
         dest: Union[Dict, npt.NDArray] = self._data
         # Find the relevant NDArray
         for level_name in self.level_names:

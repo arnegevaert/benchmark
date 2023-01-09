@@ -1,5 +1,4 @@
-from .scene_overlay_dataset import SceneOverlayDataset
-from .make_adv_patch import make_patch, validate
 from .train_epoch import train_epoch
-from .segmentation import *
+from .segmentation import isin, segment_samples, segment_attributions
 from .method_factory import MethodFactory
+from .util import ACTIVATION_FNS

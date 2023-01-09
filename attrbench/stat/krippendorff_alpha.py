@@ -1,4 +1,3 @@
-import numpy as np
 import krippendorff
 from scipy.stats import rankdata
 

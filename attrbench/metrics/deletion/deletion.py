@@ -1,7 +1,5 @@
 from typing import Callable, Union, Tuple, Dict, Optional
 
-import numpy as np
-import torch
 from torch import nn
 from torch import multiprocessing as mp
 
@@ -9,9 +7,6 @@ from attrbench.masking import Masker
 from attrbench.metrics.deletion import DeletionResult, DeletionWorker
 from attrbench.metrics import DistributedMetric
 from attrbench.data import AttributionsDataset
-
-from ._dataset import _DeletionDataset
-from ._get_predictions import _get_predictions
 
 
 class Deletion(DistributedMetric):
@@ -38,13 +33,3 @@ class Deletion(DistributedMetric):
         return DeletionWorker(queue, rank, self.world_size, all_processes_done, self.model_factory, self.dataset,
                               self.batch_size, self.maskers, self.activation_fns, self.mode,
                               self._start, self.stop, self.num_steps)
-
-
-def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
-             masker: Masker,
-             activation_fns: Union[Tuple[str], str] = "linear",
-             mode: str = "morf", start: float = 0., stop: float = 1., num_steps: int = 100) -> Dict:
-    if type(activation_fns) == str:
-        activation_fns = [activation_fns]
-    ds = _DeletionDataset(mode, start, stop, num_steps, samples, attrs, masker)
-    return _get_predictions(ds, labels, model, activation_fns)

@@ -1,13 +1,16 @@
-from typing import Tuple, Dict
+from typing import Tuple, Optional
+from typing_extensions import override
 import numpy as np
 import pandas as pd
-from attrbench.metrics.result import MetricResult, BatchResult
 from attrbench.data import RandomAccessNDArrayTree
 from numpy import typing as npt
 import h5py
 
+from attrbench.metrics.result import GroupedMetricResult
 
-def _column_avg(x: npt.NDArray, columns: npt.NDArray) -> npt.NDArray:
+
+def _column_avg(x: npt.NDArray,
+                columns: Optional[npt.NDArray] = None) -> npt.NDArray:
     """
     Returns the average value of x along the specified columns.
     Used in get_df.
@@ -18,53 +21,29 @@ def _column_avg(x: npt.NDArray, columns: npt.NDArray) -> npt.NDArray:
 
 
 # TODO loads of code duplication here with DeletionResult
-class SensitivityNResult(MetricResult):
+class SensitivityNResult(GroupedMetricResult):
     def __init__(self, method_names: Tuple[str],
                  maskers: Tuple[str], activation_fns: Tuple[str],
                  shape: Tuple[int, ...]):
-        super().__init__(method_names, shape)
-        self.activation_fns = activation_fns
-        self.maskers = maskers
-
-        levels = {"method": method_names, "masker": maskers, "activation_fn": activation_fns}
-        self._tree = RandomAccessNDArrayTree(levels, shape)
-
-    def add(self, batch_result: BatchResult):
-        """
-        Adds a BatchResult to the result object.
-        Note that Sensitivity-n uses grouped attributions, so the BatchResult contains results for all methods.
-        """
-        # method -> masker -> activation_fn -> [batch_size, 1]
-        data: Dict[str, Dict[str, Dict[str, npt.NDArray]]] = batch_result.results
-        indices = batch_result.indices.detach().cpu().numpy()
-        for method_name in self.method_names:
-            for masker_name in self.maskers:
-                for activation_fn in self.activation_fns:
-                    self._tree.write(
-                        indices, data[method_name][masker_name][activation_fn],
-                        method=method_name, masker=masker_name, activation_fn=activation_fn)
-
-    def save(self, path: str):
-        """
-        Saves the SensitivityNResult to an HDF5 file.
-        """
-        with h5py.File(path, mode="w") as fp:
-            self._tree.add_to_hdf(fp)
+        levels = {"method": method_names, "masker": maskers,
+                  "activation_fn": activation_fns}
+        level_order = ["method", "masker", "activation_fn"]
+        super().__init__(method_names, shape, levels, level_order)
 
     @classmethod
+    @override
     def load(cls, path: str) -> "SensitivityNResult":
-        """
-        Loads a SensitivityNResult from an HDF5 file.
-        """
         with h5py.File(path, "r") as fp:
             tree = RandomAccessNDArrayTree.load_from_hdf(fp)
             res = SensitivityNResult(tree.levels["method"], tree.levels["masker"],
                                      tree.levels["activation_fn"], tree.shape)
-            res._tree = tree
+            res.tree = tree
         return res
-
+    
+    @override
     def get_df(self, masker: str, activation_fn: str,
-               methods: Tuple[str] = None, columns: npt.NDArray = None) -> Tuple[pd.DataFrame, bool]:
+               methods: Optional[Tuple[str]] = None,
+               columns: Optional[npt.NDArray] = None) -> Tuple[pd.DataFrame, bool]:
         """
         Retrieves a dataframe from the result for a given masker and activation function.
         The dataframe contains a row for each sample and a column for each method.
@@ -79,6 +58,6 @@ class SensitivityNResult(MetricResult):
         methods = methods if methods is not None else self.method_names
         df_dict = {}
         for method in methods:
-            array = self._tree.get(masker=masker, activation_fn=activation_fn, method=method)
+            array = self.tree.get(masker=masker, activation_fn=activation_fn, method=method)
             df_dict[method] = _column_avg(array, columns)
         return pd.DataFrame.from_dict(df_dict), True

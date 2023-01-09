@@ -1,4 +1,8 @@
-from typing import Tuple
+from abc import abstractmethod
+from typing import Tuple, Dict
+import h5py
+import numpy as np
+from attrbench.data.nd_array_tree.random_access_nd_array_tree import RandomAccessNDArrayTree
 from attrbench.metrics.result import BatchResult
 import pandas as pd
 
@@ -7,29 +11,54 @@ class MetricResult:
     """
     Abstract class to represent results of distributed metrics.
     """
-    def __init__(self, method_names: Tuple[str], shape: Tuple[int, ...]):
+    def __init__(self, method_names: Tuple[str, ...], shape: Tuple[int, ...],
+                 levels: Dict[str, Tuple[str, ...]],
+                 level_order: Tuple[str, ...]):
         self.shape = shape
         self.method_names = method_names
+        self.levels = levels
+        self.level_order = level_order
+        self.tree = RandomAccessNDArrayTree(levels, shape)
 
     def add(self, batch_result: BatchResult):
         """
-        Add a batch to the result (abstract method).
+        Adds a BatchResult to the result object.
         """
-        raise NotImplementedError
+        if batch_result.method_names is not None:
+            indices_dict = {
+                    method_name: np.array(
+                        [i for i, name in enumerate(batch_result.method_names) 
+                         if name == method_name]
+                        )
+                    for method_name in set(batch_result.method_names)
+                    }
+            target_indices = batch_result.indices.detach().cpu().numpy()
+            level_order = list(self.level_order)
+            level_order.remove("method")
+            self.tree.write_dict_split(indices_dict,
+                                       target_indices=target_indices,
+                                       split_level="method",
+                                       data=batch_result.results,
+                                       level_order=level_order)
+        else:
+            raise ValueError("Invalid BatchResult: no method names available")
 
     def save(self, path: str):
         """
-        Save the result to an HDF5 file (abstract method).
+        Save the result to an HDF5 file.
         """
-        raise NotImplementedError
+        with h5py.File(path, mode="w") as fp:
+            self.tree.add_to_hdf(fp)
 
     @classmethod
+    @abstractmethod
     def load(cls, path: str) -> "MetricResult":
         """
         Load a result from an HDF5 file (abstract method).
         """
         raise NotImplementedError
 
+    @abstractmethod
     def get_df(self, *args, **kwargs) -> Tuple[pd.DataFrame, bool]:
         """
         Retrieve a dataframe from the result object for some given arguments,

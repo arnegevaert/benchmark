@@ -1,14 +1,28 @@
 from attrbench.metrics import MetricWorker
-from typing import Callable, Dict, Tuple
+from typing import Callable, Dict, Tuple, Union
 
+import numpy as np
+import torch
 from torch import nn
 from torch import multiprocessing as mp
 
 from attrbench.masking import Masker
 from attrbench.distributed import DoneMessage, PartialResultMessage
 from attrbench.metrics.result import BatchResult
-from attrbench.metrics.deletion import deletion
 from attrbench.data import AttributionsDataset
+
+from ._dataset import _DeletionDataset
+from ._get_predictions import _get_predictions
+
+
+def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs: np.ndarray,
+             masker: Masker,
+             activation_fns: Union[Tuple[str], str] = "linear",
+             mode: str = "morf", start: float = 0., stop: float = 1., num_steps: int = 100) -> Dict:
+    if type(activation_fns) == str:
+        activation_fns = [activation_fns]
+    ds = _DeletionDataset(mode, start, stop, num_steps, samples, attrs, masker)
+    return _get_predictions(ds, labels, model, activation_fns)
 
 
 class DeletionWorker(MetricWorker):
