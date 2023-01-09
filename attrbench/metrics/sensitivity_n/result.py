@@ -1,4 +1,4 @@
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Self
 from typing_extensions import override
 import numpy as np
 import pandas as pd
@@ -32,7 +32,7 @@ class SensitivityNResult(GroupedMetricResult):
 
     @classmethod
     @override
-    def load(cls, path: str) -> "SensitivityNResult":
+    def load(cls, path: str) -> Self:
         with h5py.File(path, "r") as fp:
             tree = RandomAccessNDArrayTree.load_from_hdf(fp)
             res = SensitivityNResult(tree.levels["method"], tree.levels["masker"],
