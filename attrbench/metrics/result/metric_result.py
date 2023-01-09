@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Tuple, Dict, Self
+from typing import Tuple, Dict
 import h5py
 import numpy as np
 from attrbench.data.nd_array_tree.random_access_nd_array_tree import RandomAccessNDArrayTree
@@ -52,7 +52,7 @@ class MetricResult:
 
     @classmethod
     @abstractmethod
-    def load(cls, path: str) -> Self:
+    def load(cls, path: str) -> "MetricResult":
         """
         Load a result from an HDF5 file (abstract method).
         """

@@ -98,7 +98,7 @@ class ImpactCoverageWorker(MetricWorker):
 
             # Compute impact coverage for each method
             for method_name, method in method_dict.items():
-                attrs = method(attacked_samples, target=targets).detach().cpu().numpy()
+                attrs = method(attacked_samples, targets).detach().cpu().numpy()
 
                 # Check attributions shape
                 if attrs.shape[1] not in (1, 3):

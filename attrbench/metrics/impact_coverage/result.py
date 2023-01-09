@@ -1,4 +1,4 @@
-from typing import Self, Tuple, Optional
+from typing import Tuple, Optional
 from typing_extensions import override
 import h5py
 import pandas as pd
@@ -15,7 +15,7 @@ class ImpactCoverageResult(GroupedMetricResult):
 
     @classmethod
     @override
-    def load(cls, path: str) -> Self:
+    def load(cls, path: str) -> "ImpactCoverageResult":
         with h5py.File(path, "r") as fp:
             tree = RandomAccessNDArrayTree.load_from_hdf(fp)
         res = ImpactCoverageResult(tree.levels["method"], tree.shape)

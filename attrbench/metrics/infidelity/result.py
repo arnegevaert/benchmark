@@ -1,4 +1,4 @@
-from typing import Tuple, Optional, Self
+from typing import Tuple, Optional
 from typing_extensions import override
 import pandas as pd
 from attrbench.data import RandomAccessNDArrayTree
@@ -19,7 +19,7 @@ class InfidelityResult(GroupedMetricResult):
 
     @classmethod
     @override
-    def load(cls, path: str) -> Self:
+    def load(cls, path: str) -> "InfidelityResult":
         with h5py.File(path, "r") as fp:
             tree = RandomAccessNDArrayTree.load_from_hdf(fp)
             res = InfidelityResult(tree.levels["method"],

@@ -2,7 +2,7 @@ from typing_extensions import override
 import h5py
 import numpy as np
 from numpy import typing as npt
-from typing import List, Tuple, Optional, Self
+from typing import List, Tuple, Optional
 from attrbench.data import RandomAccessNDArrayTree
 from attrbench.metrics.result import MetricResult
 import pandas as pd
@@ -41,7 +41,7 @@ class DeletionResult(MetricResult):
 
     @classmethod
     @override
-    def load(cls, path: str) -> Self:
+    def load(cls, path: str) -> "DeletionResult":
         """
         Loads a DeletionResult from an HDF5 file.
         """

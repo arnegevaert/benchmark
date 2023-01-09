@@ -1,26 +1,9 @@
+from attrbench.util.method_factory import MethodFactory
 from util.get_dataset_model import get_model
 from attrbench.distributed import AttributionsComputation
 from attrbench.data import HDF5Dataset, AttributionsDatasetWriter
-from captum import attr
-import torch
+from methods import Gradient, InputXGradient, IntegratedGradients, Random
 import argparse
-
-
-class MethodFactory:
-    def __init__(self, batch_size):
-        self.batch_size = batch_size
-
-    def __call__(self, model):
-        saliency = attr.Saliency(model)
-        ixg = attr.InputXGradient(model)
-        ig = attr.IntegratedGradients(model)
-        # TODO define a "AttributionMethod" wrapper class that contains a function and an is_baseline property
-        return {
-            "Gradient": saliency.attribute,
-            "InputXGradient": ixg.attribute,
-            "IntegratedGradients": lambda x, y: ig.attribute(inputs=x, target=y, internal_batch_size=self.batch_size),
-            "Random": lambda x, _: torch.rand_like(x)
-        }
 
 
 if __name__ == "__main__":
@@ -33,5 +16,15 @@ if __name__ == "__main__":
     dataset = HDF5Dataset(args.dataset)
     writer = AttributionsDatasetWriter(args.output_file, truncate=True, num_samples=len(dataset),
                                        sample_shape=dataset.sample_shape)
-    computation = AttributionsComputation(get_model, MethodFactory(args.batch_size), dataset, batch_size=args.batch_size, writer=writer)
+
+    method_factory = MethodFactory({
+        "Gradient": Gradient,
+        "InputXGradient": InputXGradient,
+        "IntegratedGradients": (IntegratedGradients, {"batch_size": args.batch_size}),
+        "Random": Random
+        })
+
+    computation = AttributionsComputation(get_model, method_factory, dataset,
+                                          batch_size=args.batch_size,
+                                          writer=writer)
     computation.run()
