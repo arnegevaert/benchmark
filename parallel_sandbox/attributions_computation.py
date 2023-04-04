@@ -1,4 +1,4 @@
-from attrbench.util.method_factory import MethodFactory
+from attrbench import MethodFactory
 from util.get_dataset_model import get_model
 from attrbench.distributed import AttributionsComputation
 from attrbench.data import HDF5Dataset, AttributionsDatasetWriter
@@ -14,7 +14,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     dataset = HDF5Dataset(args.dataset)
-    writer = AttributionsDatasetWriter(args.output_file, truncate=True, num_samples=len(dataset),
+    writer = AttributionsDatasetWriter(args.output_file, num_samples=len(dataset),
                                        sample_shape=dataset.sample_shape)
 
     method_factory = MethodFactory({

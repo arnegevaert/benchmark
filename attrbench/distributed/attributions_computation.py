@@ -1,5 +1,5 @@
 from attrbench.distributed import PartialResultMessage, DoneMessage,  DistributedComputation, DistributedSampler, Worker
-from attrbench.util import AttributionMethod
+from attrbench import AttributionMethod
 from attrbench.data import AttributionsDatasetWriter, IndexDataset
 import torch.multiprocessing as mp
 from torch.utils.data import Dataset, DataLoader

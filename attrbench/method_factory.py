@@ -1,16 +1,16 @@
 from typing import Dict, Type, Union, NewType, Tuple
 from torch import nn
 
-from attrbench.util import AttributionMethod
+from attrbench import AttributionMethod
 
 
 # ConfigDict is a dictionary mapping strings to...
-ConfigDict = NewType("ConfigDict", Dict[str, Union[
+ConfigDict = Dict[str, Union[
     # An AttributionMethod constructor
     Type[AttributionMethod],
     # ... or an AttributionMethod constructor along with a kwargs dict
     Tuple[Type[AttributionMethod], Dict]
-    ]])
+    ]]
 
 
 class MethodFactory:
