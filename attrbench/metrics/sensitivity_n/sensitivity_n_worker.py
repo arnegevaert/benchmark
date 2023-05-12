@@ -9,8 +9,8 @@ from attrbench.metrics import MetricWorker
 from attrbench.metrics.result import BatchResult
 from attrbench.distributed import PartialResultMessage, DoneMessage
 from attrbench.metrics.sensitivity_n._dataset import _SensitivityNDataset, _SegSensNDataset
-from attrbench.util.segmentation import segment_attributions
-from attrbench.util.util import ACTIVATION_FNS
+from attrbench.segmentation import segment_attributions
+from attrbench.activation_fns import ACTIVATION_FNS
 from attrbench.stat import corrcoef
 
 
@@ -57,7 +57,7 @@ class SensitivityNWorker(MetricWorker):
             else:
                 total_num_features = np.prod(self.dataset.attributions_shape)
                 n_range = n_range * total_num_features
-            n_range = n_range.astype(np.int)
+            n_range = n_range.astype(int)
 
             for masker_name, masker in self.maskers.items():
                 """

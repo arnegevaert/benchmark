@@ -1,4 +1,4 @@
-from attrbench.data.attributions_dataset import AttributionsDataset
+from attrbench.data.index_dataset import IndexDataset
 import math
 import warnings
 from attrbench.distributed.message import DoneMessage, PartialResultMessage
@@ -9,7 +9,7 @@ from torch import nn
 from torch import multiprocessing as mp
 from attrbench.metrics.result.batch_result import BatchResult
 
-from attrbench.util.method_factory import MethodFactory
+from attrbench.method_factory import MethodFactory
 
 
 def _normalize_attrs(attrs):
@@ -21,15 +21,12 @@ class MaxSensitivityWorker(MetricWorker):
     def __init__(self, result_queue: mp.Queue, rank: int, world_size: int,
                  all_processes_done, model_factory: Callable[[], nn.Module],
                  method_factory: MethodFactory,
-                 dataset: AttributionsDataset, batch_size: int,
+                 dataset: IndexDataset, batch_size: int,
                  num_perturbations: int, radius: float):
         super().__init__(result_queue, rank, world_size, all_processes_done, model_factory, dataset, batch_size)
         self.method_factory = method_factory
         self.num_perturbations = num_perturbations
         self.radius = radius
-        if not dataset.group_attributions:
-            warnings.warn("Max-Sensitivity expects a dataset group_attributions==True. Setting to True.")
-            dataset.group_attributions = True
 
 
     def work(self):
@@ -38,7 +35,7 @@ class MaxSensitivityWorker(MetricWorker):
         # Get method dictionary
         method_dict = self.method_factory(model)
         
-        for batch_indices, batch_x, batch_y, batch_attr in self.dataloader:
+        for batch_indices, batch_x, batch_y in self.dataloader:
             batch_result: Dict[str, torch.Tensor] = {
                     method_name: None for method_name in method_dict.keys()
                     }
@@ -48,8 +45,7 @@ class MaxSensitivityWorker(MetricWorker):
             
             # Compute Max-Sensitivity for each method
             for method_name, method in method_dict.items():
-                attrs = _normalize_attrs(
-                        torch.tensor(batch_attr[method_name]).float())
+                attrs = _normalize_attrs(method(batch_x, batch_y).detach()).cpu()
                 diffs = []
 
                 for _ in range(self.num_perturbations):

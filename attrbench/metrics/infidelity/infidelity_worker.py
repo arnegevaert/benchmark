@@ -3,7 +3,7 @@ import torch
 from typing import Callable, Dict, Tuple
 from torch import nn
 from attrbench.data import AttributionsDataset
-from attrbench.util.util import ACTIVATION_FNS
+from attrbench.activation_fns import ACTIVATION_FNS
 from attrbench.metrics import MetricWorker
 from attrbench.metrics.result import BatchResult
 from attrbench.distributed import PartialResultMessage, DoneMessage

@@ -23,7 +23,7 @@ def segment_attributions(seg_images: np.ndarray, attrs: np.ndarray) -> np.ndarra
     attrs_flat = attrs.reshape(attrs.shape[0], -1)
     result = np.zeros((seg_images.shape[0], len(segments)))
     for seg in segments:
-        mask = (seg_img_flat == seg).astype(np.long)
+        mask = (seg_img_flat == seg).astype(int)
         masked_attrs = mask * attrs_flat
         mask_size = np.sum(mask, axis=1)
         sum_attrs = np.sum(masked_attrs, axis=1)

@@ -13,7 +13,7 @@ from typing import Callable, Dict
 from torch import nn
 
 from attrbench.metrics.result.batch_result import BatchResult
-from attrbench.util.method_factory import MethodFactory
+from attrbench.method_factory import MethodFactory
 
 
 class ImpactCoverageWorker(MetricWorker):

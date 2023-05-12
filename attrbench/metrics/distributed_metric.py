@@ -40,3 +40,7 @@ class DistributedMetric(DistributedComputation):
             self._result.add(result_message.data)
         if self.prog is not None:
             self.prog.update(len(result_message.data.indices))
+    
+    def _finish(self):
+        if self.prog is not None:
+            self.prog.close()

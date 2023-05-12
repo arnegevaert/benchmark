@@ -10,11 +10,13 @@ class Worker:
         self.all_processes_done = all_processes_done
 
     def setup(self):
-        dist.init_process_group("gloo", rank=self.rank, world_size=self.world_size)
+        if self.world_size != 1:
+            dist.init_process_group("gloo", rank=self.rank, world_size=self.world_size)
 
     def cleanup(self):
-        self.all_processes_done.wait()
-        dist.destroy_process_group()
+        if self.world_size != 1:
+            self.all_processes_done.wait()
+            dist.destroy_process_group()
 
     def run(self):
         self.setup()

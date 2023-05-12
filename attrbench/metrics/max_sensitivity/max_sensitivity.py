@@ -1,17 +1,17 @@
-from attrbench.data.attributions_dataset import AttributionsDataset
+from attrbench.data.index_dataset import IndexDataset
 from torch import multiprocessing as mp
 from attrbench.metrics import MetricWorker
 from typing import Callable, Optional, Tuple
 from torch import nn
 from attrbench.metrics.distributed_metric import DistributedMetric
-from attrbench.util.method_factory import MethodFactory
+from attrbench.method_factory import MethodFactory
 from .result import MaxSensitivityResult
 from .max_sensitivity_worker import MaxSensitivityWorker
 
 
 class MaxSensitivity(DistributedMetric):
     def __init__(self, model_factory: Callable[[], nn.Module],
-                 dataset: AttributionsDataset, batch_size: int,
+                 dataset: IndexDataset, batch_size: int,
                  method_factory: MethodFactory,
                  num_perturbations: int, radius: float,
                  address="localhost", port="12355",

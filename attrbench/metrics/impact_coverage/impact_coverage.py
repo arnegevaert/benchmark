@@ -5,7 +5,7 @@ from torch import nn
 from torch import multiprocessing as mp
 from attrbench.data import IndexDataset
 from attrbench.metrics.impact_coverage.result import ImpactCoverageResult
-from attrbench.util.method_factory import MethodFactory
+from attrbench.method_factory import MethodFactory
 
 from .impact_coverage_worker import ImpactCoverageWorker
 

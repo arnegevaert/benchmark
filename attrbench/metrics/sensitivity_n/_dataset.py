@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 from attrbench.masking import ImageMasker, Masker
-from attrbench.util import segment_samples
+from attrbench.segmentation import segment_samples
 
 
 class _SensitivityNDataset:
