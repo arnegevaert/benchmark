@@ -1,9 +1,13 @@
+from typing import List, Literal
 from attrbench.util.attribution_method import AttributionMethod
 import torch
 from torch import nn
 from captum import attr
 import saliency.core as saliency
 import numpy as np
+
+from torchray.attribution.rise import rise,rise_class
+from torchray.attribution.extremal_perturbation import extremal_perturbation, contrastive_reward, simple_reward
 
 class Gradient(AttributionMethod):
     def __init__(self, model: nn.Module) -> None:
@@ -87,3 +91,40 @@ class XRAI(AttributionMethod):
         result=np.tile(np.expand_dims(result,axis=1),(1,channels,1,1))
         result=torch.from_numpy(result)
         return result
+    
+
+class ExtremalPerturbation(AttributionMethod):
+    def __init__(self, model: nn.Module,reward = 'contrastive_reward', areas=[0.1])-> None:
+        super().__init__(model)
+        if reward=='contrastive_reward':
+            self.reward_fuction = contrastive_reward
+        else:
+            self.reward_fuction = simple_reward
+        self.areas=areas
+
+    def __call__(self, batch_x: torch.Tensor, batch_target: torch.Tensor) -> torch.Tensor:
+        attributions=[]
+        channels=batch_x.shape[1]
+        for x,y in zip(batch_x,batch_target):
+            with torch.enable_grad():
+                res=extremal_perturbation(self.model,x.unsqueeze(0),int(y),areas=self.areas, reward_func=self.reward_fuction,resize=True)
+            mask = res[0]
+            attributions.append(mask.detach().cpu())
+
+        result=torch.vstack(attributions)
+        result=torch.tile(result,dims=[1,channels,1,1])
+        
+        return result
+    
+class Rise(AttributionMethod):
+    def __init__(self, model: nn.Module,batch_size=16)-> None:
+        super().__init__(model)
+        self.batch_size=batch_size
+
+    def __call__(self, batch_x: torch.Tensor, batch_target: torch.Tensor) -> torch.Tensor:
+        channels=batch_x.shape[1]
+        result=rise_class(self.model,input=batch_x,target=batch_target, batch_size=self.batch_size,resize=True)
+        result=torch.tile(result,dims=[1,channels,1,1])
+        return result
+    
+        
