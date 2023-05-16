@@ -19,7 +19,7 @@ class InfidelityResult(GroupedMetricResult):
 
     @classmethod
     @override
-    def load(cls, path: str) -> "InfidelityResult":
+    def _load(cls, path: str) -> "InfidelityResult":
         with h5py.File(path, "r") as fp:
             tree = RandomAccessNDArrayTree.load_from_hdf(fp)
             res = InfidelityResult(tree.levels["method"],

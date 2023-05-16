@@ -6,10 +6,10 @@ from attrbench.metrics.sensitivity_n.result import SensitivityNResult
 
 
 if __name__ == "__main__":
-    coverage = ImpactCoverageResult.load("coverage.h5")
-    deletion = DeletionResult.load("deletion.h5")
-    irof = DeletionResult.load("irof.h5")
-    maxsens = MaxSensitivityResult.load("maxsens.h5")
-    minimal_subset = MinimalSubsetResult.load("minimal_subset.h5")
-    sens_n = SensitivityNResult.load("sensn.h5")
-    seg_sens_n = SensitivityNResult.load("segsensn.h5")
+    coverage = ImpactCoverageResult._load("coverage.h5")
+    deletion = DeletionResult._load("deletion.h5")
+    irof = DeletionResult._load("irof.h5")
+    maxsens = MaxSensitivityResult._load("maxsens.h5")
+    minimal_subset = MinimalSubsetResult._load("minimal_subset.h5")
+    sens_n = SensitivityNResult._load("sensn.h5")
+    seg_sens_n = SensitivityNResult._load("segsensn.h5")

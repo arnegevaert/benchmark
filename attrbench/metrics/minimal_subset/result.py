@@ -23,7 +23,7 @@ class MinimalSubsetResult(MetricResult):
 
     @classmethod
     @override
-    def load(cls, path: str) -> "MinimalSubsetResult":
+    def _load(cls, path: str) -> "MinimalSubsetResult":
         with h5py.File(path, "r") as fp:
             tree = RandomAccessNDArrayTree.load_from_hdf(fp)
             res = MinimalSubsetResult(tree.levels["method"],

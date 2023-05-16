@@ -15,7 +15,7 @@ class ImpactCoverageResult(GroupedMetricResult):
 
     @classmethod
     @override
-    def load(cls, path: str) -> "ImpactCoverageResult":
+    def _load(cls, path: str) -> "ImpactCoverageResult":
         with h5py.File(path, "r") as fp:
             tree = RandomAccessNDArrayTree.load_from_hdf(fp)
         res = ImpactCoverageResult(tree.levels["method"], tree.shape)

@@ -13,7 +13,7 @@ class MaxSensitivityResult(GroupedMetricResult):
         super().__init__(method_names, shape, levels, level_order)
 
     @classmethod
-    def load(cls, path: str) -> "MaxSensitivityResult":
+    def _load(cls, path: str) -> "MaxSensitivityResult":
         with h5py.File(path, "r") as fp:
             tree = RandomAccessNDArrayTree.load_from_hdf(fp)
         res = MaxSensitivityResult(tree.levels["method"], tree.shape)

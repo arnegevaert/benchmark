@@ -41,7 +41,7 @@ class DeletionResult(MetricResult):
 
     @classmethod
     @override
-    def load(cls, path: str) -> "DeletionResult":
+    def _load(cls, path: str) -> "DeletionResult":
         """
         Loads a DeletionResult from an HDF5 file.
         """

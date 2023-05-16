@@ -32,7 +32,7 @@ class SensitivityNResult(GroupedMetricResult):
 
     @classmethod
     @override
-    def load(cls, path: str) -> "SensitivityNResult":
+    def _load(cls, path: str) -> "SensitivityNResult":
         with h5py.File(path, "r") as fp:
             tree = RandomAccessNDArrayTree.load_from_hdf(fp)
             res = SensitivityNResult(tree.levels["method"], tree.levels["masker"],
