@@ -62,3 +62,9 @@ class DistributedComputation:
             queue = q.Queue()
             worker = self._create_worker(queue, 0, None)
             worker.run()
+            
+            for res in queue.queue:
+                if isinstance(res, DoneMessage):
+                    self._finish()
+                else:
+                    self._handle_result(res)
