@@ -1,4 +1,5 @@
-from attrbench.distributed import DistributedSampler, DistributedComputation, PartialResultMessage, DoneMessage, Worker
+from attrbench.distributed import DistributedSampler, DistributedComputation,\
+    PartialResultMessage, DoneMessage, Worker
 from tqdm import tqdm
 from attrbench.data import HDF5DatasetWriter
 from typing import Callable, Tuple
@@ -16,10 +17,14 @@ class SamplesResult:
 
 
 class SampleSelectionWorker(Worker):
-    def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, all_processes_done: mp.Event,
-                 sufficient_samples: mp.Event, batch_size: int, dataset: Dataset,
+    def __init__(self, result_queue: mp.Queue, rank: int, world_size: int,
+                 all_processes_done: mp.Event, 
+                 distributed_computation: DistributedComputation,
+                 sufficient_samples: mp.Event, batch_size: int,
+                 dataset: Dataset,
                  model_factory: Callable[[], nn.Module]):
-        super().__init__(result_queue, rank, world_size, all_processes_done)
+        super().__init__(result_queue, rank, world_size, all_processes_done,
+                         distributed_computation)
         self.sufficient_samples = sufficient_samples
         self.model_factory = model_factory
         self.dataset = dataset
@@ -27,7 +32,8 @@ class SampleSelectionWorker(Worker):
 
     def work(self):
         sampler = DistributedSampler(self.dataset, self.world_size, self.rank)
-        dataloader = DataLoader(self.dataset, sampler=sampler, batch_size=self.batch_size,
+        dataloader = DataLoader(self.dataset, sampler=sampler,
+                                batch_size=self.batch_size,
                                 num_workers=4, pin_memory=True)
         device = torch.device(self.rank)
         model = self.model_factory()
@@ -41,15 +47,16 @@ class SampleSelectionWorker(Worker):
                 output = torch.argmax(model(batch_x), dim=1)
             correct_samples = batch_x[output == batch_y, ...]
             correct_labels = batch_y[output == batch_y]
-            result = SamplesResult(correct_samples.cpu().numpy(), correct_labels.cpu().numpy())
-            self.result_queue.put(PartialResultMessage(self.rank, result))
+            result = SamplesResult(correct_samples.cpu().numpy(),
+                                   correct_labels.cpu().numpy())
+            self.send_result(PartialResultMessage(self.rank, result))
             if self.sufficient_samples.is_set():
                 break
-        self.result_queue.put(DoneMessage(self.rank))
 
 
 class SampleSelection(DistributedComputation):
-    def __init__(self, model_factory: Callable[[], nn.Module], dataset: Dataset, writer: HDF5DatasetWriter,
+    def __init__(self, model_factory: Callable[[], nn.Module], dataset: Dataset,
+                 writer: HDF5DatasetWriter,
                  num_samples: int, batch_size: int,
                  address: str = "localhost",
                  port: str = "12355", devices: Tuple = None):
@@ -63,9 +70,13 @@ class SampleSelection(DistributedComputation):
         self.count = 0
         self.prog = None
 
-    def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event):
-        return SampleSelectionWorker(queue, rank, self.world_size, all_processes_done, self.sufficient_samples,
-                                     self.batch_size, self.dataset, self.model_factory)
+    def _create_worker(self, queue: mp.Queue, rank: int,
+                       all_processes_done: mp.Event):
+        return SampleSelectionWorker(queue, rank, self.world_size,
+                                     all_processes_done, self,
+                                     self.sufficient_samples,
+                                     self.batch_size, self.dataset,
+                                     self.model_factory)
 
     def run(self):
         self.prog = tqdm(total=self.num_samples)

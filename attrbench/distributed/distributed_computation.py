@@ -1,26 +1,26 @@
 from attrbench.distributed import PartialResultMessage, DoneMessage, Worker
 import torch.multiprocessing as mp
 import queue as q
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 import torch
 import os
 
 
 class DistributedComputation:
-    def __init__(self, address="localhost", port="12355", devices: Optional[Tuple[int]] = None):
+    def __init__(self, address="localhost", port="12355", 
+                 devices: Optional[Tuple[int]] = None):
         self.address = address
         self.port = port
-        self.devices = devices if devices is not None else list(range(torch.cuda.device_count()))
+        self.devices = devices if devices is not None \
+            else list(range(torch.cuda.device_count()))
         self.world_size = len(self.devices)
         self.ctx = mp.get_context("spawn")
 
     def _handle_result(self, result: PartialResultMessage):
         raise NotImplementedError
-    
-    def _finish(self):
-        raise NotImplementedError
 
-    def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> Worker:
+    def _create_worker(self, queue: mp.Queue, rank: int,
+                       all_processes_done: mp.Event) -> Worker:
         raise NotImplementedError
 
     def run(self):
@@ -31,7 +31,8 @@ class DistributedComputation:
             ctx = mp.get_context("spawn")
 
             queue = ctx.Queue()  # Will store results from metric
-            all_processes_done = ctx.Event()  # Used for signaling processes that they can terminate
+            # Used for signaling processes that they can terminate
+            all_processes_done = ctx.Event()
             processes = []  # Used for joining all processes
 
             # Start all processes
@@ -42,13 +43,14 @@ class DistributedComputation:
                 processes.append(p)
 
             # Gather results
-            # This is not busy waiting: queue.get will block until a result is passed
+            # This is not busy waiting: 
+            # queue.get will block until a result is passed
             done_processes = [False for _ in processes]
             while not all(done_processes):
-                res = queue.get()  # res is a PartialResultMessage or a DoneMessage
+                # res is a PartialResultMessage or a DoneMessage
+                res = queue.get()
                 if isinstance(res, DoneMessage):
                     done_processes[res.rank] = True
-                    self._finish()
                 else:
                     self._handle_result(res)
 
