@@ -7,7 +7,7 @@ from itertools import cycle
 import os
 import torch
 from attrbench.distributed.message import DoneMessage, PartialResultMessage
-from attrbench.metrics.metric_worker import MetricWorker
+from attrbench.metrics import MetricWorker, DistributedMetric
 from torch import multiprocessing as mp
 from typing import Callable, Dict
 from torch import nn
@@ -18,12 +18,13 @@ from attrbench.method_factory import MethodFactory
 
 class ImpactCoverageWorker(MetricWorker):
     def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, 
-                 all_processes_done, model_factory: Callable[[], nn.Module],
+                 all_processes_done, distributed_metric: DistributedMetric,
+                 model_factory: Callable[[], nn.Module],
                  method_factory: MethodFactory,
                  dataset: IndexDataset, batch_size: int,
                  patch_folder: str):
-        super().__init__(result_queue, rank, world_size, all_processes_done, 
-                         model_factory, dataset, batch_size)
+        super().__init__(result_queue, rank, world_size, all_processes_done,
+                         distributed_metric, model_factory, dataset, batch_size)
         self.patch_folder = patch_folder
         self.method_factory = method_factory
 
@@ -131,8 +132,4 @@ class ImpactCoverageWorker(MetricWorker):
                 batch_result[method_name] = iou
 
             # Return batch result
-            self.result_queue.put(
-                PartialResultMessage(self.rank, BatchResult(batch_indices, batch_result))
-            )
-        self.result_queue.put(DoneMessage(self.rank))
-
+            self.send_result(PartialResultMessage(self.rank, BatchResult(batch_indices, batch_result)))

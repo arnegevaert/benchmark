@@ -23,6 +23,7 @@ class Infidelity(DistributedMetric):
                                         self.activation_fns, shape=(self.dataset.num_samples, 1))
 
     def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> InfidelityWorker:
-        return InfidelityWorker(queue, rank, self.world_size, all_processes_done, self.model_factory,
+        return InfidelityWorker(queue, rank, self.world_size, 
+                                all_processes_done, self, self.model_factory,
                                 self.dataset, self.batch_size, self.perturbation_generators,
                                 self.num_perturbations, self.activation_fns)

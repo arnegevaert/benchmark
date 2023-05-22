@@ -28,7 +28,8 @@ class SensitivityN(DistributedMetric):
                                           self.activation_fns, shape=(dataset.num_samples, num_steps))
 
     def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> SensitivityNWorker:
-        return SensitivityNWorker(queue, rank, self.world_size, all_processes_done, self.model_factory,
+        return SensitivityNWorker(queue, rank, self.world_size, all_processes_done,
+                                  self, self.model_factory,
                                   self.dataset, self.batch_size, self.min_subset_size, self.max_subset_size,
                                   self.num_steps, self.num_subsets, self.maskers, self.activation_fns,
                                   self.segmented)

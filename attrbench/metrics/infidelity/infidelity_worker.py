@@ -4,7 +4,7 @@ from typing import Callable, Dict, Tuple
 from torch import nn
 from attrbench.data import AttributionsDataset
 from attrbench.activation_fns import ACTIVATION_FNS
-from attrbench.metrics import MetricWorker
+from attrbench.metrics import MetricWorker, DistributedMetric
 from attrbench.metrics.result import BatchResult
 from attrbench.distributed import PartialResultMessage, DoneMessage
 from .perturbation_generator import PerturbationGenerator
@@ -12,10 +12,12 @@ from .perturbation_generator import PerturbationGenerator
 
 class InfidelityWorker(MetricWorker):
     def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, all_processes_done: mp.Event,
+                 distributed_metric: DistributedMetric,
                  model_factory: Callable[[], nn.Module], dataset: AttributionsDataset, batch_size: int,
                  perturbation_generators: Dict[str, PerturbationGenerator], num_perturbations: int,
                  activation_fns: Tuple[str]):
-        super().__init__(result_queue, rank, world_size, all_processes_done, model_factory, dataset, batch_size)
+        super().__init__(result_queue, rank, world_size, all_processes_done,
+                         distributed_metric, model_factory, dataset, batch_size)
         self.activation_fns = activation_fns
         self.num_perturbations = num_perturbations
         self.perturbation_generators = perturbation_generators
@@ -101,7 +103,4 @@ class InfidelityWorker(MetricWorker):
                             (beta * method_dot_products - tensor_pred_diffs[afn])**2, dim=0).unsqueeze(-1)
                         batch_result[method][pert_name][afn] = infidelity.cpu().detach().numpy()
             # Return batch result
-            self.result_queue.put(
-                PartialResultMessage(self.rank, BatchResult(batch_indices, batch_result))
-            )
-        self.result_queue.put(DoneMessage(self.rank))
+            self.send_result(PartialResultMessage(self.rank, BatchResult(batch_indices, batch_result)))

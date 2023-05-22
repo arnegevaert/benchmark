@@ -4,7 +4,8 @@ from torch import nn
 from torch import multiprocessing as mp
 
 from attrbench.masking import Masker
-from attrbench.metrics.minimal_subset import MinimalSubsetResult, MinimalSubsetWorker
+from attrbench.metrics.minimal_subset import MinimalSubsetResult,\
+    MinimalSubsetWorker
 from attrbench.metrics import DistributedMetric
 from attrbench.data import AttributionsDataset
 
@@ -16,7 +17,8 @@ class MinimalSubset(DistributedMetric):
                  maskers: Dict[str, Masker], mode: str = "deletion",
                  start: float = 0., stop: float = 1., num_steps: int = 100,
                  address="localhost", port="12355", devices: Tuple = None):
-        super().__init__(model_factory, dataset, batch_size, address, port, devices)
+        super().__init__(model_factory, dataset, batch_size, address, port,
+                         devices)
         self.num_steps = num_steps
         self.stop = stop
         self._start = start
@@ -24,9 +26,13 @@ class MinimalSubset(DistributedMetric):
             raise ValueError("Mode must be deletion or insertion. Got:", mode)
         self.mode = mode
         self.maskers = maskers
-        self._result = MinimalSubsetResult(dataset.method_names, tuple(maskers.keys()), mode,
+        self._result = MinimalSubsetResult(dataset.method_names,
+                                           tuple(maskers.keys()), mode,
                                            shape=(dataset.num_samples, 1))
 
-    def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> MinimalSubsetWorker:
-        return MinimalSubsetWorker(queue, rank, self.world_size, all_processes_done, self.model_factory, self.dataset,
-                                   self.batch_size, self.maskers, self.mode, self.num_steps)
+    def _create_worker(self, queue: mp.Queue, rank: int,
+                       all_processes_done: mp.Event) -> MinimalSubsetWorker:
+        return MinimalSubsetWorker(queue, rank, self.world_size,
+                                   all_processes_done, self, self.model_factory,
+                                   self.dataset, self.batch_size, self.maskers,
+                                   self.mode, self.num_steps)

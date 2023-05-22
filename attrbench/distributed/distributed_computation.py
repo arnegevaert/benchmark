@@ -60,13 +60,5 @@ class DistributedComputation:
                 p.join()
         else:
             # Run on single process
-            # TODO this breaks the progress bar
-            queue = q.Queue()
-            worker = self._create_worker(queue, 0, None)
+            worker = self._create_worker(None, 0, None)
             worker.run()
-            
-            for res in queue.queue:
-                if isinstance(res, DoneMessage):
-                    self._finish()
-                else:
-                    self._handle_result(res)

@@ -1,4 +1,4 @@
-from attrbench.metrics import MetricWorker
+from attrbench.metrics import MetricWorker, DistributedMetric
 from typing import Callable, Dict, Tuple, Union
 
 import numpy as np
@@ -26,11 +26,14 @@ def deletion(samples: torch.Tensor, labels: torch.Tensor, model: Callable, attrs
 
 
 class DeletionWorker(MetricWorker):
-    def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, all_processes_done: mp.Event,
+    def __init__(self, result_queue: mp.Queue, rank: int, world_size: int,
+                 all_processes_done: mp.Event,
+                 distributed_metric: DistributedMetric,
                  model_factory: Callable[[], nn.Module], dataset: AttributionsDataset, batch_size: int,
                  maskers: Dict[str, Masker], activation_fns: Tuple[str], mode: str = "morf",
                  start: float = 0., stop: float = 1., num_steps: int = 100):
-        super().__init__(result_queue, rank, world_size, all_processes_done, model_factory, dataset, batch_size)
+        super().__init__(result_queue, rank, world_size, all_processes_done,
+                         distributed_metric, model_factory, dataset, batch_size)
         self.maskers = maskers
         self.activation_fns = activation_fns
         self.mode = mode
@@ -49,8 +52,4 @@ class DeletionWorker(MetricWorker):
                 batch_result[masker_name] = deletion(batch_x, batch_y, model, batch_attr.numpy(), masker,
                                                      self.activation_fns, self.mode, self.start, self.stop,
                                                      self.num_steps)
-            self.result_queue.put(
-                PartialResultMessage(self.rank, BatchResult(batch_indices, batch_result, method_names))
-            )
-        self.result_queue.put(DoneMessage(self.rank))
-
+            self.send_result(PartialResultMessage(self.rank, BatchResult(batch_indices, batch_result, method_names)))

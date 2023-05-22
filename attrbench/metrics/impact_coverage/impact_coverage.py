@@ -27,7 +27,8 @@ class ImpactCoverage(DistributedMetric):
     def _create_worker(self, queue: mp.Queue, rank: int, 
                        all_processes_done: mp.Event) -> MetricWorker:
         return ImpactCoverageWorker(queue, rank, self.world_size, 
-                                    all_processes_done, self.model_factory,
+                                    all_processes_done, self,
+                                    self.model_factory,
                                     self.method_factory, self.dataset,
                                     self.batch_size, self.patch_folder)
 

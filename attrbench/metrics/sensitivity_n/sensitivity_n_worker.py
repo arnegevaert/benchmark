@@ -5,7 +5,7 @@ from typing import Callable, Dict, Tuple
 from torch import nn
 from attrbench.data import AttributionsDataset
 from attrbench.masking import Masker
-from attrbench.metrics import MetricWorker
+from attrbench.metrics import MetricWorker, DistributedMetric
 from attrbench.metrics.result import BatchResult
 from attrbench.distributed import PartialResultMessage, DoneMessage
 from attrbench.metrics.sensitivity_n._dataset import _SensitivityNDataset, _SegSensNDataset
@@ -16,11 +16,13 @@ from attrbench.stat import corrcoef
 
 class SensitivityNWorker(MetricWorker):
     def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, all_processes_done: mp.Event,
+                 distributed_metric: DistributedMetric,
                  model_factory: Callable[[], nn.Module], dataset: AttributionsDataset, batch_size: int,
                  min_subset_size: float, max_subset_size: float, num_steps: int, num_subsets: int,
                  maskers: Dict[str, Masker], activation_fns: Tuple[str],
                  segmented=False):
-        super().__init__(result_queue, rank, world_size, all_processes_done, model_factory, dataset, batch_size)
+        super().__init__(result_queue, rank, world_size, all_processes_done,
+                         distributed_metric, model_factory, dataset, batch_size)
         self.activation_fns = activation_fns
         self.maskers = maskers
         self.num_subsets = num_subsets
@@ -121,8 +123,6 @@ class SensitivityNWorker(MetricWorker):
                         # [batch_size, len(n_range)]
                         stacked_result = torch.tensor(np.stack(afn_result, axis=1))
                         batch_result[method_name][masker_name][activation_fn] = stacked_result
-
-            self.result_queue.put(
-                PartialResultMessage(self.rank, BatchResult(batch_indices, batch_result))
-            )
-        self.result_queue.put(DoneMessage(self.rank))
+            self.send_result(
+                PartialResultMessage(
+                    self.rank, BatchResult(batch_indices, batch_result)))

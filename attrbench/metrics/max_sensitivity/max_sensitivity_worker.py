@@ -2,7 +2,7 @@ from attrbench.data.index_dataset import IndexDataset
 import math
 import warnings
 from attrbench.distributed.message import DoneMessage, PartialResultMessage
-from attrbench.metrics.metric_worker import MetricWorker
+from attrbench.metrics import MetricWorker, DistributedMetric
 from typing import Callable, Dict
 import torch
 from torch import nn
@@ -19,15 +19,16 @@ def _normalize_attrs(attrs):
 
 class MaxSensitivityWorker(MetricWorker):
     def __init__(self, result_queue: mp.Queue, rank: int, world_size: int,
-                 all_processes_done, model_factory: Callable[[], nn.Module],
+                 all_processes_done, distributed_metric: DistributedMetric,
+                 model_factory: Callable[[], nn.Module],
                  method_factory: MethodFactory,
                  dataset: IndexDataset, batch_size: int,
                  num_perturbations: int, radius: float):
-        super().__init__(result_queue, rank, world_size, all_processes_done, model_factory, dataset, batch_size)
+        super().__init__(result_queue, rank, world_size, all_processes_done,
+                         distributed_metric, model_factory, dataset, batch_size)
         self.method_factory = method_factory
         self.num_perturbations = num_perturbations
         self.radius = radius
-
 
     def work(self):
         model = self._get_model()
@@ -63,7 +64,6 @@ class MaxSensitivityWorker(MetricWorker):
                 diffs = torch.stack(diffs, 1)
                 # [batch_size]
                 batch_result[method_name] = diffs.max(dim=1)[0].cpu()
-            self.result_queue.put(
-                PartialResultMessage(self.rank, BatchResult(batch_indices, batch_result))
-            )
-        self.result_queue.put(DoneMessage(self.rank))
+            self.send_result(
+                PartialResultMessage(
+                    self.rank, BatchResult(batch_indices, batch_result)))

@@ -23,13 +23,20 @@ class Deletion(DistributedMetric):
         self.stop = stop
         self._start = start
         self.mode = mode
-        self.activation_fns = (activation_fns,) if isinstance(activation_fns, str) else tuple(activation_fns)
+        if isinstance(activation_fns, str):
+            activation_fns = (activation_fns,)
+        self.activation_fns = activation_fns
         self.maskers = maskers
-        self._result = DeletionResult(dataset.method_names, tuple(maskers.keys()),
-                                      self.activation_fns, mode, shape=(dataset.num_samples, num_steps))
+        self._result = DeletionResult(dataset.method_names,
+                                      tuple(maskers.keys()),
+                                      self.activation_fns, mode,
+                                      shape=(dataset.num_samples, num_steps))
         self.dataset = dataset
 
-    def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> DeletionWorker:
-        return DeletionWorker(queue, rank, self.world_size, all_processes_done, self.model_factory, self.dataset,
-                              self.batch_size, self.maskers, self.activation_fns, self.mode,
+    def _create_worker(self, queue: mp.Queue, rank: int,
+                       all_processes_done: mp.Event) -> DeletionWorker:
+        return DeletionWorker(queue, rank, self.world_size, all_processes_done,
+                              self, self.model_factory, self.dataset,
+                              self.batch_size, self.maskers,
+                              self.activation_fns, self.mode,
                               self._start, self.stop, self.num_steps)
