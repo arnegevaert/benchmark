@@ -1,5 +1,6 @@
 import pandas as pd
-from attrbench.util import krippendorff_alpha
+from krippendorff import krippendorff
+from scipy.stats import rankdata
 from typing import Dict, Tuple
 import matplotlib.pyplot as plt
 

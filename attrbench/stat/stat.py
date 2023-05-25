@@ -3,12 +3,13 @@ from scipy import stats
 import warnings
 
 
-def wilcoxon_tests(df, inverted):
+def wilcoxon_tests(df, higher_is_better):
     pvalues, effect_sizes = {}, {}
     for method_name in df:
         method_results = df[method_name].to_numpy()
         statistic, pvalue = stats.wilcoxon(
-            method_results, alternative="less" if inverted else "greater"
+            method_results,
+            alternative="greater" if higher_is_better else "less",
         )
         pvalues[method_name] = pvalue
         effect_sizes[method_name] = np.median(method_results)

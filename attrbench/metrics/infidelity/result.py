@@ -38,5 +38,5 @@ class InfidelityResult(GroupedMetricResult):
                     method=method,
                     perturbation_generator=perturbation_generator,
                     activation_fn=activation_fn
-                    )
+                    ).flatten()
         return pd.DataFrame.from_dict(df_dict), False

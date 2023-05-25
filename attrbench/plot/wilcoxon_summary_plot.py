@@ -1,7 +1,7 @@
 from typing import Dict, Tuple
 import pandas as pd
 from attrbench.plot.lib import heatmap
-from stat.stat import wilcoxon_tests
+from attrbench.stat import wilcoxon_tests
 import seaborn as sns
 
 
