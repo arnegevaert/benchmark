@@ -1,1 +1,1 @@
-from .stat import *
+from .stat import wilcoxon_tests, corrcoef
