@@ -6,10 +6,18 @@ import seaborn as sns
 
 def _create_fig(df, figsize, annot):
     fig, ax = plt.subplots(figsize=figsize)
-    sns.heatmap(df, annot=annot, vmin=-1, vmax=1, cmap=sns.diverging_palette(220, 20, as_cmap=True), ax=ax, fmt=".2f",
-                cbar=False)
+    sns.heatmap(
+        df,
+        annot=annot,
+        vmin=-1,
+        vmax=1,
+        cmap=sns.diverging_palette(220, 20, as_cmap=True),
+        ax=ax,
+        fmt=".2f",
+        cbar=False,
+    )
     ax.set_aspect("equal")
-    return fig
+    return fig, ax
 
 
 class InterMetricCorrelationPlot:
@@ -17,16 +25,32 @@ class InterMetricCorrelationPlot:
         self.dfs = dfs
         self.methods = list(dfs.values())[0][0].columns
 
-    def render(self, figsize=(20, 20), annot=True):
+    def render(self, figsize, annot, fontsize):
         corr_dfs = []
         for method_name in self.methods:
             data = {}
-            for metric_name, (df, inverted) in self.dfs.items():
-                data[metric_name] = -df[method_name].to_numpy() if inverted else df[method_name].to_numpy()
+            for metric_name, (df, higher_is_better) in self.dfs.items():
+                data[metric_name] = (
+                    -df[method_name].to_numpy()
+                    if not higher_is_better
+                    else df[method_name].to_numpy()
+                )
             df = pd.DataFrame(data)
             corr_dfs.append(df.corr(method="spearman"))
-        corr = pd.concat(corr_dfs).mean(level=0)
-        return _create_fig(corr, figsize, annot)
+        corr = pd.concat(corr_dfs).groupby(level=0).mean()
+        corr = corr.reindex(corr.columns)
+        fig, ax = _create_fig(corr, figsize, annot)
+
+        ax.set_xticklabels(
+            ax.get_xticklabels(),
+            rotation=45,
+            ha="right",
+            rotation_mode="anchor",
+            fontsize=fontsize,
+        )
+        ax.set_yticklabels(ax.get_yticklabels(), fontsize=fontsize)
+        return fig
+        
 
 
 class InterMethodCorrelationPlot:
@@ -35,7 +59,10 @@ class InterMethodCorrelationPlot:
 
     def render(self, figsize=(20, 20), annot=True):
         # Compute correlations for each metric
-        all_dfs = [df if not inverted else -df for _, (df, inverted) in self.dfs.items()]
+        all_dfs = [
+            df if not inverted else -df
+            for _, (df, inverted) in self.dfs.items()
+        ]
         corr_dfs = [df.corr(method="spearman") for df in all_dfs]
 
         # Compute average of correlations

@@ -18,8 +18,8 @@ class WilcoxonSummaryPlot:
         method_order=None,
     ):
         pvalues, effect_sizes = {}, {}
-        for metric_name, (df, inverted) in self.dfs.items():
-            mes, mpv = wilcoxon_tests(df, inverted)
+        for metric_name, (df, higher_is_better) in self.dfs.items():
+            mes, mpv = wilcoxon_tests(df, higher_is_better)
             effect_sizes[metric_name] = mes
             pvalues[metric_name] = mpv
         pvalues = pd.DataFrame(pvalues)
