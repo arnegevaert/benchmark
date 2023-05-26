@@ -1,4 +1,4 @@
-from .result import DeletionResult
+from .result import DeletionResult, InsertionResult
 from .deletion_worker import DeletionWorker, deletion
-from .deletion import Deletion
+from .deletion import Deletion, Insertion
 from .irof import Irof
