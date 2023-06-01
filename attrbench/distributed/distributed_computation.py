@@ -23,6 +23,9 @@ class DistributedComputation:
                        all_processes_done: mp.Event) -> Worker:
         raise NotImplementedError
 
+    def _cleanup(self):
+        pass
+
     def run(self):
         if self.world_size != 1:
             # Initialize multiproc parameters
@@ -58,7 +61,9 @@ class DistributedComputation:
             all_processes_done.set()
             for p in processes:
                 p.join()
+            self._cleanup()
         else:
             # Run on single process
             worker = self._create_worker(None, 0, None)
             worker.run()
+            self._cleanup()

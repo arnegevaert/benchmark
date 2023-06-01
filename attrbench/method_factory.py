@@ -36,6 +36,9 @@ class MethodFactory:
                 # Constructor has no kwargs
                 result[method_name] = entry(model)
         return result
+    
+    def __len__(self) -> int:
+        return len(self.config_dict)
 
     def get_method_names(self) -> Tuple[str, ...]:
         return tuple(self.config_dict.keys())

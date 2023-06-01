@@ -24,10 +24,14 @@ class DistributedMetric(DistributedComputation):
     def _create_worker(self, queue: mp.Queue, rank: int,
                        all_processes_done: mp.Event) -> MetricWorker:
         raise NotImplementedError
+    
+    def _cleanup(self):
+        if self.prog is not None:
+            self.prog.close()
 
     def run(self, result_path: Optional[str] = None, progress=True):
         if progress:
-            self.prog = tqdm()
+            self.prog = tqdm(total=len(self.dataset))
         super().run()
         if result_path is not None:
             self.save_result(result_path)

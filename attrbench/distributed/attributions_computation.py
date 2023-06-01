@@ -3,8 +3,9 @@ from attrbench.distributed import (
     DistributedComputation,
     DistributedSampler,
     Worker,
+    ModelFactory
 )
-from attrbench import AttributionMethod
+from attrbench import MethodFactory
 from attrbench.data import AttributionsDatasetWriter, IndexDataset
 import torch.multiprocessing as mp
 from torch.utils.data import Dataset, DataLoader
@@ -31,8 +32,8 @@ class AttributionsWorker(Worker):
         rank: int,
         world_size: int,
         all_processes_done: mp.Event,
-        model_factory: Callable[[], nn.Module],
-        method_factory: Callable[[nn.Module], Dict[str, AttributionMethod]],
+        model_factory: ModelFactory,
+        method_factory: MethodFactory,
         dataset: IndexDataset,
         batch_size: int,
         result_handler: Optional[
@@ -83,8 +84,8 @@ class AttributionsWorker(Worker):
 class AttributionsComputation(DistributedComputation):
     def __init__(
         self,
-        model_factory: Callable[[], nn.Module],
-        method_factory: Callable[[nn.Module], Dict[str, AttributionMethod]],
+        model_factory: ModelFactory,
+        method_factory: MethodFactory,
         dataset: Dataset,
         batch_size: int,
         writer: AttributionsDatasetWriter,
@@ -101,7 +102,7 @@ class AttributionsComputation(DistributedComputation):
         self.prog = None
 
     def run(self):
-        self.prog = tqdm()
+        self.prog = tqdm(total=len(self.dataset) * len(self.method_factory))
         super().run()
 
     def _create_worker(
