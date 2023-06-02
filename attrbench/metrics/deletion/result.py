@@ -1,4 +1,6 @@
 from typing_extensions import override
+import os
+import yaml
 import h5py
 import numpy as np
 from numpy import typing as npt
@@ -40,30 +42,48 @@ class DeletionResult(MetricResult):
         self.mode = mode
 
     @override
-    def save(self, path: str):
+    def save(self, path: str, format="hdf5"):
         """
         Saves the DeletionResult to an HDF5 file.
         """
-        super().save(path)
-        with h5py.File(path, mode="a") as fp:
-            fp.attrs["mode"] = self.mode
+        super().save(path, format)
+
+        # Save additional metadata
+        if format == "hdf5":
+            with h5py.File(path, mode="a") as fp:
+                fp.attrs["mode"] = self.mode
+        elif format == "dir":
+            with open(os.path.join(path, "metadata.yaml"), "r") as fp:
+                metadata = yaml.safe_load(fp)
+            metadata["mode"] = self.mode
+            with open(os.path.join(path, "metadata.yaml"), "w") as fp:
+                yaml.dump(metadata, fp)
+    
+    @classmethod
+    def _load_tree_mode(self, path: str, format="hdf5"):
+        if format == "hdf5":
+            with h5py.File(path, "r") as fp:
+                tree = RandomAccessNDArrayTree.load_from_hdf(fp)
+                mode = fp.attrs["mode"]
+        elif format == "dir":
+            with open(os.path.join(path, "metadata.yaml"), "r") as fp:
+                metadata = yaml.safe_load(fp)
+            tree = RandomAccessNDArrayTree.load_from_dir(path)
+            mode = metadata["mode"]
+        return tree, mode
 
     @classmethod
     @override
-    def _load(cls, path: str) -> "DeletionResult":
-        """
-        Loads a DeletionResult from an HDF5 file.
-        """
-        with h5py.File(path, "r") as fp:
-            tree = RandomAccessNDArrayTree.load_from_hdf(fp)
-            res = DeletionResult(
-                tree.levels["method"],
-                tree.levels["masker"],
-                tree.levels["activation_fn"],
-                fp.attrs["mode"],
-                tree.shape,
-            )
-            res.tree = tree
+    def _load(cls, path: str, format="hdf5") -> "DeletionResult":
+        tree, mode = cls._load_tree_mode(path, format)
+        res = DeletionResult(
+            tree.levels["method"],
+            tree.levels["masker"],
+            tree.levels["activation_fn"],
+            mode,
+            tree.shape,
+        )
+        res.tree = tree
         return res
 
     @override
@@ -107,6 +127,7 @@ class InsertionResult(DeletionResult):
     the higher_is_better flag is inverted. The _load method also makes sure
     that the resulting object is an InsertionResult.
     """
+
     def get_df(
         self,
         masker: str,
@@ -121,21 +142,17 @@ class InsertionResult(DeletionResult):
         # The only difference between Deletion and Insertion is the fact
         # that the higher_is_better flag is inverted.
         return df, not higher_is_better
-    
+
     @classmethod
     @override
     def _load(cls, path: str) -> "InsertionResult":
-        """
-        Loads a DeletionResult from an HDF5 file.
-        """
-        with h5py.File(path, "r") as fp:
-            tree = RandomAccessNDArrayTree.load_from_hdf(fp)
-            res = InsertionResult(
-                tree.levels["method"],
-                tree.levels["masker"],
-                tree.levels["activation_fn"],
-                fp.attrs["mode"],
-                tree.shape,
-            )
-            res.tree = tree
+        tree, mode = cls._load_tree_mode(path, format)
+        res = InsertionResult(
+            tree.levels["method"],
+            tree.levels["masker"],
+            tree.levels["activation_fn"],
+            mode,
+            tree.shape,
+        )
+        res.tree = tree
         return res

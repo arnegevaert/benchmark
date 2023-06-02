@@ -8,6 +8,8 @@ from attrbench.data.nd_array_tree.random_access_nd_array_tree import (
 from attrbench.metrics.result import BatchResult
 from attrbench import metrics
 import pandas as pd
+import os
+import yaml
 
 
 class MetricResult:
@@ -56,19 +58,32 @@ class MetricResult:
         else:
             raise ValueError("Invalid BatchResult: no method names available")
 
-    def save(self, path: str):
+    def save(self, path: str, format: str) -> None:
         """
-        Save the result to an HDF5 file.
+        Save the result to an HDF5 file or a directory of CSV files.
+        :param path: Path to the file.
+        :param format: Format to save the result in. Options: hdf5, dir.
         """
-        with h5py.File(path, mode="x") as fp:
-            fp.attrs["type"] = self.__class__.__name__
-            self.tree.add_to_hdf(fp)
+        if format == "hdf5":
+            with h5py.File(path, mode="x") as fp:
+                fp.attrs["type"] = self.__class__.__name__
+                self.tree.save_to_hdf(fp)
+        elif format == "dir":
+            os.makedirs(path, exist_ok=True)
+            with open(os.path.join(path, "metadata.yaml"), "w") as fp:
+                yaml.dump({"type": self.__class__.__name__}, fp)
+            self.tree.save_to_dir(path)
+        else:
+            raise ValueError("Invalid format: {}".format(format))
 
     @classmethod
     @abstractmethod
-    def _load(cls, path: str) -> "MetricResult":
+    def _load(cls, path: str, format="hdf5") -> "MetricResult":
         """
-        Load a result from an HDF5 file (abstract method).
+        Load a result from an HDF5 file or a directory of CSV files
+        (abstract method).
+        :param path: Path to the file.
+        :param format: Format to load the result from. Options: hdf5, dir.
         """
         raise NotImplementedError
 
@@ -77,10 +92,19 @@ class MetricResult:
         """
         Detect class of result file and load the result.
         """
-        with h5py.File(path, "r") as fp:
-            class_name = fp.attrs["type"]
+        # If the path is a directory, load from directory of CSV files
+        if os.path.isdir(path):
+            with open(os.path.join(path, "metadata.yaml")) as fp:
+                metadata = yaml.safe_load(fp)
+            class_name = metadata["type"]
             class_obj = getattr(metrics, class_name)
-            return class_obj._load(path)
+            return class_obj._load(path, format="dir")
+        # Otherwise, load from HDF5 file
+        else:
+            with h5py.File(path, "r") as fp:
+                class_name = fp.attrs["type"]
+                class_obj = getattr(metrics, class_name)
+                return class_obj._load(path, format="hdf5")
 
     @abstractmethod
     def get_df(self, *args, **kwargs) -> Tuple[pd.DataFrame, bool]:
