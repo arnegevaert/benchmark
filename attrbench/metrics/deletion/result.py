@@ -58,7 +58,7 @@ class DeletionResult(MetricResult):
             metadata["mode"] = self.mode
             with open(os.path.join(path, "metadata.yaml"), "w") as fp:
                 yaml.dump(metadata, fp)
-    
+
     @classmethod
     def _load_tree_mode(self, path: str, format="hdf5"):
         if format == "hdf5":
@@ -96,15 +96,17 @@ class DeletionResult(MetricResult):
         columns: Optional[npt.NDArray] = None,
     ) -> Tuple[pd.DataFrame, bool]:
         """
-        Retrieves a dataframe from the result for a given masker and activation function.
-        The dataframe contains a row for each sample and a column for each method.
-        Each value is the AUC/AOC for the given method on the given sample.
+        Retrieves a dataframe from the result for a given masker and
+        activation function. The dataframe contains a row for each sample and a
+        column for each method. Each value is the AUC/AOC for the given method
+        on the given sample.
         :param masker: the masker to use
         :param activation_fn: the activation function to use
         :param agg_fn: either "auc" for AUC or "aoc" for AOC
         :param methods: the methods to include. If None, includes all methods.
         :param columns: the columns used in the AUC/AOC calculation
-        :return: dataframe containing results, and boolean indicating if higher is better
+        :return: dataframe containing results, and boolean indicating if
+            higher is better
         """
         higher_is_better = (self.mode == "morf" and agg_fn == "aoc") or (
             self.mode == "lerf" and agg_fn == "auc"

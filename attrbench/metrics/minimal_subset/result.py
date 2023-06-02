@@ -1,4 +1,6 @@
 from typing import Tuple, Optional
+import os
+import yaml
 from typing_extensions import override
 
 import h5py
@@ -25,19 +27,31 @@ class MinimalSubsetResult(MetricResult):
         super().save(path)
         with h5py.File(path, mode="a") as fp:
             fp.attrs["mode"] = self.mode
+    
+    @classmethod
+    def _load_tree_mode(self, path: str, format="hdf5"):
+        if format == "hdf5":
+            with h5py.File(path, "r") as fp:
+                tree = RandomAccessNDArrayTree.load_from_hdf(fp)
+                mode = fp.attrs["mode"]
+        elif format == "dir":
+            with open(os.path.join(path, "metadata.yaml"), "r") as fp:
+                metadata = yaml.safe_load(fp)
+            tree = RandomAccessNDArrayTree.load_from_dir(path)
+            mode = metadata["mode"]
+        return tree, mode
 
     @classmethod
     @override
-    def _load(cls, path: str) -> "MinimalSubsetResult":
-        with h5py.File(path, "r") as fp:
-            tree = RandomAccessNDArrayTree.load_from_hdf(fp)
-            res = MinimalSubsetResult(
-                tree.levels["method"],
-                tree.levels["masker"],
-                fp.attrs["mode"],
-                tree.shape,
-            )
-            res.tree = tree
+    def _load(cls, path: str, format="hdf5") -> "MinimalSubsetResult":
+        tree, mode = cls._load_tree_mode(path, format)
+        res = MinimalSubsetResult(
+            tree.levels["method"],
+            tree.levels["masker"],
+            mode,
+            tree.shape,
+        )
+        res.tree = tree
         return res
 
     @override

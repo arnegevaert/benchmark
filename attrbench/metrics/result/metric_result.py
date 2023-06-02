@@ -75,6 +75,15 @@ class MetricResult:
             self.tree.save_to_dir(path)
         else:
             raise ValueError("Invalid format: {}".format(format))
+        
+    @classmethod
+    def _load_tree(cls, path: str, format="hdf5") -> RandomAccessNDArrayTree:
+        if format == "hdf5":
+            with h5py.File(path, "r") as fp:
+                tree = RandomAccessNDArrayTree.load_from_hdf(fp)
+        elif format == "dir":
+            tree = RandomAccessNDArrayTree.load_from_dir(path)
+        return tree
 
     @classmethod
     @abstractmethod
