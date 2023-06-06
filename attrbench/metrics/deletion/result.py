@@ -147,7 +147,7 @@ class InsertionResult(DeletionResult):
 
     @classmethod
     @override
-    def _load(cls, path: str) -> "InsertionResult":
+    def _load(cls, path: str, format="hdf5") -> "InsertionResult":
         tree, mode = cls._load_tree_mode(path, format)
         res = InsertionResult(
             tree.levels["method"],
