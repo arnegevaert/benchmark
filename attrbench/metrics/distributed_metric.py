@@ -47,3 +47,7 @@ class DistributedMetric(DistributedComputation):
             self._result.add(result_message.data)
         if self.prog is not None:
             self.prog.update(len(result_message.data.indices))
+    
+    @property
+    def result(self) -> MetricResult:
+        return self._result
