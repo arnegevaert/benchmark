@@ -36,9 +36,9 @@ class DistributedMetric(DistributedComputation):
         if result_path is not None:
             self.save_result(result_path)
 
-    def save_result(self, path: str):
+    def save_result(self, path: str, format="hdf5"):
         if self._result is not None:
-            self._result.save(path)
+            self._result.save(path, format)
         else:
             raise ValueError("Cannot save result: result is None")
 

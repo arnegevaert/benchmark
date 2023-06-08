@@ -33,8 +33,12 @@ def corrcoef(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     # Calculate denominator
     # [batch_size]
     denom = np.sqrt((a**2).sum(axis=1)) * np.sqrt((b**2).sum(axis=1))
-    denom_zero = denom == 0.0
-    if np.any(denom_zero):
-        warnings.warn("Zero standard deviation detected.")
+    #denom_zero = denom == 0.0
+    #if np.any(denom_zero):
+    #    warnings.warn(f"Zero standard deviation detected")
+    
+    # If the denominator is zero, that means one of the series is constant.
+    # Correlation is technically undefined in this case, but covariance is 0.
+    # We can just set the correlation coefficient to zero in this case.
     corrcoefs = np.divide(cov, denom, out=np.zeros_like(cov), where=denom != 0)
     return corrcoefs

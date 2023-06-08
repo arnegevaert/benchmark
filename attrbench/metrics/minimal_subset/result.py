@@ -23,10 +23,18 @@ class MinimalSubsetResult(MetricResult):
         super().__init__(method_names, shape, levels, level_order)
         self.mode = mode
 
-    def save(self, path: str):
-        super().save(path)
-        with h5py.File(path, mode="a") as fp:
-            fp.attrs["mode"] = self.mode
+    def save(self, path: str, format="hdf5"):
+        super().save(path, format)
+
+        if format == "hdf5":
+            with h5py.File(path, mode="a") as fp:
+                fp.attrs["mode"] = self.mode
+        elif format == "dir":
+            with open(os.path.join(path, "metadata.yaml"), "r") as fp:
+                metadata = yaml.safe_load(fp)
+            metadata["mode"] = self.mode
+            with open(os.path.join(path, "metadata.yaml"), "w") as fp:
+                yaml.dump(metadata, fp)
     
     @classmethod
     def _load_tree_mode(self, path: str, format="hdf5"):
