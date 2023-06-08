@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from attrbench.util import segment_samples
+from attrbench.segmentation import segment_samples
 from attrbench.masking import Masker, ImageMasker
 
 
@@ -32,7 +32,7 @@ class _DeletionDataset(_MaskingDataset):
         self.masker.set_batch(samples, attrs)
 
         total_features = self.masker.get_num_features()
-        self.mask_range = list((np.linspace(start, stop, num_steps) * total_features).astype(np.int))
+        self.mask_range = list((np.linspace(start, stop, num_steps) * total_features).astype(int))
 
     def __len__(self):
         return len(self.mask_range)

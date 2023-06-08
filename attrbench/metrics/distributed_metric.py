@@ -10,8 +10,10 @@ from typing import Tuple, Callable, Optional
 
 
 class DistributedMetric(DistributedComputation):
-    def __init__(self, model_factory: Callable[[], nn.Module], dataset: IndexDataset, batch_size: int,
-                 address="localhost", port="12355", devices: Optional[Tuple] = None):
+    def __init__(self, model_factory: Callable[[], nn.Module],
+                 dataset: IndexDataset, batch_size: int,
+                 address="localhost", port="12355",
+                 devices: Optional[Tuple] = None):
         super().__init__(address, port, devices)
         self.batch_size = batch_size
         self.dataset = dataset
@@ -19,19 +21,24 @@ class DistributedMetric(DistributedComputation):
         self.prog = None  # TQDM progress bar
         self._result: Optional[MetricResult] = None
 
-    def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> MetricWorker:
+    def _create_worker(self, queue: mp.Queue, rank: int,
+                       all_processes_done: mp.Event) -> MetricWorker:
         raise NotImplementedError
+    
+    def _cleanup(self):
+        if self.prog is not None:
+            self.prog.close()
 
     def run(self, result_path: Optional[str] = None, progress=True):
         if progress:
-            self.prog = tqdm()
+            self.prog = tqdm(total=len(self.dataset))
         super().run()
         if result_path is not None:
             self.save_result(result_path)
 
-    def save_result(self, path: str):
+    def save_result(self, path: str, format="hdf5"):
         if self._result is not None:
-            self._result.save(path)
+            self._result.save(path, format)
         else:
             raise ValueError("Cannot save result: result is None")
 
@@ -40,3 +47,7 @@ class DistributedMetric(DistributedComputation):
             self._result.add(result_message.data)
         if self.prog is not None:
             self.prog.update(len(result_message.data.indices))
+    
+    @property
+    def result(self) -> MetricResult:
+        return self._result

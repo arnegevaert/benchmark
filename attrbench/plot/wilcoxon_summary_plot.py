@@ -1,7 +1,7 @@
 from typing import Dict, Tuple
 import pandas as pd
 from attrbench.plot.lib import heatmap
-from stat.stat import wilcoxon_tests
+from attrbench.stat import wilcoxon_tests
 import seaborn as sns
 
 
@@ -9,10 +9,17 @@ class WilcoxonSummaryPlot:
     def __init__(self, dfs: Dict[str, Tuple[pd.DataFrame, bool]]):
         self.dfs = dfs
 
-    def render(self, figsize=(20, 20), glyph_scale=1500, fontsize=None, title=None, method_order=None):
+    def render(
+        self,
+        figsize=(20, 20),
+        glyph_scale=1500,
+        fontsize=None,
+        title=None,
+        method_order=None,
+    ):
         pvalues, effect_sizes = {}, {}
-        for metric_name, (df, inverted) in self.dfs.items():
-            mes, mpv = wilcoxon_tests(df, inverted)
+        for metric_name, (df, higher_is_better) in self.dfs.items():
+            mes, mpv = wilcoxon_tests(df, higher_is_better)
             effect_sizes[metric_name] = mes
             pvalues[metric_name] = mpv
         pvalues = pd.DataFrame(pvalues)
@@ -23,7 +30,7 @@ class WilcoxonSummaryPlot:
         effect_sizes = effect_sizes / effect_sizes.max()
         effect_sizes = effect_sizes.fillna(0)
 
-        effect_sizes = pd.melt(effect_sizes.reset_index(), id_vars='index')
+        effect_sizes = pd.melt(effect_sizes.reset_index(), id_vars="index")
         effect_sizes.columns = ["method", "metric", "value"]
 
         return heatmap(
@@ -37,5 +44,5 @@ class WilcoxonSummaryPlot:
             fontsize=fontsize,
             title=title,
             cbar=False,
-            x_labels=method_order
+            x_labels=method_order,
         )

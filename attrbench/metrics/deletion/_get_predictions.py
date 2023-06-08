@@ -2,7 +2,7 @@ from typing import Callable, List, Dict
 
 import torch
 
-from attrbench.util.util import ACTIVATION_FNS
+from attrbench.activation_fns import ACTIVATION_FNS
 from attrbench.metrics.deletion._dataset import _MaskingDataset
 
 

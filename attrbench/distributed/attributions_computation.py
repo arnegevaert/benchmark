@@ -1,9 +1,15 @@
-from attrbench.distributed import PartialResultMessage, DoneMessage,  DistributedComputation, DistributedSampler, Worker
-from attrbench.util import AttributionMethod
+from attrbench.distributed import (
+    PartialResultMessage,
+    DistributedComputation,
+    DistributedSampler,
+    Worker,
+    ModelFactory
+)
+from attrbench import MethodFactory
 from attrbench.data import AttributionsDatasetWriter, IndexDataset
 import torch.multiprocessing as mp
 from torch.utils.data import Dataset, DataLoader
-from typing import Callable, Tuple, Dict
+from typing import Callable, Tuple, Dict, Optional, NoReturn
 import torch
 from torch import nn
 from numpy import typing as npt
@@ -11,26 +17,51 @@ from tqdm import tqdm
 
 
 class AttributionResult:
-    def __init__(self, indices: npt.NDArray, attributions: npt.NDArray, method_name: str):
+    def __init__(
+        self, indices: npt.NDArray, attributions: npt.NDArray, method_name: str
+    ):
         self.indices = indices
         self.attributions = attributions
         self.method_name = method_name
 
 
 class AttributionsWorker(Worker):
-    def __init__(self, result_queue: mp.Queue, rank: int, world_size: int, all_processes_done: mp.Event,
-                 model_factory: Callable[[], nn.Module],
-                 method_factory: Callable[[nn.Module], Dict[str, AttributionMethod]],
-                 dataset: IndexDataset, batch_size: int):
-        super().__init__(result_queue, rank, world_size, all_processes_done)
+    def __init__(
+        self,
+        result_queue: mp.Queue,
+        rank: int,
+        world_size: int,
+        all_processes_done: mp.Event,
+        model_factory: ModelFactory,
+        method_factory: MethodFactory,
+        dataset: IndexDataset,
+        batch_size: int,
+        result_handler: Optional[
+            Callable[[PartialResultMessage], NoReturn]
+        ] = None,
+    ):
+        super().__init__(
+            result_queue,
+            rank,
+            world_size,
+            all_processes_done,
+            result_handler,
+        )
         self.batch_size = batch_size
         self.dataset = dataset
         self.method_factory = method_factory
         self.model_factory = model_factory
 
     def work(self):
-        sampler = DistributedSampler(self.dataset, self.world_size, self.rank, shuffle=False)
-        dataloader = DataLoader(self.dataset, sampler=sampler, batch_size=self.batch_size, num_workers=4)
+        sampler = DistributedSampler(
+            self.dataset, self.world_size, self.rank, shuffle=False
+        )
+        dataloader = DataLoader(
+            self.dataset,
+            sampler=sampler,
+            batch_size=self.batch_size,
+            num_workers=4,
+        )
         device = torch.device(self.rank)
         model = self.model_factory()
         model.to(device)
@@ -42,16 +73,26 @@ class AttributionsWorker(Worker):
             for method_name, method in method_dict.items():
                 with torch.no_grad():
                     attrs = method(batch_x, batch_y)
-                    result = AttributionResult(batch_indices.cpu().numpy(), attrs.cpu().numpy(), method_name)
-                    self.result_queue.put(PartialResultMessage(self.rank, result))
-        self.result_queue.put(DoneMessage(self.rank))
+                    result = AttributionResult(
+                        batch_indices.cpu().numpy(),
+                        attrs.cpu().numpy(),
+                        method_name,
+                    )
+                    self.send_result(PartialResultMessage(self.rank, result))
 
 
 class AttributionsComputation(DistributedComputation):
-    def __init__(self, model_factory: Callable[[], nn.Module],
-                 method_factory: Callable[[nn.Module], Dict[str, AttributionMethod]],
-                 dataset: Dataset, batch_size: int,
-                 writer: AttributionsDatasetWriter, address="localhost", port="12355", devices: Tuple = None):
+    def __init__(
+        self,
+        model_factory: ModelFactory,
+        method_factory: MethodFactory,
+        dataset: Dataset,
+        batch_size: int,
+        writer: AttributionsDatasetWriter,
+        address="localhost",
+        port="12355",
+        devices: Tuple = None,
+    ):
         super().__init__(address, port, devices)
         self.model_factory = model_factory
         self.method_factory = method_factory
@@ -61,14 +102,28 @@ class AttributionsComputation(DistributedComputation):
         self.prog = None
 
     def run(self):
-        self.prog = tqdm()
+        self.prog = tqdm(total=len(self.dataset) * len(self.method_factory))
         super().run()
 
-    def _create_worker(self, queue: mp.Queue, rank: int, all_processes_done: mp.Event) -> Worker:
-        return AttributionsWorker(queue, rank, self.world_size, all_processes_done, self.model_factory,
-                                  self.method_factory, self.dataset, self.batch_size)
+    def _create_worker(
+        self, queue: mp.Queue, rank: int, all_processes_done: mp.Event
+    ) -> Worker:
+        result_handler = self._handle_result if self.world_size == 1 else None
+        return AttributionsWorker(
+            queue,
+            rank,
+            self.world_size,
+            all_processes_done,
+            self.model_factory,
+            self.method_factory,
+            self.dataset,
+            self.batch_size,
+            result_handler
+        )
 
-    def _handle_result(self, result_message: PartialResultMessage[AttributionResult]):
+    def _handle_result(
+        self, result_message: PartialResultMessage[AttributionResult]
+    ):
         indices = result_message.data.indices
         attributions = result_message.data.attributions
         method_name = result_message.data.method_name

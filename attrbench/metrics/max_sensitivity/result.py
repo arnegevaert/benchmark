@@ -1,8 +1,5 @@
 from typing import Tuple, Optional
-import h5py
 import pandas as pd
-
-from attrbench.data import RandomAccessNDArrayTree
 from attrbench.metrics.result import GroupedMetricResult
 
 
@@ -13,9 +10,8 @@ class MaxSensitivityResult(GroupedMetricResult):
         super().__init__(method_names, shape, levels, level_order)
 
     @classmethod
-    def load(cls, path: str) -> "MaxSensitivityResult":
-        with h5py.File(path, "r") as fp:
-            tree = RandomAccessNDArrayTree.load_from_hdf(fp)
+    def _load(cls, path: str, format="hdf5") -> "MaxSensitivityResult":
+        tree = cls._load_tree(path, format)
         res = MaxSensitivityResult(tree.levels["method"], tree.shape)
         res.tree = tree
         return res

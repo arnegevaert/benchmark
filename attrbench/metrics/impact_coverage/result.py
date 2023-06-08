@@ -1,9 +1,6 @@
 from typing import Tuple, Optional
 from typing_extensions import override
-import h5py
 import pandas as pd
-
-from attrbench.data.nd_array_tree.random_access_nd_array_tree import RandomAccessNDArrayTree
 from attrbench.metrics.result import GroupedMetricResult
 
 
@@ -15,15 +12,15 @@ class ImpactCoverageResult(GroupedMetricResult):
 
     @classmethod
     @override
-    def load(cls, path: str) -> "ImpactCoverageResult":
-        with h5py.File(path, "r") as fp:
-            tree = RandomAccessNDArrayTree.load_from_hdf(fp)
+    def _load(cls, path: str, format="hdf5") -> "ImpactCoverageResult":
+        tree = cls._load_tree(path, format)
         res = ImpactCoverageResult(tree.levels["method"], tree.shape)
         res.tree = tree
         return res
 
-    def get_df(self, methods: Optional[Tuple[str]] = None)\
-            -> Tuple[pd.DataFrame, bool]:
+    def get_df(
+        self, methods: Optional[Tuple[str]] = None
+    ) -> Tuple[pd.DataFrame, bool]:
         methods = methods if methods is not None else self.method_names
         df_dict = {}
         for method in methods:
