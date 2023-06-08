@@ -53,13 +53,12 @@ class ImpactCoverageWorker(MetricWorker):
 
         # Get names of patches and compile regular expression for deriving
         # target labels
-        patch_names = cycle(
-            [
+        patch_names = [
                 filename
                 for filename in os.listdir(self.patch_folder)
                 if filename.endswith(".pt")
             ]
-        )
+        patch_names_cycle = cycle(patch_names)
         target_expr = re.compile(r".*_([0-9]*)\.pt")
 
         for batch_indices, batch_x, batch_y in self.dataloader:
@@ -83,7 +82,7 @@ class ImpactCoverageWorker(MetricWorker):
             while not torch.all(successful):
                 num_tries += 1
                 # Load next patch
-                patch_name = next(patch_names)
+                patch_name = next(patch_names_cycle)
                 target = int(target_expr.match(patch_name).group(1))
                 patch = torch.load(
                     os.path.join(self.patch_folder, patch_name),
@@ -126,8 +125,11 @@ class ImpactCoverageWorker(MetricWorker):
 
                 # Add the currently successful samples to all successful samples
                 successful_now = (
+                    # Output was originally not equal to target
                     (original_output.argmax(axis=1) != target)
+                    # Output is now equal to target
                     & (adv_out.argmax(axis=1) == target)
+                    # Ground truth is not equal to target
                     & (batch_y.cpu() != target)
                 )
                 successful = successful | successful_now
@@ -136,7 +138,7 @@ class ImpactCoverageWorker(MetricWorker):
                     logging.warning(
                         "Not all samples could be attacked:"
                         f"{torch.sum(successful)}/{batch_x.size(0)}"
-                        "were successful."
+                        " were successful."
                     )
                     break
             targets = targets.to(self.device)

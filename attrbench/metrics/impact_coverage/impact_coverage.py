@@ -5,6 +5,7 @@ from attrbench.metrics.distributed_metric import (
 from typing import Callable, Tuple, Optional
 from torch import nn
 from torch import multiprocessing as mp
+from torch.utils.data import Dataset
 from attrbench.data import IndexDataset
 from attrbench.metrics.impact_coverage.result import ImpactCoverageResult
 from attrbench.method_factory import MethodFactory
@@ -16,7 +17,7 @@ class ImpactCoverage(DistributedMetric):
     def __init__(
         self,
         model_factory: Callable[[], nn.Module],
-        dataset: IndexDataset,
+        dataset: Dataset,
         batch_size: int,
         method_factory: MethodFactory,
         patch_folder: str,
@@ -25,7 +26,7 @@ class ImpactCoverage(DistributedMetric):
         devices: Optional[Tuple] = None,
     ):
         super().__init__(
-            model_factory, dataset, batch_size, address, port, devices
+            model_factory, IndexDataset(dataset), batch_size, address, port, devices
         )
         self.method_factory = method_factory
         self.patch_folder = patch_folder

@@ -3,6 +3,7 @@ from torch import multiprocessing as mp
 from attrbench.metrics import MetricWorker
 from typing import Callable, Optional, Tuple
 from torch import nn
+from torch.utils.data import Dataset
 from attrbench.metrics.distributed_metric import DistributedMetric
 from attrbench.method_factory import MethodFactory
 from .result import MaxSensitivityResult
@@ -13,7 +14,7 @@ class MaxSensitivity(DistributedMetric):
     def __init__(
         self,
         model_factory: Callable[[], nn.Module],
-        dataset: IndexDataset,
+        dataset: Dataset,
         batch_size: int,
         method_factory: MethodFactory,
         num_perturbations: int,
@@ -23,7 +24,7 @@ class MaxSensitivity(DistributedMetric):
         devices: Optional[Tuple] = None,
     ):
         super().__init__(
-            model_factory, dataset, batch_size, address, port, devices
+            model_factory, IndexDataset(dataset), batch_size, address, port, devices
         )
         self.method_factory = method_factory
         self.num_perturbations = num_perturbations
