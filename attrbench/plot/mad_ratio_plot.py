@@ -11,12 +11,22 @@ def mad_ratio(df):
 
     # MAD of group medians to global median
     global_median = df.stack().median()
-    between_mad = group_medians.sub(global_median).abs().median()
+    #between_mad = group_medians.sub(global_median).abs().median()
+    between_mad = df.stack().sub(global_median).abs().median()
 
     return between_mad / within_mad
 
 
 class MADRatioPlot:
+    """
+    Bar plot of the MAD ratio for each metric.
+    The MAD ratio is the ratio of the total MAD to the MAD within groups.
+    If this ratio is high, it means that there are differences in method
+    behaviour.
+    If the ratio is close to 1, it means that the methods behave similarly.
+    This can be viewed as a one-way ANOVA test, but using non-parametric MAD
+    instead of SS.
+    """
     def __init__(self, dfs: Dict[str, Tuple[pd.DataFrame, bool]]):
         self.dfs = dfs
 

@@ -8,25 +8,45 @@ from scipy.cluster.hierarchy import linkage
 
 
 class ClusterPlot:
+    """
+    Clustermap of the median values of the metrics.
+    Allows the user to see which metrics and/or methods behave similarly.
+    """
     def __init__(self, dfs: Dict[str, Tuple[pd.DataFrame, bool]]):
         self.dfs = dfs
 
     def render(self, figsize=(7, 7)):
         medians = {}
-        for metric_name, (df, inverted) in self.dfs.items():
-            medians[metric_name] = df.median(axis=0) if not inverted else -df.median(axis=0)
+        for metric_name, (df, higher_is_better) in self.dfs.items():
+            medians[metric_name] = (
+                df.median(axis=0) if higher_is_better else -df.median(axis=0)
+            )
 
         df = pd.DataFrame.from_dict(medians)
         normalized = MinMaxScaler().fit_transform(df)
-        normalized_df = pd.DataFrame(normalized, columns=df.columns, index=df.index)
+        normalized_df = pd.DataFrame(
+            normalized, columns=df.columns, index=df.index
+        )
 
-        # Manually computing the linkage so that we can set optimal_ordering to True
+        # Manually computing the linkage so that we can set 
+        # optimal_ordering to True
         # This should allow for easy comparison between clustermaps
-        row_linkage = linkage(normalized, method="single", metric="correlation", optimal_ordering=True)
-        col_linkage = linkage(np.transpose(normalized), method="single", metric="correlation", optimal_ordering=True)
-        fig = sns.clustermap(normalized_df, row_linkage=row_linkage, col_linkage=col_linkage,
-                             figsize=figsize).fig
-
-        #fig = sns.clustermap(normalized, figsize=figsize, metric="correlation", method="single").fig
-        #plt.tight_layout()
+        row_linkage = linkage(
+            normalized,
+            method="single",
+            metric="correlation",
+            optimal_ordering=True,
+        )
+        col_linkage = linkage(
+            np.transpose(normalized),
+            method="single",
+            metric="correlation",
+            optimal_ordering=True,
+        )
+        fig = sns.clustermap(
+            normalized_df,
+            row_linkage=row_linkage,
+            col_linkage=col_linkage,
+            figsize=figsize,
+        ).fig
         return fig

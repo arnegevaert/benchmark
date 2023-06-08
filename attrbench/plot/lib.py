@@ -7,10 +7,10 @@ import numpy as np
 import math
 
 
-def effect_size_barplot(effect_sizes, pvalues, labels, alpha):
-    fig, axs = plt.subplots(ncols=2, gridspec_kw={"width_ratios": [4, 1]})
+def effect_size_barplot(effect_sizes, pvalues, labels, alpha, figsize):
+    fig, axs = plt.subplots(ncols=2, gridspec_kw={"width_ratios": [4, 2]})
 
-    effect_sizes.plot.barh(figsize=(14, 6), ax=axs[0])
+    effect_sizes.plot.barh(figsize=figsize, ax=axs[0])
     axs[0].legend(
         labels,
         loc="upper center",
@@ -25,8 +25,10 @@ def effect_size_barplot(effect_sizes, pvalues, labels, alpha):
     axs[1].set_title(f"p < {alpha}")
     axs[1].set_yticks([])
     axs[1].set_xticks(np.arange(len(labels)) + 0.5)
-    axs[1].tick_params(axis="x", rotation=45)
-    axs[1].set_xticklabels(labels, ha="right")
+
+    axs[1].set_xticklabels(
+        labels, ha="right", rotation=45, rotation_mode="anchor"
+    )
     return fig, axs
 
 
