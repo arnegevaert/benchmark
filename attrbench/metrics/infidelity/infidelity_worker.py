@@ -144,7 +144,7 @@ class InfidelityWorker(MetricWorker):
                     # Dot prodcts for this method
                     method_dot_products = torch.stack(
                         dot_products[method]
-                    )  # [num_perturnations, batch_size]
+                    )  # [num_perturbations, batch_size]
                     # Denominator for normalizing constant beta
                     beta_denominator = torch.mean(
                         method_dot_products**2, dim=0, keepdim=True
