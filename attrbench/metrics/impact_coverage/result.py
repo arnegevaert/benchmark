@@ -25,4 +25,4 @@ class ImpactCoverageResult(GroupedMetricResult):
         df_dict = {}
         for method in methods:
             df_dict[method] = self.tree.get(method=method)
-        return pd.DataFrame.from_dict(df_dict), False
+        return pd.DataFrame.from_dict(df_dict), True
