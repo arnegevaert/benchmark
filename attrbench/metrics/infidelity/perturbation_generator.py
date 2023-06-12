@@ -13,7 +13,9 @@ class PerturbationGenerator:
 
     def generate_perturbation(self):
         if self.samples is None:
-            raise ValueError("Base samples must be set to generate perturbations")
+            raise ValueError(
+                "Base samples must be set to generate perturbations"
+            )
         return self._generate_perturbation_vectors()
 
     def _generate_perturbation_vectors(self):
@@ -28,7 +30,11 @@ class NoisyBaselinePerturbationGenerator(PerturbationGenerator):
     # perturbation_size is stdev of noise
     def _generate_perturbation_vectors(self):
         # I = x - (x_0 + \epsilon) where x_0 = 0
-        return self.samples - torch.randn(*self.samples.shape, device=self.samples.device) * self.sd
+        return (
+            self.samples
+            - torch.randn(*self.samples.shape, device=self.samples.device)
+            * self.sd
+        )
 
 
 class GaussianPerturbationGenerator(PerturbationGenerator):
@@ -39,7 +45,10 @@ class GaussianPerturbationGenerator(PerturbationGenerator):
     # perturbation_size is stdev of noise
     def _generate_perturbation_vectors(self):
         # I \sim \mathcal{N}(0, self.sd)
-        return torch.randn(*self.samples.shape, device=self.samples.device) * self.sd
+        return (
+            torch.randn(*self.samples.shape, device=self.samples.device)
+            * self.sd
+        )
 
 
 class SquarePerturbationGenerator(PerturbationGenerator):
@@ -53,8 +62,15 @@ class SquarePerturbationGenerator(PerturbationGenerator):
         width = self.samples.shape[3]
         x_loc = self.rng.integers(0, width - self.square_size, size=1).item()
         y_loc = self.rng.integers(0, height - self.square_size, size=1).item()
-        perturbation_mask = torch.zeros(self.samples.shape, device=self.samples.device)
-        perturbation_mask[:, :, x_loc:x_loc + self.square_size, y_loc:y_loc + self.square_size] = 1
+        perturbation_mask = torch.zeros(
+            self.samples.shape, device=self.samples.device
+        )
+        perturbation_mask[
+            :,
+            :,
+            x_loc : x_loc + self.square_size,
+            y_loc : y_loc + self.square_size,
+        ] = 1
         perturbation_vector = self.samples * perturbation_mask
         return perturbation_vector
 
@@ -68,16 +84,29 @@ class SegmentRemovalPerturbationGenerator(PerturbationGenerator):
     def set_samples(self, samples: torch.tensor):
         self.samples = samples
         segmented_images = segment_samples(samples.cpu().numpy())
-        self.segmented_images = torch.tensor(segmented_images, device=samples.device)
-        self.segments = [np.unique(segmented_images[i, ...]) for i in range(samples.shape[0])]
+        self.segmented_images = torch.tensor(
+            segmented_images, device=samples.device
+        )
+        self.segments = [
+            np.unique(segmented_images[i, ...])
+            for i in range(samples.shape[0])
+        ]
         self.rng = np.random.default_rng()
 
     def _generate_perturbation_vectors(self):
         perturbation_vectors = []
         # Select segments to mask for each sample
         segments_to_mask = torch.tensor(
-            np.stack([self.rng.choice(self.segments[i], size=self.num_segments, replace=False)
-                      for i in range(self.samples.shape[0])]), device=self.samples.device)
+            np.stack(
+                [
+                    self.rng.choice(
+                        self.segments[i], size=self.num_segments, replace=False
+                    )
+                    for i in range(self.samples.shape[0])
+                ]
+            ),
+            device=self.samples.device,
+        )
         for i in range(self.samples.shape[0]):
             seg_sample = self.segmented_images[i, ...]
             sample = self.samples[i, ...]
