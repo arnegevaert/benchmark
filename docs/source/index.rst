@@ -1,9 +1,9 @@
-.. Attrbench documentation master file, created by
-   sphinx-quickstart on Mon Nov  7 10:30:43 2022.
+.. AttrBench documentation master file, created by
+   sphinx-quickstart on Mon Jun 12 15:45:30 2023.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Attrbench's documentation!
+Welcome to AttrBench's documentation!
 =====================================
 
 .. toctree::
