@@ -1,4 +1,4 @@
-from attribench import Metric
+from attribench.metrics._metric import Metric
 import warnings
 from torch import nn
 from typing import Callable, Dict, Tuple

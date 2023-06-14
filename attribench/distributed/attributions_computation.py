@@ -5,7 +5,7 @@ from attribench.distributed import (
     Worker,
     ModelFactory,
 )
-from attribench import MethodFactory
+from attribench._method_factory import MethodFactory
 from attribench.data import AttributionsDatasetWriter, IndexDataset
 import torch.multiprocessing as mp
 from torch.utils.data import Dataset, DataLoader

@@ -73,7 +73,7 @@ class Insertion(Deletion):
     This is a simple wrapper around the deletion metric.
     The only differences are:
     - Start, stop and mode are swapped (deleting the first x% of the input is
-      the same as inserting the last x% of the input)
+    the same as inserting the last x% of the input)
     - The result is an InsertionResult instead of a DeletionResult
     """
 

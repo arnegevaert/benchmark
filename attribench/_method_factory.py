@@ -1,7 +1,7 @@
-from typing import Dict, Type, Union, NewType, Tuple
+from typing import Dict, Type, Union, Tuple
 from torch import nn
 
-from attribench import AttributionMethod
+from attribench._attribution_method import AttributionMethod
 
 
 # ConfigDict is a dictionary mapping strings to...

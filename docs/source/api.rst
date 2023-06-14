@@ -8,13 +8,16 @@ This page contains the API reference for public functions and classes in the
 Methods
 -------
 .. autosummary::
-    :toctree: generated
+    :toctree: generated/
 
     attribench.AttributionMethod
     attribench.MethodFactory
 
-Metrics: Distributed API
-------------------------
+Metrics
+-------
+
+Distributed API
+^^^^^^^^^^^^^^^
 .. autosummary::
     :toctree: generated
 
@@ -22,8 +25,8 @@ Metrics: Distributed API
     attribench.metrics.Deletion
     attribench.metrics.Insertion
 
-Metrics: Functional API
------------------------
+Functional API
+^^^^^^^^^^^^^^
 .. autosummary::
     :toctree: generated
 
