@@ -2,11 +2,11 @@ from abc import abstractmethod
 from typing import Tuple, Dict
 import h5py
 import numpy as np
-from attribench.data.nd_array_tree.random_access_nd_array_tree import (
+from attribench.data.nd_array_tree._random_access_nd_array_tree import (
     RandomAccessNDArrayTree,
 )
 from ._batch_result import BatchResult
-from attribench import metrics
+from attribench.distributed import metrics
 import pandas as pd
 import os
 import yaml

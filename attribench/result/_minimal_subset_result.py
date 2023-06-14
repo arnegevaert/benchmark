@@ -7,7 +7,9 @@ import h5py
 import pandas as pd
 
 from ._metric_result import MetricResult
-from attribench.data import RandomAccessNDArrayTree
+from attribench.data.nd_array_tree._random_access_nd_array_tree import (
+    RandomAccessNDArrayTree,
+)
 
 
 class MinimalSubsetResult(MetricResult):

@@ -1,3 +1,4 @@
+from ._metric_result import MetricResult
 from ._deletion_result import DeletionResult
 from ._insertion_result import InsertionResult
 from ._impact_coverage_result import ImpactCoverageResult

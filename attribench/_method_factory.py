@@ -1,19 +1,24 @@
-from typing import Dict, Type, Union, Tuple
+from typing import Dict, Type, Union, Tuple, NewType
 from torch import nn
 
 from attribench._attribution_method import AttributionMethod
 
 
-# ConfigDict is a dictionary mapping strings to...
-ConfigDict = Dict[
-    str,
-    Union[
-        # An AttributionMethod constructor
-        Type[AttributionMethod],
-        # ... or an AttributionMethod constructor along with a kwargs dict
-        Tuple[Type[AttributionMethod], Dict],
+ConfigDict = NewType(
+    "ConfigDict",
+    Dict[
+        str,
+        Union[
+            Type[AttributionMethod],
+            Tuple[Type[AttributionMethod], Dict],
+        ],
     ],
-]
+)
+"""
+A ConfigDict is a dictionary mapping strings to either an AttributionMethod,
+or a tuple consisting of an AttributionMethod constructor and a dictionary of
+keyword arguments to pass to the constructor.
+"""
 
 
 class MethodFactory:
