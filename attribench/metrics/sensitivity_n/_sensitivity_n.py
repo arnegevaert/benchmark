@@ -4,10 +4,8 @@ from torch import nn
 from typing import Callable, Dict, Union, Tuple
 from attribench.data import AttributionsDataset
 from attribench.masking import Masker
-from attribench.metrics.sensitivity_n import (
-    SensitivityNResult,
-    SensitivityNWorker,
-)
+from attribench.result._sensitivity_n_result import SensitivityNResult
+from ._sensitivity_n_worker import SensitivityNWorker
 from torch import multiprocessing as mp
 
 

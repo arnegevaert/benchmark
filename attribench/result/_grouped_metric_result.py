@@ -1,5 +1,6 @@
 from abc import abstractmethod
-from attribench.metrics.result import BatchResult, MetricResult
+from ._batch_result import BatchResult
+from ._metric_result import MetricResult
 
 
 class GroupedMetricResult(MetricResult):

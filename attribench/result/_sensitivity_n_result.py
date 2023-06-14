@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from numpy import typing as npt
 
-from attribench.metrics.result import GroupedMetricResult
+from ._grouped_metric_result import GroupedMetricResult
 
 
 def _column_avg(

@@ -8,7 +8,7 @@ from torch import nn
 from torch import multiprocessing as mp
 from attribench.result._batch_result import BatchResult
 
-from attribench.method_factory import MethodFactory
+from attribench._method_factory import MethodFactory
 
 
 def _normalize_attrs(attrs):

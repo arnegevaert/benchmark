@@ -6,7 +6,7 @@ import numpy as np
 from numpy import typing as npt
 from typing import List, Tuple, Optional
 from attribench.data import RandomAccessNDArrayTree
-from attribench.result import MetricResult
+from ._metric_result import MetricResult
 import pandas as pd
 
 

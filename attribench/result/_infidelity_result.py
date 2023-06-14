@@ -1,7 +1,7 @@
 from typing import Tuple, Optional
 from typing_extensions import override
 import pandas as pd
-from attribench.metrics.result import GroupedMetricResult
+from ._grouped_metric_result import GroupedMetricResult
 
 
 class InfidelityResult(GroupedMetricResult):

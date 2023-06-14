@@ -1,7 +1,7 @@
 from typing_extensions import override
 from numpy import typing as npt
 from typing import List, Tuple, Optional
-from attribench.result import DeletionResult
+from ._deletion_result import DeletionResult
 import pandas as pd
 
 

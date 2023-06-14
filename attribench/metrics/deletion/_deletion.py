@@ -4,11 +4,9 @@ from torch import nn
 from torch import multiprocessing as mp
 
 from attribench.masking import Masker
-from attribench.metrics.deletion import (
-    DeletionWorker,
-)
+from ._deletion_worker import DeletionWorker
 from attribench.result import DeletionResult, InsertionResult
-from attribench import Metric
+from attribench.metrics._metric import Metric
 from attribench.data import AttributionsDataset
 
 

@@ -7,13 +7,13 @@ from itertools import cycle
 import os
 import torch
 from attribench.distributed.message import PartialResultMessage
-from attribench.metrics import MetricWorker
+from attribench.metrics._metric_worker import MetricWorker
 from torch import multiprocessing as mp
 from typing import Callable, Dict, Optional, NoReturn
 from torch import nn
 
 from attribench.result._batch_result import BatchResult
-from attribench.method_factory import MethodFactory
+from attribench._method_factory import MethodFactory
 
 
 class ImpactCoverageWorker(MetricWorker):

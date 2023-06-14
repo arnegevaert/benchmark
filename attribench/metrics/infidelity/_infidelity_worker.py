@@ -4,8 +4,8 @@ from typing import Callable, Dict, Tuple, Optional, NoReturn
 from torch import nn
 from attribench.data import AttributionsDataset
 from attribench._activation_fns import ACTIVATION_FNS
-from attribench.metrics import MetricWorker
-from attribench.metrics.result import BatchResult
+from attribench.metrics._metric_worker import MetricWorker
+from attribench.result._batch_result import BatchResult
 from attribench.distributed import PartialResultMessage
 from ._perturbation_generator import PerturbationGenerator
 

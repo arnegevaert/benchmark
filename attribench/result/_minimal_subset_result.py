@@ -6,7 +6,7 @@ from typing_extensions import override
 import h5py
 import pandas as pd
 
-from attribench.metrics.result import MetricResult
+from ._metric_result import MetricResult
 from attribench.data import RandomAccessNDArrayTree
 
 

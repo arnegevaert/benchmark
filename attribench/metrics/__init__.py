@@ -1,3 +1,5 @@
+from ._metric import Metric
+
 # Deletion
 from .deletion._deletion import Deletion
 from .deletion._deletion_worker import deletion
@@ -18,7 +20,7 @@ from .infidelity._infidelity import Infidelity
 from .max_sensitivity._max_sensitivity import MaxSensitivity
 
 # Minimal Subset
-from .minimal_subset import MinimalSubset
+from .minimal_subset._minimal_subset import MinimalSubset
 
 # Sensitivity-N
-from .sensitivity_n import SensitivityN
+from .sensitivity_n._sensitivity_n import SensitivityN

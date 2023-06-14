@@ -4,8 +4,8 @@ from torch import nn
 import torch.multiprocessing as mp
 
 from attribench.distributed import PartialResultMessage, DistributedComputation
-from attribench.metrics import MetricWorker
-from attribench import MetricResult
+from attribench.metrics._metric_worker import MetricWorker
+from attribench.result._metric_result import MetricResult
 from typing import Tuple, Callable, Optional
 
 

@@ -9,14 +9,13 @@ from attribench.masking import ImageMasker
 from attribench.distributed import (
     Worker,
     DistributedSampler,
-    DoneMessage,
     PartialResultMessage,
 )
-from attribench.metrics.result import BatchResult
-from attribench.metrics.deletion import Deletion
+from attribench.result._batch_result import BatchResult
+from ._deletion import Deletion
 from attribench.data import AttributionsDataset
 
-from .deletion import DeletionWorker
+from ._deletion import DeletionWorker
 from ._dataset import _IrofDataset
 from ._get_predictions import _get_predictions
 

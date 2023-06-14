@@ -5,7 +5,7 @@ import numpy as np
 from attribench.data.nd_array_tree.random_access_nd_array_tree import (
     RandomAccessNDArrayTree,
 )
-from attribench.metrics.result import BatchResult
+from ._batch_result import BatchResult
 from attribench import metrics
 import pandas as pd
 import os
