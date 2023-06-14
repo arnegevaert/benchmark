@@ -5,17 +5,38 @@ API Reference
 This page contains the API reference for public functions and classes in the
 :mod:`attribench` package.
 
-Metrics
+Methods
 -------
 .. autosummary::
     :toctree: generated
 
-    attribench.metrics.DistributedMetric
-    attribench.metrics.
+    attribench.AttributionMethod
+    attribench.MethodFactory
+
+Metrics: Distributed API
+------------------------
+.. autosummary::
+    :toctree: generated
+
+    attribench.Metric
     attribench.metrics.Deletion
-    attribench.metrics.DeletionResult
     attribench.metrics.Insertion
-    attribench.metrics.InsertionResult
+
+Metrics: Functional API
+-----------------------
+.. autosummary::
+    :toctree: generated
+
+    attribench.metrics.deletion
+
+Results
+-------
+.. autosummary::
+    :toctree: generated
+
+    attribench.MetricResult
+    attribench.result.DeletionResult
+    attribench.result.InsertionResult
 
 
 Data
@@ -49,13 +70,3 @@ Plot
     :toctree: generated
 
     attribench.plot.ClusterPlot
-
-Stat
-----
-
-.. autosummary::
-    :toctree: generated
-
-    attribench.stat.corrcoef
-
-"""

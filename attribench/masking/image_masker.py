@@ -1,5 +1,5 @@
 from attribench.masking import Masker
-from attribench.segmentation import segment_attributions
+from attribench._segmentation import segment_attributions
 from typing import List, Union, Optional
 import numpy as np
 import torch

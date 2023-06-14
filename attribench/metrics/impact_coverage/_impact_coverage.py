@@ -1,24 +1,25 @@
-from attribench.data.index_dataset import IndexDataset
-from torch import multiprocessing as mp
-from attribench.metrics import MetricWorker
-from typing import Callable, Optional, Tuple
+from attribench import Metric
+from attribench.metrics._metric_worker import MetricWorker
+from attribench.result import ImpactCoverageResult
+
+from typing import Callable, Tuple, Optional
 from torch import nn
+from torch import multiprocessing as mp
 from torch.utils.data import Dataset
-from attribench.metrics.distributed_metric import Metric
+from attribench.data import IndexDataset
 from attribench.method_factory import MethodFactory
-from .result import MaxSensitivityResult
-from .max_sensitivity_worker import MaxSensitivityWorker
+
+from ._impact_coverage_worker import ImpactCoverageWorker
 
 
-class MaxSensitivity(Metric):
+class ImpactCoverage(Metric):
     def __init__(
         self,
         model_factory: Callable[[], nn.Module],
         dataset: Dataset,
         batch_size: int,
         method_factory: MethodFactory,
-        num_perturbations: int,
-        radius: float,
+        patch_folder: str,
         address="localhost",
         port="12355",
         devices: Optional[Tuple] = None,
@@ -32,16 +33,15 @@ class MaxSensitivity(Metric):
             devices,
         )
         self.method_factory = method_factory
-        self.num_perturbations = num_perturbations
-        self.radius = radius
-        self._result = MaxSensitivityResult(
+        self.patch_folder = patch_folder
+        self._result = ImpactCoverageResult(
             method_factory.get_method_names(), shape=(len(dataset),)
         )
 
     def _create_worker(
         self, queue: mp.Queue, rank: int, all_processes_done: mp.Event
     ) -> MetricWorker:
-        return MaxSensitivityWorker(
+        return ImpactCoverageWorker(
             queue,
             rank,
             self.world_size,
@@ -50,7 +50,6 @@ class MaxSensitivity(Metric):
             self.method_factory,
             self.dataset,
             self.batch_size,
-            self.num_perturbations,
-            self.radius,
+            self.patch_folder,
             self._handle_result if self.world_size == 1 else None,
         )

@@ -3,11 +3,11 @@ import torch
 from typing import Callable, Dict, Tuple, Optional, NoReturn
 from torch import nn
 from attribench.data import AttributionsDataset
-from attribench.activation_fns import ACTIVATION_FNS
+from attribench._activation_fns import ACTIVATION_FNS
 from attribench.metrics import MetricWorker
 from attribench.metrics.result import BatchResult
 from attribench.distributed import PartialResultMessage
-from .perturbation_generator import PerturbationGenerator
+from ._perturbation_generator import PerturbationGenerator
 
 
 class InfidelityWorker(MetricWorker):

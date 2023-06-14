@@ -1,7 +1,7 @@
 from typing import Dict, Tuple
 import pandas as pd
 from attribench.plot.lib import effect_size_barplot
-from attribench.stat import wilcoxon_tests
+from attribench._stat import wilcoxon_tests
 
 
 class WilcoxonBarPlot:

@@ -2,8 +2,8 @@ from typing import Callable, List, Dict
 
 import torch
 
-from attribench.activation_fns import ACTIVATION_FNS
-from attribench.metrics.deletion._dataset import _MaskingDataset
+from attribench._activation_fns import ACTIVATION_FNS
+from ._dataset import _MaskingDataset
 
 
 def _get_predictions(

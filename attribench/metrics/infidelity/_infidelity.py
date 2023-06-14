@@ -1,10 +1,11 @@
-from attribench.metrics import Metric
+from attribench import Metric
 import warnings
 from torch import nn
 from typing import Callable, Dict, Tuple
 from attribench.data import AttributionsDataset
-from attribench.metrics.infidelity import InfidelityWorker, InfidelityResult
-from .perturbation_generator import PerturbationGenerator
+from attribench.metrics.infidelity._infidelity_worker import InfidelityWorker
+from attribench.result import InfidelityResult
+from ._perturbation_generator import PerturbationGenerator
 from torch import multiprocessing as mp
 
 

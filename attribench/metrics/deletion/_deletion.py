@@ -5,11 +5,10 @@ from torch import multiprocessing as mp
 
 from attribench.masking import Masker
 from attribench.metrics.deletion import (
-    DeletionResult,
     DeletionWorker,
-    InsertionResult,
 )
-from attribench.metrics import Metric
+from attribench.result import DeletionResult, InsertionResult
+from attribench import Metric
 from attribench.data import AttributionsDataset
 
 

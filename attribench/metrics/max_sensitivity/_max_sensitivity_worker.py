@@ -1,12 +1,12 @@
 from attribench.data.index_dataset import IndexDataset
 import math
 from attribench.distributed.message import PartialResultMessage
-from attribench.metrics import MetricWorker
+from attribench.metrics._metric_worker import MetricWorker
 from typing import Callable, Dict, Optional, NoReturn
 import torch
 from torch import nn
 from torch import multiprocessing as mp
-from attribench.metrics.result.batch_result import BatchResult
+from attribench.result._batch_result import BatchResult
 
 from attribench.method_factory import MethodFactory
 

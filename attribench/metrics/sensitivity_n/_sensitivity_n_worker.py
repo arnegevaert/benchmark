@@ -5,16 +5,16 @@ from typing import Callable, Dict, Tuple, Optional, NoReturn
 from torch import nn
 from attribench.data import AttributionsDataset
 from attribench.masking import Masker
-from attribench.metrics import MetricWorker, Metric
-from attribench.metrics.result import BatchResult
+from attribench.metrics._metric_worker import MetricWorker
+from attribench.result._batch_result import BatchResult
 from attribench.distributed import PartialResultMessage
-from attribench.metrics.sensitivity_n._dataset import (
-    _SensitivityNDataset,
-    _SegSensNDataset,
+from ._dataset import (
+    SensitivityNDataset,
+    SegSensNDataset,
 )
-from attribench.segmentation import segment_attributions
-from attribench.activation_fns import ACTIVATION_FNS
-from attribench.stat import corrcoef
+from attribench._segmentation import segment_attributions
+from attribench._activation_fns import ACTIVATION_FNS
+from attribench._stat import corrcoef
 
 
 class SensitivityNWorker(MetricWorker):
@@ -96,10 +96,10 @@ class SensitivityNWorker(MetricWorker):
             for masker_name, masker in self.maskers.items():
                 # Create pseudo-dataset to generate perturbed samples
                 if self.segmented:
-                    ds = _SegSensNDataset(n_range, self.num_subsets, batch_x)
+                    ds = SegSensNDataset(n_range, self.num_subsets, batch_x)
                     ds.set_masker(masker)
                 else:
-                    ds = _SensitivityNDataset(
+                    ds = SensitivityNDataset(
                         n_range, self.num_subsets, batch_x, masker
                     )
 

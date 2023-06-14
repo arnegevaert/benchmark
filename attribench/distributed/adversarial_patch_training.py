@@ -184,7 +184,7 @@ class PatchResult:
         self.percent_successful = percent_successful
 
 
-class MakePatchesWorker(Worker):
+class AdversarialPatchTrainingWorker(Worker):
     def __init__(
         self,
         result_queue: mp.Queue,
@@ -242,7 +242,7 @@ class MakePatchesWorker(Worker):
             )
 
 
-class MakePatches(DistributedComputation):
+class AdversarialPatchTraining(DistributedComputation):
     def __init__(
         self,
         model_factory: Callable[[], nn.Module],
@@ -267,7 +267,7 @@ class MakePatches(DistributedComputation):
     def _create_worker(
         self, queue: mp.Queue, rank: int, all_processes_done: mp.Event
     ) -> Worker:
-        return MakePatchesWorker(
+        return AdversarialPatchTrainingWorker(
             queue,
             rank,
             self.world_size,

@@ -4,11 +4,9 @@ from torch import nn
 from torch import multiprocessing as mp
 
 from attribench.masking import Masker
-from attribench.metrics.minimal_subset import (
-    MinimalSubsetResult,
-    MinimalSubsetWorker,
-)
-from attribench.metrics import Metric
+from ._minimal_subset_worker import MinimalSubsetWorker
+from attribench.result import MinimalSubsetResult
+from attribench import Metric
 from attribench.data import AttributionsDataset
 
 

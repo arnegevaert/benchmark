@@ -2,10 +2,10 @@ import numpy as np
 import torch
 
 from attribench.masking import ImageMasker, Masker
-from attribench.segmentation import segment_samples
+from attribench._segmentation import segment_samples
 
 
-class _SensitivityNDataset:
+class SensitivityNDataset:
     def __init__(
         self,
         n_range: np.ndarray,
@@ -29,7 +29,7 @@ class _SensitivityNDataset:
         return masked_samples, indices, n
 
 
-class _SegSensNDataset:
+class SegSensNDataset:
     def __init__(
         self, n_range: np.ndarray, num_subsets: int, samples: torch.tensor
     ):

@@ -1,4 +1,4 @@
-from .segmentation import isin, segment_samples, segment_attributions
-from .attribution_method import AttributionMethod
-from .method_factory import MethodFactory
-from .activation_fns import ACTIVATION_FNS
+from ._attribution_method import AttributionMethod
+from ._method_factory import MethodFactory
+from .metrics._metric import Metric
+from .result._metric_result import MetricResult

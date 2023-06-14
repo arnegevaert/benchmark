@@ -1,4 +1,4 @@
-from attribench.metrics import MetricWorker
+from attribench.metrics._metric_worker import MetricWorker
 from typing import Callable, Dict, Optional, NoReturn
 
 import numpy as np
@@ -8,7 +8,7 @@ from torch import multiprocessing as mp
 
 from attribench.masking import Masker
 from attribench.distributed import PartialResultMessage
-from attribench.metrics.result import BatchResult
+from attribench.result._batch_result import BatchResult
 from attribench.data import AttributionsDataset
 from ._dataset import (
     _MinimalSubsetDataset,

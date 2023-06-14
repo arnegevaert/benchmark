@@ -1,5 +1,5 @@
 import numpy as np
-from attribench.segmentation import segment_samples, isin
+from attribench._segmentation import segment_samples, isin
 import torch
 
 
