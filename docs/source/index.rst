@@ -6,17 +6,24 @@
 Welcome to AttriBench's documentation!
 ======================================
 **AttriBench** is a Pytorch-based benchmarking tool for feature attribution-based
-explanations of machine learning models. Check out the :doc:`usage` page for more
-information.
+explanations of machine learning models.
 
 .. note::
    This documentation is still under construction.
 
+Install
+-------
+To install AttriBench, run the following command::
+   
+      pip install attribench
+
 Contents
 --------
 .. toctree::
-   usage
-   api
+   :maxdepth: 2
+
+   Getting Started <getting_started>
+   API Reference <api>
 
 
 Indices and tables

@@ -9,7 +9,7 @@ from attribench.metrics.result import MetricResult
 from typing import Tuple, Callable, Optional
 
 
-class DistributedMetric(DistributedComputation):
+class Metric(DistributedComputation):
     def __init__(
         self,
         model_factory: Callable[[], nn.Module],

@@ -9,11 +9,11 @@ from attribench.metrics.deletion import (
     DeletionWorker,
     InsertionResult,
 )
-from attribench.metrics import DistributedMetric
+from attribench.metrics import Metric
 from attribench.data import AttributionsDataset
 
 
-class Deletion(DistributedMetric):
+class Deletion(Metric):
     def __init__(
         self,
         model_factory: Callable[[], nn.Module],

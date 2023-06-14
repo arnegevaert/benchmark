@@ -5,7 +5,7 @@ from typing import Callable, Dict, Tuple, Optional, NoReturn
 from torch import nn
 from attribench.data import AttributionsDataset
 from attribench.masking import Masker
-from attribench.metrics import MetricWorker, DistributedMetric
+from attribench.metrics import MetricWorker, Metric
 from attribench.metrics.result import BatchResult
 from attribench.distributed import PartialResultMessage
 from attribench.metrics.sensitivity_n._dataset import (

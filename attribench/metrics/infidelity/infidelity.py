@@ -1,4 +1,4 @@
-from attribench.metrics import DistributedMetric
+from attribench.metrics import Metric
 import warnings
 from torch import nn
 from typing import Callable, Dict, Tuple
@@ -8,7 +8,7 @@ from .perturbation_generator import PerturbationGenerator
 from torch import multiprocessing as mp
 
 
-class Infidelity(DistributedMetric):
+class Infidelity(Metric):
     def __init__(
         self,
         model_factory: Callable[[], nn.Module],

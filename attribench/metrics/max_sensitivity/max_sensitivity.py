@@ -4,13 +4,13 @@ from attribench.metrics import MetricWorker
 from typing import Callable, Optional, Tuple
 from torch import nn
 from torch.utils.data import Dataset
-from attribench.metrics.distributed_metric import DistributedMetric
+from attribench.metrics.distributed_metric import Metric
 from attribench.method_factory import MethodFactory
 from .result import MaxSensitivityResult
 from .max_sensitivity_worker import MaxSensitivityWorker
 
 
-class MaxSensitivity(DistributedMetric):
+class MaxSensitivity(Metric):
     def __init__(
         self,
         model_factory: Callable[[], nn.Module],

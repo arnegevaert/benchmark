@@ -7,7 +7,7 @@ from itertools import cycle
 import os
 import torch
 from attribench.distributed.message import PartialResultMessage
-from attribench.metrics import MetricWorker, DistributedMetric
+from attribench.metrics import MetricWorker, Metric
 from torch import multiprocessing as mp
 from typing import Callable, Dict, Optional, NoReturn
 from torch import nn

@@ -1,13 +1,12 @@
 import numpy as np
 from scipy import stats
-import warnings
 
 
 def wilcoxon_tests(df, higher_is_better):
     pvalues, effect_sizes = {}, {}
     for method_name in df:
         method_results = df[method_name].to_numpy()
-        statistic, pvalue = stats.wilcoxon(
+        _, pvalue = stats.wilcoxon(
             method_results,
             alternative="greater" if higher_is_better else "less",
         )

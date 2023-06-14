@@ -8,11 +8,11 @@ from attribench.metrics.minimal_subset import (
     MinimalSubsetResult,
     MinimalSubsetWorker,
 )
-from attribench.metrics import DistributedMetric
+from attribench.metrics import Metric
 from attribench.data import AttributionsDataset
 
 
-class MinimalSubset(DistributedMetric):
+class MinimalSubset(Metric):
     def __init__(
         self,
         model_factory: Callable[[], nn.Module],

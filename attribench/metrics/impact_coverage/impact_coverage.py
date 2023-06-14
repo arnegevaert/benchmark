@@ -1,5 +1,5 @@
 from attribench.metrics.distributed_metric import (
-    DistributedMetric,
+    Metric,
     MetricWorker,
 )
 from typing import Callable, Tuple, Optional
@@ -13,7 +13,7 @@ from attribench.method_factory import MethodFactory
 from .impact_coverage_worker import ImpactCoverageWorker
 
 
-class ImpactCoverage(DistributedMetric):
+class ImpactCoverage(Metric):
     def __init__(
         self,
         model_factory: Callable[[], nn.Module],

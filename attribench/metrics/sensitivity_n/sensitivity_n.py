@@ -1,4 +1,4 @@
-from attribench.metrics import DistributedMetric
+from attribench.metrics import Metric
 import warnings
 from torch import nn
 from typing import Callable, Dict, Union, Tuple
@@ -11,7 +11,7 @@ from attribench.metrics.sensitivity_n import (
 from torch import multiprocessing as mp
 
 
-class SensitivityN(DistributedMetric):
+class SensitivityN(Metric):
     def __init__(
         self,
         model_factory: Callable[[], nn.Module],
