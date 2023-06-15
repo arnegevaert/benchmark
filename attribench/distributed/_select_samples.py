@@ -102,10 +102,10 @@ class SelectSamples(DistributedComputation):
         batch_size : int
             Batch size per subprocess to use for the dataloader.
         address : str, optional
-            Address for communication between subprocesses,
+            Address to use for the multiprocessing connection,
             by default "localhost"
         port : str, optional
-            Port for communication between subprocesses, by default "12355"
+            Port to use for the multiprocessing connection, by default "12355"
         devices : Tuple, optional
             Devices to use. If None, then all available devices are used.
             By default None.

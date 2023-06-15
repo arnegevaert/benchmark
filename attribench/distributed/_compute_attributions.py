@@ -8,10 +8,11 @@ from attribench._method_factory import MethodFactory
 from attribench.data import AttributionsDatasetWriter, IndexDataset
 import torch.multiprocessing as mp
 from torch.utils.data import Dataset, DataLoader
-from typing import Callable, Tuple, Dict, Optional, NoReturn
+from typing import Callable, Tuple, Optional
 import torch
 from numpy import typing as npt
 from tqdm import tqdm
+from multiprocessing.synchronize import Event
 
 
 class AttributionResult:
@@ -29,13 +30,13 @@ class AttributionsWorker(Worker):
         result_queue: mp.Queue,
         rank: int,
         world_size: int,
-        all_processes_done: mp.Event,
+        all_processes_done: Event,
         model_factory: ModelFactory,
         method_factory: MethodFactory,
         dataset: IndexDataset,
         batch_size: int,
         result_handler: Optional[
-            Callable[[PartialResultMessage], NoReturn]
+            Callable[[PartialResultMessage], None]
         ] = None,
     ):
         super().__init__(
@@ -59,6 +60,7 @@ class AttributionsWorker(Worker):
             sampler=sampler,
             batch_size=self.batch_size,
             num_workers=4,
+            pin_memory=True,
         )
         device = torch.device(self.rank)
         model = self.model_factory()
@@ -89,8 +91,36 @@ class ComputeAttributions(DistributedComputation):
         writer: AttributionsDatasetWriter,
         address="localhost",
         port="12355",
-        devices: Tuple = None,
+        devices: Optional[Tuple] = None,
     ):
+        """Compute attributions for a dataset using multiple processes.
+        The attributions are written to a HDF5 file.
+        The number of processes is determined by the number of devices.
+
+        Parameters
+        ----------
+        model_factory : ModelFactory
+            ModelFactory instance or callable that returns a model.
+            Used to create a model for each subprocess.
+        method_factory : MethodFactory
+            MethodFactory instance or callable that returns a dictionary of
+            attribution methods, given a model.
+        dataset : Dataset
+            Torch Dataset to use for computing the attributions.
+        batch_size : int
+            The batch size to use for computing the attributions.
+        writer : AttributionsDatasetWriter
+            AttributionsDatasetWriter to write the attributions to.
+        address : str, optional
+            Address to use for the multiprocessing connection.
+            By default "localhost".
+        port : str, optional
+            Port to use for the multiprocessing connection.
+            By default "12355".
+        devices : Optional[Tuple], optional
+            Devices to use. If None, then all available devices are used.
+            By default None.
+        """
         super().__init__(address, port, devices)
         self.model_factory = model_factory
         self.method_factory = method_factory
@@ -104,7 +134,7 @@ class ComputeAttributions(DistributedComputation):
         super().run()
 
     def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: mp.Event
+        self, queue: mp.Queue, rank: int, all_processes_done: Event
     ) -> Worker:
         result_handler = self._handle_result if self.world_size == 1 else None
         return AttributionsWorker(
@@ -126,4 +156,5 @@ class ComputeAttributions(DistributedComputation):
         attributions = result_message.data.attributions
         method_name = result_message.data.method_name
         self.writer.write(indices, attributions, method_name)
-        self.prog.update(len(indices))
+        if self.prog is not None:
+            self.prog.update(len(indices))
