@@ -14,8 +14,8 @@ from ._deletion import Deletion
 from ._deletion_worker import DeletionWorker
 from attribench.data import AttributionsDataset
 
-from ._dataset import _IrofDataset
-from ._get_predictions import _get_predictions
+from ....functional.metrics.deletion._dataset import IrofDataset
+from ....functional.metrics.deletion._get_predictions import get_predictions
 
 
 def irof(
@@ -30,13 +30,13 @@ def irof(
     stop: float = 1.0,
     num_steps: int = 100,
 ):
-    masking_dataset = _IrofDataset(
+    masking_dataset = IrofDataset(
         mode, start, stop, num_steps, samples, masker
     )
     if type(activation_fns) == str:
         activation_fns = [activation_fns]
     masking_dataset.set_attrs(attrs)
-    return _get_predictions(masking_dataset, labels, model, activation_fns)
+    return get_predictions(masking_dataset, labels, model, activation_fns)
 
 
 class IrofWorker(DeletionWorker):

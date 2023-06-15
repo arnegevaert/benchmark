@@ -5,6 +5,7 @@ from .._message import PartialResultMessage
 from typing import Callable, Optional, NoReturn
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
+from multiprocessing.synchronize import Event
 import torch
 
 
@@ -14,12 +15,12 @@ class MetricWorker(Worker):
         result_queue: mp.Queue,
         rank: int,
         world_size: int,
-        all_processes_done: mp.Event,
+        all_processes_done: Event,
         model_factory: Callable[[], nn.Module],
         dataset: Dataset,
         batch_size: int,
         result_handler: Optional[
-            Callable[[PartialResultMessage], NoReturn]
+            Callable[[PartialResultMessage], None]
         ] = None,
     ):
         super().__init__(

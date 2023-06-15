@@ -19,6 +19,8 @@ def _aoc(x: np.ndarray, columns: Optional[npt.NDArray] = None):
 
 
 def _auc(x: np.ndarray, columns: Optional[npt.NDArray] = None):
+    # TODO do we have to normalize by the first value? Same for AOC.
+    # Should actually not make a difference.
     if columns is not None:
         x = x[..., columns]
     l = x.shape[-1] if columns is None else columns.shape[0]
@@ -62,16 +64,20 @@ class DeletionResult(MetricResult):
                 yaml.dump(metadata, fp)
 
     @classmethod
-    def _load_tree_mode(self, path: str, format="hdf5"):
+    def _load_tree_mode(
+        cls, path: str, format="hdf5"
+    ) -> Tuple[RandomAccessNDArrayTree, str]:
         if format == "hdf5":
             with h5py.File(path, "r") as fp:
                 tree = RandomAccessNDArrayTree.load_from_hdf(fp)
-                mode = fp.attrs["mode"]
+                mode = str(fp.attrs["mode"])
         elif format == "dir":
             with open(os.path.join(path, "metadata.yaml"), "r") as fp:
                 metadata = yaml.safe_load(fp)
             tree = RandomAccessNDArrayTree.load_from_dir(path)
             mode = metadata["mode"]
+        else:
+            raise ValueError("Invalid format", format)
         return tree, mode
 
     @classmethod
@@ -94,7 +100,7 @@ class DeletionResult(MetricResult):
         masker: str,
         activation_fn: str,
         agg_fn="auc",
-        methods: List[str] = None,
+        methods: Optional[Tuple[str]] = None,
         columns: Optional[npt.NDArray] = None,
     ) -> Tuple[pd.DataFrame, bool]:
         """

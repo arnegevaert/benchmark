@@ -1,36 +1,15 @@
 from .._metric_worker import MetricWorker
-from typing import Callable, Dict, Tuple, Union, Optional, NoReturn
+from typing import Callable, Dict, Tuple, List, Union, Optional, NoReturn
 
-import numpy as np
-import torch
 from torch import nn
 from torch import multiprocessing as mp
+from multiprocessing.synchronize import Event
 
 from attribench.masking import Masker
 from ..._message import PartialResultMessage
 from attribench.result._batch_result import BatchResult
 from attribench.data import AttributionsDataset
-
-from ._dataset import _DeletionDataset
-from ._get_predictions import _get_predictions
-
-
-def deletion(
-    samples: torch.Tensor,
-    labels: torch.Tensor,
-    model: Callable,
-    attrs: np.ndarray,
-    masker: Masker,
-    activation_fns: Union[Tuple[str], str] = "linear",
-    mode: str = "morf",
-    start: float = 0.0,
-    stop: float = 1.0,
-    num_steps: int = 100,
-) -> Dict:
-    if type(activation_fns) == str:
-        activation_fns = [activation_fns]
-    ds = _DeletionDataset(mode, start, stop, num_steps, samples, attrs, masker)
-    return _get_predictions(ds, labels, model, activation_fns)
+from attribench.functional.metrics.deletion._deletion import _deletion_batch
 
 
 class DeletionWorker(MetricWorker):
@@ -39,18 +18,18 @@ class DeletionWorker(MetricWorker):
         result_queue: mp.Queue,
         rank: int,
         world_size: int,
-        all_processes_done: mp.Event,
+        all_processes_done: Event,
         model_factory: Callable[[], nn.Module],
         dataset: AttributionsDataset,
         batch_size: int,
         maskers: Dict[str, Masker],
-        activation_fns: Tuple[str],
+        activation_fns: List[str],
         mode: str = "morf",
         start: float = 0.0,
         stop: float = 1.0,
         num_steps: int = 100,
         result_handler: Optional[
-            Callable[[PartialResultMessage], NoReturn]
+            Callable[[PartialResultMessage], None]
         ] = None,
     ):
         super().__init__(
@@ -82,20 +61,18 @@ class DeletionWorker(MetricWorker):
         ) in self.dataloader:
             batch_x = batch_x.to(self.device)
             batch_y = batch_y.to(self.device)
-            batch_result = {}
-            for masker_name, masker in self.maskers.items():
-                batch_result[masker_name] = deletion(
-                    batch_x,
-                    batch_y,
-                    model,
-                    batch_attr.numpy(),
-                    masker,
-                    self.activation_fns,
-                    self.mode,
-                    self.start,
-                    self.stop,
-                    self.num_steps,
-                )
+            batch_result = _deletion_batch(
+                batch_x,
+                batch_y,
+                model,
+                batch_attr.numpy(),
+                self.maskers,
+                self.activation_fns,
+                self.mode,
+                self.start,
+                self.stop,
+                self.num_steps,
+            )
             self.send_result(
                 PartialResultMessage(
                     self.rank,

@@ -5,7 +5,7 @@ from attribench._segmentation import segment_samples
 from attribench.masking import Masker, ImageMasker
 
 
-class _MaskingDataset:
+class MaskingDataset:
     def __init__(self, mode: str, start: float, stop: float, num_steps: int):
         if mode not in ("morf", "lerf"):
             raise ValueError("Mode must be morf or lerf")
@@ -23,14 +23,14 @@ class _MaskingDataset:
         raise NotImplementedError
 
 
-class _DeletionDataset(_MaskingDataset):
+class DeletionDataset(MaskingDataset):
     def __init__(
         self,
         mode: str,
         start: float,
         stop: float,
         num_steps: int,
-        samples: torch.tensor,
+        samples: torch.Tensor,
         attrs: np.ndarray,
         masker: Masker,
     ):
@@ -59,14 +59,14 @@ class _DeletionDataset(_MaskingDataset):
         return masked_samples
 
 
-class _IrofDataset(_MaskingDataset):
+class IrofDataset(MaskingDataset):
     def __init__(
         self,
         mode: str,
         start: float,
         stop: float,
         num_steps: int,
-        samples: torch.tensor,
+        samples: torch.Tensor,
         masker: ImageMasker,
     ):
         super().__init__(mode, start, stop, num_steps)

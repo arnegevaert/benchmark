@@ -10,6 +10,7 @@ General
 
     attribench.distributed.SelectSamples
     attribench.distributed.TrainAdversarialPatches
+    attribench.distributed.ComputeAttributions
 
 Metrics
 -------

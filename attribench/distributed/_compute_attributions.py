@@ -96,6 +96,8 @@ class ComputeAttributions(DistributedComputation):
         """Compute attributions for a dataset using multiple processes.
         The attributions are written to a HDF5 file.
         The number of processes is determined by the number of devices.
+        If no devices are specified, then all available devices are used.
+        Samples are distributed evenly across the processes.
 
         Parameters
         ----------
