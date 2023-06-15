@@ -1,7 +1,6 @@
 from .._metric_worker import MetricWorker
-from typing import Callable, Dict, Tuple, List, Union, Optional, NoReturn
+from typing import Callable, Mapping, List, Optional
 
-from torch import nn
 from torch import multiprocessing as mp
 from multiprocessing.synchronize import Event
 
@@ -10,6 +9,7 @@ from ..._message import PartialResultMessage
 from attribench.result._batch_result import BatchResult
 from attribench.data import AttributionsDataset
 from attribench.functional.metrics.deletion._deletion import _deletion_batch
+from attribench._model_factory import ModelFactory
 
 
 class DeletionWorker(MetricWorker):
@@ -19,10 +19,10 @@ class DeletionWorker(MetricWorker):
         rank: int,
         world_size: int,
         all_processes_done: Event,
-        model_factory: Callable[[], nn.Module],
+        model_factory: ModelFactory,
         dataset: AttributionsDataset,
         batch_size: int,
-        maskers: Dict[str, Masker],
+        maskers: Mapping[str, Masker],
         activation_fns: List[str],
         mode: str = "morf",
         start: float = 0.0,

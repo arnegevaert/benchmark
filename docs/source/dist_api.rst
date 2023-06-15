@@ -2,6 +2,10 @@
 
 Distributed API Reference
 =========================
+This page contains the reference for the distributed API of :mod:`attribench`.
+For simple, small-scale experiments, the :mod:`attribench`
+:doc:`functional API<func_api>` is recommended. For large-scale experiments,
+the distributed API is recommended, as it can leverage multiple GPUs.
 
 General
 -------

@@ -24,3 +24,5 @@ Metrics
     :toctree: generated/
 
     attribench.functional.metrics.deletion
+    attribench.functional.metrics.insertion
+    attribench.functional.metrics.irof

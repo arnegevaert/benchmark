@@ -1,22 +1,24 @@
 import torch
-from numpy import typing as npt
-from typing import Callable, List, Mapping, Dict, Union
-from attribench.masking import Masker
-from attribench.data import AttributionsDataset
 from torch import nn
-from ._dataset import DeletionDataset
-from ._get_predictions import get_predictions
+from numpy import typing as npt
+from typing import List, Union, Mapping, Dict
+from attribench.masking import ImageMasker
+from attribench.functional.metrics.deletion._dataset import IrofDataset
+from attribench.functional.metrics.deletion._get_predictions import (
+    get_predictions,
+)
+from attribench.data import AttributionsDataset
 from torch.utils.data import DataLoader
-from attribench.result import DeletionResult
+from attribench.result._deletion_result import DeletionResult
 from attribench.result._batch_result import BatchResult
 
 
-def _deletion_batch(
+def irof_batch(
     samples: torch.Tensor,
     labels: torch.Tensor,
-    model: Callable,
+    model: nn.Module,
     attrs: npt.NDArray,
-    maskers: Mapping[str, Masker],
+    maskers: Mapping[str, ImageMasker],
     activation_fns: List[str],
     mode: str,
     start: float,
@@ -25,54 +27,56 @@ def _deletion_batch(
 ) -> Dict:
     result_dict = {}
     for masker_name, masker in maskers.items():
-        ds = DeletionDataset(
-            mode, start, stop, num_steps, samples, attrs, masker
+        masking_dataset = IrofDataset(
+            mode, start, stop, num_steps, samples, masker
         )
+        masking_dataset.set_attrs(attrs)
         result_dict[masker_name] = get_predictions(
-            ds, labels, model, activation_fns
+            masking_dataset, labels, model, activation_fns
         )
     return result_dict
 
 
-def deletion(
+def irof(
     dataset: AttributionsDataset,
     model: nn.Module,
     batch_size: int,
-    maskers: Mapping[str, Masker],
+    maskers: Mapping[str, ImageMasker],
     activation_fns: Union[List[str], str] = "linear",
     mode: str = "morf",
     start: float = 0.0,
     stop: float = 1.0,
     num_steps: int = 100,
     device: torch.device = torch.device("cpu"),
-) -> DeletionResult:
-    """Computes the Deletion metric for a given `AttributionsDataset` and model.
+):
+    """Computes the IROF metric for a given `AttributionsDataset` and model.
 
-    Deletion is computed by iteratively masking the top (Most Relevant First,
-    or MoRF) or bottom (Least Relevant First, or LeRF) features of
-    the input samples and computing the confidence of the model on the masked
-    samples.
+    IROF starts segmenting the input image using SLIC. Then, it iteratively
+    masks out the top (Most Relevant First, or MoRF) or bottom (Least Relevant
+    First, or LeRF) segments and computes the confidence of the model on the
+    masked samples. The relevance of a segment is computed as the average
+    relevance of the features in the segment.
 
-    This results in a curve of confidence vs. number of features masked. The
-    area under (or equivalently over) this curve is the Deletion metric.
+    This results in a curve of confidence vs. number of segments masked. The
+    area under (or equivalently over) this curve is the IROF metric.
 
-    `start`, `stop`, and `num_steps` are used to determine the range of features
+    `start`, `stop`, and `num_steps` are used to determine the range of segments
     to mask. The range is determined by `start` and `stop` as a percentage of
-    the total number of features. `num_steps` is the number of steps to take
+    the total number of segments. `num_steps` is the number of steps to take
     between `start` and `stop`.
 
-    The Deletion metric is computed for each masker in `maskers` and for each
+    The IROF metric is computed for each masker in `maskers` and for each
     activation function in `activation_fns`.
 
     Parameters
     ----------
     dataset : AttributionsDataset
-        Dataset of attributions to compute Deletion on.
+        Dataset of attributions to compute IROF on.
     model : nn.Module
-        Model to compute Deletion on.
+        Model to compute IROF on.
     batch_size : int
         Batch size to use when computing model predictions on masked samples.
-    maskers : Mapping[str, Masker]
+    maskers : Mapping[str, ImageMasker]
         Dictionary of maskers to use for masking samples.
     activation_fns : Union[List[str], str], optional
         List of activation functions to use when computing model predictions on
@@ -83,21 +87,14 @@ def deletion(
         Mode to use when masking samples. Must be "morf" or "lerf".
         Default: "morf"
     start : float, optional
-        Relative start of the range of features to mask. Must be between 0 and 1.
+        Relative start of the range of segments to mask. Must be between 0 and 1.
         Default: 0.0
     stop : float, optional
-        Relative end of the range of features to mask. Must be between 0 and 1.
+        Relative stop of the range of segments to mask. Must be between 0 and 1.
         Default: 1.0
     num_steps : int, optional
-        Number of steps to use for the range of features to mask.
+        Number of steps to take between `start` and `stop`.
         Default: 100
-    device : torch.device, optional
-        Device to use, by default `torch.device("cpu")`
-
-    Returns
-    -------
-    DeletionResult
-        Result of the Deletion metric.
     """
     if isinstance(activation_fns, str):
         activation_fns = [activation_fns]
@@ -126,7 +123,7 @@ def deletion(
     ) in dataloader:
         batch_x = batch_x.to(device)
         batch_y = batch_y.to(device)
-        batch_result = _deletion_batch(
+        batch_result = irof_batch(
             batch_x,
             batch_y,
             model,
@@ -139,4 +136,3 @@ def deletion(
             num_steps,
         )
         result.add(BatchResult(batch_indices, batch_result, method_names))
-    return result

@@ -8,12 +8,14 @@ from .._distributed_computation import DistributedComputation
 from ._metric_worker import MetricWorker
 from attribench.result._metric_result import MetricResult
 from typing import Tuple, Callable, Optional
+from multiprocessing.synchronize import Event
+from attribench._model_factory import ModelFactory
 
 
 class Metric(DistributedComputation):
     def __init__(
         self,
-        model_factory: Callable[[], nn.Module],
+        model_factory: ModelFactory,
         dataset: IndexDataset,
         batch_size: int,
         address="localhost",
@@ -28,7 +30,7 @@ class Metric(DistributedComputation):
         self._result: Optional[MetricResult] = None
 
     def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: mp.Event
+        self, queue: mp.Queue, rank: int, all_processes_done: Event
     ) -> MetricWorker:
         raise NotImplementedError
 
@@ -37,6 +39,8 @@ class Metric(DistributedComputation):
             self.prog.close()
 
     def run(self, result_path: Optional[str] = None, progress=True):
+        """
+        Runs the metric computation"""
         if progress:
             self.prog = tqdm(total=len(self.dataset))
         super().run()
@@ -57,4 +61,6 @@ class Metric(DistributedComputation):
 
     @property
     def result(self) -> MetricResult:
+        if self._result is None:
+            raise ValueError("Cannot get result: result is None")
         return self._result
