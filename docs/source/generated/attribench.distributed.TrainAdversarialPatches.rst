@@ -1,9 +1,9 @@
-﻿attribench.distributed.AttributionsComputation
+﻿attribench.distributed.TrainAdversarialPatches
 ==============================================
 
 .. currentmodule:: attribench.distributed
 
-.. autoclass:: AttributionsComputation
+.. autoclass:: TrainAdversarialPatches
 
    
    .. automethod:: __init__
@@ -13,8 +13,8 @@
 
    .. autosummary::
    
-      ~AttributionsComputation.__init__
-      ~AttributionsComputation.run
+      ~TrainAdversarialPatches.__init__
+      ~TrainAdversarialPatches.run
    
    
 

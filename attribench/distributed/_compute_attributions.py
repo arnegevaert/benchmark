@@ -79,7 +79,7 @@ class AttributionsWorker(Worker):
                     self.send_result(PartialResultMessage(self.rank, result))
 
 
-class AttributionsComputation(DistributedComputation):
+class ComputeAttributions(DistributedComputation):
     def __init__(
         self,
         model_factory: ModelFactory,

@@ -23,9 +23,7 @@ Contents
    :maxdepth: 2
 
    Getting Started <getting_started>
-   Functional API Reference <func_api>
-   Distributed API Reference <dist_api>
-   General API Reference <general_api>
+   API Reference <general_api>
 
 
 Indices and tables

@@ -1,7 +1,8 @@
 from torch import multiprocessing as mp
 from torch import distributed as dist
 from ._message import PartialResultMessage, DoneMessage
-from typing import Optional, Callable, NoReturn
+from typing import Optional, Callable
+from multiprocessing.synchronize import Event
 
 
 class Worker:
@@ -10,9 +11,9 @@ class Worker:
         result_queue: mp.Queue,
         rank: int,
         world_size: int,
-        all_processes_done: mp.Event,
+        all_processes_done: Event,
         result_handler: Optional[
-            Callable[[PartialResultMessage], NoReturn]
+            Callable[[PartialResultMessage], None]
         ] = None,
     ):
         """
@@ -32,7 +33,12 @@ class Worker:
         self.world_size = world_size
         self.all_processes_done = all_processes_done
         self.synchronized = world_size == 1
-        self.result_handler = result_handler
+        if self.synchronized and result_handler is None:
+            raise ValueError(
+                "If world_size is 1, result_handler must be provided."
+            )
+        elif result_handler is not None:
+            self.result_handler = result_handler
 
     def setup(self):
         if not self.synchronized:

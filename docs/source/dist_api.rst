@@ -8,9 +8,8 @@ General
 .. autosummary::
     :toctree: generated
 
-    attribench.distributed.AdversarialPatchTraining
-    attribench.distributed.AttributionsComputation
-    attribench.distributed.SampleSelection
+    attribench.distributed.SelectSamples
+    attribench.distributed.TrainAdversarialPatches
 
 Metrics
 -------

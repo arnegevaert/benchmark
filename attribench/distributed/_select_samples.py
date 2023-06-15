@@ -2,14 +2,17 @@ from ._distributed_sampler import DistributedSampler
 from ._distributed_computation import DistributedComputation
 from ._message import PartialResultMessage
 from ._worker import Worker
+from attribench import ModelFactory
 from tqdm import tqdm
 from attribench.data import HDF5DatasetWriter
+from attribench.functional._select_samples import _select_samples_batch
 from typing import Callable, Tuple, Optional, NoReturn
 from torch.utils.data import Dataset, DataLoader
 import torch.multiprocessing as mp
 import torch
 from numpy import typing as npt
 from torch import nn
+from multiprocessing.synchronize import Event
 
 
 class SamplesResult:
@@ -24,13 +27,13 @@ class SampleSelectionWorker(Worker):
         result_queue: mp.Queue,
         rank: int,
         world_size: int,
-        all_processes_done: mp.Event,
-        sufficient_samples: mp.Event,
+        all_processes_done: Event,
+        sufficient_samples: Event,
         batch_size: int,
         dataset: Dataset,
         model_factory: Callable[[], nn.Module],
         result_handler: Optional[
-            Callable[[PartialResultMessage], NoReturn]
+            Callable[[PartialResultMessage], None]
         ] = None,
     ):
         super().__init__(
@@ -56,12 +59,9 @@ class SampleSelectionWorker(Worker):
         it = iter(dataloader)
 
         for batch_x, batch_y in it:
-            batch_x = batch_x.to(device)
-            batch_y = batch_y.to(device)
-            with torch.no_grad():
-                output = torch.argmax(model(batch_x), dim=1)
-            correct_samples = batch_x[output == batch_y, ...]
-            correct_labels = batch_y[output == batch_y]
+            correct_samples, correct_labels = _select_samples_batch(
+                batch_x, batch_y, model, device
+            )
             result = SamplesResult(
                 correct_samples.cpu().numpy(), correct_labels.cpu().numpy()
             )
@@ -70,18 +70,46 @@ class SampleSelectionWorker(Worker):
                 break
 
 
-class SampleSelection(DistributedComputation):
+class SelectSamples(DistributedComputation):
     def __init__(
         self,
-        model_factory: Callable[[], nn.Module],
+        model_factory: ModelFactory,
         dataset: Dataset,
         writer: HDF5DatasetWriter,
         num_samples: int,
         batch_size: int,
         address: str = "localhost",
         port: str = "12355",
-        devices: Tuple = None,
+        devices: Optional[Tuple] = None,
     ):
+        """Select correctly classified samples from a dataset and write them
+        to a HDF5 file. This is done in a distributed fashion, i.e. each
+        subprocess selects a part of the samples and writes them to the
+        HDF5 file. The number of processes is determined by the number of
+        devices.
+
+        Parameters
+        ----------
+        model_factory : ModelFactory
+            ModelFactory instance or callable that returns a model.
+            Used to instantiate a model for each subprocess.
+        dataset : Dataset
+            Torch Dataset containing the samples and labels.
+        writer : HDF5DatasetWriter
+            Writer to write the samples and labels to.
+        num_samples : int
+            Number of correctly classified samples to select.
+        batch_size : int
+            Batch size per subprocess to use for the dataloader.
+        address : str, optional
+            Address for communication between subprocesses,
+            by default "localhost"
+        port : str, optional
+            Port for communication between subprocesses, by default "12355"
+        devices : Tuple, optional
+            Devices to use. If None, then all available devices are used.
+            By default None.
+        """
         super().__init__(address, port, devices)
         self.model_factory = model_factory
         self.dataset = dataset
@@ -90,10 +118,10 @@ class SampleSelection(DistributedComputation):
         self.batch_size = batch_size
         self.sufficient_samples = self.ctx.Event()
         self.count = 0
-        self.prog = None
+        self.prog: tqdm | None = None
 
     def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: mp.Event
+        self, queue: mp.Queue, rank: int, all_processes_done: Event
     ):
         result_handler = self._handle_result if self.world_size == 1 else None
         return SampleSelectionWorker(
@@ -121,4 +149,5 @@ class SampleSelection(DistributedComputation):
             self.sufficient_samples.set()
         self.writer.write(samples, labels)
         self.count += samples.shape[0]
-        self.prog.update(samples.shape[0])
+        if self.prog is not None:
+            self.prog.update(samples.shape[0])

@@ -1,36 +1,29 @@
-from typing import Callable, Optional, Tuple, NoReturn
-from tqdm import trange
-import os
-import torch
-from torch import nn
 import numpy as np
-from torch import multiprocessing as mp
-from torch.utils.data import DataLoader, Dataset
+import torch
 import random
+from tqdm import trange
+from torch import nn
+from torch.utils.data import Dataset, DataLoader
+from typing import Optional, Tuple, List
+from itertools import cycle
 
-from attribench.distributed._distributed_computation import (
-    DistributedComputation,
-)
-from attribench.distributed._message import PartialResultMessage
-from attribench.distributed._worker import Worker
 
-
-def normalize(x, x_min, x_max):
+def _normalize(x, x_min, x_max):
     return x * (x_max - x_min) + x_min
 
 
-def init_patch_square(
+def _init_patch_square(
     image_size, image_channels, patch_size_percent, data_min, data_max
 ):
     image_size = image_size**2
     noise_size = image_size * patch_size_percent
     noise_dim = int(noise_size**0.5)
     patch = np.random.rand(1, image_channels, noise_dim, noise_dim)
-    patch = normalize(patch, data_min, data_max)
+    patch = _normalize(patch, data_min, data_max)
     return patch
 
 
-def train_epoch(
+def _train_epoch(
     model,
     patch,
     train_dl,
@@ -79,7 +72,7 @@ def train_epoch(
     return epoch_loss
 
 
-def validate(model, patch, data_loader, loss_function, target_label, device):
+def _validate(model, patch, data_loader, loss_function, target_label, device):
     patch_size = patch.shape[-1]
     val_loss = []
     preds = []
@@ -110,8 +103,9 @@ def validate(model, patch, data_loader, loss_function, target_label, device):
         return val_loss, percent_successful
 
 
-def make_patch(
-    dataloader,
+def _make_patch(
+    dataset,
+    batch_size,
     model,
     target_label,
     device,
@@ -121,6 +115,8 @@ def make_patch(
     data_max=None,
     lr=0.05,
 ):
+    dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=4,
+                            pin_memory=True)
     # patch values will be clipped between data_min and data_max
     # so that patch will be valid image data.
     if data_max is None or data_min is None:
@@ -142,7 +138,7 @@ def make_patch(
     x, _ = next(iter(dataloader))
     sample_shape = x.shape
 
-    patch = init_patch_square(
+    patch = _init_patch_square(
         sample_shape[-1], sample_shape[1], patch_percent, data_min, data_max
     )
     patch = torch.tensor(patch, requires_grad=True, device=device)
@@ -152,8 +148,8 @@ def make_patch(
     min_loss = None
     best_patch = None
 
-    for i in trange(epochs):
-        epoch_loss = train_epoch(
+    for _ in trange(epochs):
+        epoch_loss = _train_epoch(
             model,
             patch,
             dataloader,
@@ -169,122 +165,70 @@ def make_patch(
             min_loss = epoch_loss
             best_patch = patch.cpu()
 
-    val_loss, percent_successful = validate(
+    val_loss, percent_successful = _validate(
         model, patch, dataloader, loss, target_label, device
     )
     return best_patch, val_loss, percent_successful
 
-
-class PatchResult:
-    def __init__(
-        self, patch_label: int, val_loss: float, percent_successful: float
-    ) -> None:
-        self.patch_label = patch_label
-        self.val_loss = val_loss
-        self.percent_successful = percent_successful
-
-
-class AdversarialPatchTrainingWorker(Worker):
-    def __init__(
-        self,
-        result_queue: mp.Queue,
-        rank: int,
-        world_size: int,
-        all_processes_done: mp.Event,
-        path: str,
-        total_num_patches: int,
-        batch_size: int,
+def train_adversarial_patches(
+        model: nn.Module,
         dataset: Dataset,
-        model_factory: Callable[[], nn.Module],
-        result_handler: Optional[
-            Callable[[PartialResultMessage], NoReturn]
-        ] = None,
-    ):
-        super().__init__(
-            result_queue, rank, world_size, all_processes_done, result_handler
-        )
-        self.patch_labels = list(range(total_num_patches))[
-            self.rank : total_num_patches : self.world_size
-        ]
-        self.dataset = dataset
-        self.model_factory = model_factory
-        self.batch_size = batch_size
-        self.path = path
-
-    def work(self):
-        device = torch.device(self.rank)
-        model = self.model_factory()
-        model.to(device)
-
-        for patch_label in self.patch_labels:
-            # Train patch
-            dataloader = DataLoader(
-                self.dataset,
-                batch_size=self.batch_size,
-                num_workers=4,
-                pin_memory=True,
-            )
-            patch, val_loss, percent_successful = make_patch(
-                dataloader, model, patch_label, device
-            )
-
-            # Save patch to disk
-            torch.save(
-                patch, os.path.join(self.path, f"patch_{patch_label}.pt")
-            )
-
-            # Send message to main process
-            self.send_result(
-                PartialResultMessage(
-                    self.rank,
-                    PatchResult(patch_label, val_loss, percent_successful),
-                )
-            )
-
-
-class AdversarialPatchTraining(DistributedComputation):
-    def __init__(
-        self,
-        model_factory: Callable[[], nn.Module],
-        dataset: Dataset,
-        num_labels: int,
+        num_patches: int,
         batch_size: int,
-        path: str,
-        address="localhost",
-        port="12355",
-        devices: Optional[Tuple[int]] = None,
-    ):
-        super().__init__(address, port, devices)
-        self.num_labels = num_labels
-        self.path = path
-        self.prog = None
-        self.model_factory = model_factory
-        self.dataset = dataset
-        self.batch_size = batch_size
-        if not os.path.isdir(self.path):
-            os.makedirs(self.path)
+        path: Optional[str],
+        labels: Optional[Tuple[int]] = None,
+        device: Optional[torch.device] = None,
+) -> List[torch.Tensor] | None:
+    """Train adversarial patches for a given model and dataset.
+    If `path` is not `None`, the patches are saved to disk.
+    Otherwise, they are returned as a list.
 
-    def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: mp.Event
-    ) -> Worker:
-        return AdversarialPatchTrainingWorker(
-            queue,
-            rank,
-            self.world_size,
-            all_processes_done,
-            self.path,
-            self.num_labels,
-            self.batch_size,
-            self.dataset,
-            self.model_factory,
-            self._handle_result if self.world_size == 1 else None,
+    Parameters
+    ----------
+    model : nn.Module
+        The model for which the patches should be trained.
+    dataset : Dataset
+        Torch Dataset to use for training the patches.
+    num_patches : int
+        The number of patches to train.
+    batch_size : int
+        The batch size to use for training.
+    path : Optional[str]
+        The path to which the patches should be saved.
+        If `None`, the patches are returned as a list.
+        Default: `None`.
+    labels : Optional[Tuple[int]], optional
+        Tuple of labels to use for the patches.
+        If `None`, the labels are assumed to be `range(num_patches)`.
+        Default: `None`.
+    device : Optional[torch.device], optional
+        Device to use, by default None.
+
+    Returns
+    -------
+    List[torch.Tensor] | None
+        If `path` is `None`, a list of patches.
+        Otherwise, `None`.
+    """    
+    if device is None:
+        device = torch.device("cpu")
+    model.to(device)
+    model.eval()
+
+    patch_labels = cycle(labels) if labels is not None else range(num_patches)
+    all_patches = []
+    for patch_label in patch_labels:
+        patch, val_loss, percent_successful = _make_patch(
+            dataset, batch_size, model, patch_label, device
         )
-
-    def _handle_result(self, result: PartialResultMessage[PatchResult]):
-        # The workers save the files,
-        # so no need to do anything except log results
         print(
-            f"Received patch {result.data.patch_label}.",
-            f"Loss: {result.data.val_loss:.3f}.",
-            f"Acc: {result.data.percent_successful:.3f}.",
+            f"Patch label: {patch_label}.",
+            f"Loss: {val_loss:.3f}.",
+            f"Success rate: {percent_successful:.3f}.",
         )
+        if path is not None:
+            torch.save(patch, path + f"_{patch_label}.pt")
+        else:
+            all_patches.append(patch)
+    if path is None:
+        return all_patches

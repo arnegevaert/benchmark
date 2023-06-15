@@ -59,3 +59,12 @@ Plot
     :toctree: generated
 
     attribench.plot.ClusterPlot
+
+Other
+-----
+.. autosummary::
+    :toctree: generated
+
+    attribench.ModelFactory
+    attribench.MethodFactory
+    attribench.AttributionMethod

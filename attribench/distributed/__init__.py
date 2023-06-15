@@ -1,4 +1,4 @@
-from ._adversarial_patch_training import AdversarialPatchTraining
-from ._attributions_computation import AttributionsComputation
-from ._sample_selection import SampleSelection
+from ._train_adversarial_patches import TrainAdversarialPatches
+from ._compute_attributions import ComputeAttributions
+from ._select_samples import SelectSamples
 from .metrics._metric import Metric

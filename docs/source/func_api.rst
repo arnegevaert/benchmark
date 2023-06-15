@@ -12,4 +12,5 @@ you should use the :mod:`attribench` :doc:`object-oriented API<dist_api>` instea
 .. autosummary::
     :toctree: generated/
 
-    attribench.functional.deletion
+    attribench.functional.select_samples
+    attribench.functional.train_adversarial_patches
