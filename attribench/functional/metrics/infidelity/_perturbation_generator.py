@@ -5,7 +5,7 @@ import torch
 
 class PerturbationGenerator:
     def __init__(self):
-        self.samples = None
+        self.samples: torch.Tensor
         self.rng = np.random.default_rng()
 
     def set_samples(self, samples):
@@ -81,7 +81,7 @@ class SegmentRemovalPerturbationGenerator(PerturbationGenerator):
         super().__init__()
         self.num_segments = num_segments
 
-    def set_samples(self, samples: torch.tensor):
+    def set_samples(self, samples: torch.Tensor):
         self.samples = samples
         segmented_images = segment_samples(samples.cpu().numpy())
         self.segmented_images = torch.tensor(

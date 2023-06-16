@@ -27,3 +27,4 @@ Metrics
     attribench.functional.metrics.insertion
     attribench.functional.metrics.irof
     attribench.functional.metrics.impact_coverage
+    attribench.functional.metrics.infidelity
