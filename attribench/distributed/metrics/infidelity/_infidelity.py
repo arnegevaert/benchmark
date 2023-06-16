@@ -1,6 +1,6 @@
 from .._metric import Metric
 import warnings
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 from attribench.data import AttributionsDataset
 from ._infidelity_worker import InfidelityWorker
 from attribench.result import InfidelityResult
@@ -21,6 +21,9 @@ class Infidelity(Metric):
         perturbation_generators: Dict[str, PerturbationGenerator],
         num_perturbations: int,
         activation_fns: Tuple[str],
+        address="localhost",
+        port="12355",
+        devices: Optional[Tuple] = None,
     ):
         """Computes the Infidelity metric for a given `AttributionsDataset` and
         model using multiple processes.
@@ -67,8 +70,19 @@ class Infidelity(Metric):
             Number of perturbations to generate for each sample.
         activation_fns : Tuple[str]
             Tuple of activation functions to use when computing Infidelity.
+        address : str, optional
+            Address to use for the multiprocessing connection,
+            by default "localhost"
+        port : str, optional
+            Port to use for the multiprocessing connection,
+            by default "12355"
+        devices : Optional[Tuple], optional
+            Devices to use. If None, then all available devices are used.
+            By default None.
         """
-        super().__init__(model_factory, dataset, batch_size)
+        super().__init__(
+            model_factory, dataset, batch_size, address, port, devices
+        )
         if not dataset.group_attributions:
             warnings.warn(
                 "Infidelity expects a dataset with group_attributions==True."

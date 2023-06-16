@@ -97,7 +97,6 @@ def deletion(
     Returns
     -------
     DeletionResult
-        Result of the Deletion metric.
     """
     if isinstance(activation_fns, str):
         activation_fns = [activation_fns]
