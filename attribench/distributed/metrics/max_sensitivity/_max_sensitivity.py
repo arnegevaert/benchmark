@@ -2,18 +2,19 @@ from attribench.data._index_dataset import IndexDataset
 from torch import multiprocessing as mp
 from .._metric_worker import MetricWorker
 from .._metric import Metric
-from typing import Callable, Optional, Tuple
-from torch import nn
+from typing import Optional, Tuple
 from torch.utils.data import Dataset
 from attribench import MethodFactory
 from attribench.result._max_sensitivity_result import MaxSensitivityResult
 from ._max_sensitivity_worker import MaxSensitivityWorker
+from attribench._model_factory import ModelFactory
+from multiprocessing.synchronize import Event
 
 
 class MaxSensitivity(Metric):
     def __init__(
         self,
-        model_factory: Callable[[], nn.Module],
+        model_factory: ModelFactory,
         dataset: Dataset,
         batch_size: int,
         method_factory: MethodFactory,
@@ -23,9 +24,54 @@ class MaxSensitivity(Metric):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
+        """Compute the Max-Sensitivity metric for a given `Dataset` and attribution
+        methods using multiple processes.
+         
+        Max-Sensitivity is computed by adding a small amount of uniform noise
+        to the input samples and computing the norm of the difference in attributions
+        between the original samples and the noisy samples.
+        The maximum norm of difference is then taken as the Max-Sensitivity.
+
+        The idea is that a small amount of noise should not change the attributions
+        significantly, so the norm of the difference should be small. If the norm
+        is large, then the attributions are not robust to small perturbations in the
+        input.
+
+        The number of processes is determined by the number of devices. If `devices`
+        is None, then all available devices are used. Samples are distributed evenly
+        across the processes. Each subprocess computes the Max-Sensitivity for a
+        all attribution methods on a subset of the samples.
+
+        Parameters
+        ----------
+        model_factory : ModelFactory
+            ModelFactory instance or callable that returns a model.
+            Used to create a model for each subprocess.
+        dataset : Dataset
+            Torch Dataset to use for computing the Max-Sensitivity.
+        batch_size : int
+            The batch size per subprocess to use for computing the Max-Sensitivity.
+        method_factory : MethodFactory
+            MethodFactory instance or callable that returns a dictionary of
+            attribution methods, given a model.
+        num_perturbations : int
+            The number of perturbations to use for computing the Max-Sensitivity.
+        radius : float
+            The radius of the uniform noise to add to the input samples.
+        address : str, optional
+            Address to use for the multiprocessing connection.
+            Default: "localhost"
+        port : str, optional
+            Port to use for the multiprocessing connection.
+            Default: "12355"
+        devices : Optional[Tuple], optional
+            Tuple of devices to use for multiprocessing.
+            If `None`, all available devices are used.
+        """
+        index_dataset = IndexDataset(dataset)
         super().__init__(
             model_factory,
-            IndexDataset(dataset),
+            index_dataset,
             batch_size,
             address,
             port,
@@ -35,11 +81,11 @@ class MaxSensitivity(Metric):
         self.num_perturbations = num_perturbations
         self.radius = radius
         self._result = MaxSensitivityResult(
-            method_factory.get_method_names(), shape=(len(dataset),)
+            method_factory.get_method_names(), shape=(len(index_dataset),)
         )
 
     def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: mp.Event
+        self, queue: mp.Queue, rank: int, all_processes_done: Event
     ) -> MetricWorker:
         return MaxSensitivityWorker(
             queue,
