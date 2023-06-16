@@ -1,6 +1,5 @@
 from typing import Union, Tuple, Dict, Optional, List, Mapping
 
-from torch import nn
 from torch import multiprocessing as mp
 from multiprocessing.synchronize import Event
 
