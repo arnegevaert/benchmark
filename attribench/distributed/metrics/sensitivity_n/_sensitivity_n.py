@@ -1,18 +1,19 @@
 from .._metric import Metric
 import warnings
-from torch import nn
-from typing import Callable, Dict, Union, Tuple
+from typing import Dict, Union, Tuple
 from attribench.data import AttributionsDataset
 from attribench.masking import Masker
 from attribench.result._sensitivity_n_result import SensitivityNResult
 from ._sensitivity_n_worker import SensitivityNWorker
 from torch import multiprocessing as mp
+from multiprocessing.synchronize import Event
+from attribench._model_factory import ModelFactory
 
 
 class SensitivityN(Metric):
     def __init__(
         self,
-        model_factory: Callable[[], nn.Module],
+        model_factory: ModelFactory,
         dataset: AttributionsDataset,
         batch_size: int,
         min_subset_size: float,
@@ -35,6 +36,7 @@ class SensitivityN(Metric):
             if isinstance(activation_fns, str)
             else activation_fns
         )
+        self.dataset = dataset
         self.maskers = maskers
         self.num_subsets = num_subsets
         self.num_steps = num_steps
@@ -49,7 +51,7 @@ class SensitivityN(Metric):
         )
 
     def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: mp.Event
+        self, queue: mp.Queue, rank: int, all_processes_done: Event
     ) -> SensitivityNWorker:
         return SensitivityNWorker(
             queue,

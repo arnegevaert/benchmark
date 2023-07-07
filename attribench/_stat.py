@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import typing as npt
 from scipy import stats
 
 
@@ -15,7 +16,7 @@ def wilcoxon_tests(df, higher_is_better):
     return effect_sizes, pvalues
 
 
-def corrcoef(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+def corrcoef(a: npt.NDArray, b: npt.NDArray) -> npt.NDArray:
     """
     Calculates row-wise correlations between two arrays.
     :param a: first set of row vectors (shape: [num_rows, num_measurements])

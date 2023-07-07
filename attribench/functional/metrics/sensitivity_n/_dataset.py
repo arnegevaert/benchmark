@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import typing as npt
 import torch
 
 from attribench.masking import ImageMasker, Masker
@@ -8,9 +9,9 @@ from attribench._segmentation import segment_samples
 class SensitivityNDataset:
     def __init__(
         self,
-        n_range: np.ndarray,
+        n_range: npt.NDArray[np.int32],
         num_subsets: int,
-        samples: torch.tensor,
+        samples: torch.Tensor,
         masker: Masker,
     ):
         self.n_range = n_range
@@ -24,14 +25,23 @@ class SensitivityNDataset:
         return self.n_range.shape[0] * self.num_subsets
 
     def __getitem__(self, item):
-        n = self.n_range[item // self.num_subsets]
-        masked_samples, indices = self.masker.mask_rand(n, return_indices=True)
-        return masked_samples, indices, n
+        # This is implicitly a nested loop, running through num_subsets and
+        # n_range. The inner loop is the num_subsets loop, the outer loop is
+        # the n_range loop.
+        n_idx = item // self.num_subsets
+        subset_idx = item % self.num_subsets
+        masked_samples, indices = self.masker.mask_rand(
+            self.n_range[n_idx], return_indices=True
+        )
+        return masked_samples, indices, self.n_range[n_idx], subset_idx
 
 
 class SegSensNDataset:
     def __init__(
-        self, n_range: np.ndarray, num_subsets: int, samples: torch.tensor
+        self,
+        n_range: npt.NDArray[np.int32],
+        num_subsets: int,
+        samples: torch.Tensor,
     ):
         self.n_range = n_range
         self.num_subsets = num_subsets
@@ -45,9 +55,12 @@ class SegSensNDataset:
         return self.n_range.shape[0] * self.num_subsets
 
     def __getitem__(self, item):
-        n = self.n_range[item // self.num_subsets]
-        masked_samples, indices = self.masker.mask_rand(n, True)
-        return masked_samples, indices, n
+        n_idx = item // self.num_subsets
+        subset_idx = item % self.num_subsets
+        masked_samples, indices = self.masker.mask_rand(
+            self.n_range[n_idx], return_indices=True
+        )
+        return masked_samples, indices, self.n_range[n_idx], subset_idx
 
     def set_masker(self, masker: ImageMasker):
         self.masker = masker
