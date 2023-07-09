@@ -45,7 +45,6 @@ Data
     attribench.data.HDF5Dataset
     attribench.data.HDF5DatasetWriter
 
-
 Masking
 -------
 .. autosummary::

@@ -23,8 +23,76 @@ class SensitivityN(Metric):
         maskers: Dict[str, Masker],
         activation_fns: Union[Tuple[str], str],
         segmented=False,
+        address="localhost",
+        port="12355",
+        devices: Tuple | None = None,
     ):
-        super().__init__(model_factory, dataset, batch_size)
+        """Compute the Sensitivity-n metric for a given `AttributionsDataset` and model
+        using multiple processes.
+
+        Sensitivity-n is computed by iteratively masking a random subset of `n` features
+        of the input samples and computing the output of the model on the masked
+        samples.
+
+        For each random subset of masked features, the sum of the attributions is
+        also computed. This results in two series of values: the model output and
+        the sum of the attributions. The Sensitivity-n metric is the correlation
+        between these two series.
+
+        This is repeated for different values of `n` between `min_subset_size` and
+        `max_subset_size` in `num_steps` steps. `min_subset_size` and `max_subset_size`
+        are percentages of the total number of features.
+        For each value of `n`, `num_subsets` random subsets are generated.
+
+        If segmented is True, then the Seg-Sensitivity-n metric is computed.
+        This metric is analogous to Sensitivity-n, but instead of using random
+        subsets of features, the images are first segmented into superpixels and
+        then random subsets of superpixels are masked. This improves the
+        signal-to-noise ratio of the metric for high-resolution images.
+
+        The Sensitivity-n metric is computed for each masker in `maskers` and for each
+        activation function in `activation_fns`. The number of processes is
+        determined by the number of devices. If `devices` is None, then all
+        available devices are used. Samples are distributed evenly across the
+        processes.
+
+        Parameters
+        ----------
+        model_factory : ModelFactory
+            ModelFactory instance or callable that returns a model.
+            Used to create a model for each subprocess.
+        dataset : AttributionsDataset
+            Dataset containing the attributions to compute Sensitivity-n on.
+        batch_size : int
+            Batch size to use when computing the model output.
+        min_subset_size : float
+            Minimum percentage of features to mask.
+        max_subset_size : float
+            Maximum percentage of features to mask.
+        num_steps : int
+            Number of steps between `min_subset_size` and `max_subset_size`.
+        num_subsets : int
+            Number of random subsets to generate for each value of `n`.
+        maskers : Dict[str, Masker]
+            Dictionary of maskers to use. Keys are the names of the maskers.
+        activation_fns : Union[Tuple[str], str]
+            Activation functions to use. If a single string is passed, then the
+            it is converted to a single-element list.
+        segmented : bool
+            If True, then the Seg-Sensitivity-n metric is computed.
+        address : str, optional
+            Address to use for the distributed computation.
+            Defaults to "localhost".
+        port : str | int, optional
+            Port to use for the distributed computation.
+            Defaults to "12355".
+        devices : Tuple | None
+            Devices to use for the distributed computation. If None, then all
+            available devices are used.
+        """
+        super().__init__(
+            model_factory, dataset, batch_size, address, port, devices
+        )
         if not dataset.group_attributions:
             warnings.warn(
                 "Sensitivity-n expects a dataset group_attributions==True."

@@ -20,8 +20,8 @@ class AttributionsDataset(IndexDataset):
     (see functional interface for compute_attributions)
     File
     ```
-    - method_1: [num_samples, *sample_shape]
-    - method_2: [num_samples, *sample_shape]
+    - method_1: `[num_samples, *sample_shape]`
+    - method_2: `[num_samples, *sample_shape]`
     - ...
     ```
     """

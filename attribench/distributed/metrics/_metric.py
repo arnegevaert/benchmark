@@ -7,7 +7,7 @@ from .._message import PartialResultMessage
 from .._distributed_computation import DistributedComputation
 from ._metric_worker import MetricWorker
 from attribench.result._metric_result import MetricResult
-from typing import Tuple, Callable, Optional
+from typing import Tuple, Optional
 from multiprocessing.synchronize import Event
 from attribench._model_factory import ModelFactory
 
@@ -18,8 +18,8 @@ class Metric(DistributedComputation):
         model_factory: ModelFactory,
         dataset: IndexDataset,
         batch_size: int,
-        address="localhost",
-        port="12355",
+        address: str,
+        port: str | int,
         devices: Optional[Tuple] = None,
     ):
         super().__init__(address, port, devices)

@@ -1,21 +1,21 @@
 from ._worker import Worker
 from ._message import PartialResultMessage, DoneMessage
 import torch.multiprocessing as mp
-import queue as q
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 import torch
 import os
+from multiprocessing.synchronize import Event
 
 
 class DistributedComputation:
     def __init__(
         self,
-        address="localhost",
-        port="12355",
+        address: str,
+        port: str | int,
         devices: Optional[Tuple[int]] = None,
     ):
         self.address = address
-        self.port = port
+        self.port = str(port)
         self.devices = (
             devices
             if devices is not None
@@ -28,7 +28,7 @@ class DistributedComputation:
         raise NotImplementedError
 
     def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: mp.Event
+        self, queue: mp.Queue, rank: int, all_processes_done: Event
     ) -> Worker:
         raise NotImplementedError
 

@@ -25,8 +25,9 @@ Metrics
 
     attribench.functional.metrics.deletion
     attribench.functional.metrics.insertion
-    attribench.functional.metrics.irof
     attribench.functional.metrics.impact_coverage
+    attribench.functional.metrics.irof
     attribench.functional.metrics.infidelity
     attribench.functional.metrics.max_sensitivity
     attribench.functional.metrics.minimal_subset
+    attribench.functional.metrics.sensitivity_n

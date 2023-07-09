@@ -1,4 +1,5 @@
 import numpy as np
+from torch import nn
 import warnings
 import torch
 import numpy.typing as npt
@@ -6,12 +7,12 @@ from typing import Callable, List, Mapping, Dict, Tuple
 from attribench.masking import Masker
 from torch.utils.data import DataLoader
 from attribench.data import AttributionsDataset
-from attribench.result import SensitivityNResult
-from attribench.result._batch_result import BatchResult
 from attribench._activation_fns import ACTIVATION_FNS
 from ._dataset import SensitivityNDataset, SegSensNDataset
 from attribench._segmentation import segment_attributions
 from attribench._stat import corrcoef
+from attribench.result import SensitivityNResult
+from attribench.result._batch_result import BatchResult
 
 
 def _get_orig_output(
@@ -154,7 +155,7 @@ def _sens_n_batch(
 
 def sensitivity_n(
     dataset: AttributionsDataset,
-    model: Callable,
+    model: nn.Module,
     batch_size: int,
     min_subset_size: float,
     max_subset_size: float,
@@ -165,6 +166,61 @@ def sensitivity_n(
     activation_fns: str | List[str] = "linear",
     device: torch.device = torch.device("cpu"),
 ) -> SensitivityNResult:
+    """Computes the Sensitivity-n metric for a given `AttributionsDataset` and model.
+
+    Sensitivity-n is computed by iteratively masking a random subset of `n` features
+    of the input samples and computing the output of the model on the masked
+    samples.
+
+    For each random subset of masked features, the sum of the attributions is
+    also computed. This results in two series of values: the model output and
+    the sum of the attributions. The Sensitivity-n metric is the correlation
+    between these two series.
+
+    This is repeated for different values of `n` between `min_subset_size` and
+    `max_subset_size` in `num_steps` steps. `min_subset_size` and `max_subset_size`
+    are percentages of the total number of features.
+    For each value of `n`, `num_subsets` random subsets are generated.
+
+    If segmented is True, then the Seg-Sensitivity-n metric is computed.
+    This metric is analogous to Sensitivity-n, but instead of using random
+    subsets of features, the images are first segmented into superpixels and
+    then random subsets of superpixels are masked. This improves the
+    signal-to-noise ratio of the metric for high-resolution images.
+
+    The Sensitivity-n metric is computed for each masker in `maskers` and for each
+    activation function in `activation_fns`.
+
+    Parameters
+    ----------
+    dataset : AttributionsDataset
+        Dataset containing the attributions to compute Sensitivity-n on.
+    model : nn.Module
+        Model to compute Sensitivity-n for.
+    batch_size : int
+        Batch size to use when computing model output on masked samples.
+    min_subset_size : float
+        Minimum percentage of features to mask.
+    max_subset_size : float
+        Maximum percentage of features to mask.
+    num_steps : int
+        Number of steps between `min_subset_size` and `max_subset_size`.
+    num_subsets : int
+        Number of random subsets to generate for each value of `n`.
+    segmented : bool
+        If True, then the Seg-Sensitivity-n metric is computed.
+    maskers : Dict[str, Masker]
+        Dictionary of maskers to use. Keys are the names of the maskers.
+    activation_fns : Union[Tuple[str], str]
+        Activation functions to use. If a single string is passed, then the
+        it is converted to a single-element list.
+    device : torch.device, optional
+        Device to use, by default torch.device("cpu")
+
+    Returns
+    -------
+    SensitivityNResult
+    """
     if isinstance(activation_fns, str):
         activation_fns = [activation_fns]
 

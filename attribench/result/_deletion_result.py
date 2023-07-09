@@ -108,13 +108,26 @@ class DeletionResult(MetricResult):
         activation function. The dataframe contains a row for each sample and a
         column for each method. Each value is the AUC/AOC for the given method
         on the given sample.
-        :param masker: the masker to use
-        :param activation_fn: the activation function to use
-        :param agg_fn: either "auc" for AUC or "aoc" for AOC
-        :param methods: the methods to include. If None, includes all methods.
-        :param columns: the columns used in the AUC/AOC calculation
-        :return: dataframe containing results, and boolean indicating if
-            higher is better
+
+        Parameters
+        ----------
+        masker : str
+            the masker to use
+        activation_fn : str
+            the activation function to use
+        agg_fn : str
+            either "auc" for AUC or "aoc" for AOC
+        methods : Optional[Tuple[str]]
+            the methods to include. If None, includes all methods.
+        columns : Optional[npt.NDArray]
+            the columns used in the AUC/AOC calculation.
+            If None, uses all columns.
+
+        Returns
+        -------
+        Tuple[pd.DataFrame, bool]
+            dataframe containing results,
+            and boolean indicating if higher is better
         """
         higher_is_better = (self.mode == "morf" and agg_fn == "aoc") or (
             self.mode == "lerf" and agg_fn == "auc"

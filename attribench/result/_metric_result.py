@@ -83,6 +83,8 @@ class MetricResult:
                 tree = RandomAccessNDArrayTree.load_from_hdf(fp)
         elif format == "dir":
             tree = RandomAccessNDArrayTree.load_from_dir(path)
+        else:
+            raise ValueError("Invalid format", format)
         return tree
 
     @classmethod
