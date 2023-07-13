@@ -31,16 +31,17 @@ release = '0.0.1'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'numpydoc',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.viewcode',
-    'sphinx.ext.napoleon'
 ]
-autodoc_typehints = 'both'
+#autodoc_typehints = 'both'
 autodoc_default_options = {
     'members': True,
     'inherited-members': True,
 }
+numpydoc_show_class_members = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

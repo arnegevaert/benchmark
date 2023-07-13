@@ -6,8 +6,8 @@ import h5py
 class HDF5Dataset(Dataset):
     """
     File
-    - samples: `[num_samples, *sample_shape]`
-    - labels: `[num_samples]`
+    - samples: ``[num_samples, *sample_shape]``
+    - labels: ``[num_samples]``
     """
     def __init__(self, path: str):
         self.path = path

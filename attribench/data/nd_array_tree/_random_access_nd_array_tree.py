@@ -1,4 +1,4 @@
-from typing import Tuple, Dict, Union, Optional
+from typing import Tuple, Dict, Union, Optional, List
 import os
 import yaml
 import numpy as np
@@ -7,7 +7,11 @@ import h5py
 
 
 class RandomAccessNDArrayTree:
-    def __init__(self, levels: Dict[str, Tuple[str]], shape: Tuple[int, ...]):
+    def __init__(
+        self,
+        levels: Dict[str, List[str]],
+        shape: List[int],
+    ):
         """
         Represents a tree of numpy NDArrays capable of writing in a
         random-access way (as opposed to append-only).
@@ -18,13 +22,13 @@ class RandomAccessNDArrayTree:
         """
         self.levels = levels
         self.shape = shape
-        self.level_names: Tuple[str] = tuple(sorted(list(levels.keys())))
+        self.level_names: List[str] = sorted(list(levels.keys()))
 
         def _initialize_data(data, depth=0) -> Dict:
             """
             Recursively initialize the data structure.
             If we are in an internal node, a dictionary is created and keys for
-            the next level are added recursively. Otherwise, a 0-valued NDArray 
+            the next level are added recursively. Otherwise, a 0-valued NDArray
             of the necessary shape is created.
             :param data: The nested dictionary with the data we are constructing
             :param depth: The current depth
@@ -45,7 +49,7 @@ class RandomAccessNDArrayTree:
         self,
         indices: npt.NDArray,
         data: Dict,
-        level_order: Optional[Tuple[str]] = None,
+        level_order: Optional[List[str]] = None,
     ):
         """
         Recursively write a dictionary of data to fixed indices.
@@ -85,7 +89,7 @@ class RandomAccessNDArrayTree:
         target_indices: npt.NDArray,
         split_level: str,
         data: Dict,
-        level_order: Optional[Tuple[str]] = None,
+        level_order: Optional[List[str]] = None,
     ):
         """
         Same as write_dict, but instead of writing the full NDArray to each
@@ -110,7 +114,6 @@ class RandomAccessNDArrayTree:
         # and in level_order. These are all levels except the split level.
         data_levels = list(self.level_names)
         data_levels.remove(split_level)
-        data_levels = tuple(data_levels)
 
         if level_order is None:
             level_order = data_levels
@@ -151,7 +154,7 @@ class RandomAccessNDArrayTree:
         should be 1 key. This encodes the path to take down the tree.
         :param indices: Indices of NDArray where data should be written
         :param data: The data to write in the NDArray at the given indices
-        :param level_keys: a key for each level to indicate the path to the 
+        :param level_keys: a key for each level to indicate the path to the
             desired NDArray
         """
         if set(level_keys.keys()) != set(self.levels.keys()):
@@ -183,7 +186,7 @@ class RandomAccessNDArrayTree:
     def save_to_hdf(self, group: h5py.Group) -> None:
         """
         Attach the NDArrayTree to an HDF5 group
-        :param group: the HDF5 group to which the root of this NDArrayTree 
+        :param group: the HDF5 group to which the root of this NDArrayTree
             should be attached
         """
 
@@ -206,7 +209,7 @@ class RandomAccessNDArrayTree:
             """
             Recursively loads the necessary metadata from the tree:
             level names, level keys, NDArray shape.
-            :return: the necessary arguments to instantiate an NDArrayTree from 
+            :return: the necessary arguments to instantiate an NDArrayTree from
                 this file.
             """
             if isinstance(node, h5py.Group):
@@ -234,7 +237,7 @@ class RandomAccessNDArrayTree:
         levels, shape = _load_metadata_rec(group, {})
         result = cls(levels, shape)
 
-        # Traverse the NDArrayTree to copy the NDArrays to their respective 
+        # Traverse the NDArrayTree to copy the NDArrays to their respective
         # locations
         _copy_ndarrays_rec(group, result._data)
         return result
@@ -296,7 +299,6 @@ class RandomAccessNDArrayTree:
                 elif key.endswith(".csv"):
                     # We are at the bottom, copy the datasets to the tree
                     tree_node[key[:-4]] = np.loadtxt(next_path)
-        
+
         _copy_ndarrays_rec(path, result._data)
         return result
-        

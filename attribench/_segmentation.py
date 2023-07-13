@@ -3,7 +3,7 @@ import torch
 from skimage.segmentation import slic
 
 
-def isin(a: torch.tensor, b: torch.tensor):
+def isin(a: torch.Tensor, b: torch.Tensor):
     # https://stackoverflow.com/questions/60918304/get-indices-of-elements-in-tensor-a-that-are-present-in-tensor-b
     return (a[..., None] == b).any(-1)
 

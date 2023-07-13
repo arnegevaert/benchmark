@@ -28,28 +28,44 @@ def _auc(x: np.ndarray, columns: Optional[npt.NDArray] = None):
 
 
 class DeletionResult(MetricResult):
+    """Represents results from running the Deletion metric.
+    """
     def __init__(
         self,
-        method_names: Tuple[str],
-        maskers: Tuple[str],
-        activation_fns: Tuple[str],
+        method_names: List[str],
+        maskers: List[str],
+        activation_fns: List[str],
         mode: str,
-        shape: Tuple[int, ...],
+        shape: List[int],
     ):
+        """Create a new DeletionResult object.
+
+        Parameters
+        ----------
+        method_names : List[str]
+            Names of attribution methods tested by Deletion.
+        maskers : List[str]
+            Names of maskers used by Deletion.
+        activation_fns : List[str]
+            Names of activation functions used by Deletion.
+        mode : str
+            Indicates if Deletion-MoRF or Deletion-LeRF was used.
+            Options: "morf", "lerf"
+        shape : List[int]
+            Shape of numpy arrays the contain the results.
+            For Deletion, this is ``(n_samples, n_steps)``.
+        """
         levels = {
             "method": method_names,
             "masker": maskers,
             "activation_fn": activation_fns,
         }
-        level_order = ("method", "masker", "activation_fn")
+        level_order = ["method", "masker", "activation_fn"]
         super().__init__(method_names, shape, levels, level_order)
         self.mode = mode
 
     @override
     def save(self, path: str, format="hdf5"):
-        """
-        Saves the DeletionResult to an HDF5 file.
-        """
         super().save(path, format)
 
         # Save additional metadata
@@ -67,6 +83,27 @@ class DeletionResult(MetricResult):
     def _load_tree_mode(
         cls, path: str, format="hdf5"
     ) -> Tuple[RandomAccessNDArrayTree, str]:
+        """Loads the tree and mode from a file or directory.
+
+        Parameters
+        ----------
+        path : str
+            Path to the file or directory.
+        format : str, optional
+            Format of the saved result.
+            Options: "hdf5", "dir".
+            By default "hdf5".
+
+        Returns
+        -------
+        Tuple[RandomAccessNDArrayTree, str]
+            The RandomAccessNDArrayTree object and the mode as a string.
+
+        Raises
+        ------
+        ValueError
+            If the format argument is not valid.
+        """
         if format == "hdf5":
             with h5py.File(path, "r") as fp:
                 tree = RandomAccessNDArrayTree.load_from_hdf(fp)
@@ -100,7 +137,7 @@ class DeletionResult(MetricResult):
         masker: str,
         activation_fn: str,
         agg_fn="auc",
-        methods: Optional[Tuple[str]] = None,
+        methods: Optional[List[str]] = None,
         columns: Optional[npt.NDArray] = None,
     ) -> Tuple[pd.DataFrame, bool]:
         """
@@ -112,12 +149,12 @@ class DeletionResult(MetricResult):
         Parameters
         ----------
         masker : str
-            the masker to use
+            the masker to use.
         activation_fn : str
-            the activation function to use
+            the activation function to use.
         agg_fn : str
-            either "auc" for AUC or "aoc" for AOC
-        methods : Optional[Tuple[str]]
+            either "auc" for AUC or "aoc" for AOC.
+        methods : Optional[List[str]]
             the methods to include. If None, includes all methods.
         columns : Optional[npt.NDArray]
             the columns used in the AUC/AOC calculation.
@@ -127,7 +164,7 @@ class DeletionResult(MetricResult):
         -------
         Tuple[pd.DataFrame, bool]
             dataframe containing results,
-            and boolean indicating if higher is better
+            and boolean indicating if higher is better.
         """
         higher_is_better = (self.mode == "morf" and agg_fn == "aoc") or (
             self.mode == "lerf" and agg_fn == "auc"

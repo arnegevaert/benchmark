@@ -181,8 +181,8 @@ def impact_coverage(
     is the target class of the patch. The target class is the class that
     the model will predict when the patch is applied to the input.
 
-    To generate adversarial patches, the train_adversarial_patches function
-    or TrainAdversarialPatches class can be used.
+    To generate adversarial patches, the `train_adversarial_patches` function
+    or `TrainAdversarialPatches` class can be used.
     TODO add link to train_adversarial_patches function and
     TrainAdversarialPatches class.
 

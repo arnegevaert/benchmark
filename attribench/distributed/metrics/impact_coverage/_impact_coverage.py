@@ -45,8 +45,8 @@ class ImpactCoverage(Metric):
         `devices` is None, then all available devices are used. Samples are
         distributed evenly across the processes.
 
-        To generate adversarial patches, the train_adversarial_patches function
-        or TrainAdversarialPatches class can be used.
+        To generate adversarial patches, the `train_adversarial_patches` function
+        or `TrainAdversarialPatches` class can be used.
         TODO add link to train_adversarial_patches function and
         TrainAdversarialPatches class.
 

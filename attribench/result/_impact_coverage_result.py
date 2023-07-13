@@ -1,13 +1,13 @@
-from typing import Tuple, Optional
+from typing import List, Optional, Tuple
 from typing_extensions import override
 import pandas as pd
 from ._grouped_metric_result import GroupedMetricResult
 
 
 class ImpactCoverageResult(GroupedMetricResult):
-    def __init__(self, method_names: Tuple[str], shape: Tuple[int, ...]):
+    def __init__(self, method_names: List[str], shape: List[int]):
         levels = {"method": method_names}
-        level_order = ("method",)
+        level_order = ["method"]
         super().__init__(method_names, shape, levels, level_order)
 
     @classmethod
@@ -19,7 +19,7 @@ class ImpactCoverageResult(GroupedMetricResult):
         return res
 
     def get_df(
-        self, methods: Optional[Tuple[str]] = None
+        self, methods: Optional[List[str]] = None
     ) -> Tuple[pd.DataFrame, bool]:
         methods = methods if methods is not None else self.method_names
         df_dict = {}

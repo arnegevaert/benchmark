@@ -1,5 +1,5 @@
 import torch
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 
 class BatchResult:
@@ -8,7 +8,7 @@ class BatchResult:
     Used by MetricResult to handle results from distributed metrics.
     """
     def __init__(self, indices: torch.Tensor, results: Dict,
-                 method_names: Optional[List[str]] = None):
+                 method_names: List[str]):
         self.method_names = method_names
         self.results = results
         self.indices = indices

@@ -9,8 +9,7 @@ class InsertionResult(DeletionResult):
     """
     This class serves as a simple wrapper class for Insertion results.
     It is nearly identical to the DeletionResult class, except that
-    the higher_is_better flag is inverted. The _load method also makes sure
-    that the resulting object is an InsertionResult.
+    the ``higher_is_better`` flag in ``get_df`` is inverted.
     """
 
     def get_df(
@@ -18,7 +17,7 @@ class InsertionResult(DeletionResult):
         masker: str,
         activation_fn: str,
         agg_fn="auc",
-        methods: List[str] = None,
+        methods: Optional[List[str]] = None,
         columns: Optional[npt.NDArray] = None,
     ) -> Tuple[pd.DataFrame, bool]:
         df, higher_is_better = super().get_df(

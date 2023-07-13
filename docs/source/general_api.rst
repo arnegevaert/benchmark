@@ -25,6 +25,11 @@ Results
     attribench.result.MetricResult
     attribench.result.DeletionResult
     attribench.result.InsertionResult
+    attribench.result.ImpactCoverageResult
+    attribench.result.InfidelityResult
+    attribench.result.MaxSensitivityResult
+    attribench.result.MinimalSubsetResult
+    attribench.result.SensitivityNResult
 
 Methods
 -------

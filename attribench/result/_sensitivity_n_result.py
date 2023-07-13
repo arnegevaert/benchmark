@@ -54,7 +54,7 @@ class SensitivityNResult(GroupedMetricResult):
         self,
         masker: str,
         activation_fn: str,
-        methods: Optional[Tuple[str]] = None,
+        methods: Optional[Tuple[str, ...]] = None,
         columns: Optional[npt.NDArray] = None,
     ) -> Tuple[pd.DataFrame, bool]:
         """
@@ -63,13 +63,27 @@ class SensitivityNResult(GroupedMetricResult):
         column for each method. Each value is the average Sensitivity-N value
         for the given method on the given sample,
         over the specified columns.
-        :param masker: the masker to use
-        :param activation_fn: the activation function to use
-        :param methods: the methods to include. If None, includes all methods.
-        :param columns: the columns used in the aggregation
-        :return: dataframe containing results, and boolean indicating if
-            higher is better (always True for this metric)
+
+        Parameters
+        ----------
+        masker : str
+            the masker to use
+        activation_fn : str
+            the activation function to use
+        methods : Optional[Tuple[str, ...]]
+            the methods to include. If None, includes all methods.
+        columns : Optional[npt.NDArray]
+            the columns used in the aggregation.
+            If None, uses all columns.
+
+        Returns
+        -------
+        Tuple[pd.DataFrame, bool]
+            dataframe containing results,
+            and boolean indicating if higher is better
+            (always True for Sensitivity-N)
         """
+
         methods = methods if methods is not None else self.method_names
         df_dict = {}
         for method in methods:
