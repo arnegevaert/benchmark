@@ -1,4 +1,4 @@
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 from typing_extensions import override
 import numpy as np
 import pandas as pd
@@ -21,18 +21,37 @@ def _column_avg(
 
 # TODO loads of code duplication here with DeletionResult
 class SensitivityNResult(GroupedMetricResult):
+    """Represents results from running the Sensitivity-N metric.
+    """
     def __init__(
         self,
-        method_names: Tuple[str],
-        maskers: Tuple[str],
-        activation_fns: Tuple[str],
-        shape: Tuple[int, ...],
+        method_names: List[str],
+        maskers: List[str],
+        activation_fns: List[str],
+        num_samples: int,
+        num_steps: int
     ):
+        """Create a new SensitivityNResult object.
+
+        Parameters
+        ----------
+        method_names : List[str]
+            Names of attribution methods tested by Sensitivity-N.
+        maskers : List[str]
+            Names of maskers used by Sensitivity-N.
+        activation_fns : List[str]
+            Names of activation functions used by Sensitivity-N.
+        num_samples : int
+            Number of samples on which Sensitivity-N was run.
+        num_steps : int
+            Number of steps used by Sensitivity-N.
+        """
         levels = {
             "masker": maskers,
             "activation_fn": activation_fns,
             "method": method_names,
         }
+        shape = [num_samples, num_steps]
         level_order = ["method", "masker", "activation_fn"]
         super().__init__(method_names, shape, levels, level_order)
 
@@ -44,7 +63,8 @@ class SensitivityNResult(GroupedMetricResult):
             tree.levels["masker"],
             tree.levels["activation_fn"],
             tree.levels["method"],
-            tree.shape,
+            tree.shape[0],
+            tree.shape[1]
         )
         res.tree = tree
         return res
@@ -54,7 +74,7 @@ class SensitivityNResult(GroupedMetricResult):
         self,
         masker: str,
         activation_fn: str,
-        methods: Optional[Tuple[str, ...]] = None,
+        methods: Optional[List[str]] = None,
         columns: Optional[npt.NDArray] = None,
     ) -> Tuple[pd.DataFrame, bool]:
         """
@@ -70,7 +90,7 @@ class SensitivityNResult(GroupedMetricResult):
             the masker to use
         activation_fn : str
             the activation function to use
-        methods : Optional[Tuple[str, ...]]
+        methods : Optional[List[str, ...]]
             the methods to include. If None, includes all methods.
         columns : Optional[npt.NDArray]
             the columns used in the aggregation.

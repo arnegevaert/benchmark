@@ -109,8 +109,9 @@ class Insertion(Deletion):
         )
         self._result = InsertionResult(
             dataset.method_names,
-            tuple(maskers.keys()),
-            tuple(self.activation_fns),
+            list(maskers.keys()),
+            list(self.activation_fns),
             mode,
-            shape=(dataset.num_samples, num_steps),
+            num_samples=dataset.num_samples,
+            num_steps=num_steps,
         )

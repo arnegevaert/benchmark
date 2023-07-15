@@ -134,9 +134,9 @@ def minimal_subset(
 
     result = MinimalSubsetResult(
         dataset.method_names,
-        tuple(maskers.keys()),
+        list(maskers.keys()),
         mode,
-        shape=(dataset.num_samples, 1),
+        num_samples=len(dataset),
     )
 
     for (

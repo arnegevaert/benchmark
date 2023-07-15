@@ -98,10 +98,10 @@ def max_sensitivity(
         pin_memory=True,
     )
 
-    method_names = tuple(method_dict.keys())
+    method_names = list(method_dict.keys())
     result = MaxSensitivityResult(
         method_names,
-        shape=(len(index_dataset),),
+        num_samples=len(index_dataset),
     )
     for batch_indices, batch_x, batch_y in dataloader:
         batch_x = batch_x.to(device)

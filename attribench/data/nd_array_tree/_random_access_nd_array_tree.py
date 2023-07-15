@@ -181,6 +181,10 @@ class RandomAccessNDArrayTree:
         res = self._data
         for level_name in self.level_names:
             res = res[level_keys[level_name]]
+        if not isinstance(res, np.ndarray):
+            raise ValueError(
+                f"Expected leaf node to be ndarray, got {type(res)}"
+            )
         return res
 
     def save_to_hdf(self, group: h5py.Group) -> None:
@@ -205,7 +209,7 @@ class RandomAccessNDArrayTree:
     def load_from_hdf(cls, group: h5py.Group) -> "RandomAccessNDArrayTree":
         def _load_metadata_rec(
             node: Union[h5py.Group, h5py.Dataset], cur_levels
-        ) -> Tuple[Dict, Tuple[int, ...]]:
+        ) -> Tuple[Dict, List[int]]:
             """
             Recursively loads the necessary metadata from the tree:
             level names, level keys, NDArray shape.
@@ -216,22 +220,27 @@ class RandomAccessNDArrayTree:
                 keys = list(node.keys())
                 level_name = node.attrs["level_name"]
                 cur_levels[level_name] = keys
-                return _load_metadata_rec(node[keys[0]], cur_levels)
+                next_node = node[keys[0]]
+                assert isinstance(next_node, (h5py.Group, h5py.Dataset))
+                return _load_metadata_rec(next_node, cur_levels)
             elif isinstance(node, h5py.Dataset):
-                return cur_levels, node.shape
+                return cur_levels, list(node.shape)
 
         def _copy_ndarrays_rec(h5py_node: h5py.Group, tree_node: Dict):
             """
             Recursively copy the NDArrays from the HDF5 file to the tree
             """
             for key in list(h5py_node.keys()):
-                if isinstance(h5py_node[key], h5py.Dataset):
+                next_node = h5py_node[key]
+                if isinstance(next_node, h5py.Dataset):
                     # We are at the bottom, copy the datasets to the tree
                     # An HDF5 Dataset can be converted to an NDArray using [()]
-                    tree_node[key] = h5py_node[key][()]
-                else:
+                    tree_node[key] = next_node[()]
+                elif isinstance(next_node, h5py.Group):
                     # We are at an inner node, descend
-                    _copy_ndarrays_rec(h5py_node[key], tree_node[key])
+                    _copy_ndarrays_rec(next_node, tree_node[key])
+                else:
+                    raise ValueError(f"Invalid type: {type(next_node)}")
 
         # Instantiate the NDArrayTree with the necessary metadata
         levels, shape = _load_metadata_rec(group, {})

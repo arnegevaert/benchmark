@@ -23,6 +23,7 @@ Results
     :toctree: generated
 
     attribench.result.MetricResult
+    attribench.result.GroupedMetricResult
     attribench.result.DeletionResult
     attribench.result.InsertionResult
     attribench.result.ImpactCoverageResult

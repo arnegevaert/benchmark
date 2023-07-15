@@ -83,9 +83,9 @@ class MinimalSubset(Metric):
         self.maskers = maskers
         self._result = MinimalSubsetResult(
             dataset.method_names,
-            tuple(maskers.keys()),
+            list(maskers.keys()),
             mode,
-            shape=(dataset.num_samples, 1),
+            num_samples=dataset.num_samples,
         )
 
     def _create_worker(

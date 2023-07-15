@@ -100,10 +100,11 @@ class Deletion(Metric):
         self.maskers = maskers
         self._result = DeletionResult(
             dataset.method_names,
-            tuple(maskers.keys()),
-            tuple(self.activation_fns),
+            list(maskers.keys()),
+            self.activation_fns,
             mode,
-            shape=(dataset.num_samples, num_steps),
+            dataset.num_samples,
+            num_steps,
         )
         self.dataset = dataset
 

@@ -81,7 +81,7 @@ class MaxSensitivity(Metric):
         self.num_perturbations = num_perturbations
         self.radius = radius
         self._result = MaxSensitivityResult(
-            method_factory.get_method_names(), shape=(len(index_dataset),)
+            method_factory.get_method_names(), num_samples=len(index_dataset)
         )
 
     def _create_worker(

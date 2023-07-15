@@ -1,4 +1,4 @@
-from typing import Dict, Type, Union, Tuple, NewType
+from typing import Dict, Type, Union, Tuple, NewType, List
 from torch import nn
 
 from attribench._attribution_method import AttributionMethod
@@ -49,5 +49,5 @@ class MethodFactory:
     def __len__(self) -> int:
         return len(self.config_dict)
 
-    def get_method_names(self) -> Tuple[str, ...]:
-        return tuple(self.config_dict.keys())
+    def get_method_names(self) -> List[str]:
+        return list(self.config_dict.keys())

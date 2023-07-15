@@ -240,9 +240,10 @@ def sensitivity_n(
 
     result = SensitivityNResult(
         dataset.method_names,
-        tuple(maskers.keys()),
-        tuple(activation_fns),
-        shape=(dataset.num_samples, num_steps),
+        list(maskers.keys()),
+        list(activation_fns),
+        num_samples=dataset.num_samples,
+        num_steps=num_steps,
     )
 
     # Compute range of subset sizes

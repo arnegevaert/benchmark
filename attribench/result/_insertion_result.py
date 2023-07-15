@@ -36,7 +36,8 @@ class InsertionResult(DeletionResult):
             tree.levels["masker"],
             tree.levels["activation_fn"],
             mode,
-            tree.shape,
+            tree.shape[0],
+            tree.shape[1],
         )
         res.tree = tree
         return res

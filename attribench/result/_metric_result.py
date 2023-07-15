@@ -30,7 +30,7 @@ class MetricResult:
         method_names : Tuple[str, ...] | List[str]
             Names of attribution methods tested by the metric.
         shape : Tuple[int, ...] | List[int]
-            Shape of numpy arrays the contain the results.
+            Shape of numpy arrays that contain the results.
             Note that this is the result on the full dataset, not a single
             sample. For example, if the metric is computed on 100 samples and
             the metric returns 10 values per sample, then the shape

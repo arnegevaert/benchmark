@@ -23,7 +23,7 @@ def impact_coverage_batch(
     patch_names_cycle: cycle,
     target_expr: re.Pattern,
     device: torch.device,
-):
+) -> Dict[str, torch.Tensor]:
     batch_result: Dict[str, torch.Tensor] = {
         method_name: torch.zeros(1) for method_name in method_dict.keys()
     }
@@ -223,9 +223,7 @@ def impact_coverage(
         index_dataset, batch_size=batch_size, num_workers=4, pin_memory=True
     )
 
-    result = ImpactCoverageResult(
-        tuple(method_dict.keys()), shape=(len(index_dataset),)
-    )
+    result = ImpactCoverageResult(list(method_dict.keys()), len(index_dataset))
 
     for batch_indices, batch_x, batch_y in dataloader:
         batch_result = impact_coverage_batch(

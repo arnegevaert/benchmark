@@ -1,4 +1,5 @@
 from typing import Tuple
+from .._typing import check_is_dataset
 import h5py
 from numpy import typing as npt
 
@@ -16,7 +17,9 @@ class AttributionsDatasetWriter:
         self, indices: npt.NDArray, attributions: npt.NDArray, method_name: str
     ):
         if method_name not in self.file.keys():
-            self.file.create_dataset(
+            dataset = self.file.create_dataset(
                 method_name, shape=(self.num_samples, *self.sample_shape)
             )
-        self.file[method_name][indices, ...] = attributions
+        else:
+            dataset = check_is_dataset(self.file[method_name])
+        dataset[indices, ...] = attributions

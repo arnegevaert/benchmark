@@ -113,7 +113,8 @@ def deletion(
         tuple(maskers.keys()),
         tuple(activation_fns),
         mode,
-        shape=(dataset.num_samples, num_steps),
+        dataset.num_samples,
+        num_steps,
     )
 
     for (

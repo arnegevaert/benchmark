@@ -1,9 +1,10 @@
 from attribench.data._index_dataset import IndexDataset
+from .._typing import check_is_dataset
 from torch.utils.data import Dataset
 import numpy as np
 import h5py
 from numpy import typing as npt
-from typing import Tuple, Optional
+from typing import Optional, List
 
 
 def _max_abs(arr: npt.NDArray, axis: int):
@@ -30,7 +31,7 @@ class AttributionsDataset(IndexDataset):
         path: str,
         aggregate_axis: int = 0,
         aggregate_method: Optional[str] = None,
-        methods: Optional[Tuple[str]] = None,
+        methods: Optional[List[str]] = None,
         group_attributions=False,
     ):
         self.path = path
@@ -44,18 +45,24 @@ class AttributionsDataset(IndexDataset):
         if aggregate_method is not None:
             agg_fns = {"mean": _mean, "max_abs": _max_abs}
             self.aggregate_fn = agg_fns[aggregate_method]
-        self.method_names: Tuple[str]
+        self.method_names: List[str]
         with h5py.File(path, "r") as fp:
             num_samples = fp.attrs["num_samples"]
-            if isinstance(num_samples, np.int64):
-                self.num_samples: int = int(num_samples)
+            if isinstance(num_samples, np.integer):
+                self.num_samples = int(num_samples)
+            else:
+                raise ValueError(
+                    f"Expected num_samples to be an integer,"
+                    f" but got {type(num_samples)}"
+                )
             if methods is None:
-                self.method_names = tuple(fp.keys())
+                self.method_names = list(fp.keys())
             elif all(m in fp for m in methods):
                 self.method_names = methods
             else:
                 raise ValueError(f"Invalid methods: {methods}")
-            orig_attributions_shape = fp[self.method_names[0]].shape[1:]
+            dataset = check_is_dataset(fp[self.method_names[0]])
+            orig_attributions_shape = dataset.shape[1:]
             if self.aggregate_fn is not None:
                 self.attributions_shape = (
                     orig_attributions_shape[: self.aggregate_axis]
@@ -64,22 +71,27 @@ class AttributionsDataset(IndexDataset):
             else:
                 self.attributions_shape = orig_attributions_shape
 
-    def get_item_nongrouped(self, index):
+    def _get_item_nongrouped(self, index):
+        if self.attributions_file is None:
+            raise ValueError("Attributions file not open")
         method_idx = index // self.num_samples
         method_name = self.method_names[method_idx]
         sample_idx = index % self.num_samples
         sample, label = self.samples_dataset[sample_idx]
-        attrs = self.attributions_file[method_name][sample_idx]
+        dataset = check_is_dataset(self.attributions_file[method_name])
+        attrs = dataset[sample_idx]
         if self.aggregate_fn is not None:
             attrs = self.aggregate_fn(attrs, axis=self.aggregate_axis)
         return sample_idx, sample, label, attrs, method_name
 
-    def get_item_grouped(self, index):
+    def _get_item_grouped(self, index):
+        if self.attributions_file is None:
+            raise ValueError("Attributions file not open")
         sample, label = self.samples_dataset[index]
-        attrs = {
-            method_name: self.attributions_file[method_name][index]
-            for method_name in self.method_names
-        }
+        attrs = {}
+        for method_name in self.method_names:
+            dataset = check_is_dataset(self.attributions_file[method_name])
+            attrs[method_name] = dataset[index]
         if self.aggregate_fn is not None:
             for method_name in self.method_names:
                 attrs[method_name] = self.aggregate_fn(
@@ -91,8 +103,8 @@ class AttributionsDataset(IndexDataset):
         if self.attributions_file is None:
             self.attributions_file = h5py.File(self.path, "r")
         if self.group_attributions:
-            return self.get_item_grouped(index)
-        return self.get_item_nongrouped(index)
+            return self._get_item_grouped(index)
+        return self._get_item_nongrouped(index)
 
     def __len__(self):
         if self.group_attributions:

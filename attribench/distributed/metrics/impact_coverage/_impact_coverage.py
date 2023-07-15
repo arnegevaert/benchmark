@@ -86,7 +86,7 @@ class ImpactCoverage(Metric):
         self.method_factory = method_factory
         self.patch_folder = patch_folder
         self._result = ImpactCoverageResult(
-            method_factory.get_method_names(), shape=(len(index_dataset),)
+            method_factory.get_method_names(), len(index_dataset)
         )
 
     def _create_worker(

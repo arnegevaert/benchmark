@@ -6,7 +6,7 @@ from ._perturbation_generator import PerturbationGenerator
 from torch.utils.data import DataLoader
 from attribench._activation_fns import ACTIVATION_FNS
 from attribench.result._infidelity_result import InfidelityResult
-from attribench.result._batch_result import BatchResult
+from attribench.result._grouped_batch_result import GroupedBatchResult
 
 
 def infidelity_batch(
@@ -207,7 +207,7 @@ def infidelity(
         dataset.method_names,
         tuple(perturbation_generators.keys()),
         activation_fns,
-        shape=(dataset.num_samples, 1),
+        num_samples=dataset.num_samples,
     )
     for batch_indices, batch_x, batch_y, batch_attr in dataloader:
         batch_result = infidelity_batch(
@@ -220,4 +220,4 @@ def infidelity(
             activation_fns,
             device,
         )
-        result.add(BatchResult(batch_indices, batch_result))
+        result.add(GroupedBatchResult(batch_indices, batch_result))

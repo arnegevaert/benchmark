@@ -28,15 +28,18 @@ def _auc(x: np.ndarray, columns: Optional[npt.NDArray] = None):
 
 
 class DeletionResult(MetricResult):
-    """Represents results from running the Deletion metric.
     """
+    Represents results from running the Deletion metric.
+    """
+
     def __init__(
         self,
         method_names: List[str],
         maskers: List[str],
         activation_fns: List[str],
         mode: str,
-        shape: List[int],
+        num_samples: int,
+        num_steps: int,
     ):
         """Create a new DeletionResult object.
 
@@ -51,9 +54,10 @@ class DeletionResult(MetricResult):
         mode : str
             Indicates if Deletion-MoRF or Deletion-LeRF was used.
             Options: "morf", "lerf"
-        shape : List[int]
-            Shape of numpy arrays the contain the results.
-            For Deletion, this is ``(n_samples, n_steps)``.
+        num_samples : int
+            Number of samples on which Deletion was run.
+        num_steps : int
+            Number of steps used by Deletion.
         """
         levels = {
             "method": method_names,
@@ -61,6 +65,7 @@ class DeletionResult(MetricResult):
             "activation_fn": activation_fns,
         }
         level_order = ["method", "masker", "activation_fn"]
+        shape = [num_samples, num_steps]
         super().__init__(method_names, shape, levels, level_order)
         self.mode = mode
 
@@ -126,7 +131,8 @@ class DeletionResult(MetricResult):
             tree.levels["masker"],
             tree.levels["activation_fn"],
             mode,
-            tree.shape,
+            tree.shape[0],
+            tree.shape[1],
         )
         res.tree = tree
         return res
@@ -149,15 +155,15 @@ class DeletionResult(MetricResult):
         Parameters
         ----------
         masker : str
-            the masker to use.
+            The masker to use.
         activation_fn : str
-            the activation function to use.
+            The activation function to use.
         agg_fn : str
-            either "auc" for AUC or "aoc" for AOC.
+            Either "auc" for AUC or "aoc" for AOC.
         methods : Optional[List[str]]
-            the methods to include. If None, includes all methods.
+            The methods to include. If None, includes all methods.
         columns : Optional[npt.NDArray]
-            the columns used in the AUC/AOC calculation.
+            The columns used in the AUC/AOC calculation.
             If None, uses all columns.
 
         Returns
