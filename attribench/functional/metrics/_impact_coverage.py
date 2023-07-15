@@ -7,7 +7,7 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from attribench._attribution_method import AttributionMethod
 from attribench.result import ImpactCoverageResult
-from attribench.result._batch_result import BatchResult
+from attribench.result._grouped_batch_result import GroupedBatchResult
 from attribench.data import IndexDataset
 import torch
 from itertools import cycle
@@ -21,9 +21,9 @@ def impact_coverage_batch(
     batch_y: torch.Tensor,
     patch_folder: str,
     patch_names_cycle: cycle,
-    target_expr: re.Pattern,
     device: torch.device,
 ) -> Dict[str, torch.Tensor]:
+    target_expr = re.compile(r".*_([0-9]*)\.pt")
     batch_result: Dict[str, torch.Tensor] = {
         method_name: torch.zeros(1) for method_name in method_dict.keys()
     }
@@ -216,7 +216,6 @@ def impact_coverage(
         if filename.endswith(".pt")
     ]
     patch_names_cycle = cycle(patch_names)
-    target_expr = re.compile(r".*_([0-9]*)\.pt")
 
     index_dataset = IndexDataset(dataset)
     dataloader = DataLoader(
@@ -233,8 +232,7 @@ def impact_coverage(
             batch_y,
             patch_folder,
             patch_names_cycle,
-            target_expr,
             device,
         )
-        result.add(BatchResult(batch_indices, batch_result))
+        result.add(GroupedBatchResult(batch_indices, batch_result))
     return result

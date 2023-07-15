@@ -72,7 +72,7 @@ class DistributedComputation:
                 p.join()
             self._cleanup()
         else:
-            # Run on single process
+            # If world size is 1, run on the main process
             worker = self._create_worker(None, 0, None)
             worker.run()
             self._cleanup()

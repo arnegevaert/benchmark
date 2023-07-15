@@ -3,7 +3,7 @@ from typing import Callable, Dict, Tuple, Optional
 from torch import nn
 from attribench.data import AttributionsDataset
 from .._metric_worker import MetricWorker
-from attribench.result._batch_result import BatchResult
+from attribench.result._grouped_batch_result import GroupedBatchResult
 from ..._message import PartialResultMessage
 from attribench.functional.metrics.infidelity._perturbation_generator import (
     PerturbationGenerator,
@@ -62,6 +62,6 @@ class InfidelityWorker(MetricWorker):
             # Return batch result
             self.send_result(
                 PartialResultMessage(
-                    self.rank, BatchResult(batch_indices, batch_result)
+                    self.rank, GroupedBatchResult(batch_indices, batch_result)
                 )
             )

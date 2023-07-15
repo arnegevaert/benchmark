@@ -8,7 +8,7 @@ from torch import multiprocessing as mp
 from typing import Callable, Optional
 from torch import nn
 
-from attribench.result._batch_result import BatchResult
+from attribench.result._grouped_batch_result import GroupedBatchResult
 from attribench._method_factory import MethodFactory
 from attribench.functional.metrics._impact_coverage import impact_coverage_batch
 
@@ -41,22 +41,18 @@ class ImpactCoverageWorker(MetricWorker):
         )
         self.patch_folder = patch_folder
         self.method_factory = method_factory
+        patch_names = [
+            filename
+            for filename in os.listdir(self.patch_folder)
+            if filename.endswith(".pt")
+        ]
+        self.patch_names_cycle = cycle(patch_names)
 
     def work(self):
         model = self._get_model()
 
         # Get method dictionary
         method_dict = self.method_factory(model)
-
-        # Get names of patches and compile regular expression for deriving
-        # target labels
-        patch_names = [
-            filename
-            for filename in os.listdir(self.patch_folder)
-            if filename.endswith(".pt")
-        ]
-        patch_names_cycle = cycle(patch_names)
-        target_expr = re.compile(r".*_([0-9]*)\.pt")
 
         for batch_indices, batch_x, batch_y in self.dataloader:
             # Compute batch result
@@ -66,13 +62,12 @@ class ImpactCoverageWorker(MetricWorker):
                 batch_x,
                 batch_y,
                 self.patch_folder,
-                patch_names_cycle,
-                target_expr,
+                self.patch_names_cycle,
                 self.device,
             )
             # Return batch result
             self.send_result(
                 PartialResultMessage(
-                    self.rank, BatchResult(batch_indices, batch_result)
+                    self.rank, GroupedBatchResult(batch_indices, batch_result)
                 )
             )

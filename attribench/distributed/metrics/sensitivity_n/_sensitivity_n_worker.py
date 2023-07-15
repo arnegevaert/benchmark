@@ -4,7 +4,7 @@ from typing import Callable, Dict, Optional, List
 from attribench.data import AttributionsDataset
 from attribench.masking import Masker
 from .._metric_worker import MetricWorker
-from attribench.result._batch_result import BatchResult
+from attribench.result._grouped_batch_result import GroupedBatchResult
 from ..._message import PartialResultMessage
 from attribench._model_factory import ModelFactory
 from attribench.functional.metrics.sensitivity_n._sensitivity_n import _sens_n_batch
@@ -75,6 +75,6 @@ class SensitivityNWorker(MetricWorker):
 
             self.send_result(
                 PartialResultMessage(
-                    self.rank, BatchResult(batch_indices, batch_result)
+                    self.rank, GroupedBatchResult(batch_indices, batch_result)
                 )
             )

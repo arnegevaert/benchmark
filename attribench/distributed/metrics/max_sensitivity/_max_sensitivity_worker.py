@@ -4,7 +4,7 @@ from .._metric_worker import MetricWorker
 from typing import Callable, Optional
 from torch import nn
 from torch import multiprocessing as mp
-from attribench.result._batch_result import BatchResult
+from attribench.result._grouped_batch_result import GroupedBatchResult
 from attribench.functional.metrics._max_sensitivity import (
     max_sensitivity_batch,
 )
@@ -60,6 +60,6 @@ class MaxSensitivityWorker(MetricWorker):
             )
             self.send_result(
                 PartialResultMessage(
-                    self.rank, BatchResult(batch_indices, batch_result)
+                    self.rank, GroupedBatchResult(batch_indices, batch_result)
                 )
             )
