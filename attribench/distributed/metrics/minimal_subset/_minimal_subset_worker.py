@@ -2,7 +2,7 @@ from numpy import typing as npt
 import torch
 from .._metric_worker import MetricWorker
 from ..._worker import WorkerConfig
-from typing import Callable, Dict, List
+from typing import Callable, Dict
 
 from torch import nn
 
@@ -31,11 +31,9 @@ class MinimalSubsetWorker(MetricWorker):
 
     def process_batch(
         self,
-        batch_indices: torch.Tensor,
         batch_x: torch.Tensor,
         batch_y: torch.Tensor,
-        batch_attr: npt.NDArray,
-        method_names: List[str],
+        batch_attr: torch.Tensor,
     ):
         return minimal_subset_batch(
             batch_x,

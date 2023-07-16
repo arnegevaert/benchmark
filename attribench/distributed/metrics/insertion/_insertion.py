@@ -1,4 +1,4 @@
-from ._deletion import Deletion
+from ..deletion._deletion import Deletion
 from attribench._model_factory import ModelFactory
 from attribench.masking import Masker
 from attribench.data import AttributionsDataset

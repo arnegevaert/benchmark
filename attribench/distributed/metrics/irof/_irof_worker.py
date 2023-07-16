@@ -1,34 +1,40 @@
+from typing import List, Mapping
 import torch
-from numpy import typing as npt
-from .._metric_worker import MetricWorker, WorkerConfig
-from typing import Dict, Mapping, List
-from attribench.masking import Masker
-from attribench.data import AttributionsDataset
-from attribench.functional.metrics.deletion._deletion import _deletion_batch
+from attribench.masking import ImageMasker
 from attribench._model_factory import ModelFactory
+from ..deletion._deletion_worker import DeletionWorker
+from .._metric_worker import WorkerConfig
+from attribench.data import AttributionsDataset
+from attribench.functional.metrics._irof import _irof_batch
 
 
-class DeletionWorker(MetricWorker):
+class IrofWorker(DeletionWorker):
     def __init__(
         self,
         worker_config: WorkerConfig,
         model_factory: ModelFactory,
         dataset: AttributionsDataset,
         batch_size: int,
-        maskers: Mapping[str, Masker],
+        maskers: Mapping[str, ImageMasker],
         activation_fns: List[str],
         mode: str = "morf",
-        start: float = 0.0,
-        stop: float = 1.0,
+        start: float = 0,
+        stop: float = 1,
         num_steps: int = 100,
     ):
-        super().__init__(worker_config, model_factory, dataset, batch_size)
+        super().__init__(
+            worker_config,
+            model_factory,
+            dataset,
+            batch_size,
+            maskers,
+            activation_fns,
+            mode,
+            start,
+            stop,
+            num_steps,
+        )
         self.maskers = maskers
-        self.activation_fns = activation_fns
-        self.mode = mode
-        self.start = start
-        self.stop = stop
-        self.num_steps = num_steps
 
     def process_batch(
         self,
@@ -36,7 +42,7 @@ class DeletionWorker(MetricWorker):
         batch_y: torch.Tensor,
         batch_attr: torch.Tensor,
     ):
-        return _deletion_batch(
+        return _irof_batch(
             batch_x,
             batch_y,
             self.model,

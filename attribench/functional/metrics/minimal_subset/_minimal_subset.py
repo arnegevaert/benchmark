@@ -16,7 +16,7 @@ from attribench.result._batch_result import BatchResult
 def minimal_subset_batch(
     samples: torch.Tensor,
     model: Callable,
-    attrs: np.ndarray,
+    attrs: torch.Tensor,
     num_steps: float,
     maskers: Dict[str, Masker],
     mode: str,

@@ -1,65 +1,51 @@
+import torch
 from attribench.data import IndexDataset
-from ..._message import PartialResultMessage
-from .._metric_worker import MetricWorker
-from typing import Callable, Optional
+from .._metric_worker import GroupedMetricWorker, WorkerConfig
+from typing import Callable, Dict
 from torch import nn
-from torch import multiprocessing as mp
-from attribench.result._grouped_batch_result import GroupedBatchResult
 from attribench.functional.metrics._max_sensitivity import (
-    max_sensitivity_batch,
+    _max_sensitivity_batch,
 )
-
 from attribench._method_factory import MethodFactory
 
 
-class MaxSensitivityWorker(MetricWorker):
+class MaxSensitivityWorker(GroupedMetricWorker):
     def __init__(
         self,
-        result_queue: mp.Queue,
-        rank: int,
-        world_size: int,
-        all_processes_done,
+        worker_config: WorkerConfig,
         model_factory: Callable[[], nn.Module],
-        method_factory: MethodFactory,
         dataset: IndexDataset,
         batch_size: int,
+        method_factory: MethodFactory,
         num_perturbations: int,
         radius: float,
-        result_handler: Optional[
-            Callable[[PartialResultMessage], None]
-        ] = None,
     ):
         super().__init__(
-            result_queue,
-            rank,
-            world_size,
-            all_processes_done,
+            worker_config,
             model_factory,
             dataset,
             batch_size,
-            result_handler,
         )
         self.method_factory = method_factory
         self.num_perturbations = num_perturbations
         self.radius = radius
 
-    def work(self):
-        model = self._get_model()
+    def setup(self):
+        self.model = self._get_model()
+        self.method_dict = self.method_factory(self.model)
 
-        # Get method dictionary
-        method_dict = self.method_factory(model)
-
-        for batch_indices, batch_x, batch_y in self.dataloader:
-            batch_result = max_sensitivity_batch(
-                batch_x,
-                batch_y,
-                method_dict,
-                self.num_perturbations,
-                self.radius,
-                self.device,
-            )
-            self.send_result(
-                PartialResultMessage(
-                    self.rank, GroupedBatchResult(batch_indices, batch_result)
-                )
-            )
+    def process_batch(
+        self,
+        batch_x: torch.Tensor,
+        batch_y: torch.Tensor,
+        batch_attr: Dict[str, torch.Tensor],
+    ):
+        return _max_sensitivity_batch(
+            batch_x,
+            batch_y,
+            batch_attr,
+            self.method_dict,
+            self.num_perturbations,
+            self.radius,
+            self.device,
+        )

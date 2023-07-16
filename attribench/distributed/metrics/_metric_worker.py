@@ -1,9 +1,10 @@
+from abc import abstractmethod
 from .._distributed_sampler import DistributedSampler
 from .._worker import Worker, WorkerConfig
 from .._message import PartialResultMessage
 from attribench.result._batch_result import BatchResult
 from attribench.result._grouped_batch_result import GroupedBatchResult
-from typing import Callable, List
+from typing import Callable, List, Dict
 from numpy import typing as npt
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
@@ -59,11 +60,9 @@ class MetricWorker(Worker):
             batch_y = batch_y.to(self.device)
 
             batch_result = self.process_batch(
-                batch_indices,
                 batch_x,
                 batch_y,
                 batch_attr,
-                method_names,
             )
             self.worker_config.send_result(
                 PartialResultMessage(
@@ -72,13 +71,12 @@ class MetricWorker(Worker):
                 )
             )
 
+    @abstractmethod
     def process_batch(
         self,
-        batch_indices: torch.Tensor,
         batch_x: torch.Tensor,
         batch_y: torch.Tensor,
-        batch_attr: npt.NDArray,
-        method_names: List[str],
+        batch_attr: torch.Tensor,
     ):
         raise NotImplementedError
 
@@ -97,7 +95,6 @@ class GroupedMetricWorker(MetricWorker):
             batch_y = batch_y.to(self.device)
 
             batch_result = self.process_batch(
-                batch_indices,
                 batch_x,
                 batch_y,
                 batch_attr,
@@ -109,11 +106,11 @@ class GroupedMetricWorker(MetricWorker):
                 )
             )
 
+    @abstractmethod
     def process_batch(
         self,
-        batch_indices: torch.Tensor,
         batch_x: torch.Tensor,
         batch_y: torch.Tensor,
-        batch_attr: npt.NDArray,
+        batch_attr: Dict[str, torch.Tensor],
     ):
         raise NotImplementedError

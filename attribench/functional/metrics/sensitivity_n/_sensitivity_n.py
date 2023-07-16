@@ -4,7 +4,7 @@ import warnings
 import torch
 import numpy.typing as npt
 from typing import Callable, List, Mapping, Dict, Tuple
-from attribench.masking import Masker
+from attribench.masking import Masker, ImageMasker
 from torch.utils.data import DataLoader
 from attribench.data import AttributionsDataset
 from attribench._activation_fns import ACTIVATION_FNS
@@ -12,7 +12,7 @@ from ._dataset import SensitivityNDataset, SegSensNDataset
 from attribench._segmentation import segment_attributions
 from attribench._stat import corrcoef
 from attribench.result import SensitivityNResult
-from attribench.result._batch_result import BatchResult
+from attribench.result._grouped_batch_result import GroupedBatchResult
 
 
 def _get_orig_output(
@@ -69,7 +69,7 @@ def _compute_out_diffs(
 
 def _compute_correlations(
     method_names: List[str],
-    batch_attr: Dict[str, npt.NDArray],
+    batch_attr: Dict[str, torch.Tensor],
     ds: SensitivityNDataset | SegSensNDataset,
     segmented: bool,
     removed_indices: Dict[int, npt.NDArray],
@@ -87,8 +87,9 @@ def _compute_correlations(
     # Compute correlations for all methods
     # TODO can we use joblib here to compute this in parallel?
     for method_name in method_names:
-        attrs = batch_attr[method_name]
+        attrs = batch_attr[method_name].cpu().numpy()
         if segmented:
+            assert isinstance(ds, SegSensNDataset)
             attrs = segment_attributions(
                 ds.segmented_images.cpu().numpy(), attrs
             )
@@ -116,7 +117,7 @@ def _sens_n_batch(
     samples: torch.Tensor,
     labels: torch.Tensor,
     model: Callable,
-    attrs: Dict[str, npt.NDArray],
+    attrs: Dict[str, torch.Tensor],
     maskers: Mapping[str, Masker],
     activation_fns: List[str],
     n_range: npt.NDArray,
@@ -133,6 +134,7 @@ def _sens_n_batch(
         # Create pseudo-dataset to generate perturbed samples
         if segmented:
             ds = SegSensNDataset(n_range, num_subsets, samples)
+            assert isinstance(masker, ImageMasker)
             ds.set_masker(masker)
         else:
             ds = SensitivityNDataset(n_range, num_subsets, samples, masker)
@@ -260,7 +262,6 @@ def sensitivity_n(
         batch_x,
         batch_y,
         batch_attr,
-        method_names,
     ) in dataloader:
         batch_x = batch_x.to(device)
         batch_y = batch_y.to(device)
@@ -275,5 +276,5 @@ def sensitivity_n(
             num_subsets,
             segmented,
         )
-        result.add(BatchResult(batch_indices, batch_result, method_names))
+        result.add(GroupedBatchResult(batch_indices, batch_result))
     return result

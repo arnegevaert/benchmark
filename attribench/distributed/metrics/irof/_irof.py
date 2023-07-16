@@ -1,100 +1,10 @@
-from typing import Callable, Union, Tuple, List, Optional, Mapping
-import torch
-from torch import multiprocessing as mp
-from torch.utils.data import DataLoader
-from attribench.distributed._message import PartialResultMessage
-
-from attribench.masking import ImageMasker, Masker
+from typing import Union, Tuple, List, Optional, Mapping
+from attribench.masking import ImageMasker
 from attribench._model_factory import ModelFactory
-from ..._worker import Worker
-from ..._distributed_sampler import DistributedSampler
-from ..._message import PartialResultMessage
-from attribench.result._batch_result import BatchResult
-from ._deletion import Deletion
-from ._deletion_worker import DeletionWorker
+from ..._worker import Worker, WorkerConfig
+from ._irof_worker import IrofWorker
+from ..deletion._deletion import Deletion
 from attribench.data import AttributionsDataset
-from attribench.functional.metrics._irof import irof_batch
-
-from multiprocessing.synchronize import Event
-
-
-class IrofWorker(DeletionWorker):
-    def __init__(
-        self,
-        result_queue: mp.Queue,
-        rank: int,
-        world_size: int,
-        all_processes_done: Event,
-        model_factory: ModelFactory,
-        dataset: AttributionsDataset,
-        batch_size: int,
-        maskers: Mapping[str, ImageMasker],
-        activation_fns: List[str],
-        mode: str = "morf",
-        start: float = 0,
-        stop: float = 1,
-        num_steps: int = 100,
-        result_handler: Callable[[PartialResultMessage], None] | None = None,
-    ):
-        super().__init__(
-            result_queue,
-            rank,
-            world_size,
-            all_processes_done,
-            model_factory,
-            dataset,
-            batch_size,
-            maskers,
-            activation_fns,
-            mode,
-            start,
-            stop,
-            num_steps,
-            result_handler,
-        )
-        self.maskers = maskers
-
-    def work(self):
-        sampler = DistributedSampler(
-            self.dataset, self.world_size, self.rank, shuffle=False
-        )
-        dataloader = DataLoader(
-            self.dataset,
-            sampler=sampler,
-            batch_size=self.batch_size,
-            num_workers=4,
-        )
-        device = torch.device(self.rank)
-        model = self.model_factory()
-        model.to(device)
-
-        for (
-            batch_indices,
-            batch_x,
-            batch_y,
-            batch_attr,
-            method_names,
-        ) in dataloader:
-            batch_x = batch_x.to(device)
-            batch_y = batch_y.to(device)
-            batch_result = irof_batch(
-                batch_x,
-                batch_y,
-                model,
-                batch_attr.numpy(),
-                self.maskers,
-                self.activation_fns,
-                self.mode,
-                self.start,
-                self.stop,
-                self.num_steps,
-            )
-            self.send_result(
-                PartialResultMessage(
-                    self.rank,
-                    BatchResult(batch_indices, batch_result, method_names),
-                )
-            )
 
 
 class Irof(Deletion):
@@ -191,13 +101,10 @@ class Irof(Deletion):
         self.maskers = maskers
 
     def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: Event
+        self, worker_config: WorkerConfig
     ) -> Worker:
         return IrofWorker(
-            queue,
-            rank,
-            self.world_size,
-            all_processes_done,
+            worker_config,
             self.model_factory,
             self.dataset,
             self.batch_size,
@@ -207,5 +114,4 @@ class Irof(Deletion):
             self._start,
             self.stop,
             self.num_steps,
-            self._handle_result if self.world_size == 1 else None,
         )

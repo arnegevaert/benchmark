@@ -1,11 +1,12 @@
+import warnings
+from numpy import typing as npt
 from attribench.result import MaxSensitivityResult
-from attribench.result._batch_result import BatchResult
+from attribench.result._grouped_batch_result import GroupedBatchResult
 from typing import Dict
-from torch.utils.data import Dataset
+from attribench.data import AttributionsDataset
 import torch
 from attribench._attribution_method import AttributionMethod
 from torch.utils.data import DataLoader
-from attribench.data import IndexDataset
 import math
 
 
@@ -14,14 +15,20 @@ def _normalize_attrs(attrs):
     return flattened / torch.norm(flattened, dim=1, p=math.inf, keepdim=True)
 
 
-def max_sensitivity_batch(
+def _max_sensitivity_batch(
     batch_x: torch.Tensor,
     batch_y: torch.Tensor,
+    batch_attr: Dict[str, torch.Tensor],
     method_dict: Dict[str, AttributionMethod],
     num_perturbations: int,
     radius: float,
     device: torch.device,
 ):
+    if set(method_dict.keys()) != set(batch_attr.keys()):
+        raise ValueError(
+            "Method dictionary and batch attributions dictionary"
+            " must have the same keys."
+        )
     result: Dict[str, torch.Tensor] = {
         method_name: torch.zeros(1) for method_name in method_dict.keys()
     }
@@ -30,7 +37,7 @@ def max_sensitivity_batch(
 
     # Compute Max-Sensitivity for each method
     for method_name, method in method_dict.items():
-        attrs = _normalize_attrs(method(batch_x, batch_y).detach()).cpu()
+        attrs = _normalize_attrs(batch_attr[method_name])
         diffs = []
 
         for _ in range(num_perturbations):
@@ -56,7 +63,7 @@ def max_sensitivity_batch(
 
 
 def max_sensitivity(
-    dataset: Dataset,
+    dataset: AttributionsDataset,
     method_dict: Dict[str, AttributionMethod],
     batch_size: int,
     num_perturbations: int,
@@ -90,7 +97,13 @@ def max_sensitivity(
     device : torch.device, optional
         Device to use, by default `torch.device("cpu")`.
     """
-    index_dataset = IndexDataset(dataset)
+    if not dataset.group_attributions:
+        warnings.warn(
+            "Sensitivity-n expects a dataset group_attributions==True."
+            "Setting to True."
+        )
+        dataset.group_attributions = True
+
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,
@@ -101,15 +114,19 @@ def max_sensitivity(
     method_names = list(method_dict.keys())
     result = MaxSensitivityResult(
         method_names,
-        num_samples=len(index_dataset),
+        num_samples=len(dataset),
     )
-    for batch_indices, batch_x, batch_y in dataloader:
+    for batch_indices, batch_x, batch_y, batch_attr in dataloader:
         batch_x = batch_x.to(device)
         batch_y = batch_y.to(device)
 
-        batch_result = max_sensitivity_batch(
-            batch_x, batch_y, method_dict, num_perturbations, radius, device
+        batch_result = _max_sensitivity_batch(
+            batch_x,
+            batch_y,
+            batch_attr,
+            method_dict,
+            num_perturbations,
+            radius,
+            device,
         )
-        result.add(
-            BatchResult(batch_indices, batch_result, list(method_names))
-        )
+        result.add(GroupedBatchResult(batch_indices, batch_result))

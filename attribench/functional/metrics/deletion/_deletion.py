@@ -15,7 +15,7 @@ def _deletion_batch(
     samples: torch.Tensor,
     labels: torch.Tensor,
     model: Callable,
-    attrs: npt.NDArray,
+    attrs: torch.Tensor,
     maskers: Mapping[str, Masker],
     activation_fns: List[str],
     mode: str,
@@ -110,8 +110,8 @@ def deletion(
 
     result = DeletionResult(
         dataset.method_names,
-        tuple(maskers.keys()),
-        tuple(activation_fns),
+        list(maskers.keys()),
+        activation_fns,
         mode,
         dataset.num_samples,
         num_steps,
@@ -130,7 +130,7 @@ def deletion(
             batch_x,
             batch_y,
             model,
-            batch_attr.numpy(),
+            batch_attr,
             maskers,
             activation_fns,
             mode,

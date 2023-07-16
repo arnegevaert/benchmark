@@ -22,8 +22,8 @@ class ImageMasker(Masker):
     def set_batch(
         self,
         samples: torch.Tensor,
-        attributions: np.ndarray = None,
-        segmented_samples: torch.Tensor = None,
+        attributions: torch.Tensor | None = None,
+        segmented_samples: torch.Tensor | None = None,
     ):
         if attributions is not None and not self._check_attribution_shape(
             samples, attributions

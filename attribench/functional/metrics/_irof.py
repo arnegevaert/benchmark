@@ -13,11 +13,11 @@ from attribench.result._deletion_result import DeletionResult
 from attribench.result._batch_result import BatchResult
 
 
-def irof_batch(
+def _irof_batch(
     samples: torch.Tensor,
     labels: torch.Tensor,
     model: nn.Module,
-    attrs: npt.NDArray,
+    attrs: torch.Tensor,
     maskers: Mapping[str, ImageMasker],
     activation_fns: List[str],
     mode: str,
@@ -108,10 +108,11 @@ def irof(
 
     result = DeletionResult(
         dataset.method_names,
-        tuple(maskers.keys()),
-        tuple(activation_fns),
+        list(maskers.keys()),
+        activation_fns,
         mode,
-        shape=(dataset.num_samples, num_steps),
+        num_samples=dataset.num_samples,
+        num_steps=num_steps,
     )
 
     for (
@@ -123,11 +124,11 @@ def irof(
     ) in dataloader:
         batch_x = batch_x.to(device)
         batch_y = batch_y.to(device)
-        batch_result = irof_batch(
+        batch_result = _irof_batch(
             batch_x,
             batch_y,
             model,
-            batch_attr.numpy(),
+            batch_attr,
             maskers,
             activation_fns,
             mode,

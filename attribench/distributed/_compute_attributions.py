@@ -1,18 +1,16 @@
 from ._message import PartialResultMessage
 from ._distributed_computation import DistributedComputation
 from ._distributed_sampler import DistributedSampler
-from ._worker import Worker
+from ._worker import Worker, WorkerConfig
 from attribench._model_factory import ModelFactory
 
 from attribench._method_factory import MethodFactory
 from attribench.data import AttributionsDatasetWriter, IndexDataset
-import torch.multiprocessing as mp
 from torch.utils.data import Dataset, DataLoader
-from typing import Callable, Tuple, Optional
+from typing import Tuple, Optional
 import torch
 from numpy import typing as npt
 from tqdm import tqdm
-from multiprocessing.synchronize import Event
 
 
 class AttributionResult:
@@ -27,25 +25,13 @@ class AttributionResult:
 class AttributionsWorker(Worker):
     def __init__(
         self,
-        result_queue: mp.Queue,
-        rank: int,
-        world_size: int,
-        all_processes_done: Event,
+        worker_config: WorkerConfig,
         model_factory: ModelFactory,
         method_factory: MethodFactory,
         dataset: IndexDataset,
         batch_size: int,
-        result_handler: Optional[
-            Callable[[PartialResultMessage], None]
-        ] = None,
     ):
-        super().__init__(
-            result_queue,
-            rank,
-            world_size,
-            all_processes_done,
-            result_handler,
-        )
+        super().__init__(worker_config)
         self.batch_size = batch_size
         self.dataset = dataset
         self.method_factory = method_factory
@@ -53,7 +39,10 @@ class AttributionsWorker(Worker):
 
     def work(self):
         sampler = DistributedSampler(
-            self.dataset, self.world_size, self.rank, shuffle=False
+            self.dataset,
+            self.worker_config.world_size,
+            self.worker_config.rank,
+            shuffle=False,
         )
         dataloader = DataLoader(
             self.dataset,
@@ -62,7 +51,7 @@ class AttributionsWorker(Worker):
             num_workers=4,
             pin_memory=True,
         )
-        device = torch.device(self.rank)
+        device = torch.device(self.worker_config.rank)
         model = self.model_factory()
         model.to(device)
         method_dict = self.method_factory(model)
@@ -78,7 +67,9 @@ class AttributionsWorker(Worker):
                         attrs.cpu().numpy(),
                         method_name,
                     )
-                    self.send_result(PartialResultMessage(self.rank, result))
+                    self.worker_config.send_result(
+                        PartialResultMessage(self.worker_config.rank, result)
+                    )
 
 
 class ComputeAttributions(DistributedComputation):
@@ -134,21 +125,20 @@ class ComputeAttributions(DistributedComputation):
     def run(self):
         self.prog = tqdm(total=len(self.dataset) * len(self.method_factory))
         super().run()
+    
+    def _cleanup(self):
+        if self.prog is not None:
+            self.prog.close()
 
     def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: Event
+        self, worker_config: WorkerConfig
     ) -> Worker:
-        result_handler = self._handle_result if self.world_size == 1 else None
         return AttributionsWorker(
-            queue,
-            rank,
-            self.world_size,
-            all_processes_done,
+            worker_config,
             self.model_factory,
             self.method_factory,
             self.dataset,
             self.batch_size,
-            result_handler,
         )
 
     def _handle_result(

@@ -1,23 +1,20 @@
-from torch import multiprocessing as mp
 import numpy as np
-from typing import Callable, Dict, Optional, List
+from typing import Dict, List
+
+import torch
 from attribench.data import AttributionsDataset
 from attribench.masking import Masker
-from .._metric_worker import MetricWorker
-from attribench.result._grouped_batch_result import GroupedBatchResult
-from ..._message import PartialResultMessage
+from .._metric_worker import GroupedMetricWorker, WorkerConfig
 from attribench._model_factory import ModelFactory
-from attribench.functional.metrics.sensitivity_n._sensitivity_n import _sens_n_batch
-from multiprocessing.synchronize import Event
+from attribench.functional.metrics.sensitivity_n._sensitivity_n import (
+    _sens_n_batch,
+)
 
 
-class SensitivityNWorker(MetricWorker):
+class SensitivityNWorker(GroupedMetricWorker):
     def __init__(
         self,
-        result_queue: mp.Queue,
-        rank: int,
-        world_size: int,
-        all_processes_done: Event,
+        worker_config: WorkerConfig,
         model_factory: ModelFactory,
         dataset: AttributionsDataset,
         batch_size: int,
@@ -28,20 +25,8 @@ class SensitivityNWorker(MetricWorker):
         maskers: Dict[str, Masker],
         activation_fns: List[str],
         segmented=False,
-        result_handler: Optional[
-            Callable[[PartialResultMessage], None]
-        ] = None,
     ):
-        super().__init__(
-            result_queue,
-            rank,
-            world_size,
-            all_processes_done,
-            model_factory,
-            dataset,
-            batch_size,
-            result_handler,
-        )
+        super().__init__(worker_config, model_factory, dataset, batch_size)
         self.dataset = dataset
         self.activation_fns = activation_fns
         self.maskers: Dict[str, Masker] = maskers
@@ -54,27 +39,20 @@ class SensitivityNWorker(MetricWorker):
             self.min_subset_size, self.max_subset_size, self.num_steps
         )
 
-    def work(self):
-        model = self._get_model()
-
-        for batch_indices, batch_x, batch_y, batch_attr in self.dataloader:
-            batch_x = batch_x.to(self.device)
-            batch_y = batch_y.to(self.device)
-
-            batch_result = _sens_n_batch(
-                batch_x,
-                batch_y,
-                model,
-                batch_attr,
-                self.maskers,
-                self.activation_fns,
-                self.n_range,
-                self.num_subsets,
-                self.segmented,
-            )
-
-            self.send_result(
-                PartialResultMessage(
-                    self.rank, GroupedBatchResult(batch_indices, batch_result)
-                )
-            )
+    def process_batch(
+        self,
+        batch_x: torch.Tensor,
+        batch_y: torch.Tensor,
+        batch_attr: Dict[str, torch.Tensor],
+    ):
+        return _sens_n_batch(
+            batch_x,
+            batch_y,
+            self.model,
+            batch_attr,
+            self.maskers,
+            self.activation_fns,
+            self.n_range,
+            self.num_subsets,
+            self.segmented,
+        )

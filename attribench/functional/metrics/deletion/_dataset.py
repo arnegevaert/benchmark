@@ -31,7 +31,7 @@ class DeletionDataset(MaskingDataset):
         stop: float,
         num_steps: int,
         samples: torch.Tensor,
-        attrs: np.ndarray,
+        attrs: torch.Tensor,
         masker: Masker,
     ):
         super().__init__(mode, start, stop, num_steps)
@@ -91,5 +91,5 @@ class IrofDataset(MaskingDataset):
             else self.masker.mask_bot(to_mask)
         )
 
-    def set_attrs(self, attrs: np.ndarray):
+    def set_attrs(self, attrs: torch.Tensor):
         self.masker.set_batch(self.samples, attrs, self.segmented_images)

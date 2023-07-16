@@ -1,6 +1,6 @@
 from ._metric import Metric
 from .deletion._deletion import Deletion
-from .deletion._insertion import Insertion
+from .insertion._insertion import Insertion
 from .impact_coverage._impact_coverage import ImpactCoverage
 from .deletion._irof import Irof
 from .infidelity._infidelity import Infidelity

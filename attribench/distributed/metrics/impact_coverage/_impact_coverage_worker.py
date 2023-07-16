@@ -1,11 +1,9 @@
 from attribench.data import IndexDataset
-import re
 from itertools import cycle
 import os
 from ..._message import PartialResultMessage
-from .._metric_worker import MetricWorker
-from torch import multiprocessing as mp
-from typing import Callable, Optional
+from .._metric_worker import GroupedMetricWorker, WorkerConfig
+from typing import Callable
 from torch import nn
 
 from attribench.result._grouped_batch_result import GroupedBatchResult
@@ -13,31 +11,21 @@ from attribench._method_factory import MethodFactory
 from attribench.functional.metrics._impact_coverage import impact_coverage_batch
 
 
-class ImpactCoverageWorker(MetricWorker):
+class ImpactCoverageWorker(GroupedMetricWorker):
     def __init__(
         self,
-        result_queue: mp.Queue,
-        rank: int,
-        world_size: int,
-        all_processes_done,
+        worker_config: WorkerConfig,
         model_factory: Callable[[], nn.Module],
-        method_factory: MethodFactory,
         dataset: IndexDataset,
         batch_size: int,
+        method_factory: MethodFactory,
         patch_folder: str,
-        result_handler: Optional[
-            Callable[[PartialResultMessage], None]
-        ] = None,
     ):
         super().__init__(
-            result_queue,
-            rank,
-            world_size,
-            all_processes_done,
+            worker_config,
             model_factory,
             dataset,
             batch_size,
-            result_handler,
         )
         self.patch_folder = patch_folder
         self.method_factory = method_factory
@@ -47,18 +35,19 @@ class ImpactCoverageWorker(MetricWorker):
             if filename.endswith(".pt")
         ]
         self.patch_names_cycle = cycle(patch_names)
+    
+    def setup(self):
+        self.model = self._get_model()
+        self.method_dict = self.method_factory(self.model)
 
     def work(self):
-        model = self._get_model()
-
-        # Get method dictionary
-        method_dict = self.method_factory(model)
+        self.setup()
 
         for batch_indices, batch_x, batch_y in self.dataloader:
             # Compute batch result
             batch_result = impact_coverage_batch(
-                model,
-                method_dict,
+                self.model,
+                self.method_dict,
                 batch_x,
                 batch_y,
                 self.patch_folder,
@@ -66,8 +55,9 @@ class ImpactCoverageWorker(MetricWorker):
                 self.device,
             )
             # Return batch result
-            self.send_result(
+            self.worker_config.send_result(
                 PartialResultMessage(
-                    self.rank, GroupedBatchResult(batch_indices, batch_result)
+                    self.worker_config.rank,
+                    GroupedBatchResult(batch_indices, batch_result)
                 )
             )

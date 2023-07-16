@@ -1,14 +1,12 @@
+from abc import abstractmethod
 from attribench.data import IndexDataset
 from tqdm import tqdm
-from torch import nn
-import torch.multiprocessing as mp
 
 from .._message import PartialResultMessage
 from .._distributed_computation import DistributedComputation
-from ._metric_worker import MetricWorker
+from ._metric_worker import MetricWorker, WorkerConfig
 from attribench.result._metric_result import MetricResult
 from typing import Tuple, Optional
-from multiprocessing.synchronize import Event
 from attribench._model_factory import ModelFactory
 
 
@@ -29,9 +27,8 @@ class Metric(DistributedComputation):
         self.prog = None  # TQDM progress bar
         self._result: Optional[MetricResult] = None
 
-    def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: Event
-    ) -> MetricWorker:
+    @abstractmethod
+    def _create_worker(self, worker_config: WorkerConfig) -> MetricWorker:
         raise NotImplementedError
 
     def _cleanup(self):
