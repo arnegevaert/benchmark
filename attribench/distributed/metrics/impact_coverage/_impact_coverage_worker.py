@@ -2,7 +2,7 @@ from attribench.data import IndexDataset
 from itertools import cycle
 import os
 from ..._message import PartialResultMessage
-from .._metric_worker import GroupedMetricWorker, WorkerConfig
+from .._metric_worker import MetricWorker, WorkerConfig
 from typing import Callable
 from torch import nn
 
@@ -13,7 +13,7 @@ from attribench.functional.metrics._impact_coverage import (
 )
 
 
-class ImpactCoverageWorker(GroupedMetricWorker):
+class ImpactCoverageWorker(MetricWorker):
     def __init__(
         self,
         worker_config: WorkerConfig,

@@ -4,10 +4,14 @@ from .._worker import Worker, WorkerConfig
 from .._message import PartialResultMessage
 from attribench.result._batch_result import BatchResult
 from attribench.result._grouped_batch_result import GroupedBatchResult
-from typing import Callable, List, Dict
-from numpy import typing as npt
+from typing import Callable, Dict
+from attribench.data.attributions_dataset._attributions_dataset import (
+    _GroupedAttributionsDataset,
+    AttributionsDataset
+)
+from attribench.data import IndexDataset
 from torch import nn
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 import torch
 
 
@@ -16,7 +20,7 @@ class MetricWorker(Worker):
         self,
         worker_config: WorkerConfig,
         model_factory: Callable[[], nn.Module],
-        dataset: Dataset,
+        dataset: IndexDataset,
         batch_size: int,
     ):
         super().__init__(worker_config)
@@ -82,6 +86,16 @@ class MetricWorker(Worker):
 
 
 class GroupedMetricWorker(MetricWorker):
+    def __init__(
+        self,
+        worker_config: WorkerConfig,
+        model_factory: Callable[[], nn.Module],
+        dataset: AttributionsDataset,
+        batch_size: int,
+    ):
+        super().__init__(worker_config, model_factory, dataset, batch_size)
+        self.dataset = _GroupedAttributionsDataset(dataset)
+        
     def work(self):
         self.setup()
 

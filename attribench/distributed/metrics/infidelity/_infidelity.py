@@ -1,5 +1,4 @@
 from .._metric import Metric
-import warnings
 from typing import Dict, Tuple, Optional, List
 from attribench.data import AttributionsDataset
 from ._infidelity_worker import InfidelityWorker
@@ -85,12 +84,6 @@ class Infidelity(Metric):
         super().__init__(
             model_factory, dataset, batch_size, address, port, devices
         )
-        if not dataset.group_attributions:
-            warnings.warn(
-                "Infidelity expects a dataset with group_attributions==True."
-                "Setting to True."
-            )
-            dataset.group_attributions = True
         self.dataset = dataset
         self.activation_fns = activation_fns
         self.num_perturbations = num_perturbations

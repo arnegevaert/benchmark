@@ -1,14 +1,12 @@
 from typing import Optional, List
-from .._typing import check_is_dataset
+from .._typing import _check_is_dataset
 import h5py
 from numpy import typing as npt
 import numpy as np
 
 
 class HDF5DatasetWriter:
-    def __init__(
-        self, path: str, num_samples: int, sample_shape: List[int]
-    ):
+    def __init__(self, path: str, num_samples: int, sample_shape: List[int]):
         self.path: str = path
         self.file: Optional[h5py.File] = None
         self.num_samples = num_samples
@@ -42,8 +40,8 @@ class HDF5DatasetWriter:
         if self.file is None:
             self.file = h5py.File(self.path, "a")
 
-        samples_dataset = check_is_dataset(self.file["samples"])
-        labels_dataset = check_is_dataset(self.file["labels"])
+        samples_dataset = _check_is_dataset(self.file["samples"])
+        labels_dataset = _check_is_dataset(self.file["labels"])
 
         samples_dataset[
             self.head : self.head + samples.shape[0], ...

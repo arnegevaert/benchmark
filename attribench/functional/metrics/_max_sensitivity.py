@@ -1,9 +1,10 @@
-import warnings
-from numpy import typing as npt
 from attribench.result import MaxSensitivityResult
 from attribench.result._grouped_batch_result import GroupedBatchResult
 from typing import Dict
 from attribench.data import AttributionsDataset
+from attribench.data.attributions_dataset._attributions_dataset import (
+    _GroupedAttributionsDataset,
+)
 import torch
 from attribench._attribution_method import AttributionMethod
 from torch.utils.data import DataLoader
@@ -97,15 +98,9 @@ def max_sensitivity(
     device : torch.device, optional
         Device to use, by default `torch.device("cpu")`.
     """
-    if not dataset.group_attributions:
-        warnings.warn(
-            "Sensitivity-n expects a dataset group_attributions==True."
-            "Setting to True."
-        )
-        dataset.group_attributions = True
-
+    grouped_dataset = _GroupedAttributionsDataset(dataset)
     dataloader = DataLoader(
-        dataset,
+        grouped_dataset,
         batch_size=batch_size,
         num_workers=4,
         pin_memory=True,
@@ -114,7 +109,7 @@ def max_sensitivity(
     method_names = list(method_dict.keys())
     result = MaxSensitivityResult(
         method_names,
-        num_samples=len(dataset),
+        num_samples=len(grouped_dataset),
     )
     for batch_indices, batch_x, batch_y, batch_attr in dataloader:
         batch_x = batch_x.to(device)

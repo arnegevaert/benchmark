@@ -1,5 +1,4 @@
 from .._metric import Metric
-import warnings
 from typing import Dict, Union, Tuple, List
 from attribench.data import AttributionsDataset
 from attribench.masking import Masker
@@ -95,12 +94,6 @@ class SensitivityN(Metric):
         super().__init__(
             model_factory, dataset, batch_size, address, port, devices
         )
-        if not dataset.group_attributions:
-            warnings.warn(
-                "Sensitivity-n expects a dataset group_attributions==True."
-                "Setting to True."
-            )
-            dataset.group_attributions = True
         if isinstance(activation_fns, str):
             activation_fns = [activation_fns]
         self.activation_fns: List[str] = activation_fns

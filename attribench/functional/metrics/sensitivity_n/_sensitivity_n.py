@@ -1,6 +1,5 @@
 import numpy as np
 from torch import nn
-import warnings
 import torch
 import numpy.typing as npt
 from typing import Callable, List, Mapping, Dict, Tuple
@@ -13,6 +12,9 @@ from attribench._segmentation import segment_attributions
 from attribench._stat import corrcoef
 from attribench.result import SensitivityNResult
 from attribench.result._grouped_batch_result import GroupedBatchResult
+from attribench.data.attributions_dataset._attributions_dataset import (
+    _GroupedAttributionsDataset,
+)
 
 
 def _get_orig_output(
@@ -224,19 +226,14 @@ def sensitivity_n(
     """
     if isinstance(activation_fns, str):
         activation_fns = [activation_fns]
-
-    if not dataset.group_attributions:
-        warnings.warn(
-            "Sensitivity-n expects a dataset group_attributions==True."
-            "Setting to True."
-        )
-        dataset.group_attributions = True
+    
 
     model.to(device)
     model.eval()
 
+    grouped_dataset = _GroupedAttributionsDataset(dataset)
     dataloader = DataLoader(
-        dataset, batch_size=batch_size, num_workers=4, pin_memory=True
+        grouped_dataset, batch_size=batch_size, num_workers=4, pin_memory=True
     )
 
     result = SensitivityNResult(

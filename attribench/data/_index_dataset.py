@@ -3,7 +3,18 @@ from torch.utils.data import Dataset
 
 
 class IndexDataset(Dataset):
+    """Wraps a dataset to return the index of the sample as well.
+    Used internally to keep track of the index of a sample in a dataset.
+    """
+
     def __init__(self, dataset: Dataset):
+        """Create a new IndexDataset.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            The PyTorch Dataset to wrap.
+        """
         self.dataset: Dataset = dataset
 
     def __len__(self):

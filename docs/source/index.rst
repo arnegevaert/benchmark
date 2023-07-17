@@ -13,7 +13,7 @@ explanations of machine learning models.
 
 Install
 -------
-To install AttriBench, run the following command::
+Attribench can be installed from [PyPI](https://pypi.org/) as follows::
    
       pip install attribench
 
@@ -24,11 +24,3 @@ Contents
 
    Getting Started <getting_started>
    API Reference <general_api>
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

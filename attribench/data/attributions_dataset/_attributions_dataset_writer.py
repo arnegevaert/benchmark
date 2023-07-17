@@ -1,5 +1,5 @@
 from typing import Tuple
-from .._typing import check_is_dataset
+from .._typing import _check_is_dataset
 import h5py
 from numpy import typing as npt
 
@@ -21,5 +21,5 @@ class AttributionsDatasetWriter:
                 method_name, shape=(self.num_samples, *self.sample_shape)
             )
         else:
-            dataset = check_is_dataset(self.file[method_name])
+            dataset = _check_is_dataset(self.file[method_name])
         dataset[indices, ...] = attributions

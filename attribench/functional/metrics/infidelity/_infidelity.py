@@ -1,7 +1,10 @@
 from torch import nn
 import torch
-from typing import Dict, Tuple, List
-from attribench.data import AttributionsDataset
+from typing import Dict, List
+from attribench.data.attributions_dataset._attributions_dataset import (
+    _GroupedAttributionsDataset,
+    AttributionsDataset,
+)
 from ._perturbation_generator import PerturbationGenerator
 from torch.utils.data import DataLoader
 from attribench._activation_fns import ACTIVATION_FNS
@@ -21,7 +24,7 @@ def _infidelity_batch(
 ):
     batch_x = batch_x.to(device)
     batch_y = batch_y.to(device)
-    method_names: Tuple[str] = tuple(batch_attr.keys())
+    method_names: List[str] = list(batch_attr.keys())
 
     # method_name -> perturbation_generator
     # -> activation_fn -> [batch_size, 1]
@@ -192,7 +195,8 @@ def infidelity(
     device : torch.device, optional
         Device to use, by default `torch.device("cpu")`
     """
-    dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=4)
+    grouped_dataset = _GroupedAttributionsDataset(dataset)
+    dataloader = DataLoader(grouped_dataset, batch_size=batch_size, num_workers=4)
     result = InfidelityResult(
         dataset.method_names,
         list(perturbation_generators.keys()),
