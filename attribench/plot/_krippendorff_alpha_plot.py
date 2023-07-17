@@ -1,15 +1,13 @@
 import pandas as pd
 from krippendorff import krippendorff
 from scipy.stats import rankdata
-from typing import Dict, Tuple
 import matplotlib.pyplot as plt
+from attribench.plot import Plot
+from matplotlib.figure import Figure
 
 
-class KrippendorffAlphaPlot:
-    def __init__(self, dfs: Dict[str, Tuple[pd.DataFrame, bool]]):
-        self.dfs = dfs
-
-    def render(self, title=None, fontsize=20, figsize=(10, 10)):
+class KrippendorffAlphaPlot(Plot):
+    def render(self, title=None, figsize=(10, 10), fontsize=20) -> Figure:
         k_a = {
             metric_name: krippendorff.alpha(
                 rankdata(df.to_numpy(), axis=1), level_of_measurement="ordinal"
@@ -21,6 +19,7 @@ class KrippendorffAlphaPlot:
         plt.xticks(fontsize=fontsize)
         plt.yticks(fontsize=fontsize)
         k_a.plot.barh(figsize=figsize, ax=ax)
-        ax.set_title(title)
+        if title is not None:
+            ax.set_title(title)
         fig.tight_layout()
         return fig

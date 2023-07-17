@@ -1,21 +1,18 @@
-from typing import Dict, Tuple
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 from scipy.cluster.hierarchy import linkage
+from attribench.plot import Plot
+from matplotlib.figure import Figure
 
 
-class ClusterPlot:
+class ClusterPlot(Plot):
     """
     Clustermap of the median values of the metrics.
     Allows the user to see which metrics and/or methods behave similarly.
     """
-    def __init__(self, dfs: Dict[str, Tuple[pd.DataFrame, bool]]):
-        self.dfs = dfs
-
-    def render(self, figsize=(7, 7)):
+    def render(self, figsize=(7, 7)) -> Figure:
         medians = {}
         for metric_name, (df, higher_is_better) in self.dfs.items():
             medians[metric_name] = (

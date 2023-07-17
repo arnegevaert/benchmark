@@ -3,33 +3,9 @@
 # https://seaborn.pydata.org/generated/seaborn.heatmap.html
 import seaborn as sns
 from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
 import numpy as np
 import math
-
-
-def effect_size_barplot(effect_sizes, pvalues, labels, alpha, figsize):
-    fig, axs = plt.subplots(ncols=2, gridspec_kw={"width_ratios": [4, 2]})
-
-    effect_sizes.plot.barh(figsize=figsize, ax=axs[0])
-    axs[0].legend(
-        labels,
-        loc="upper center",
-        bbox_to_anchor=(0.5, -0.05),
-        ncol=3,
-        fancybox=True,
-        shadow=True,
-    )
-    axs[1].pcolor(
-        pvalues < alpha, cmap="RdYlGn", edgecolor="black", vmin=0.0, vmax=1.0
-    )
-    axs[1].set_title(f"p < {alpha}")
-    axs[1].set_yticks([])
-    axs[1].set_xticks(np.arange(len(labels)) + 0.5)
-
-    axs[1].set_xticklabels(
-        labels, ha="right", rotation=45, rotation_mode="anchor"
-    )
-    return fig, axs
 
 
 def heatmap(
@@ -46,7 +22,7 @@ def heatmap(
     cbar=True,
     x_labels=None,
     y_labels=None,
-):
+) -> Figure:
     sns.set()
     fig = plt.figure(figsize=figsize)
     fig.suptitle(title, fontsize=16)

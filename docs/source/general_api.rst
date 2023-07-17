@@ -63,7 +63,15 @@ Plot
 .. autosummary::
     :toctree: generated
 
+    attribench.plot.Plot
+    attribench.plot.WilcoxonSummaryPlot
+    attribench.plot.InterMetricCorrelationPlot
+    attribench.plot.InterMethodCorrelationPlot
+    attribench.plot.ConvergencePlot
+    attribench.plot.KrippendorffAlphaPlot
     attribench.plot.ClusterPlot
+    attribench.plot.MADRatioPlot
+    attribench.plot.WilcoxonBarPlot
 
 Other
 -----

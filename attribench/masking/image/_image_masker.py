@@ -188,6 +188,7 @@ class ImageMasker(Masker):
     def mask_rand(
         self, k, return_indices=False
     ) -> torch.Tensor | Tuple[torch.Tensor, torch.Tensor]:
+        assert self.samples is not None
         if k == 0:
             return self.samples
         rng = np.random.default_rng()
@@ -205,7 +206,7 @@ class ImageMasker(Masker):
             ]
             masked_samples = self._mask_segments(indices)
         if return_indices:
-            return masked_samples, indices
+            return masked_samples, torch.tensor(indices)
         return masked_samples
 
     def _check_attribution_shape(

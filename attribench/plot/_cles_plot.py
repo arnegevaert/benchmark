@@ -1,15 +1,13 @@
 import pandas as pd
-from typing import Dict, Tuple
 from scipy import stats
 import matplotlib.pyplot as plt
 import seaborn as sns
+from matplotlib.figure import Figure
+from attribench.plot import Plot
 
 
-class CLESPlot:
-    def __init__(self, dfs: Dict[str, Tuple[pd.DataFrame, bool]]):
-        self.dfs = dfs
-
-    def render(self, method1, method2):
+class CLESPlot(Plot):
+    def render(self, method1, method2) -> Figure:
         result_cles = {}
         for key in self.dfs:
             df, higher_is_better = self.dfs[key]
