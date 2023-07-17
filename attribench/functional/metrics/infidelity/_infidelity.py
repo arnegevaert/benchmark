@@ -2,7 +2,7 @@ from torch import nn
 import torch
 from typing import Dict, List
 from attribench.data.attributions_dataset._attributions_dataset import (
-    _GroupedAttributionsDataset,
+    GroupedAttributionsDataset,
     AttributionsDataset,
 )
 from ._perturbation_generator import PerturbationGenerator
@@ -195,8 +195,10 @@ def infidelity(
     device : torch.device, optional
         Device to use, by default `torch.device("cpu")`
     """
-    grouped_dataset = _GroupedAttributionsDataset(dataset)
-    dataloader = DataLoader(grouped_dataset, batch_size=batch_size, num_workers=4)
+    grouped_dataset = GroupedAttributionsDataset(dataset)
+    dataloader = DataLoader(
+        grouped_dataset, batch_size=batch_size, num_workers=4
+    )
     result = InfidelityResult(
         dataset.method_names,
         list(perturbation_generators.keys()),

@@ -3,7 +3,7 @@ from attribench.result._grouped_batch_result import GroupedBatchResult
 from typing import Dict
 from attribench.data import AttributionsDataset
 from attribench.data.attributions_dataset._attributions_dataset import (
-    _GroupedAttributionsDataset,
+    GroupedAttributionsDataset,
 )
 import torch
 from attribench._attribution_method import AttributionMethod
@@ -98,7 +98,7 @@ def max_sensitivity(
     device : torch.device, optional
         Device to use, by default `torch.device("cpu")`.
     """
-    grouped_dataset = _GroupedAttributionsDataset(dataset)
+    grouped_dataset = GroupedAttributionsDataset(dataset)
     dataloader = DataLoader(
         grouped_dataset,
         batch_size=batch_size,

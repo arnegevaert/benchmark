@@ -6,8 +6,8 @@ from attribench.result._batch_result import BatchResult
 from attribench.result._grouped_batch_result import GroupedBatchResult
 from typing import Callable, Dict
 from attribench.data.attributions_dataset._attributions_dataset import (
-    _GroupedAttributionsDataset,
-    AttributionsDataset
+    GroupedAttributionsDataset,
+    AttributionsDataset,
 )
 from attribench.data import IndexDataset
 from torch import nn
@@ -94,8 +94,8 @@ class GroupedMetricWorker(MetricWorker):
         batch_size: int,
     ):
         super().__init__(worker_config, model_factory, dataset, batch_size)
-        self.dataset = _GroupedAttributionsDataset(dataset)
-        
+        self.dataset = GroupedAttributionsDataset(dataset)
+
     def work(self):
         self.setup()
 

@@ -102,11 +102,44 @@ def _parse_attributions_file(
 
 class AttributionsDataset(IndexDataset):
     """
-    (see functional interface for compute_attributions)
-    File
-    - method_1: ``[num_samples, *sample_shape]``
-    - method_2: ``[num_samples, *sample_shape]``
-    - ...
+    Represents a dataset containing attributions for a set of samples and
+    attribution methods.
+
+    The samples and labels can be given in two ways. Either a PyTorch
+    ``Dataset`` is passed to the ``samples`` argument
+    containing both the samples and the labels, or a Tensor is passed to the
+    ``samples`` argument and a Tensor is passed to the ``labels`` argument.
+
+    An AttributionsDataset can be constructed from a dictionary of attributions
+    or from an HDF5 file containing the attributions. 
+    If attributions are given using a dictionary, the dictionary must map
+    method names to Tensors containing the attributions for each sample. The
+    attributions must have the same shape for each method. The shape of the
+    attributions must be ``[num_samples, *sample_shape]``.
+
+    If attributions are given using an HDF5 file, the file must contain a
+    dataset for each attribution method. The dataset must have the same shape
+    for each method. The shape of the dataset must be
+    ``[num_samples, *sample_shape]``. The file must also contain an attribute
+    ``num_samples`` specifying the number of samples in the dataset.
+
+    A list of method names can be given using the ``methods`` argument. If
+    ``methods`` is None, all methods in the attributions dictionary or file
+    are used. Otherwise, only the methods in the ``methods`` list are used.
+
+    Attributions can be aggregated over some dimension by specifying the
+    aggregate_dim and aggregate_method arguments. The aggregate_dim argument
+    specifies the dimension over which to aggregate. The aggregate_method
+    argument specifies the method to use for aggregation. The aggregate_method
+    argument must be one of ``"mean"`` or ``"max_abs"``. Note that the
+    aggregate_dim argument is specified in terms of the shape of the
+    attributions, i.e. excluding the ``num_samples`` dimension.
+    
+    For example, if the
+    attributions have shape ``[num_samples, 3, 32, 32]``, then the
+    attributions can be aggregated over the channel dimension by setting
+    ``aggregate_dim=0``. The resulting attributions will have shape
+    ``[num_samples, 32, 32]``.
     """
 
     def __init__(
@@ -119,6 +152,38 @@ class AttributionsDataset(IndexDataset):
         aggregate_dim: int = 0,
         aggregate_method: str | None = None,
     ):
+        """Create a new AttributionsDataset.
+
+        Parameters
+        ----------
+        samples: Dataset | torch.Tensor
+            A Dataset containing samples and labels, or a Tensor containing the
+            samples for which attributions are given.
+        labels: torch.Tensor | None
+            A Tensor containing the labels for the samples.
+            Only used if samples is a Tensor.
+        attributions: Dict[str, torch.Tensor] | None
+            A dictionary mapping attribution method names to Tensors containing
+            the attributions for each sample. If None, a path to an HDF5 file
+            must be given.
+        methods: List[str] | None
+            A list of method names to use. If None, all methods in the
+            attributions dictionary are used.
+        path: str | None
+            Path to an HDF5 file containing the attributions.
+            If None, attributions must be given as a dictionary.
+        aggregate_dim: int
+            If not None, aggregate the attributions over the given dimension.
+        aggregate_method: str | None
+            If not None, aggregate the attributions using the given method.
+            Must be one of "mean" or "max_abs" or None.
+        
+        Raises
+        ------
+        ValueError
+            If attributions is None and path is None, or if labels is None and
+            samples is a Tensor.
+        """
         self.path = path
 
         # If samples and labels are given as Tensors, wrap them in a Dataset
@@ -191,7 +256,7 @@ class AttributionsDataset(IndexDataset):
         return self.num_samples * len(self.method_names)
 
 
-class _GroupedAttributionsDataset(Dataset):
+class GroupedAttributionsDataset(Dataset):
     def __init__(self, dataset: AttributionsDataset):
         super().__init__()
         self.dataset = dataset
