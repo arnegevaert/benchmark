@@ -6,12 +6,22 @@ import h5py
 
 class HDF5Dataset(Dataset):
     """
-    File
-    - samples: ``[num_samples, *sample_shape]``
-    - labels: ``[num_samples]``
+    Dataset stored in a HDF5 file.
+
+    The HDF5 file must contain the following datasets:
+
+    - ``samples: [num_samples, *sample_shape]``
+    - ``labels: [num_samples]``
     """
 
     def __init__(self, path: str):
+        """Create a new HDF5Dataset.
+
+        Parameters
+        ----------
+        path : str
+            Path to the HDF5 file.
+        """
         self.path = path
         self.file: h5py.File | None = None
         self._sample_shape: Tuple | None = None

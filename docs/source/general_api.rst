@@ -43,9 +43,7 @@ Data
 
     attribench.data.IndexDataset
     attribench.data.AttributionsDataset
-    attribench.data.AttributionsDatasetWriter
     attribench.data.HDF5Dataset
-    attribench.data.HDF5DatasetWriter
 
 Masking
 -------
