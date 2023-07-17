@@ -1,7 +1,7 @@
-﻿attribench.masking.ImageMasker
-==============================
+﻿attribench.masking.image.ImageMasker
+====================================
 
-.. currentmodule:: attribench.masking
+.. currentmodule:: attribench.masking.image
 
 .. autoclass:: ImageMasker
 
@@ -15,7 +15,6 @@
    
       ~ImageMasker.__init__
       ~ImageMasker.get_num_features
-      ~ImageMasker.initialize_baselines
       ~ImageMasker.mask_bot
       ~ImageMasker.mask_rand
       ~ImageMasker.mask_top

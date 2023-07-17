@@ -51,12 +51,12 @@ Masking
     :toctree: generated
 
     attribench.masking.Masker
-    attribench.masking.ConstantMasker
-    attribench.masking.RandomMasker
-    attribench.masking.SampleAverageMasker
+    attribench.masking.image.ImageMasker
+    attribench.masking.image.BlurringImageMasker
+    attribench.masking.image.ConstantImageMasker
+    attribench.masking.image.RandomImageMasker
+    attribench.masking.image.SampleAverageImageMasker
     attribench.masking.TabularMasker
-    attribench.masking.ImageMasker
-    attribench.masking.BlurringMasker
 
 Plot
 ----

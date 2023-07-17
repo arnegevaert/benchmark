@@ -1,5 +1,5 @@
 from typing import Union, Tuple, List, Optional, Mapping
-from attribench.masking import ImageMasker
+from attribench.masking.image import ImageMasker
 from attribench._model_factory import ModelFactory
 from ..._worker import Worker, WorkerConfig
 from ._irof_worker import IrofWorker

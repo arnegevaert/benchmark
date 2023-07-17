@@ -2,7 +2,8 @@ import numpy as np
 import torch
 
 from attribench._segmentation import segment_samples
-from attribench.masking import Masker, ImageMasker
+from attribench.masking import Masker
+from attribench.masking.image import ImageMasker
 
 
 class MaskingDataset:

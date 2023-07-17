@@ -1,6 +1,6 @@
 import torch
 from .._metric_worker import MetricWorker, WorkerConfig
-from typing import Dict, Mapping, List
+from typing import Mapping, List
 from attribench.masking import Masker
 from attribench.data import AttributionsDataset
 from attribench.functional.metrics.deletion._deletion import _deletion_batch

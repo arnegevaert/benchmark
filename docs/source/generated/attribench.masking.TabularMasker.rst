@@ -15,7 +15,6 @@
    
       ~TabularMasker.__init__
       ~TabularMasker.get_num_features
-      ~TabularMasker.initialize_baselines
       ~TabularMasker.mask_bot
       ~TabularMasker.mask_rand
       ~TabularMasker.mask_top

@@ -3,7 +3,8 @@ from torch import nn
 import torch
 import numpy.typing as npt
 from typing import Callable, List, Mapping, Dict, Tuple
-from attribench.masking import Masker, ImageMasker
+from attribench.masking import Masker
+from attribench.masking.image import ImageMasker
 from torch.utils.data import DataLoader
 from attribench.data import AttributionsDataset
 from attribench._activation_fns import ACTIVATION_FNS

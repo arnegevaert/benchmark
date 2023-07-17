@@ -1,15 +1,16 @@
-from attribench.masking import ImageMasker
+from attribench.masking.image import ImageMasker
 import torch
 import numpy as np
 from typing import List, Union
 
 
+# TODO this should not be a subclass of ImageMasker
 class TabularMasker(ImageMasker):
     def __init__(self, mask_value: Union[float, List[float]] = 0.0):
         self.mask_value = mask_value
         super().__init__("channel")
 
-    def initialize_baselines(self, samples):
+    def _initialize_baselines(self, samples):
         mask = torch.tensor(
             self.mask_value, device=samples.device, dtype=samples.dtype
         )
@@ -36,11 +37,11 @@ class TabularMasker(ImageMasker):
 
         # to_mask = torch.zeros(samples.shape).flatten(1 if self.feature_level == "channel" else 2)
         to_mask = np.zeros(self.samples.shape)
-        if self.feature_level == "channel":
+        if self.masking_level == "channel":
             to_mask = to_mask.reshape((to_mask.shape[0], -1))
         else:
             to_mask = to_mask.reshape((to_mask.shape[0], to_mask.shape[1], -1))
-        if self.feature_level == "channel":
+        if self.masking_level == "channel":
             to_mask[batch_dim, indices] = 1.0
         else:
             try:

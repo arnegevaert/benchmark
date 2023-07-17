@@ -1,6 +1,6 @@
 from typing import List, Mapping
 import torch
-from attribench.masking import ImageMasker
+from attribench.masking.image import ImageMasker
 from attribench._model_factory import ModelFactory
 from ..deletion._deletion_worker import DeletionWorker
 from .._metric_worker import WorkerConfig

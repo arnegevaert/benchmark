@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from numpy import typing as npt
 from typing import List, Union, Mapping, Dict
-from attribench.masking import ImageMasker
+from attribench.masking.image import ImageMasker
 from attribench.functional.metrics.deletion._dataset import IrofDataset
 from attribench.functional.metrics.deletion._get_predictions import (
     get_predictions,
