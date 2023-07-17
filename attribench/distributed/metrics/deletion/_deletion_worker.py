@@ -1,5 +1,4 @@
 import torch
-from numpy import typing as npt
 from .._metric_worker import MetricWorker, WorkerConfig
 from typing import Dict, Mapping, List
 from attribench.masking import Masker

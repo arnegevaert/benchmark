@@ -1,14 +1,11 @@
 from typing import Tuple, Dict, Optional
-
-from torch import multiprocessing as mp
-
+from ..._worker import WorkerConfig
 from attribench.masking import Masker
 from ._minimal_subset_worker import MinimalSubsetWorker
 from attribench.result import MinimalSubsetResult
 from .._metric import Metric
 from attribench.data import AttributionsDataset
 from attribench._model_factory import ModelFactory
-from multiprocessing.synchronize import Event
 
 
 class MinimalSubset(Metric):
@@ -89,18 +86,14 @@ class MinimalSubset(Metric):
         )
 
     def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: Event
+        self, worker_config: WorkerConfig
     ) -> MinimalSubsetWorker:
         return MinimalSubsetWorker(
-            queue,
-            rank,
-            self.world_size,
-            all_processes_done,
+            worker_config,
             self.model_factory,
             self.dataset,
             self.batch_size,
             self.maskers,
             self.mode,
             self.num_steps,
-            self._handle_result if self.world_size == 1 else None,
         )

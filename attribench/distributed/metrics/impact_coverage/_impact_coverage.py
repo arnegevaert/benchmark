@@ -1,5 +1,6 @@
 from .._metric import Metric
 from .._metric_worker import MetricWorker
+from ..._worker import WorkerConfig
 from attribench.result import ImpactCoverageResult
 
 from typing import Tuple, Optional
@@ -90,17 +91,13 @@ class ImpactCoverage(Metric):
         )
 
     def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: Event
+        self, worker_config: WorkerConfig
     ) -> MetricWorker:
         return ImpactCoverageWorker(
-            queue,
-            rank,
-            self.world_size,
-            all_processes_done,
+            worker_config,
             self.model_factory,
-            self.method_factory,
             self.dataset,
             self.batch_size,
+            self.method_factory,
             self.patch_folder,
-            self._handle_result if self.world_size == 1 else None,
         )

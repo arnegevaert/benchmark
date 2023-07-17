@@ -9,14 +9,14 @@ from attribench.result._infidelity_result import InfidelityResult
 from attribench.result._grouped_batch_result import GroupedBatchResult
 
 
-def infidelity_batch(
+def _infidelity_batch(
     model: nn.Module,
     batch_x: torch.Tensor,
     batch_y: torch.Tensor,
     batch_attr: Dict[str, torch.Tensor],
     perturbation_generators: Dict[str, PerturbationGenerator],
     num_perturbations: int,
-    activation_fns: Tuple[str],
+    activation_fns: List[str],
     device: torch.device,
 ):
     batch_x = batch_x.to(device)
@@ -49,9 +49,9 @@ def infidelity_batch(
                 attributions = torch.repeat_interleave(
                     attributions, batch_x.shape[axis], dim=axis
                 )
-        tensor_attributions[attribution_method] = attributions.flatten(
-            1
-        ).to(device)
+        tensor_attributions[attribution_method] = attributions.flatten(1).to(
+            device
+        )
 
     # Get original model output on the samples
     # (dict: activation_fn -> torch.Tensor)
@@ -59,9 +59,9 @@ def infidelity_batch(
     with torch.no_grad():
         for fn in activation_fns:
             # [batch_size, 1]
-            orig_output[fn] = ACTIVATION_FNS[fn](
-                model(batch_x)
-            ).gather(dim=1, index=batch_y.unsqueeze(-1))
+            orig_output[fn] = ACTIVATION_FNS[fn](model(batch_x)).gather(
+                dim=1, index=batch_y.unsqueeze(-1)
+            )
 
     for (
         pert_name,
@@ -75,9 +75,7 @@ def infidelity_batch(
 
         for _ in range(num_perturbations):
             # Get perturbation vector I and perturbed samples (x - I)
-            perturbation_vector = (
-                pert_generator.generate_perturbation()
-            )
+            perturbation_vector = pert_generator.generate_perturbation()
             perturbed_x = batch_x - perturbation_vector
 
             # Get output of model on perturbed sample
@@ -90,9 +88,7 @@ def infidelity_batch(
                     perturbed_output
                 ).gather(dim=1, index=batch_y.unsqueeze(-1))
                 pred_diffs[fn].append(
-                    torch.squeeze(
-                        orig_output[fn] - activated_perturbed_output
-                    )
+                    torch.squeeze(orig_output[fn] - activated_perturbed_output)
                 )
 
             # Compute dot products of perturbation vectors with all
@@ -103,9 +99,7 @@ def infidelity_batch(
             ) in tensor_attributions.items():
                 # (batch_size)
                 dot_products[attribution_method].append(
-                    (
-                        perturbation_vector.flatten(1) * attributions
-                    ).sum(dim=-1)
+                    (perturbation_vector.flatten(1) * attributions).sum(dim=-1)
                 )
 
         # For each method and activation function, compute infidelity
@@ -138,11 +132,7 @@ def infidelity_batch(
                 beta[torch.isnan(beta)] = 0
                 # [batch_size, 1]
                 infidelity = torch.mean(
-                    (
-                        beta * method_dot_products
-                        - tensor_pred_diffs[afn]
-                    )
-                    ** 2,
+                    (beta * method_dot_products - tensor_pred_diffs[afn]) ** 2,
                     dim=0,
                 ).unsqueeze(-1)
                 batch_result[method][pert_name][afn] = (
@@ -157,7 +147,7 @@ def infidelity(
     batch_size: int,
     perturbation_generators: Dict[str, PerturbationGenerator],
     num_perturbations: int,
-    activation_fns: Tuple[str],
+    activation_fns: List[str],
     device: torch.device = torch.device("cpu"),
 ):
     """Computes the Infidelity metric for a given `AttributionsDataset` and model.
@@ -205,12 +195,12 @@ def infidelity(
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=4)
     result = InfidelityResult(
         dataset.method_names,
-        tuple(perturbation_generators.keys()),
+        list(perturbation_generators.keys()),
         activation_fns,
         num_samples=dataset.num_samples,
     )
     for batch_indices, batch_x, batch_y, batch_attr in dataloader:
-        batch_result = infidelity_batch(
+        batch_result = _infidelity_batch(
             model,
             batch_x,
             batch_y,

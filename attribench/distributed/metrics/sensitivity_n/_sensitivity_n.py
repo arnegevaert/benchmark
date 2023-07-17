@@ -1,12 +1,11 @@
 from .._metric import Metric
 import warnings
-from typing import Dict, Union, Tuple
+from typing import Dict, Union, Tuple, List
 from attribench.data import AttributionsDataset
 from attribench.masking import Masker
 from attribench.result._sensitivity_n_result import SensitivityNResult
 from ._sensitivity_n_worker import SensitivityNWorker
-from torch import multiprocessing as mp
-from multiprocessing.synchronize import Event
+from ..._worker import WorkerConfig
 from attribench._model_factory import ModelFactory
 
 
@@ -21,7 +20,7 @@ class SensitivityN(Metric):
         num_steps: int,
         num_subsets: int,
         maskers: Dict[str, Masker],
-        activation_fns: Union[Tuple[str], str],
+        activation_fns: Union[List[str], str],
         segmented=False,
         address="localhost",
         port="12355",
@@ -99,11 +98,9 @@ class SensitivityN(Metric):
                 "Setting to True."
             )
             dataset.group_attributions = True
-        self.activation_fns = (
-            (activation_fns,)
-            if isinstance(activation_fns, str)
-            else activation_fns
-        )
+        if isinstance(activation_fns, str):
+            activation_fns = [activation_fns]
+        self.activation_fns: List[str] = activation_fns
         self.dataset = dataset
         self.maskers = maskers
         self.num_subsets = num_subsets
@@ -113,19 +110,17 @@ class SensitivityN(Metric):
         self.segmented = segmented
         self._result = SensitivityNResult(
             dataset.method_names,
-            tuple(maskers.keys()),
+            list(maskers.keys()),
             self.activation_fns,
-            shape=(dataset.num_samples, num_steps),
+            dataset.num_samples,
+            num_steps,
         )
 
     def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: Event
+        self, worker_config: WorkerConfig
     ) -> SensitivityNWorker:
         return SensitivityNWorker(
-            queue,
-            rank,
-            self.world_size,
-            all_processes_done,
+            worker_config,
             self.model_factory,
             self.dataset,
             self.batch_size,
@@ -136,5 +131,4 @@ class SensitivityN(Metric):
             self.maskers,
             self.activation_fns,
             self.segmented,
-            self._handle_result if self.world_size == 1 else None,
         )

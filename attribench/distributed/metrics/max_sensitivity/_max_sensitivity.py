@@ -1,6 +1,6 @@
 from attribench.data._index_dataset import IndexDataset
-from torch import multiprocessing as mp
 from .._metric_worker import MetricWorker
+from ..._worker import WorkerConfig
 from .._metric import Metric
 from typing import Optional, Tuple
 from torch.utils.data import Dataset
@@ -8,7 +8,6 @@ from attribench import MethodFactory
 from attribench.result._max_sensitivity_result import MaxSensitivityResult
 from ._max_sensitivity_worker import MaxSensitivityWorker
 from attribench._model_factory import ModelFactory
-from multiprocessing.synchronize import Event
 
 
 class MaxSensitivity(Metric):
@@ -84,19 +83,13 @@ class MaxSensitivity(Metric):
             method_factory.get_method_names(), num_samples=len(index_dataset)
         )
 
-    def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: Event
-    ) -> MetricWorker:
+    def _create_worker(self, worker_config: WorkerConfig) -> MetricWorker:
         return MaxSensitivityWorker(
-            queue,
-            rank,
-            self.world_size,
-            all_processes_done,
+            worker_config,
             self.model_factory,
-            self.method_factory,
             self.dataset,
             self.batch_size,
+            self.method_factory,
             self.num_perturbations,
             self.radius,
-            self._handle_result if self.world_size == 1 else None,
         )

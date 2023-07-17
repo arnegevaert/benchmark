@@ -8,7 +8,9 @@ from torch import nn
 
 from attribench.result._grouped_batch_result import GroupedBatchResult
 from attribench._method_factory import MethodFactory
-from attribench.functional.metrics._impact_coverage import impact_coverage_batch
+from attribench.functional.metrics._impact_coverage import (
+    _impact_coverage_batch,
+)
 
 
 class ImpactCoverageWorker(GroupedMetricWorker):
@@ -35,7 +37,7 @@ class ImpactCoverageWorker(GroupedMetricWorker):
             if filename.endswith(".pt")
         ]
         self.patch_names_cycle = cycle(patch_names)
-    
+
     def setup(self):
         self.model = self._get_model()
         self.method_dict = self.method_factory(self.model)
@@ -45,7 +47,7 @@ class ImpactCoverageWorker(GroupedMetricWorker):
 
         for batch_indices, batch_x, batch_y in self.dataloader:
             # Compute batch result
-            batch_result = impact_coverage_batch(
+            batch_result = _impact_coverage_batch(
                 self.model,
                 self.method_dict,
                 batch_x,
@@ -58,6 +60,6 @@ class ImpactCoverageWorker(GroupedMetricWorker):
             self.worker_config.send_result(
                 PartialResultMessage(
                     self.worker_config.rank,
-                    GroupedBatchResult(batch_indices, batch_result)
+                    GroupedBatchResult(batch_indices, batch_result),
                 )
             )

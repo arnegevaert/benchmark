@@ -1,5 +1,5 @@
 import torch
-from typing import Callable, Dict, Tuple
+from typing import Callable, Dict, List
 from torch import nn
 from attribench.data import AttributionsDataset
 from .._metric_worker import GroupedMetricWorker, WorkerConfig
@@ -7,7 +7,7 @@ from attribench.functional.metrics.infidelity._perturbation_generator import (
     PerturbationGenerator,
 )
 from attribench.functional.metrics.infidelity._infidelity import (
-    infidelity_batch,
+    _infidelity_batch,
 )
 
 
@@ -20,7 +20,7 @@ class InfidelityWorker(GroupedMetricWorker):
         batch_size: int,
         perturbation_generators: Dict[str, PerturbationGenerator],
         num_perturbations: int,
-        activation_fns: Tuple[str],
+        activation_fns: List[str],
     ):
         super().__init__(
             worker_config,
@@ -38,7 +38,7 @@ class InfidelityWorker(GroupedMetricWorker):
         batch_y: torch.Tensor,
         batch_attr: Dict[str, torch.Tensor],
     ):
-        return infidelity_batch(
+        return _infidelity_batch(
             self.model,
             batch_x,
             batch_y,

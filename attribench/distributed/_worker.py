@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from torch import multiprocessing as mp
 from torch import distributed as dist
 from ._message import PartialResultMessage, DoneMessage
@@ -15,12 +16,15 @@ class WorkerConfig:
         self.world_size = world_size
         self.rank = rank
 
+    @abstractmethod
     def setup(self):
         raise NotImplementedError
 
+    @abstractmethod
     def cleanup(self):
         raise NotImplementedError
 
+    @abstractmethod
     def send_result(self, result: PartialResultMessage):
         raise NotImplementedError
 

@@ -1,10 +1,7 @@
-from typing import Union, Tuple, Dict, Optional, List, Mapping
-
-from torch import multiprocessing as mp
-from multiprocessing.synchronize import Event
-
+from typing import Union, Tuple, Optional, List, Mapping
 from attribench.masking import Masker
 from ._deletion_worker import DeletionWorker
+from ..._worker import WorkerConfig
 from attribench.result import DeletionResult
 from .._metric import Metric
 from attribench.data import AttributionsDataset
@@ -96,7 +93,7 @@ class Deletion(Metric):
         self.mode = mode
         if isinstance(activation_fns, str):
             activation_fns = [activation_fns]
-        self.activation_fns = activation_fns
+        self.activation_fns: List[str] = activation_fns
         self.maskers = maskers
         self._result = DeletionResult(
             dataset.method_names,
@@ -109,13 +106,10 @@ class Deletion(Metric):
         self.dataset = dataset
 
     def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: Event
+        self, worker_config: WorkerConfig
     ) -> DeletionWorker:
         return DeletionWorker(
-            queue,
-            rank,
-            self.world_size,
-            all_processes_done,
+            worker_config,
             self.model_factory,
             self.dataset,
             self.batch_size,
@@ -125,6 +119,4 @@ class Deletion(Metric):
             self._start,
             self.stop,
             self.num_steps,
-            self._handle_result if self.world_size == 1 else None,
         )
-

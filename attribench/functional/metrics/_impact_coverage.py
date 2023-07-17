@@ -14,7 +14,7 @@ from itertools import cycle
 import numpy as np
 
 
-def impact_coverage_batch(
+def _impact_coverage_batch(
     model: nn.Module,
     method_dict: Dict[str, AttributionMethod],
     batch_x: torch.Tensor,
@@ -225,7 +225,7 @@ def impact_coverage(
     result = ImpactCoverageResult(list(method_dict.keys()), len(index_dataset))
 
     for batch_indices, batch_x, batch_y in dataloader:
-        batch_result = impact_coverage_batch(
+        batch_result = _impact_coverage_batch(
             model,
             method_dict,
             batch_x,

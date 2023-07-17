@@ -1,15 +1,13 @@
-from typing import Callable, Optional, Tuple
+from typing import Optional, Tuple
 import os
 import torch
-from torch import multiprocessing as mp
 from torch.utils.data import Dataset
-from multiprocessing.synchronize import Event
 
 from attribench.distributed._distributed_computation import (
     DistributedComputation,
 )
 from attribench.distributed._message import PartialResultMessage
-from attribench.distributed._worker import Worker
+from attribench.distributed._worker import Worker, WorkerConfig
 from attribench.functional._train_adversarial_patches import _make_patch
 from attribench import ModelFactory
 
@@ -26,23 +24,15 @@ class PatchResult:
 class AdversarialPatchTrainingWorker(Worker):
     def __init__(
         self,
-        result_queue: mp.Queue,
-        rank: int,
-        world_size: int,
-        all_processes_done: Event,
+        worker_config: WorkerConfig,
         path: str,
         total_num_patches: int,
         batch_size: int,
         dataset: Dataset,
         model_factory: ModelFactory,
         labels: Optional[Tuple[int]] = None,
-        result_handler: Optional[
-            Callable[[PartialResultMessage], None]
-        ] = None,
     ):
-        super().__init__(
-            result_queue, rank, world_size, all_processes_done, result_handler
-        )
+        super().__init__(worker_config)
         # Create a list of patch labels.
         # If the number of available labels is smaller than the number of
         # patches, the labels are repeated.
@@ -50,10 +40,12 @@ class AdversarialPatchTrainingWorker(Worker):
             labels = tuple(range(total_num_patches))
         num_repeats = total_num_patches // len(labels)
         labels = labels * (num_repeats + 1)
-        
+
         # Each worker only trains a subset of the patches.
+        rank = self.worker_config.rank
+        world_size = self.worker_config.world_size
         self.patch_labels = labels[
-            self.rank : total_num_patches : self.world_size
+            rank : total_num_patches : world_size
         ]
         self.dataset = dataset
         self.model_factory = model_factory
@@ -61,7 +53,7 @@ class AdversarialPatchTrainingWorker(Worker):
         self.path = path
 
     def work(self):
-        device = torch.device(self.rank)
+        device = torch.device(self.worker_config.rank)
         model = self.model_factory()
         model.to(device)
 
@@ -77,9 +69,9 @@ class AdversarialPatchTrainingWorker(Worker):
             )
 
             # Send message to main process
-            self.send_result(
+            self.worker_config.send_result(
                 PartialResultMessage(
-                    self.rank,
+                    self.worker_config.rank,
                     PatchResult(patch_label, val_loss, percent_successful),
                 )
             )
@@ -139,21 +131,15 @@ class TrainAdversarialPatches(DistributedComputation):
         if not os.path.isdir(self.path):
             os.makedirs(self.path)
 
-    def _create_worker(
-        self, queue: mp.Queue, rank: int, all_processes_done: Event
-    ) -> Worker:
+    def _create_worker(self, worker_config: WorkerConfig) -> Worker:
         return AdversarialPatchTrainingWorker(
-            queue,
-            rank,
-            self.world_size,
-            all_processes_done,
+            worker_config,
             self.path,
             self.num_patches,
             self.batch_size,
             self.dataset,
             self.model_factory,
             self.labels,
-            self._handle_result if self.world_size == 1 else None,
         )
 
     def _handle_result(self, result: PartialResultMessage[PatchResult]):
