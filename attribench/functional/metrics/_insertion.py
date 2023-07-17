@@ -21,7 +21,7 @@ def insertion(
     num_steps: int = 100,
     device: Optional[torch.device] = None,
 ):
-    """Computes the Insertion metric for a given `AttributionsDataset` and model.
+    """Computes the Insertion metric for a given :class:`~attribench.data.AttributionsDataset` and model.
     Insertion can be viewed as an opposite version of the Deletion metric.
 
     Insertion is computed by iteratively revealing the top (Most Relevant First,
@@ -37,7 +37,7 @@ def insertion(
     to mask. The range is determined by `start` and `stop` as a percentage of
     the total number of features. `num_steps` is the number of steps to take
     between `start` and `stop`.
-        
+
     The Insertion metric is computed for each masker in `maskers` and for each
     activation function in `activation_fns`.
 

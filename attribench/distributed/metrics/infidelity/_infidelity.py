@@ -12,6 +12,35 @@ from attribench._model_factory import ModelFactory
 
 
 class Infidelity(Metric):
+    """Computes the Infidelity metric for a given :class:`~attribench.data.AttributionsDataset` and
+    model using multiple processes.
+
+    Infidelity is computed by generating perturbations for each sample in the
+    dataset and computing the difference in the model's output on the original
+    sample and the perturbed sample. This difference is then compared to the
+    dot product of the perturbation vector and the attribution map for each
+    attribution method. The Infidelity metric is the mean squared error between
+    these two values.
+
+    The idea is that if the dot product is large, then the perturbation vector
+    is aligned with the attribution map, and the model's output should change
+    significantly when the perturbation is applied. If the dot product is small,
+    then the perturbation vector is not aligned with the attribution map, and
+    the model's output should not change significantly when the perturbation is
+    applied.
+
+    The mean squared error is computed for `num_perturbations` perturbations
+    for each sample. The `perturbation_generators` argument is a dictionary
+    mapping perturbation generator names to `PerturbationGenerator` objects.
+    These objects can be used to implement different versions of Infidelity.
+
+    The Infidelity metric is computed for each perturbation generator in
+    `perturbation_generators` and each activation function in `activation_fns`.
+    The number of processes is determined by the number of devices. If `devices`
+    is None, then all available devices are used. Samples are distributed evenly
+    across the processes.
+    """
+
     def __init__(
         self,
         model_factory: ModelFactory,
@@ -24,33 +53,7 @@ class Infidelity(Metric):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
-        """Computes the Infidelity metric for a given `AttributionsDataset` and
-        model using multiple processes.
-
-        Infidelity is computed by generating perturbations for each sample in the
-        dataset and computing the difference in the model's output on the original
-        sample and the perturbed sample. This difference is then compared to the
-        dot product of the perturbation vector and the attribution map for each
-        attribution method. The Infidelity metric is the mean squared error between
-        these two values.
-
-        The idea is that if the dot product is large, then the perturbation vector
-        is aligned with the attribution map, and the model's output should change
-        significantly when the perturbation is applied. If the dot product is small,
-        then the perturbation vector is not aligned with the attribution map, and
-        the model's output should not change significantly when the perturbation is
-        applied.
-
-        The mean squared error is computed for `num_perturbations` perturbations
-        for each sample. The `perturbation_generators` argument is a dictionary
-        mapping perturbation generator names to `PerturbationGenerator` objects.
-        These objects can be used to implement different versions of Infidelity.
-
-        The Infidelity metric is computed for each perturbation generator in
-        `perturbation_generators` and each activation function in `activation_fns`.
-        The number of processes is determined by the number of devices. If `devices`
-        is None, then all available devices are used. Samples are distributed evenly
-        across the processes.
+        """Creates an Infidelity instance.
 
         Parameters
         ----------
@@ -99,9 +102,7 @@ class Infidelity(Metric):
             num_samples=self.dataset.num_samples,
         )
 
-    def _create_worker(
-        self, worker_config: WorkerConfig
-    ) -> InfidelityWorker:
+    def _create_worker(self, worker_config: WorkerConfig) -> InfidelityWorker:
         return InfidelityWorker(
             worker_config,
             self.model_factory,

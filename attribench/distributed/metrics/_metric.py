@@ -11,6 +11,8 @@ from attribench._model_factory import ModelFactory
 
 
 class Metric(DistributedComputation):
+    """Abstract base class for metrics that are computed using multiple processes.
+    """
     def __init__(
         self,
         model_factory: ModelFactory,
@@ -37,7 +39,17 @@ class Metric(DistributedComputation):
 
     def run(self, result_path: Optional[str] = None, progress=True):
         """
-        Runs the metric computation"""
+        Runs the metric computation and optionally saves the result.
+        If no result path is given, the result will not be saved to disk.
+        It can still be accessed via the ``result`` property.
+
+        Parameters
+        ----------
+        result_path : str, optional
+            Path to save the result to. If None, the result is not saved to disk.
+        progress : bool, optional
+            Whether to show a progress bar. Defaults to True.
+        """
         if progress:
             self.prog = tqdm(total=len(self.dataset))
         super().run()
@@ -45,6 +57,23 @@ class Metric(DistributedComputation):
             self.save_result(result_path)
 
     def save_result(self, path: str, format="hdf5"):
+        """Save the result to disk.
+
+        Parameters
+        ----------
+        path : str
+            Path to save the result to.
+        format : str, optional
+            Format to save the result in.
+            If ``"hdf5"``, the result is saved as an HDF5 file.
+            If ``"csv"``, the result is saved as a directory structure containing
+            CSV files. Default: ``"hdf5"``.
+
+        Raises
+        ------
+        ValueError
+            If the result is None.
+        """
         if self._result is not None:
             self._result.save(path, format)
         else:

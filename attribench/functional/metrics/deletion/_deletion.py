@@ -46,7 +46,7 @@ def deletion(
     num_steps: int = 100,
     device: torch.device = torch.device("cpu"),
 ) -> DeletionResult:
-    """Computes the Deletion metric for a given `AttributionsDataset` and model.
+    """Computes the Deletion metric for a given :class:`~attribench.data.AttributionsDataset` and model.
 
     Deletion is computed by iteratively masking the top (Most Relevant First,
     or MoRF) or bottom (Least Relevant First, or LeRF) features of

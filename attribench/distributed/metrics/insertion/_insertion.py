@@ -7,6 +7,39 @@ from typing import Dict, List, Optional, Tuple, Union
 
 
 class Insertion(Deletion):
+    """Compute the Insertion metric for a given :class:`~attribench.data.AttributionsDataset` and model
+    using multiple processes. Insertion can be viewed as an opposite version
+    of the Deletion metric.
+
+    Insertion is computed by iteratively revealing the top (Most Relevant First,
+    or MoRF) or bottom (Least Relevant First, or LeRF) features of
+    the input samples, leaving the other features masked out,
+    and computing the confidence of the model on the masked samples.
+
+    This results in a curve of confidence vs. number of features masked. The
+    area under (or equivalently over) this curve is the Insertion metric.
+
+    `start`, `stop`, and `num_steps` are used to determine the range of features
+    to mask. The range is determined by `start` and `stop` as a percentage of
+    the total number of features. `num_steps` is the number of steps to take
+    between `start` and `stop`.
+
+    The Insertion metric is computed for each masker in `maskers` and for each
+    activation function in `activation_fns`. The number of processes is
+    determined by the number of devices. If `devices` is None, then all
+    available devices are used. Samples are distributed evenly across the
+    processes.
+
+    Note that the Insertion metric is equivalent to the Deletion metric
+    with the following changes:
+    - Start and stop are 1 - start and 1 - stop, respectively
+    - The mode parameter is swapped
+
+    Note also that, if start and stop are 1 and 0 or vice versa, then
+    Insertion-morf and Deletion-lerf are equal, and Insertion-lerf
+    and Deletion-morf are equal.
+    """
+
     def __init__(
         self,
         model_factory: ModelFactory,
@@ -22,38 +55,7 @@ class Insertion(Deletion):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
-        """Compute the Insertion metric for a given `AttributionsDataset` and model
-        using multiple processes. Insertion can be viewed as an opposite version
-        of the Deletion metric.
-
-        Insertion is computed by iteratively revealing the top (Most Relevant First,
-        or MoRF) or bottom (Least Relevant First, or LeRF) features of
-        the input samples, leaving the other features masked out,
-        and computing the confidence of the model on the masked samples.
-
-        This results in a curve of confidence vs. number of features masked. The
-        area under (or equivalently over) this curve is the Insertion metric.
-
-        `start`, `stop`, and `num_steps` are used to determine the range of features
-        to mask. The range is determined by `start` and `stop` as a percentage of
-        the total number of features. `num_steps` is the number of steps to take
-        between `start` and `stop`.
-
-        The Insertion metric is computed for each masker in `maskers` and for each
-        activation function in `activation_fns`. The number of processes is
-        determined by the number of devices. If `devices` is None, then all
-        available devices are used. Samples are distributed evenly across the
-        processes.
-
-        Note that the Insertion metric is equivalent to the Deletion metric
-        with the following changes:
-        - Start and stop are 1 - start and 1 - stop, respectively
-        - The mode parameter is swapped
-
-        Note also that, if start and stop are 1 and 0 or vice versa, then
-        Insertion-morf and Deletion-lerf are equal, and Insertion-lerf
-        and Deletion-morf are equal.
-
+        """Creates an Insertion instance.
 
         Parameters
         ----------

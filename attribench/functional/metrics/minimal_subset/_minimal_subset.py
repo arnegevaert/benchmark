@@ -87,7 +87,7 @@ def minimal_subset(
     device: torch.device = torch.device("cpu"),
 ) -> MinimalSubsetResult:
     """Computes Minimal Subset Deletion or Insertion for a given
-    `AttributionsDataset` and model.
+    :class:`~attribench.data.AttributionsDataset` and model.
 
     Minimal Subset Deletion or Insertion is computed by iteratively masking
     (Deletion) or revealing (Insertion) the top features of the input samples

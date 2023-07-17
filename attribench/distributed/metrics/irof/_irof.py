@@ -8,6 +8,30 @@ from attribench.data import AttributionsDataset
 
 
 class Irof(Deletion):
+    """Compute the IROF metric for a given :class:`~attribench.data.AttributionsDataset` and model
+    using multiple processes.
+
+    IROF starts segmenting the input image using SLIC. Then, it iteratively
+    masks out the top (Most Relevant First, or MoRF) or bottom (Least Relevant
+    First, or LeRF) segments and computes the confidence of the model on the
+    masked samples. The relevance of a segment is computed as the average
+    relevance of the features in the segment.
+
+    This results in a curve of confidence vs. number of segments masked. The
+    area under (or equivalently over) this curve is the IROF metric.
+
+    `start`, `stop`, and `num_steps` are used to determine the range of segments
+    to mask. The range is determined by `start` and `stop` as a percentage of
+    the total number of segments. `num_steps` is the number of steps to take
+    between `start` and `stop`.
+
+    The IROF metric is computed for each masker in `maskers` and for each
+    activation function in `activation_fns`. The number of processes is
+    determined by the number of devices. If `devices` is None, then all
+    available devices are used. Samples are distributed evenly across the
+    processes.
+    """
+
     def __init__(
         self,
         model_factory: ModelFactory,
@@ -23,28 +47,7 @@ class Irof(Deletion):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
-        """Compute the IROF metric for a given `AttributionsDataset` and model
-        using multiple processes.
-
-        IROF starts segmenting the input image using SLIC. Then, it iteratively
-        masks out the top (Most Relevant First, or MoRF) or bottom (Least Relevant
-        First, or LeRF) segments and computes the confidence of the model on the
-        masked samples. The relevance of a segment is computed as the average
-        relevance of the features in the segment.
-
-        This results in a curve of confidence vs. number of segments masked. The
-        area under (or equivalently over) this curve is the IROF metric.
-
-        `start`, `stop`, and `num_steps` are used to determine the range of segments
-        to mask. The range is determined by `start` and `stop` as a percentage of
-        the total number of segments. `num_steps` is the number of steps to take
-        between `start` and `stop`.
-
-        The IROF metric is computed for each masker in `maskers` and for each
-        activation function in `activation_fns`. The number of processes is
-        determined by the number of devices. If `devices` is None, then all
-        available devices are used. Samples are distributed evenly across the
-        processes.
+        """Creates an Irof instance.
 
         Parameters
         ----------
@@ -100,9 +103,7 @@ class Irof(Deletion):
         )
         self.maskers = maskers
 
-    def _create_worker(
-        self, worker_config: WorkerConfig
-    ) -> Worker:
+    def _create_worker(self, worker_config: WorkerConfig) -> Worker:
         return IrofWorker(
             worker_config,
             self.model_factory,

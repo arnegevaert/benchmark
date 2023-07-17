@@ -9,6 +9,29 @@ from attribench import ModelFactory
 
 
 class Deletion(Metric):
+    """Compute the Deletion metric for a given :class:`~attribench.data.AttributionsDataset` and model
+    using multiple processes.
+
+    Deletion is computed by iteratively masking the top (Most Relevant First,
+    or MoRF) or bottom (Least Relevant First, or LeRF) features of
+    the input samples and computing the confidence of the model on the masked
+    samples.
+
+    This results in a curve of confidence vs. number of features masked. The
+    area under (or equivalently over) this curve is the Deletion metric.
+
+    `start`, `stop`, and `num_steps` are used to determine the range of features
+    to mask. The range is determined by `start` and `stop` as a percentage of
+    the total number of features. `num_steps` is the number of steps to take
+    between `start` and `stop`.
+
+    The Deletion metric is computed for each masker in `maskers` and for each
+    activation function in `activation_fns`. The number of processes is
+    determined by the number of devices. If `devices` is None, then all
+    available devices are used. Samples are distributed evenly across the
+    processes.
+    """
+
     def __init__(
         self,
         model_factory: ModelFactory,
@@ -24,27 +47,7 @@ class Deletion(Metric):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
-        """Compute the Deletion metric for a given `AttributionsDataset` and model
-        using multiple processes.
-
-        Deletion is computed by iteratively masking the top (Most Relevant First,
-        or MoRF) or bottom (Least Relevant First, or LeRF) features of
-        the input samples and computing the confidence of the model on the masked
-        samples.
-
-        This results in a curve of confidence vs. number of features masked. The
-        area under (or equivalently over) this curve is the Deletion metric.
-
-        `start`, `stop`, and `num_steps` are used to determine the range of features
-        to mask. The range is determined by `start` and `stop` as a percentage of
-        the total number of features. `num_steps` is the number of steps to take
-        between `start` and `stop`.
-
-        The Deletion metric is computed for each masker in `maskers` and for each
-        activation function in `activation_fns`. The number of processes is
-        determined by the number of devices. If `devices` is None, then all
-        available devices are used. Samples are distributed evenly across the
-        processes.
+        """Create a new Deletion instance.
 
         Parameters
         ----------
@@ -105,9 +108,7 @@ class Deletion(Metric):
         )
         self.dataset = dataset
 
-    def _create_worker(
-        self, worker_config: WorkerConfig
-    ) -> DeletionWorker:
+    def _create_worker(self, worker_config: WorkerConfig) -> DeletionWorker:
         return DeletionWorker(
             worker_config,
             self.model_factory,

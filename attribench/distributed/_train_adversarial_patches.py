@@ -78,6 +78,11 @@ class AdversarialPatchTrainingWorker(Worker):
 
 
 class TrainAdversarialPatches(DistributedComputation):
+    """Train adversarial patches for a given model and dataset and save
+    them to disk. The patches are trained in parallel on multiple
+    processes. Each process trains a subset of the patches.
+    """
+
     def __init__(
         self,
         model_factory: ModelFactory,
@@ -90,9 +95,7 @@ class TrainAdversarialPatches(DistributedComputation):
         port: str = "12355",
         devices: Optional[Tuple[int]] = None,
     ):
-        """Train adversarial patches for a given model and dataset and save
-        them to disk. The patches are trained in parallel on multiple
-        processes. Each process trains a subset of the patches.
+        """Creates a TrainAdversarialPatches instance.
 
         Parameters
         ----------

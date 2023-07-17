@@ -150,7 +150,7 @@ def infidelity(
     activation_fns: List[str],
     device: torch.device = torch.device("cpu"),
 ):
-    """Computes the Infidelity metric for a given `AttributionsDataset` and model.
+    """Computes the Infidelity metric for a given :class:`~attribench.data.AttributionsDataset` and model.
 
     Infidelity is computed by generating perturbations for each sample in the
     dataset and computing the difference in the model's output on the original

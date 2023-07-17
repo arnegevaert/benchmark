@@ -5,11 +5,6 @@ from ._message import PartialResultMessage, DoneMessage
 from typing import Callable
 from multiprocessing.synchronize import Event
 
-# TODO make a Worker class that also calls a MethodFactory during setup.
-# This can be used in MaxSensitivity, Impact Coverage.
-
-# TODO make a Worker class that uses GroupedBatchResult.
-
 
 class WorkerConfig:
     def __init__(self, world_size: int, rank: int) -> None:

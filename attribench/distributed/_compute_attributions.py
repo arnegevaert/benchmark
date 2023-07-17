@@ -73,6 +73,13 @@ class AttributionsWorker(Worker):
 
 
 class ComputeAttributions(DistributedComputation):
+    """Compute attributions for a dataset using multiple processes.
+    The attributions are written to a HDF5 file.
+    The number of processes is determined by the number of devices.
+    If no devices are specified, then all available devices are used.
+    Samples are distributed evenly across the processes.
+    """
+
     def __init__(
         self,
         model_factory: ModelFactory,
@@ -84,11 +91,7 @@ class ComputeAttributions(DistributedComputation):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
-        """Compute attributions for a dataset using multiple processes.
-        The attributions are written to a HDF5 file.
-        The number of processes is determined by the number of devices.
-        If no devices are specified, then all available devices are used.
-        Samples are distributed evenly across the processes.
+        """Creates a ComputeAttributions instance.
 
         Parameters
         ----------

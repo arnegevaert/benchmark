@@ -124,7 +124,6 @@ def _sens_n_batch(
     num_subsets: int,
     segmented: bool,
 ) -> Dict[str, Dict[str, Dict[str, torch.Tensor]]]:
-
     method_names = list(attrs.keys())
     orig_output = _get_orig_output(samples, model, activation_fns)
     # masker_name -> activation_fn -> method_name -> [batch_size, num_steps]
@@ -168,7 +167,7 @@ def sensitivity_n(
     activation_fns: str | List[str] = "linear",
     device: torch.device = torch.device("cpu"),
 ) -> SensitivityNResult:
-    """Computes the Sensitivity-n metric for a given `AttributionsDataset` and model.
+    """Computes the Sensitivity-n metric for a given :class:`~attribench.data.AttributionsDataset` and model.
 
     Sensitivity-n is computed by iteratively masking a random subset of `n` features
     of the input samples and computing the output of the model on the masked

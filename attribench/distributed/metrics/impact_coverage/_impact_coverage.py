@@ -2,19 +2,40 @@ from .._metric import Metric
 from .._metric_worker import MetricWorker
 from ..._worker import WorkerConfig
 from attribench.result import ImpactCoverageResult
-
 from typing import Tuple, Optional
-from torch import multiprocessing as mp
 from torch.utils.data import Dataset
 from attribench.data import IndexDataset
 from attribench._method_factory import MethodFactory
 from attribench._model_factory import ModelFactory
-from multiprocessing.synchronize import Event
-
 from ._impact_coverage_worker import ImpactCoverageWorker
 
 
 class ImpactCoverage(Metric):
+    """Computes the Impact Coverage metric for a given dataset, model, and
+    set of attribution methods, using multiple processes.
+
+    Impact Coverage is computed by applying an adversarial patch to the input.
+    This patch causes the model to change its prediction.
+    The Impact Coverage metric is the intersection over union (IoU) of the
+    patch with the top n attributions of the input, where n is the number of
+    features masked by the patch. The idea is that, as the patch causes the
+    model to change its prediction, the corresponding region in the image
+    should be highly relevant to the model's prediction.
+
+    Impact Coverage requires a folder containing adversarial patches. The
+    patches should be named as follows: patch_<target>.pt, where <target>
+    is the target class of the patch. The target class is the class that
+    the model will predict when the patch is applied to the input.
+
+    The number of processes is determined by the number of devices. If
+    `devices` is None, then all available devices are used. Samples are
+    distributed evenly across the processes.
+
+    To generate adversarial patches, the 
+    :meth:`~attribench.functional.train_adversarial_patches` function
+    or :class:`~attribench.distributed.TrainAdversarialPatches` class
+    can be used.
+    """
     def __init__(
         self,
         model_factory: ModelFactory,
@@ -26,30 +47,7 @@ class ImpactCoverage(Metric):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
-        """Computes the Impact Coverage metric for a given dataset, model, and
-        set of attribution methods, using multiple processes.
-
-        Impact Coverage is computed by applying an adversarial patch to the input.
-        This patch causes the model to change its prediction.
-        The Impact Coverage metric is the intersection over union (IoU) of the
-        patch with the top n attributions of the input, where n is the number of
-        features masked by the patch. The idea is that, as the patch causes the
-        model to change its prediction, the corresponding region in the image
-        should be highly relevant to the model's prediction.
-
-        Impact Coverage requires a folder containing adversarial patches. The
-        patches should be named as follows: patch_<target>.pt, where <target>
-        is the target class of the patch. The target class is the class that
-        the model will predict when the patch is applied to the input.
-
-        The number of processes is determined by the number of devices. If
-        `devices` is None, then all available devices are used. Samples are
-        distributed evenly across the processes.
-
-        To generate adversarial patches, the `train_adversarial_patches` function
-        or `TrainAdversarialPatches` class can be used.
-        TODO add link to train_adversarial_patches function and
-        TrainAdversarialPatches class.
+        """Creates an ImpactCoverage instance.
 
         Parameters
         ----------

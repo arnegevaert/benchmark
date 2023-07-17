@@ -9,6 +9,24 @@ from attribench._model_factory import ModelFactory
 
 
 class MinimalSubset(Metric):
+    """Computes Minimal Subset Deletion or Insertion for a given
+    :class:`~attribench.data.AttributionsDataset` and model using multiple processes.
+
+    Minimal Subset Deletion or Insertion is computed by iteratively masking
+    (Deletion) or revealing (Insertion) the top features of the input samples
+    and computing the prediction of the model on the masked samples.
+
+    Minimal Subset Deletion is the minimal number of features that must be
+    masked to change the model's prediction from its original prediction.
+    Minimal Subset Insertion is the minimal number of features that must be
+    revealed to get the model's original prediction.
+
+    The Minimal Subset metric is computed for each masker in `maskers`.
+    The number of processes is determined by the number of devices. If `devices`
+    is None, then all available devices are used. Samples are distributed evenly
+    across the processes.
+    """
+
     def __init__(
         self,
         model_factory: ModelFactory,
@@ -21,22 +39,7 @@ class MinimalSubset(Metric):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
-        """Computes Minimal Subset Deletion or Insertion for a given
-        `AttributionsDataset` and model using multiple processes.
-
-        Minimal Subset Deletion or Insertion is computed by iteratively masking
-        (Deletion) or revealing (Insertion) the top features of the input samples
-        and computing the prediction of the model on the masked samples.
-
-        Minimal Subset Deletion is the minimal number of features that must be
-        masked to change the model's prediction from its original prediction.
-        Minimal Subset Insertion is the minimal number of features that must be
-        revealed to get the model's original prediction.
-
-        The Minimal Subset metric is computed for each masker in `maskers`.
-        The number of processes is determined by the number of devices. If `devices`
-        is None, then all available devices are used. Samples are distributed evenly
-        across the processes.
+        """Creates a MinimalSubset instance.
 
         Parameters
         ----------

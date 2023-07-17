@@ -10,6 +10,36 @@ from attribench._model_factory import ModelFactory
 
 
 class SensitivityN(Metric):
+    """Compute the Sensitivity-n metric for a given :class:`~attribench.data.AttributionsDataset` and model
+    using multiple processes.
+
+    Sensitivity-n is computed by iteratively masking a random subset of `n` features
+    of the input samples and computing the output of the model on the masked
+    samples.
+
+    For each random subset of masked features, the sum of the attributions is
+    also computed. This results in two series of values: the model output and
+    the sum of the attributions. The Sensitivity-n metric is the correlation
+    between these two series.
+
+    This is repeated for different values of `n` between `min_subset_size` and
+    `max_subset_size` in `num_steps` steps. `min_subset_size` and `max_subset_size`
+    are percentages of the total number of features.
+    For each value of `n`, `num_subsets` random subsets are generated.
+
+    If segmented is True, then the Seg-Sensitivity-n metric is computed.
+    This metric is analogous to Sensitivity-n, but instead of using random
+    subsets of features, the images are first segmented into superpixels and
+    then random subsets of superpixels are masked. This improves the
+    signal-to-noise ratio of the metric for high-resolution images.
+
+    The Sensitivity-n metric is computed for each masker in `maskers` and for each
+    activation function in `activation_fns`. The number of processes is
+    determined by the number of devices. If `devices` is None, then all
+    available devices are used. Samples are distributed evenly across the
+    processes.
+    """
+
     def __init__(
         self,
         model_factory: ModelFactory,
@@ -26,34 +56,7 @@ class SensitivityN(Metric):
         port="12355",
         devices: Tuple | None = None,
     ):
-        """Compute the Sensitivity-n metric for a given `AttributionsDataset` and model
-        using multiple processes.
-
-        Sensitivity-n is computed by iteratively masking a random subset of `n` features
-        of the input samples and computing the output of the model on the masked
-        samples.
-
-        For each random subset of masked features, the sum of the attributions is
-        also computed. This results in two series of values: the model output and
-        the sum of the attributions. The Sensitivity-n metric is the correlation
-        between these two series.
-
-        This is repeated for different values of `n` between `min_subset_size` and
-        `max_subset_size` in `num_steps` steps. `min_subset_size` and `max_subset_size`
-        are percentages of the total number of features.
-        For each value of `n`, `num_subsets` random subsets are generated.
-
-        If segmented is True, then the Seg-Sensitivity-n metric is computed.
-        This metric is analogous to Sensitivity-n, but instead of using random
-        subsets of features, the images are first segmented into superpixels and
-        then random subsets of superpixels are masked. This improves the
-        signal-to-noise ratio of the metric for high-resolution images.
-
-        The Sensitivity-n metric is computed for each masker in `maskers` and for each
-        activation function in `activation_fns`. The number of processes is
-        determined by the number of devices. If `devices` is None, then all
-        available devices are used. Samples are distributed evenly across the
-        processes.
+        """Creates a SensitivityN instance.
 
         Parameters
         ----------

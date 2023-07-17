@@ -11,6 +11,24 @@ from attribench._model_factory import ModelFactory
 
 
 class MaxSensitivity(Metric):
+    """Compute the Max-Sensitivity metric for a given `Dataset` and attribution
+    methods using multiple processes.
+        
+    Max-Sensitivity is computed by adding a small amount of uniform noise
+    to the input samples and computing the norm of the difference in attributions
+    between the original samples and the noisy samples.
+    The maximum norm of difference is then taken as the Max-Sensitivity.
+
+    The idea is that a small amount of noise should not change the attributions
+    significantly, so the norm of the difference should be small. If the norm
+    is large, then the attributions are not robust to small perturbations in the
+    input.
+
+    The number of processes is determined by the number of devices. If `devices`
+    is None, then all available devices are used. Samples are distributed evenly
+    across the processes. Each subprocess computes the Max-Sensitivity for a
+    all attribution methods on a subset of the samples.
+    """
     def __init__(
         self,
         model_factory: ModelFactory,
@@ -23,23 +41,7 @@ class MaxSensitivity(Metric):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
-        """Compute the Max-Sensitivity metric for a given `Dataset` and attribution
-        methods using multiple processes.
-         
-        Max-Sensitivity is computed by adding a small amount of uniform noise
-        to the input samples and computing the norm of the difference in attributions
-        between the original samples and the noisy samples.
-        The maximum norm of difference is then taken as the Max-Sensitivity.
-
-        The idea is that a small amount of noise should not change the attributions
-        significantly, so the norm of the difference should be small. If the norm
-        is large, then the attributions are not robust to small perturbations in the
-        input.
-
-        The number of processes is determined by the number of devices. If `devices`
-        is None, then all available devices are used. Samples are distributed evenly
-        across the processes. Each subprocess computes the Max-Sensitivity for a
-        all attribution methods on a subset of the samples.
+        """Creates a MaxSensitivity instance.
 
         Parameters
         ----------

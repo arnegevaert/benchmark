@@ -6,9 +6,8 @@ from attribench import ModelFactory
 from tqdm import tqdm
 from attribench.data import HDF5DatasetWriter
 from attribench.functional._select_samples import _select_samples_batch
-from typing import Callable, Tuple, Optional, NoReturn
+from typing import Callable, Tuple, Optional
 from torch.utils.data import Dataset, DataLoader
-import torch.multiprocessing as mp
 import torch
 from numpy import typing as npt
 from torch import nn
@@ -69,6 +68,13 @@ class SampleSelectionWorker(Worker):
 
 
 class SelectSamples(DistributedComputation):
+    """Select correctly classified samples from a dataset and write them
+    to a HDF5 file. This is done in a distributed fashion, i.e. each
+    subprocess selects a part of the samples and writes them to the
+    HDF5 file. The number of processes is determined by the number of
+    devices.
+    """
+
     def __init__(
         self,
         model_factory: ModelFactory,
@@ -80,11 +86,7 @@ class SelectSamples(DistributedComputation):
         port: str = "12355",
         devices: Optional[Tuple] = None,
     ):
-        """Select correctly classified samples from a dataset and write them
-        to a HDF5 file. This is done in a distributed fashion, i.e. each
-        subprocess selects a part of the samples and writes them to the
-        HDF5 file. The number of processes is determined by the number of
-        devices.
+        """Creates a SelectSamples instance.
 
         Parameters
         ----------

@@ -49,7 +49,7 @@ def irof(
     num_steps: int = 100,
     device: torch.device = torch.device("cpu"),
 ):
-    """Computes the IROF metric for a given `AttributionsDataset` and model.
+    """Computes the IROF metric for a given :class:`~attribench.data.AttributionsDataset` and model.
 
     IROF starts segmenting the input image using SLIC. Then, it iteratively
     masks out the top (Most Relevant First, or MoRF) or bottom (Least Relevant

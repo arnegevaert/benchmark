@@ -14,8 +14,6 @@
    .. autosummary::
    
       ~AttributionsDataset.__init__
-      ~AttributionsDataset.get_item_grouped
-      ~AttributionsDataset.get_item_nongrouped
    
    
 

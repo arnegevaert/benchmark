@@ -4,12 +4,16 @@ General API Reference
 =====================
 This page contains the API reference for the attribench package.
 
-Computations
-------------
-Computations are divided into two API groups: a :doc:`functional API<func_api>` and an
-:doc:`object-oriented API<dist_api>`. The functional API is the simplest to use, but
-**does not support multi-GPU computations.** If you want to run a large-scale
-benchmarking experiment on multiple GPUs, you should use the object-oriented API.
+Computations and Metrics
+------------------------
+Computations and metrics are divided into two API groups:
+a :doc:`functional API<func_api>` and an
+:doc:`object-oriented API<dist_api>`.
+The functional API is the simplest to use, but
+**does not support multi-GPU computations.**
+If you want to run a large-scale
+benchmarking experiment on multiple GPUs,
+you should use the object-oriented API.
 
 .. toctree::
     :maxdepth: 1
@@ -32,14 +36,6 @@ Results
     attribench.result.MinimalSubsetResult
     attribench.result.SensitivityNResult
 
-Methods
--------
-.. autosummary::
-    :toctree: generated/
-
-    attribench.AttributionMethod
-    attribench.MethodFactory
-
 Data
 ----
 .. autosummary::
@@ -56,6 +52,12 @@ Masking
 .. autosummary::
     :toctree: generated
 
+    attribench.masking.Masker
+    attribench.masking.ConstantMasker
+    attribench.masking.RandomMasker
+    attribench.masking.SampleAverageMasker
+    attribench.masking.TabularMasker
+    attribench.masking.ImageMasker
     attribench.masking.BlurringMasker
 
 Plot
