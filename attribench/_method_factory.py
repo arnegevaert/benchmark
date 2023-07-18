@@ -55,6 +55,18 @@ class MethodFactory:
         self.config_dict = config_dict
 
     def __call__(self, model: nn.Module) -> Dict[str, AttributionMethod]:
+        """Create dictionary mapping method names to AttributionMethod objects.
+
+        Parameters
+        ----------
+        model : nn.Module
+            Model to compute attributions for.
+
+        Returns
+        -------
+        Dict[str, AttributionMethod]
+            Dictionary mapping method names to AttributionMethod objects.
+        """
         result: Dict[str, AttributionMethod] = {}
         for method_name, entry in self.config_dict.items():
             if isinstance(entry, Tuple):

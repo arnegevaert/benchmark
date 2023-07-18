@@ -1,4 +1,6 @@
-from attribench.data._index_dataset import IndexDataset
+from attribench.data.attributions_dataset._attributions_dataset import (
+    AttributionsDataset,
+)
 from .._metric_worker import MetricWorker
 from ..._worker import WorkerConfig
 from .._metric import Metric
@@ -13,7 +15,7 @@ from attribench._model_factory import ModelFactory
 class MaxSensitivity(Metric):
     """Compute the Max-Sensitivity metric for a given `Dataset` and attribution
     methods using multiple processes.
-        
+
     Max-Sensitivity is computed by adding a small amount of uniform noise
     to the input samples and computing the norm of the difference in attributions
     between the original samples and the noisy samples.
@@ -29,10 +31,11 @@ class MaxSensitivity(Metric):
     across the processes. Each subprocess computes the Max-Sensitivity for a
     all attribution methods on a subset of the samples.
     """
+
     def __init__(
         self,
         model_factory: ModelFactory,
-        dataset: Dataset,
+        dataset: AttributionsDataset,
         batch_size: int,
         method_factory: MethodFactory,
         num_perturbations: int,
@@ -68,10 +71,9 @@ class MaxSensitivity(Metric):
             Tuple of devices to use for multiprocessing.
             If `None`, all available devices are used.
         """
-        index_dataset = IndexDataset(dataset)
         super().__init__(
             model_factory,
-            index_dataset,
+            dataset,
             batch_size,
             address,
             port,
@@ -80,8 +82,9 @@ class MaxSensitivity(Metric):
         self.method_factory = method_factory
         self.num_perturbations = num_perturbations
         self.radius = radius
+        self.dataset = dataset
         self._result = MaxSensitivityResult(
-            method_factory.get_method_names(), num_samples=len(index_dataset)
+            method_factory.get_method_names(), num_samples=dataset.num_samples
         )
 
     def _create_worker(self, worker_config: WorkerConfig) -> MetricWorker:
