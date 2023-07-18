@@ -7,8 +7,7 @@ class RandomImageMasker(ImageMasker):
     noise, with a given standard deviation.
     """
     def __init__(self, masking_level: str, std=1):
-        """Create a new RandomImageMasker object.
-
+        """
         Parameters
         ----------
         masking_level : str

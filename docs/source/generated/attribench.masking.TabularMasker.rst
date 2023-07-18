@@ -4,16 +4,18 @@
 .. currentmodule:: attribench.masking
 
 .. autoclass:: TabularMasker
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~TabularMasker.__init__
       ~TabularMasker.get_num_features
       ~TabularMasker.mask_bot
       ~TabularMasker.mask_rand

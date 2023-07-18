@@ -9,14 +9,13 @@ class Masker:
     Maskers are used to "remove" features from a sample by masking them with
     some value. This can be a fixed baseline value, a random value, or some
     other value.
+
+    Note that a Masker object is not yet usable after creation. You need to
+    call :meth:`set_batch` first, to set the samples and attributions.
+    This allows the same Masker object to be used for multiple batches.
     """
 
     def __init__(self):
-        """Create a new Masker object.
-        Note that a Masker object is not yet usable after creation. You need to
-        call :meth:`set_batch` first, to set the samples and attributions.
-        This allows the same Masker object to be used for multiple batches.
-        """
         self.baseline: torch.Tensor | None = None
         self.samples: torch.Tensor | None = None
         self.attributions: torch.Tensor | None = None

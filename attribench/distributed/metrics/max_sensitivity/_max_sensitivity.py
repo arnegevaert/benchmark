@@ -41,8 +41,7 @@ class MaxSensitivity(Metric):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
-        """Creates a MaxSensitivity instance.
-
+        """
         Parameters
         ----------
         model_factory : ModelFactory

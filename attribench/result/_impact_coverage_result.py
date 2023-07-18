@@ -9,8 +9,7 @@ class ImpactCoverageResult(GroupedMetricResult):
     Represents results from running the ImpactCoverage metric.
     """
     def __init__(self, method_names: List[str], num_samples: int):
-        """Create a new ImpactCoverageResult object.
-
+        """
         Parameters
         ----------
         method_names : List[str]

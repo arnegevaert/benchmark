@@ -152,8 +152,7 @@ class AttributionsDataset(IndexDataset):
         aggregate_dim: int = 0,
         aggregate_method: str | None = None,
     ):
-        """Create a new AttributionsDataset.
-
+        """
         Parameters
         ----------
         samples: Dataset | torch.Tensor

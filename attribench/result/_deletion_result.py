@@ -41,8 +41,7 @@ class DeletionResult(MetricResult):
         num_samples: int,
         num_steps: int,
     ):
-        """Create a new DeletionResult object.
-
+        """
         Parameters
         ----------
         method_names : List[str]

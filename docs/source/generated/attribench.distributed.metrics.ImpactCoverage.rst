@@ -4,16 +4,18 @@
 .. currentmodule:: attribench.distributed.metrics
 
 .. autoclass:: ImpactCoverage
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~ImpactCoverage.__init__
       ~ImpactCoverage.run
       ~ImpactCoverage.save_result
    

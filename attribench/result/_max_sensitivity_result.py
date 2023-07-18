@@ -8,8 +8,6 @@ class MaxSensitivityResult(GroupedMetricResult):
     """
     def __init__(self, method_names: List[str], num_samples: int):
         """
-        Create a new MaxSensitivityResult object.
-
         Parameters
         ----------
         method_names : List[str]

@@ -4,16 +4,18 @@
 .. currentmodule:: attribench.distributed
 
 .. autoclass:: ComputeAttributions
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~ComputeAttributions.__init__
       ~ComputeAttributions.run
    
    

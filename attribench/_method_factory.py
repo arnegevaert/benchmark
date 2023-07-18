@@ -29,9 +29,29 @@ class MethodFactory:
     the attribution methods to be instantiated in subprocesses, which is
     necessary for computing attributions on multiple GPUs, as the methods need
     access to the specific copy of the model for their process.
+
+    The config dictionary should map strings to either AttributionMethod
+    constructors, or tuples consisting of an AttributionMethod constructor
+    and a dictionary of keyword arguments to pass to the constructor.
+
+    Example::
+
+        {
+            "method1": AttributionMethod1,
+            "method2": (AttributionMethod2, {"kwarg1": 1, "kwarg2": 2}),
+        }
+
     """
 
     def __init__(self, config_dict: ConfigDict) -> None:
+        """
+        Parameters
+        ----------
+        config_dict : ConfigDict
+            Dictionary mapping strings to either AttributionMethod constructors,
+            or tuples consisting of an AttributionMethod constructor and a
+            dictionary of keyword arguments to pass to the constructor.
+        """
         self.config_dict = config_dict
 
     def __call__(self, model: nn.Module) -> Dict[str, AttributionMethod]:

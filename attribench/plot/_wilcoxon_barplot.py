@@ -53,6 +53,22 @@ class WilcoxonBarPlot(Plot):
         figsize=(12, 6),
         fontsize: int | None = None,
     ) -> Figure:
+        """Render the plot.
+
+        Parameters
+        ----------
+        title : str | None, optional
+            Title of the figure, by default None
+        figsize : tuple, optional
+            Size of the figure, by default (12, 6)
+        fontsize : int | None, optional
+            Font size of x and y axis ticks, by default None
+
+        Returns
+        -------
+        Figure
+            Rendered Matplotlib figure.
+        """
         ALPHA = 0.01
         effect_sizes, pvalues = {}, {}
 

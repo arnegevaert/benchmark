@@ -1,9 +1,9 @@
-﻿attribench.MethodFactory
-========================
+﻿attribench.BasicModelFactory
+============================
 
 .. currentmodule:: attribench
 
-.. autoclass:: MethodFactory
+.. autoclass:: BasicModelFactory
    :members:
    :show-inheritance:
    :inherited-members:
@@ -16,7 +16,6 @@
    .. autosummary::
       :nosignatures:
    
-      ~MethodFactory.get_method_names
    
    
 

@@ -7,12 +7,51 @@ from attribench.plot import Plot
 
 
 class CLESPlot(Plot):
-    def render(self, method1, method2) -> Figure:
+    """Bar plot showing the CLES (Common Language Effect Size) of two methods.
+    The CLES is the probability that the metric value for a random sample from
+    one method will be greater than a random sample from the other method.
+
+    This plot shows the CLES as a bar vertical bar plot centered around 0.5
+    (no difference between methods). If the bar is on the right side of 0.5,
+    it means that the first method is better than the second method. A bar
+    is shown for each metric.
+    """
+
+    def render(self, method1: str, method2: str) -> Figure:
+        """Render the plot.
+        TODO add options for figsize, fontsize, title
+
+        Parameters
+        ----------
+        method1 : str
+            First method to compare.
+        method2 : str
+            Second method to compare.
+
+        Returns
+        -------
+        Figure
+            Rendered Matplotlib figure.
+
+        Raises
+        ------
+        ValueError
+            If one of the methods is not found in the dataframe.
+        """
         result_cles = {}
         for key in self.dfs:
             df, higher_is_better = self.dfs[key]
             if not higher_is_better:
                 df = -df
+
+            if method1 not in df.columns:
+                raise ValueError(
+                    f"Method {method1} not found in dataframe {key}"
+                )
+            if method2 not in df.columns:
+                raise ValueError(
+                    f"Method {method2} not found in dataframe {key}"
+                )
 
             statistic, pvalue = stats.wilcoxon(
                 x=df[method1], y=df[method2], alternative="two-sided"

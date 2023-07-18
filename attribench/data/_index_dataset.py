@@ -8,8 +8,7 @@ class IndexDataset(Dataset):
     """
 
     def __init__(self, dataset: Dataset):
-        """Create a new IndexDataset.
-
+        """
         Parameters
         ----------
         dataset : Dataset

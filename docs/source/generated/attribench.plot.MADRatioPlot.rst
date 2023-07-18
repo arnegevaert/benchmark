@@ -1,9 +1,9 @@
-﻿attribench.MethodFactory
-========================
+﻿attribench.plot.MADRatioPlot
+============================
 
-.. currentmodule:: attribench
+.. currentmodule:: attribench.plot
 
-.. autoclass:: MethodFactory
+.. autoclass:: MADRatioPlot
    :members:
    :show-inheritance:
    :inherited-members:
@@ -16,7 +16,7 @@
    .. autosummary::
       :nosignatures:
    
-      ~MethodFactory.get_method_names
+      ~MADRatioPlot.render
    
    
 

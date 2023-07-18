@@ -47,8 +47,7 @@ class Irof(Deletion):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
-        """Creates an Irof instance.
-
+        """
         Parameters
         ----------
         model_factory : ModelFactory

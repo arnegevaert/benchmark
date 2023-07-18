@@ -52,8 +52,7 @@ class Infidelity(Metric):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
-        """Creates an Infidelity instance.
-
+        """
         Parameters
         ----------
         model_factory : ModelFactory

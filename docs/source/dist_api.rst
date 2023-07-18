@@ -11,6 +11,7 @@ General
 -------
 .. autosummary::
     :toctree: generated
+    :template: custom-class-template.rst
 
     attribench.distributed.SelectSamples
     attribench.distributed.TrainAdversarialPatches
@@ -20,6 +21,7 @@ Metrics
 -------
 .. autosummary::
     :toctree: generated
+    :template: custom-class-template.rst
 
     attribench.distributed.Metric
     attribench.distributed.metrics.Deletion

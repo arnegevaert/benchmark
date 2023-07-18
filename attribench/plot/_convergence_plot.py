@@ -7,15 +7,14 @@ from matplotlib.figure import Figure
 
 
 class ConvergencePlot(Plot):
-    """ Line plot of the median values of a given metric vs. the number of samples.
+    """ Line plot of the median values of a given metric vs the number of samples.
     Error bars are computed using bootstrapping.
     Allows the user to inspect if metric values have converged,
     i.e. if the benchmark has been run on enough samples.
     """
 
     def __init__(self, df: pd.DataFrame):
-        """Create a ConvergencePlot.
-
+        """
         Parameters
         ----------
         df : pd.DataFrame

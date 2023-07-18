@@ -86,8 +86,7 @@ class SelectSamples(DistributedComputation):
         port: str = "12355",
         devices: Optional[Tuple] = None,
     ):
-        """Creates a SelectSamples instance.
-
+        """
         Parameters
         ----------
         model_factory : ModelFactory

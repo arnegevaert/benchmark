@@ -1,9 +1,9 @@
-﻿attribench.MethodFactory
-========================
+﻿attribench.plot.ConvergencePlot
+===============================
 
-.. currentmodule:: attribench
+.. currentmodule:: attribench.plot
 
-.. autoclass:: MethodFactory
+.. autoclass:: ConvergencePlot
    :members:
    :show-inheritance:
    :inherited-members:
@@ -16,7 +16,7 @@
    .. autosummary::
       :nosignatures:
    
-      ~MethodFactory.get_method_names
+      ~ConvergencePlot.render
    
    
 

@@ -4,16 +4,18 @@
 .. currentmodule:: attribench.masking.image
 
 .. autoclass:: ImageMasker
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~ImageMasker.__init__
       ~ImageMasker.get_num_features
       ~ImageMasker.mask_bot
       ~ImageMasker.mask_rand

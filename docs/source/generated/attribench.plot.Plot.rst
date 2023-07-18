@@ -1,9 +1,9 @@
-﻿attribench.MethodFactory
-========================
+﻿attribench.plot.Plot
+====================
 
-.. currentmodule:: attribench
+.. currentmodule:: attribench.plot
 
-.. autoclass:: MethodFactory
+.. autoclass:: Plot
    :members:
    :show-inheritance:
    :inherited-members:
@@ -16,7 +16,7 @@
    .. autosummary::
       :nosignatures:
    
-      ~MethodFactory.get_method_names
+      ~Plot.render
    
    
 

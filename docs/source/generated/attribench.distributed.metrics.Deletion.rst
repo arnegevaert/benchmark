@@ -4,16 +4,18 @@
 .. currentmodule:: attribench.distributed.metrics
 
 .. autoclass:: Deletion
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~Deletion.__init__
       ~Deletion.run
       ~Deletion.save_result
    

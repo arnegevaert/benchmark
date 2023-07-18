@@ -91,8 +91,7 @@ class ComputeAttributions(DistributedComputation):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
-        """Creates a ComputeAttributions instance.
-
+        """
         Parameters
         ----------
         model_factory : ModelFactory

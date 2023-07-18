@@ -29,8 +29,7 @@ class ImageMasker(Masker):
     """
 
     def __init__(self, masking_level: str):
-        """Create a new ImageMasker.
-
+        """
         Parameters
         ----------
         masking_level : str

@@ -4,16 +4,18 @@
 .. currentmodule:: attribench.result
 
 .. autoclass:: InfidelityResult
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~InfidelityResult.__init__
       ~InfidelityResult.add
       ~InfidelityResult.get_df
       ~InfidelityResult.load

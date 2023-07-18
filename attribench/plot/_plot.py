@@ -10,8 +10,7 @@ class Plot:
     matplotlib Figure.
     """
     def __init__(self, dfs: Dict[str, Tuple[pd.DataFrame, bool]]):
-        """Create a new Plot object.
-
+        """
         Parameters
         ----------
         dfs : Dict[str, Tuple[pd.DataFrame, bool]]

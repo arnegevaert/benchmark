@@ -4,16 +4,18 @@
 .. currentmodule:: attribench.distributed.metrics
 
 .. autoclass:: Irof
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~Irof.__init__
       ~Irof.run
       ~Irof.save_result
    

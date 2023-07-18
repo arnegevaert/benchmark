@@ -4,16 +4,18 @@
 .. currentmodule:: attribench
 
 .. autoclass:: ModelFactory
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~ModelFactory.__init__
    
    
 

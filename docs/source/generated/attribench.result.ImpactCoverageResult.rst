@@ -4,16 +4,18 @@
 .. currentmodule:: attribench.result
 
 .. autoclass:: ImpactCoverageResult
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~ImpactCoverageResult.__init__
       ~ImpactCoverageResult.add
       ~ImpactCoverageResult.get_df
       ~ImpactCoverageResult.load

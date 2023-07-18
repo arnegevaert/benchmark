@@ -23,8 +23,6 @@ class MetricResult:
         level_order: List[str],
     ):
         """
-        Create a new MetricResult object.
-
         Parameters
         ----------
         method_names : Tuple[str, ...] | List[str]

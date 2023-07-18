@@ -1,9 +1,9 @@
-﻿attribench.plot.ClusterPlot
-===========================
+﻿attribench.plot.InterMetricCorrelationPlot
+==========================================
 
 .. currentmodule:: attribench.plot
 
-.. autoclass:: ClusterPlot
+.. autoclass:: InterMetricCorrelationPlot
    :members:
    :show-inheritance:
    :inherited-members:
@@ -16,7 +16,7 @@
    .. autosummary::
       :nosignatures:
    
-      ~ClusterPlot.render
+      ~InterMetricCorrelationPlot.render
    
    
 

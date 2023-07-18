@@ -7,7 +7,27 @@ from matplotlib.figure import Figure
 
 
 class KrippendorffAlphaPlot(Plot):
-    def render(self, title=None, figsize=(10, 10), fontsize=20) -> Figure:
+    """Bar plot of Krippendorff's alpha for each metric."""
+
+    def render(
+        self, title: str | None = None, figsize=(10, 10), fontsize=20
+    ) -> Figure:
+        """Render the plot.
+
+        Parameters
+        ----------
+        title : str | None, optional
+            Title of the figure, by default None
+        figsize : tuple, optional
+            Size of the figure, by default (10, 10)
+        fontsize : int, optional
+            Font size of x and y axis ticks, by default 20
+
+        Returns
+        -------
+        Figure
+            Rendered Matplotlib figure.
+        """
         k_a = {
             metric_name: krippendorff.alpha(
                 rankdata(df.to_numpy(), axis=1), level_of_measurement="ordinal"

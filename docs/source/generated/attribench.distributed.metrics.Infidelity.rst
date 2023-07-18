@@ -4,16 +4,18 @@
 .. currentmodule:: attribench.distributed.metrics
 
 .. autoclass:: Infidelity
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~Infidelity.__init__
       ~Infidelity.run
       ~Infidelity.save_result
    

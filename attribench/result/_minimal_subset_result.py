@@ -22,8 +22,7 @@ class MinimalSubsetResult(MetricResult):
         mode: str,
         num_samples: int,
     ):
-        """Create a new MinimalSubsetResult object.
-
+        """
         Parameters
         ----------
         method_names : List[str]

@@ -4,16 +4,18 @@
 .. currentmodule:: attribench
 
 .. autoclass:: AttributionMethod
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~AttributionMethod.__init__
    
    
 

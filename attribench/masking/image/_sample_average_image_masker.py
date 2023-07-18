@@ -7,8 +7,7 @@ class SampleAverageImageMasker(ImageMasker):
     the average value in the corresponding image.
     """
     def __init__(self, feature_level: str):
-        """Create a new SampleAverageImageMasker object.
-
+        """
         Parameters
         ----------
         feature_level : str

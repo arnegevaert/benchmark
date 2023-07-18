@@ -23,6 +23,8 @@ def _create_fig(df, figsize, annot):
 
 
 class InterMetricCorrelationPlot(Plot):
+    """Heatmap showing Spearman correlations between metrics."""
+
     def render(
         self,
         title: str | None = None,
@@ -30,6 +32,25 @@ class InterMetricCorrelationPlot(Plot):
         fontsize: int | None = None,
         annot: bool = False,
     ) -> Figure:
+        """Render the plot.
+
+        Parameters
+        ----------
+        title : str | None, optional
+            Title of the figure, by default None
+        figsize : Tuple[int, int], optional
+            Size of the figure, by default (20, 20)
+        fontsize : int | None, optional
+            Font size of x and y axis ticks, by default None
+        annot : bool, optional
+            Whether to annotate the heatmap with the correlation values, by
+            default False
+
+        Returns
+        -------
+        Figure
+            The rendered Matplotlib figure.
+        """
         corr_dfs = []
         methods = list(self.dfs.values())[0][0].columns
         for method_name in methods:
@@ -59,9 +80,8 @@ class InterMetricCorrelationPlot(Plot):
         return fig
 
 
-class InterMethodCorrelationPlot:
-    def __init__(self, dfs: Dict[str, Tuple[pd.DataFrame, bool]]):
-        self.dfs = dfs
+class InterMethodCorrelationPlot(Plot):
+    """Heatmap showing Spearman correlations between methods."""
 
     def render(
         self,
@@ -70,6 +90,28 @@ class InterMethodCorrelationPlot:
         fontsize: int | None = None,
         annot=False,
     ) -> Figure:
+        """Render the plot.
+        Spearman correlation values are averaged across metrics.
+        To plot inter-method correlations for each metric separately,
+        use :meth:`render_all`.
+
+        Parameters
+        ----------
+        title : str | None, optional
+            Title of the figure, by default None
+        figsize : Tuple[int, int], optional
+            Size of the figure, by default (20, 20)
+        fontsize : int | None, optional
+            Font size of x and y axis ticks, by default None
+        annot : bool, optional
+            Whether to annotate the heatmap with the correlation values, by
+            default False
+
+        Returns
+        -------
+        Figure
+            The rendered Matplotlib figure.
+        """
         # Compute correlations for each metric
         all_dfs = [
             df if not inverted else -df
@@ -92,7 +134,27 @@ class InterMethodCorrelationPlot:
         ax.set_yticklabels(ax.get_yticklabels(), fontsize=fontsize)
         return fig
 
-    def render_all(self, figsize=(20, 20), annot=True):
+    def render_all(
+        self, figsize=(20, 20), fontsize: int | None = None, annot=False
+    ) -> Dict[str, Figure]:
+        """Render a separate heatmap for each metric.
+        TODO test and make sure args are consistent with render.
+
+        Parameters
+        ----------
+        figsize : Tuple[int, int], optional
+            Size of the figures, by default (20, 20)
+        fontsize : int | None, optional
+            Font size of x and y axis ticks, by default None
+        annot : bool, optional
+            Whether to annotate the heatmaps with the correlation values, by
+            default False
+
+        Returns
+        -------
+        Dict[str, Figure]
+            Dictionary mapping metric names to rendered Matplotlib figures.
+        """
         figs = {}
         for name, (df, inverted) in self.dfs.items():
             if inverted:

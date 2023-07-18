@@ -7,8 +7,7 @@ class ConstantImageMasker(ImageMasker):
     a given constant value.
     """
     def __init__(self, feature_level: str, mask_value=0.0):
-        """Create a new ConstantImageMasker object.
-
+        """
         Parameters
         ----------
         feature_level : str

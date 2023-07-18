@@ -55,8 +55,7 @@ class Insertion(Deletion):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
-        """Creates an Insertion instance.
-
+        """
         Parameters
         ----------
         model_factory : ModelFactory

@@ -4,16 +4,18 @@
 .. currentmodule:: attribench.result
 
 .. autoclass:: DeletionResult
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~DeletionResult.__init__
       ~DeletionResult.add
       ~DeletionResult.get_df
       ~DeletionResult.load

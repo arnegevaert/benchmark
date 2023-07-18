@@ -25,6 +25,7 @@ Results
 -------
 .. autosummary::
     :toctree: generated
+    :template: custom-class-template.rst
 
     attribench.result.MetricResult
     attribench.result.GroupedMetricResult
@@ -40,6 +41,7 @@ Data
 ----
 .. autosummary::
     :toctree: generated
+    :template: custom-class-template.rst
 
     attribench.data.IndexDataset
     attribench.data.AttributionsDataset
@@ -49,6 +51,7 @@ Masking
 -------
 .. autosummary::
     :toctree: generated
+    :template: custom-class-template.rst
 
     attribench.masking.Masker
     attribench.masking.image.ImageMasker
@@ -62,6 +65,7 @@ Plot
 ----
 .. autosummary::
     :toctree: generated
+    :template: custom-class-template.rst
 
     attribench.plot.Plot
     attribench.plot.WilcoxonSummaryPlot
@@ -77,7 +81,9 @@ Other
 -----
 .. autosummary::
     :toctree: generated
+    :template: custom-class-template.rst
 
     attribench.ModelFactory
+    attribench.BasicModelFactory
     attribench.MethodFactory
     attribench.AttributionMethod

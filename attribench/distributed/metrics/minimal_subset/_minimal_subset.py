@@ -39,8 +39,7 @@ class MinimalSubset(Metric):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
-        """Creates a MinimalSubset instance.
-
+        """
         Parameters
         ----------
         model_factory : ModelFactory

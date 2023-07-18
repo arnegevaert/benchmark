@@ -11,8 +11,7 @@ class BlurringImageMasker(ImageMasker):
     of the image height.
     """
     def __init__(self, feature_level: str, kernel_size: float):
-        """Create a new BlurringImageMasker object.
-
+        """
         Parameters
         ----------
         feature_level : str

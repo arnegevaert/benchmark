@@ -31,8 +31,7 @@ class SensitivityNResult(GroupedMetricResult):
         num_samples: int,
         num_steps: int
     ):
-        """Create a new SensitivityNResult object.
-
+        """
         Parameters
         ----------
         method_names : List[str]

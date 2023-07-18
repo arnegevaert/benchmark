@@ -4,16 +4,18 @@
 .. currentmodule:: attribench.result
 
 .. autoclass:: MinimalSubsetResult
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~MinimalSubsetResult.__init__
       ~MinimalSubsetResult.add
       ~MinimalSubsetResult.get_df
       ~MinimalSubsetResult.load

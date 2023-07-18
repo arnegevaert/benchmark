@@ -15,8 +15,7 @@ class HDF5Dataset(Dataset):
     """
 
     def __init__(self, path: str):
-        """Create a new HDF5Dataset.
-
+        """
         Parameters
         ----------
         path : str

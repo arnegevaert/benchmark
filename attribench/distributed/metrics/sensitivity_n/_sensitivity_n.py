@@ -55,8 +55,7 @@ class SensitivityN(Metric):
         port="12355",
         devices: Tuple | None = None,
     ):
-        """Creates a SensitivityN instance.
-
+        """
         Parameters
         ----------
         model_factory : ModelFactory

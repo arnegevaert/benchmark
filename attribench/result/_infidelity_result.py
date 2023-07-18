@@ -14,8 +14,7 @@ class InfidelityResult(GroupedMetricResult):
         activation_fns: List[str],
         num_samples: int,
     ):
-        """Create a new InfidelityResult object.
-
+        """
         Parameters
         ----------
         method_names : List[str]

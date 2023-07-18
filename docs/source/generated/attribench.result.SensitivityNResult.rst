@@ -4,16 +4,18 @@
 .. currentmodule:: attribench.result
 
 .. autoclass:: SensitivityNResult
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~SensitivityNResult.__init__
       ~SensitivityNResult.add
       ~SensitivityNResult.get_df
       ~SensitivityNResult.load

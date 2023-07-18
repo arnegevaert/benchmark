@@ -47,8 +47,7 @@ class Deletion(Metric):
         port="12355",
         devices: Optional[Tuple] = None,
     ):
-        """Create a new Deletion instance.
-
+        """
         Parameters
         ----------
         model_factory : ModelFactory

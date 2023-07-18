@@ -1,9 +1,9 @@
-﻿attribench.MethodFactory
-========================
+﻿attribench.plot.KrippendorffAlphaPlot
+=====================================
 
-.. currentmodule:: attribench
+.. currentmodule:: attribench.plot
 
-.. autoclass:: MethodFactory
+.. autoclass:: KrippendorffAlphaPlot
    :members:
    :show-inheritance:
    :inherited-members:
@@ -16,7 +16,7 @@
    .. autosummary::
       :nosignatures:
    
-      ~MethodFactory.get_method_names
+      ~KrippendorffAlphaPlot.render
    
    
 

@@ -4,16 +4,18 @@
 .. currentmodule:: attribench.distributed.metrics
 
 .. autoclass:: MaxSensitivity
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~MaxSensitivity.__init__
       ~MaxSensitivity.run
       ~MaxSensitivity.save_result
    

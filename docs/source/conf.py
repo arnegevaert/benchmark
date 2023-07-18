@@ -4,6 +4,8 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+# Templates from: https://github.com/JamesALeedham/Sphinx-Autosummary-Recursion/tree/master
+
 # -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -31,12 +33,15 @@ release = '0.0.1'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'numpydoc',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.viewcode',
+    'numpydoc',  # Numpy documentation style
+    'sphinx.ext.autodoc',  # Automatic documentation of docstrings
+    'sphinx.ext.autosummary',  # Automatic generation of summary tables
+    'sphinx.ext.viewcode',  # Add links to source code
+    'sphinx_autodoc_typehints',  # Automatically document type hints for cleaner signatures
 ]
-#autodoc_typehints = 'both'
+autoclass_content = 'both'
+autodoc_inherit_docstrings = True
+set_type_checking_flag = True
 autodoc_default_options = {
     'members': True,
     'inherited-members': True,

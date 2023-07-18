@@ -4,16 +4,18 @@
 .. currentmodule:: attribench.result
 
 .. autoclass:: GroupedMetricResult
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
-   .. automethod:: __init__
-
    
    .. rubric:: Methods
 
    .. autosummary::
+      :nosignatures:
    
-      ~GroupedMetricResult.__init__
       ~GroupedMetricResult.add
       ~GroupedMetricResult.get_df
       ~GroupedMetricResult.load

@@ -13,7 +13,7 @@ explanations of machine learning models.
 
 Install
 -------
-Attribench can be installed from [PyPI](https://pypi.org/) as follows::
+Attribench can be installed from `PyPI <https://pypi.org/>`_ as follows::
    
       pip install attribench
 

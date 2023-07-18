@@ -95,8 +95,7 @@ class TrainAdversarialPatches(DistributedComputation):
         port: str = "12355",
         devices: Optional[Tuple[int]] = None,
     ):
-        """Creates a TrainAdversarialPatches instance.
-
+        """
         Parameters
         ----------
         model_factory : ModelFactory
