@@ -27,7 +27,7 @@ class DistributedComputation:
             else list(range(torch.cuda.device_count()))
         )
         self.world_size = len(self.devices)
-        self.ctx = mp.get_context("fork")
+        self.ctx = mp.get_context("spawn")
 
     @abstractmethod
     def _handle_result(self, result: PartialResultMessage):
