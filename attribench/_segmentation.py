@@ -10,14 +10,23 @@ def isin(a: torch.Tensor, b: torch.Tensor):
 
 def segment_samples(samples: np.ndarray) -> np.ndarray:
     # Segment images using SLIC
-    seg_images = np.stack([slic(np.transpose(samples[i, ...], (1, 2, 0)),
-                                start_label=0, slic_zero=True)
-                           for i in range(samples.shape[0])])
+    seg_images = np.stack(
+        [
+            slic(
+                np.transpose(samples[i, ...], (1, 2, 0)),
+                start_label=0,
+                slic_zero=True,
+            )
+            for i in range(samples.shape[0])
+        ]
+    )
     seg_images = np.expand_dims(seg_images, axis=1)
     return seg_images
 
 
-def segment_attributions(seg_images: np.ndarray, attrs: np.ndarray) -> np.ndarray:
+def segment_attributions(
+    seg_images: np.ndarray, attrs: np.ndarray
+) -> np.ndarray:
     segments = np.unique(seg_images)
     seg_img_flat = seg_images.reshape(seg_images.shape[0], -1)
     attrs_flat = attrs.reshape(attrs.shape[0], -1)
@@ -27,7 +36,12 @@ def segment_attributions(seg_images: np.ndarray, attrs: np.ndarray) -> np.ndarra
         masked_attrs = mask * attrs_flat
         mask_size = np.sum(mask, axis=1)
         sum_attrs = np.sum(masked_attrs, axis=1)
-        mean_attrs = np.divide(sum_attrs, mask_size, out=np.zeros_like(sum_attrs), where=mask_size != 0)
+        mean_attrs = np.divide(
+            sum_attrs,
+            mask_size,
+            out=np.zeros_like(sum_attrs),
+            where=mask_size != 0,
+        )
         # If seg does not exist for image, mask_size == 0. Set to -inf.
         mean_attrs[mask_size == 0] = -np.inf
         result[:, seg] = mean_attrs

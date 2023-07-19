@@ -14,6 +14,7 @@ class IndexDataset(Dataset):
         dataset : Dataset
             The PyTorch Dataset to wrap.
         """
+        super().__init__()
         self.dataset: Dataset = dataset
 
     def __len__(self):

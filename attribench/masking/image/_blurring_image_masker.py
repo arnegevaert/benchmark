@@ -10,7 +10,7 @@ class BlurringImageMasker(ImageMasker):
     by the ``kernel_size`` parameter, which is expressed as a fraction
     of the image height.
     """
-    def __init__(self, feature_level: str, kernel_size: float):
+    def __init__(self, masking_level: str, kernel_size: float):
         """
         Parameters
         ----------
@@ -26,7 +26,7 @@ class BlurringImageMasker(ImageMasker):
         ValueError
             If ``kernel_size`` is not between 0 and 1.
         """
-        super().__init__(feature_level)
+        super().__init__(masking_level)
         if not 0 < kernel_size < 1.0:
             raise ValueError(
                 "Kernel size is expressed as a fraction of image height,"

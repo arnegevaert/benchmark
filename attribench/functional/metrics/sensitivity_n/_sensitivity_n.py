@@ -48,7 +48,8 @@ def _compute_out_diffs(
         for activation_fn in activation_fns
     }
     removed_indices: Dict[int, npt.NDArray] = {
-        n: np.zeros((ds.samples.shape[0], ds.num_subsets, n)) for n in n_range
+        n: np.zeros((ds.samples.shape[0], ds.num_subsets, n), dtype=int)
+        for n in n_range
     }
     # TODO why do we not use a dataloader here?
     for i in range(len(ds)):
@@ -62,6 +63,7 @@ def _compute_out_diffs(
             output_diffs[activation_fn][n][:, subset_idx] = (
                 (orig_output[activation_fn] - activated_output)
                 .gather(dim=1, index=labels.unsqueeze(-1))
+                .flatten()
                 .detach()
                 .cpu()
                 .numpy()
@@ -110,7 +112,7 @@ def _compute_correlations(
                 n_output_diffs = output_diffs[activation_fn][n]
                 # Compute correlation between output difference and
                 # sum of attribution values
-                result[method_name][activation_fn][:, n_idx] = torch.tensor(
+                result[activation_fn][method_name][:, n_idx] = torch.tensor(
                     corrcoef(n_sum_of_attrs, n_output_diffs)
                 )
     return result

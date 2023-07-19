@@ -6,7 +6,7 @@ class ConstantImageMasker(ImageMasker):
     """Image masker that masks pixels or features by replacing them with
     a given constant value.
     """
-    def __init__(self, feature_level: str, mask_value=0.0):
+    def __init__(self, masking_level: str, mask_value=0.0):
         """
         Parameters
         ----------
@@ -16,7 +16,7 @@ class ConstantImageMasker(ImageMasker):
         mask_value : float
             The value to use for masking. Defaults to 0.0.
         """
-        super().__init__(feature_level)
+        super().__init__(masking_level)
         self.mask_value = mask_value
 
     def _initialize_baselines(self, samples: torch.Tensor):

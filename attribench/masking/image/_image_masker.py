@@ -53,6 +53,7 @@ class ImageMasker(Masker):
         self.segmented_attributions: Optional[np.ndarray] = None
         self.segment_indices: Optional[List[np.ndarray]] = None
         self.use_segments: bool = False
+        self.sorted_indices: torch.Tensor | List[torch.Tensor] | None = None
 
     def set_batch(
         self,
@@ -115,7 +116,9 @@ class ImageMasker(Masker):
                 segmented_samples.cpu().numpy(),
                 attributions.cpu().numpy(),
             )
-            sorted_indices = self.segmented_attributions.argsort()
+            sorted_indices = torch.tensor(
+                self.segmented_attributions.argsort()
+            )
 
             # Filter out the -np.inf values from the sorted indices
             filtered_sorted_indices = []
@@ -124,7 +127,7 @@ class ImageMasker(Masker):
                     self.segmented_attributions[i, ...] == -np.inf
                 )
                 filtered_sorted_indices.append(sorted_indices[i, num_infs:])
-            self.sorted_indices = torch.tensor(filtered_sorted_indices)
+            self.sorted_indices = filtered_sorted_indices
         elif attributions is not None:
             # If only attributions are given, sort them
             self.sorted_indices = torch.tensor(
@@ -154,7 +157,7 @@ class ImageMasker(Masker):
         if self.masking_level == "pixel":
             return self.samples.flatten(2).shape[-1]
 
-    def mask_top(self, k):
+    def mask_top(self, k: int):
         assert self.samples is not None
         assert self.sorted_indices is not None
         if not self.use_segments:
@@ -169,7 +172,7 @@ class ImageMasker(Masker):
             indices.append(self.sorted_indices[i][-num_to_mask:])
         return self._mask_segments(indices)
 
-    def mask_bot(self, k):
+    def mask_bot(self, k: int):
         assert self.samples is not None
         assert self.sorted_indices is not None
         if not self.use_segments:
@@ -185,7 +188,7 @@ class ImageMasker(Masker):
         return self._mask_segments(indices)
 
     def mask_rand(
-        self, k, return_indices=False
+        self, k: int, return_indices=False
     ) -> torch.Tensor | Tuple[torch.Tensor, torch.Tensor]:
         assert self.samples is not None
         if k == 0:
@@ -199,13 +202,19 @@ class ImageMasker(Masker):
             # k can be large -> rng.choice raises exception if k > number of segments
             assert self.segment_indices is not None
             assert self.segmented_samples is not None
-            indices = [
-                rng.choice(self.segment_indices[i], size=k, replace=False)
-                for i in range(self.segmented_samples.shape[0])
-            ]
+            indices = torch.stack(
+                [
+                    torch.tensor(
+                        rng.choice(
+                            self.segment_indices[i], size=k, replace=False
+                        )
+                    )
+                    for i in range(self.segmented_samples.shape[0])
+                ]
+            )
             masked_samples = self._mask_segments(indices)
         if return_indices:
-            return masked_samples, torch.tensor(indices)
+            return masked_samples, indices
         return masked_samples
 
     def _check_attribution_shape(
@@ -221,7 +230,7 @@ class ImageMasker(Masker):
             aggregated_shape[1] = 1
             return aggregated_shape == list(attributions.shape)
 
-    def _mask(self, indices: np.ndarray) -> torch.Tensor:
+    def _mask(self, indices: torch.Tensor) -> torch.Tensor:
         if self.baseline is None:
             raise ValueError("Masker was not initialized.")
         if self.use_segments:
@@ -251,7 +260,7 @@ class ImageMasker(Masker):
             return self._mask_boolean(to_mask.view(self.samples.shape).bool())
 
     def _mask_segments(
-        self, segments: Union[np.ndarray, List[np.ndarray]]
+        self, segments: Union[torch.Tensor, List[torch.Tensor]]
     ) -> torch.Tensor:
         assert self.segmented_samples is not None
         assert self.samples is not None
@@ -264,10 +273,8 @@ class ImageMasker(Masker):
         bool_masks = []
         for i in range(self.samples.shape[0]):
             seg_img = self.segmented_samples[i, ...]
-            segs = segments[i]
-            bool_masks.append(
-                _isin(seg_img, torch.tensor(segs, device=seg_img.device))
-            )
+            segs = segments[i].to(seg_img.device)
+            bool_masks.append(_isin(seg_img, segs))
         bool_masks = torch.stack(bool_masks, dim=0)
         if self.samples.shape[1] == 3:
             bool_masks = bool_masks.repeat(1, 3, 1, 1)

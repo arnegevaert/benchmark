@@ -1,5 +1,7 @@
 import torch
-from attribench.data import AttributionsDataset
+from attribench.data.attributions_dataset._attributions_dataset import (
+    GroupedAttributionsDataset,
+)
 from .._metric_worker import GroupedMetricWorker, WorkerConfig
 from typing import Callable, Dict
 from torch import nn
@@ -14,7 +16,7 @@ class MaxSensitivityWorker(GroupedMetricWorker):
         self,
         worker_config: WorkerConfig,
         model_factory: Callable[[], nn.Module],
-        dataset: AttributionsDataset,
+        dataset: GroupedAttributionsDataset,
         batch_size: int,
         method_factory: MethodFactory,
         num_perturbations: int,

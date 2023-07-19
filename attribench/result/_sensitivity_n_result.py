@@ -51,7 +51,7 @@ class SensitivityNResult(GroupedMetricResult):
             "method": method_names,
         }
         shape = [num_samples, num_steps]
-        level_order = ["method", "masker", "activation_fn"]
+        level_order = ["masker", "activation_fn", "method"]
         super().__init__(method_names, shape, levels, level_order)
 
     @classmethod

@@ -90,11 +90,15 @@ class GroupedMetricWorker(MetricWorker):
         self,
         worker_config: WorkerConfig,
         model_factory: Callable[[], nn.Module],
-        dataset: AttributionsDataset,
+        dataset: GroupedAttributionsDataset,
         batch_size: int,
     ):
-        super().__init__(worker_config, model_factory, dataset, batch_size)
-        self.dataset = GroupedAttributionsDataset(dataset)
+        super().__init__(
+            worker_config,
+            model_factory,
+            dataset,
+            batch_size,
+        )
 
     def work(self):
         self.setup()

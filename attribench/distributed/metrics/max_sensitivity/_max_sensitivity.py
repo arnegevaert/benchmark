@@ -1,5 +1,6 @@
 from attribench.data.attributions_dataset._attributions_dataset import (
     AttributionsDataset,
+    GroupedAttributionsDataset
 )
 from .._metric_worker import MetricWorker
 from ..._worker import WorkerConfig
@@ -82,7 +83,7 @@ class MaxSensitivity(Metric):
         self.method_factory = method_factory
         self.num_perturbations = num_perturbations
         self.radius = radius
-        self.dataset = dataset
+        self.dataset = GroupedAttributionsDataset(dataset)
         self._result = MaxSensitivityResult(
             method_factory.get_method_names(), num_samples=dataset.num_samples
         )

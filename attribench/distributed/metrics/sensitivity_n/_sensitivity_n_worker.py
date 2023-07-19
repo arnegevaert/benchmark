@@ -2,7 +2,9 @@ import numpy as np
 from typing import Dict, List
 
 import torch
-from attribench.data import AttributionsDataset
+from attribench.data.attributions_dataset._attributions_dataset import (
+    GroupedAttributionsDataset,
+)
 from attribench.masking import Masker
 from .._metric_worker import GroupedMetricWorker, WorkerConfig
 from attribench._model_factory import ModelFactory
@@ -16,7 +18,7 @@ class SensitivityNWorker(GroupedMetricWorker):
         self,
         worker_config: WorkerConfig,
         model_factory: ModelFactory,
-        dataset: AttributionsDataset,
+        dataset: GroupedAttributionsDataset,
         batch_size: int,
         min_subset_size: float,
         max_subset_size: float,
@@ -35,9 +37,15 @@ class SensitivityNWorker(GroupedMetricWorker):
         self.max_subset_size = max_subset_size
         self.min_subset_size = min_subset_size
         self.segmented = segmented
-        self.n_range = np.linspace(
+        n_range = np.linspace(
             self.min_subset_size, self.max_subset_size, self.num_steps
         )
+        if segmented:
+            n_range = n_range * 100
+        else:
+            total_num_features = np.prod(dataset.attributions_shape)
+            n_range = n_range * total_num_features
+        self.n_range = n_range.astype(int)
 
     def process_batch(
         self,

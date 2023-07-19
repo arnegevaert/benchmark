@@ -1,7 +1,7 @@
 import torch
 from typing import Callable, Dict, List
 from torch import nn
-from attribench.data import AttributionsDataset
+from attribench.data.attributions_dataset._attributions_dataset import GroupedAttributionsDataset
 from .._metric_worker import GroupedMetricWorker, WorkerConfig
 from attribench.functional.metrics.infidelity._perturbation_generator import (
     PerturbationGenerator,
@@ -16,7 +16,7 @@ class InfidelityWorker(GroupedMetricWorker):
         self,
         worker_config: WorkerConfig,
         model_factory: Callable[[], nn.Module],
-        dataset: AttributionsDataset,
+        dataset: GroupedAttributionsDataset,
         batch_size: int,
         perturbation_generators: Dict[str, PerturbationGenerator],
         num_perturbations: int,

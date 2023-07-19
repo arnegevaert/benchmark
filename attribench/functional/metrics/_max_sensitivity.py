@@ -26,6 +26,8 @@ def _max_sensitivity_batch(
     device: torch.device,
 ):
     if set(method_dict.keys()) != set(batch_attr.keys()):
+        print(method_dict.keys())
+        print(batch_attr.keys())
         raise ValueError(
             "Method dictionary and batch attributions dictionary"
             " must have the same keys."

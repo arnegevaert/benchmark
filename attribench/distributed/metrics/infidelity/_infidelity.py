@@ -1,6 +1,6 @@
 from .._metric import Metric
 from typing import Dict, Tuple, Optional, List
-from attribench.data import AttributionsDataset
+from attribench.data.attributions_dataset._attributions_dataset import GroupedAttributionsDataset, AttributionsDataset
 from ._infidelity_worker import InfidelityWorker
 from ..._worker import WorkerConfig
 from attribench.result import InfidelityResult
@@ -83,7 +83,7 @@ class Infidelity(Metric):
         super().__init__(
             model_factory, dataset, batch_size, address, port, devices
         )
-        self.dataset = dataset
+        self.dataset = GroupedAttributionsDataset(dataset)
         self.activation_fns = activation_fns
         self.num_perturbations = num_perturbations
         self.perturbation_generators = perturbation_generators

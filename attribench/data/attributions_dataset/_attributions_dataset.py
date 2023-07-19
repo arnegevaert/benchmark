@@ -146,9 +146,9 @@ class AttributionsDataset(IndexDataset):
         self,
         samples: Dataset | torch.Tensor,
         labels: torch.Tensor | None = None,
+        path: str | None = None,
         attributions: Dict[str, torch.Tensor] | None = None,
         methods: List[str] | None = None,
-        path: str | None = None,
         aggregate_dim: int = 0,
         aggregate_method: str | None = None,
     ):
@@ -161,6 +161,9 @@ class AttributionsDataset(IndexDataset):
         labels: torch.Tensor | None
             A Tensor containing the labels for the samples.
             Only used if samples is a Tensor.
+        path: str | None
+            Path to an HDF5 file containing the attributions.
+            If None, attributions must be given as a dictionary.
         attributions: Dict[str, torch.Tensor] | None
             A dictionary mapping attribution method names to Tensors containing
             the attributions for each sample. If None, a path to an HDF5 file
@@ -168,9 +171,6 @@ class AttributionsDataset(IndexDataset):
         methods: List[str] | None
             A list of method names to use. If None, all methods in the
             attributions dictionary are used.
-        path: str | None
-            Path to an HDF5 file containing the attributions.
-            If None, attributions must be given as a dictionary.
         aggregate_dim: int
             If not None, aggregate the attributions over the given dimension.
         aggregate_method: str | None
@@ -233,12 +233,16 @@ class AttributionsDataset(IndexDataset):
             )
         else:
             self.attributions_shape = orig_attributions_shape
+        
+    def _open_attributions_file(self):
+        self.attributions = h5py.File(self.path, "r")
 
     def __getitem__(
         self, index: int
     ) -> Tuple[int, torch.Tensor, torch.Tensor, torch.Tensor, str]:
         if self.attributions is None:
-            self.attributions = h5py.File(self.path, "r")
+            self._open_attributions_file()
+        assert self.attributions is not None
         method_idx = index // self.num_samples
         method_name = self.method_names[method_idx]
         sample_idx = index % self.num_samples
@@ -255,14 +259,18 @@ class AttributionsDataset(IndexDataset):
         return self.num_samples * len(self.method_names)
 
 
-class GroupedAttributionsDataset(Dataset):
+class GroupedAttributionsDataset(IndexDataset):
     def __init__(self, dataset: AttributionsDataset):
-        super().__init__()
-        self.dataset = dataset
+        super().__init__(dataset)
+        self.dataset: AttributionsDataset = dataset
+        self.method_names = dataset.method_names
+        self.num_samples = dataset.num_samples
+        self.attributions_shape = dataset.attributions_shape
 
     def __getitem__(self, index):
         if self.dataset.attributions is None:
-            raise ValueError("Attributions file not open")
+            self.dataset._open_attributions_file()
+            assert self.dataset.attributions is not None
         sample, label = self.dataset.samples_dataset[index]
         attrs: Dict[str, torch.Tensor] = {}
         for method_name in self.dataset.method_names:

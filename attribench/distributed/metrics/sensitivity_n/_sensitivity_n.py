@@ -1,6 +1,9 @@
 from .._metric import Metric
 from typing import Dict, Union, Tuple, List
-from attribench.data import AttributionsDataset
+from attribench.data.attributions_dataset._attributions_dataset import (
+    AttributionsDataset,
+    GroupedAttributionsDataset,
+)
 from attribench.masking import Masker
 from attribench.result._sensitivity_n_result import SensitivityNResult
 from ._sensitivity_n_worker import SensitivityNWorker
@@ -96,7 +99,7 @@ class SensitivityN(Metric):
         if isinstance(activation_fns, str):
             activation_fns = [activation_fns]
         self.activation_fns: List[str] = activation_fns
-        self.dataset = dataset
+        self.dataset = GroupedAttributionsDataset(dataset)
         self.maskers = maskers
         self.num_subsets = num_subsets
         self.num_steps = num_steps
