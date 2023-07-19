@@ -73,13 +73,16 @@ class SelectSamples(DistributedComputation):
     subprocess selects a part of the samples and writes them to the
     HDF5 file. The number of processes is determined by the number of
     devices.
+
+    If you want to select correctly classified samples and return them,
+    rather than storing them to a HDF5 file, use
+    :func:`attribench.functional.select_samples` instead.
     """
 
     def __init__(
         self,
         model_factory: ModelFactory,
         dataset: Dataset,
-        writer: HDF5DatasetWriter,
         num_samples: int,
         batch_size: int,
         address: str = "localhost",
@@ -112,12 +115,12 @@ class SelectSamples(DistributedComputation):
         super().__init__(address, port, devices)
         self.model_factory = model_factory
         self.dataset = dataset
-        self.writer = writer
         self.num_samples = num_samples
         self.batch_size = batch_size
         self.sufficient_samples = self.ctx.Event()
         self.count = 0
         self.prog: tqdm | None = None
+        self.writer: HDF5DatasetWriter | None = None
 
     def _create_worker(
         self, worker_config: WorkerConfig
@@ -130,18 +133,33 @@ class SelectSamples(DistributedComputation):
             self.model_factory,
         )
 
-    def run(self):
+    def run(self, path: str):
+        """Run the sample selection.
+
+        Parameters
+        ----------
+        path : str
+            Path to write the samples to.
+        """
+        self.writer = HDF5DatasetWriter(path, self.num_samples)
         self.prog = tqdm(total=self.num_samples)
         super().run()
 
     def _handle_result(self, result: PartialResultMessage[SamplesResult]):
+        assert self.writer is not None
+
+        # If too many samples, truncate
         samples = result.data.samples
         labels = result.data.labels
         if self.count + samples.shape[0] > self.num_samples:
             samples = samples[: self.num_samples - self.count]
             labels = labels[: self.num_samples - self.count]
             self.sufficient_samples.set()
+
+        # Write to disk
         self.writer.write(samples, labels)
+
+        # Update progress bar
         self.count += samples.shape[0]
         if self.prog is not None:
             self.prog.update(samples.shape[0])

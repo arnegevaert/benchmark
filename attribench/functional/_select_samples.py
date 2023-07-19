@@ -47,6 +47,9 @@ def select_samples(
     samples and labels are simply returned. Otherwise, the samples and
     labels are written to the HDF5 file and `None` is returned.
 
+    TODO this function should just return the samples and labels. Use the
+    distributed class to write the samples and labels to a file.
+
     Parameters
     ----------
     model : nn.Module

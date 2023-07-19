@@ -40,7 +40,7 @@ class DistributedComputation:
     def _cleanup(self):
         pass
 
-    def run(self):
+    def run(self, *args, **kwargs):
         if self.world_size != 1:
             # Initialize multiproc parameters
             os.environ["MASTER_ADDR"] = self.address
