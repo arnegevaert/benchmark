@@ -11,14 +11,15 @@ class HDF5DatasetWriter:
     we want to avoid having the full dataset in memory. This object writes
     the dataset in chunks as they come in.
     """
+
     def __init__(self, path: str, num_samples: int):
         self.path: str = path
         self.num_samples = num_samples
         self.head = 0
-        
+
         self.file: h5py.File | None = None
-        self.sample_shape: Tuple[int] | None = None
-    
+        self.sample_shape: Tuple[int, ...] | None = None
+
     def init_file(self, sample_shape: Tuple[int, ...]):
         self.sample_shape = sample_shape
         with h5py.File(self.path, "x") as fp:
@@ -42,7 +43,10 @@ class HDF5DatasetWriter:
                 "Number of samples and number of labels do not match."
             )
         if samples.shape[1:] != self.sample_shape:
-            raise ValueError("Invalid sample shape.")
+            raise ValueError(
+                f"Invalid sample shape. Expected: {self.sample_shape}, "
+                f"got: {samples.shape[1:]}"
+            )
         if self.file is None:
             self.file = h5py.File(self.path, "a")
 

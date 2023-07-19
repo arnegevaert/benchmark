@@ -139,7 +139,7 @@ class SelectSamples(DistributedComputation):
         Parameters
         ----------
         path : str
-            Path to write the samples to.
+            Path to the HDF5 file to write the samples to.
         """
         self.writer = HDF5DatasetWriter(path, self.num_samples)
         self.prog = tqdm(total=self.num_samples)

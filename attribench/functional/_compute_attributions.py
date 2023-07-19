@@ -20,6 +20,8 @@ def compute_attributions(
     is `None`, the attributions are simply returned in a dictionary.
     Otherwise, the attributions are written to the HDF5 file and `None` is returned.
 
+    TODO don't write to file, just return the dict
+
     Parameters
     ----------
     model : nn.Module

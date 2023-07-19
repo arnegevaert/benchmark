@@ -78,6 +78,10 @@ class ComputeAttributions(DistributedComputation):
     The number of processes is determined by the number of devices.
     If no devices are specified, then all available devices are used.
     Samples are distributed evenly across the processes.
+
+    If you want to compute attributions and simply return them, rather than
+    storing them in a file, then use the
+    :func:`~attribench.functional.compute_attributions` function instead.
     """
 
     def __init__(
@@ -86,7 +90,6 @@ class ComputeAttributions(DistributedComputation):
         method_factory: MethodFactory,
         dataset: Dataset,
         batch_size: int,
-        writer: AttributionsDatasetWriter,
         address="localhost",
         port="12355",
         devices: Optional[Tuple] = None,
@@ -121,10 +124,21 @@ class ComputeAttributions(DistributedComputation):
         self.method_factory = method_factory
         self.dataset = IndexDataset(dataset)
         self.batch_size = batch_size
-        self.writer = writer
-        self.prog = None
+        self.prog: tqdm | None = None
+        self.writer: AttributionsDatasetWriter | None = None
 
-    def run(self):
+    def run(self, path: str):
+        """Run the computation.
+
+        Parameters
+        ----------
+        path : str
+            Path to the HDF5 file to write the attributions to.
+        """
+        self.writer = AttributionsDatasetWriter(
+            path,
+            num_samples=len(self.dataset),
+        )
         self.prog = tqdm(total=len(self.dataset) * len(self.method_factory))
         super().run()
     
@@ -146,6 +160,7 @@ class ComputeAttributions(DistributedComputation):
     def _handle_result(
         self, result_message: PartialResultMessage[AttributionResult]
     ):
+        assert self.writer is not None
         indices = result_message.data.indices
         attributions = result_message.data.attributions
         method_name = result_message.data.method_name
