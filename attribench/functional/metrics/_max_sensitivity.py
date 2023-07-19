@@ -40,7 +40,10 @@ def _max_sensitivity_batch(
 
     # Compute Max-Sensitivity for each method
     for method_name, method in method_dict.items():
-        attrs = _normalize_attrs(batch_attr[method_name])
+        #attrs = _normalize_attrs(batch_attr[method_name])
+        # TODO we are not taking into account the aggregation here
+        # TODO also the AttributionsDataset is not being used
+        attrs = _normalize_attrs(method(batch_x, batch_y).detach()).cpu()
         diffs = []
 
         for _ in range(num_perturbations):

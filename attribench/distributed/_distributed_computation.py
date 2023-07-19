@@ -27,7 +27,7 @@ class DistributedComputation:
             else list(range(torch.cuda.device_count()))
         )
         self.world_size = len(self.devices)
-        self.ctx = mp.get_context("spawn")
+        self.ctx = mp.get_context("fork")
 
     @abstractmethod
     def _handle_result(self, result: PartialResultMessage):
@@ -45,11 +45,10 @@ class DistributedComputation:
             # Initialize multiproc parameters
             os.environ["MASTER_ADDR"] = self.address
             os.environ["MASTER_PORT"] = self.port
-            ctx = mp.get_context("spawn")
 
-            result_queue = ctx.Queue()  # Will store results from metric
+            result_queue = self.ctx.Queue()  # Will store results from metric
             # Used for signaling processes that they can terminate
-            all_processes_done = ctx.Event()
+            all_processes_done = self.ctx.Event()
             processes = []  # Used for joining all processes
 
             # Start all processes
@@ -58,7 +57,7 @@ class DistributedComputation:
                     self.world_size, result_queue, rank, all_processes_done
                 )
                 worker = self._create_worker(worker_config)
-                p = ctx.Process(target=worker.run)
+                p = self.ctx.Process(target=worker.run)
                 p.start()
                 processes.append(p)
 
