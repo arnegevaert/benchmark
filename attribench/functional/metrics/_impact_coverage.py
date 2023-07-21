@@ -159,9 +159,9 @@ def _impact_coverage_batch(
 
 def impact_coverage(
     model: nn.Module,
-    method_dict: Dict[str, AttributionMethod],
-    dataset: Dataset,
+    samples_dataset: Dataset,
     batch_size: int,
+    method_dict: Dict[str, AttributionMethod],
     patch_folder: str,
     device: torch.device = torch.device("cpu"),
 ) -> ImpactCoverageResult:
@@ -190,12 +190,12 @@ def impact_coverage(
     ----------
     model : nn.Module
         Model to compute Impact Coverage for.
-    method_dict : Dict[str, AttributionMethod]
-        Dictionary mapping method names to attribution methods.
-    dataset : Dataset
+    samples_dataset : Dataset
         Dataset to compute Impact Coverage for.
     batch_size : int
         Batch size to use when computing Impact Coverage.
+    method_dict : Dict[str, AttributionMethod]
+        Dictionary mapping method names to attribution methods.
     patch_folder : str
         Path to folder containing adversarial patches.
     device : torch.device, optional
@@ -216,7 +216,7 @@ def impact_coverage(
     ]
     patch_names_cycle = cycle(patch_names)
 
-    index_dataset = IndexDataset(dataset)
+    index_dataset = IndexDataset(samples_dataset)
     dataloader = DataLoader(
         index_dataset, batch_size=batch_size, num_workers=4, pin_memory=True
     )

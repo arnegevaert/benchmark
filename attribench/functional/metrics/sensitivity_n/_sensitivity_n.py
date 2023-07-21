@@ -160,16 +160,16 @@ def _sens_n_batch(
 
 
 def sensitivity_n(
-    dataset: AttributionsDataset,
     model: nn.Module,
+    attributions_dataset: AttributionsDataset,
     batch_size: int,
+    maskers: Mapping[str, Masker],
+    activation_fns: str | List[str],
     min_subset_size: float,
     max_subset_size: float,
-    num_subsets: int,
     num_steps: int,
+    num_subsets: int,
     segmented: bool,
-    maskers: Mapping[str, Masker],
-    activation_fns: str | List[str] = "linear",
     device: torch.device = torch.device("cpu"),
 ) -> SensitivityNResult:
     """Computes the Sensitivity-n metric for a given :class:`~attribench.data.AttributionsDataset` and model.
@@ -199,12 +199,17 @@ def sensitivity_n(
 
     Parameters
     ----------
-    dataset : AttributionsDataset
-        Dataset containing the attributions to compute Sensitivity-n on.
     model : nn.Module
         Model to compute Sensitivity-n for.
+    attributions_dataset : AttributionsDataset
+        Dataset containing the attributions to compute Sensitivity-n on.
     batch_size : int
         Batch size to use when computing model output on masked samples.
+    maskers : Dict[str, Masker]
+        Dictionary of maskers to use. Keys are the names of the maskers.
+    activation_fns : Union[Tuple[str], str]
+        Activation functions to use. If a single string is passed, then the
+        it is converted to a single-element list.
     min_subset_size : float
         Minimum percentage of features to mask.
     max_subset_size : float
@@ -215,11 +220,6 @@ def sensitivity_n(
         Number of random subsets to generate for each value of `n`.
     segmented : bool
         If True, then the Seg-Sensitivity-n metric is computed.
-    maskers : Dict[str, Masker]
-        Dictionary of maskers to use. Keys are the names of the maskers.
-    activation_fns : Union[Tuple[str], str]
-        Activation functions to use. If a single string is passed, then the
-        it is converted to a single-element list.
     device : torch.device, optional
         Device to use, by default torch.device("cpu")
 
@@ -233,16 +233,16 @@ def sensitivity_n(
     model.to(device)
     model.eval()
 
-    grouped_dataset = GroupedAttributionsDataset(dataset)
+    grouped_dataset = GroupedAttributionsDataset(attributions_dataset)
     dataloader = DataLoader(
         grouped_dataset, batch_size=batch_size, num_workers=4, pin_memory=True
     )
 
     result = SensitivityNResult(
-        dataset.method_names,
+        attributions_dataset.method_names,
         list(maskers.keys()),
         list(activation_fns),
-        num_samples=dataset.num_samples,
+        num_samples=attributions_dataset.num_samples,
         num_steps=num_steps,
     )
 
@@ -251,7 +251,7 @@ def sensitivity_n(
     if segmented:
         n_range = n_range * 100
     else:
-        total_num_features = np.prod(dataset.attributions_shape)
+        total_num_features = np.prod(attributions_dataset.attributions_shape)
         n_range = n_range * total_num_features
     n_range = n_range.astype(int)
 

@@ -145,12 +145,12 @@ def _infidelity_batch(
 
 
 def infidelity(
-    dataset: AttributionsDataset,
     model: nn.Module,
+    attributions_dataset: AttributionsDataset,
     batch_size: int,
+    activation_fns: List[str],
     perturbation_generators: Dict[str, PerturbationGenerator],
     num_perturbations: int,
-    activation_fns: List[str],
     device: torch.device = torch.device("cpu"),
 ):
     """Computes the Infidelity metric for a given :class:`~attribench.data.AttributionsDataset` and model.
@@ -179,10 +179,10 @@ def infidelity(
 
     Parameters
     ----------
-    dataset : AttributionsDataset
-        Dataset of attributions to compute Infidelity on.
     model : nn.Module
         Model to compute Infidelity on.
+    attributions_dataset : AttributionsDataset
+        Dataset of attributions to compute Infidelity on.
     batch_size : int
         Batch size to use when computing Infidelity.
     perturbation_generators : Dict[str, PerturbationGenerator]
@@ -195,15 +195,15 @@ def infidelity(
     device : torch.device, optional
         Device to use, by default `torch.device("cpu")`
     """
-    grouped_dataset = GroupedAttributionsDataset(dataset)
+    grouped_dataset = GroupedAttributionsDataset(attributions_dataset)
     dataloader = DataLoader(
         grouped_dataset, batch_size=batch_size, num_workers=4
     )
     result = InfidelityResult(
-        dataset.method_names,
+        attributions_dataset.method_names,
         list(perturbation_generators.keys()),
         activation_fns,
-        num_samples=dataset.num_samples,
+        num_samples=attributions_dataset.num_samples,
     )
     for batch_indices, batch_x, batch_y, batch_attr in dataloader:
         batch_result = _infidelity_batch(

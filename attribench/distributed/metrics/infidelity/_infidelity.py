@@ -43,11 +43,11 @@ class Infidelity(Metric):
     def __init__(
         self,
         model_factory: ModelFactory,
-        dataset: AttributionsDataset,
+        attributions_dataset: AttributionsDataset,
         batch_size: int,
+        activation_fns: List[str],
         perturbation_generators: Dict[str, PerturbationGenerator],
         num_perturbations: int,
-        activation_fns: List[str],
         address="localhost",
         port="12355",
         devices: Optional[Tuple] = None,
@@ -58,18 +58,18 @@ class Infidelity(Metric):
         model_factory : ModelFactory
             ModelFactory instance or callable that returns a model.
             Used to create a model for each subprocess.
-        dataset : AttributionsDataset
+        attributions_dataset : AttributionsDataset
             Dataset containing the samples and attributions to compute
             Infidelity on.
         batch_size : int
             Batch size to use when computing Infidelity.
+        activation_fns : Tuple[str]
+            Tuple of activation functions to use when computing Infidelity.
         perturbation_generators : Dict[str, PerturbationGenerator]
             Dictionary of perturbation generators to use for generating
             perturbations.
         num_perturbations : int
             Number of perturbations to generate for each sample.
-        activation_fns : Tuple[str]
-            Tuple of activation functions to use when computing Infidelity.
         address : str, optional
             Address to use for the multiprocessing connection,
             by default "localhost"
@@ -81,9 +81,9 @@ class Infidelity(Metric):
             By default None.
         """
         super().__init__(
-            model_factory, dataset, batch_size, address, port, devices
+            model_factory, attributions_dataset, batch_size, address, port, devices
         )
-        self.dataset = GroupedAttributionsDataset(dataset)
+        self.dataset = GroupedAttributionsDataset(attributions_dataset)
         self.activation_fns = activation_fns
         self.num_perturbations = num_perturbations
         self.perturbation_generators = perturbation_generators

@@ -45,14 +45,14 @@ class SensitivityN(Metric):
     def __init__(
         self,
         model_factory: ModelFactory,
-        dataset: AttributionsDataset,
+        attributions_dataset: AttributionsDataset,
         batch_size: int,
+        maskers: Dict[str, Masker],
+        activation_fns: Union[List[str], str],
         min_subset_size: float,
         max_subset_size: float,
         num_steps: int,
         num_subsets: int,
-        maskers: Dict[str, Masker],
-        activation_fns: Union[List[str], str],
         segmented=False,
         address="localhost",
         port="12355",
@@ -64,10 +64,15 @@ class SensitivityN(Metric):
         model_factory : ModelFactory
             ModelFactory instance or callable that returns a model.
             Used to create a model for each subprocess.
-        dataset : AttributionsDataset
+        attributions_dataset : AttributionsDataset
             Dataset containing the attributions to compute Sensitivity-n on.
         batch_size : int
             Batch size to use when computing the model output.
+        maskers : Dict[str, Masker]
+            Dictionary of maskers to use. Keys are the names of the maskers.
+        activation_fns : Union[Tuple[str], str]
+            Activation functions to use. If a single string is passed, then the
+            it is converted to a single-element list.
         min_subset_size : float
             Minimum percentage of features to mask.
         max_subset_size : float
@@ -76,11 +81,6 @@ class SensitivityN(Metric):
             Number of steps between `min_subset_size` and `max_subset_size`.
         num_subsets : int
             Number of random subsets to generate for each value of `n`.
-        maskers : Dict[str, Masker]
-            Dictionary of maskers to use. Keys are the names of the maskers.
-        activation_fns : Union[Tuple[str], str]
-            Activation functions to use. If a single string is passed, then the
-            it is converted to a single-element list.
         segmented : bool
             If True, then the Seg-Sensitivity-n metric is computed.
         address : str, optional
@@ -94,12 +94,17 @@ class SensitivityN(Metric):
             available devices are used.
         """
         super().__init__(
-            model_factory, dataset, batch_size, address, port, devices
+            model_factory,
+            attributions_dataset,
+            batch_size,
+            address,
+            port,
+            devices,
         )
         if isinstance(activation_fns, str):
             activation_fns = [activation_fns]
         self.activation_fns: List[str] = activation_fns
-        self.dataset = GroupedAttributionsDataset(dataset)
+        self.dataset = GroupedAttributionsDataset(attributions_dataset)
         self.maskers = maskers
         self.num_subsets = num_subsets
         self.num_steps = num_steps
@@ -107,10 +112,10 @@ class SensitivityN(Metric):
         self.min_subset_size = min_subset_size
         self.segmented = segmented
         self._result = SensitivityNResult(
-            dataset.method_names,
+            attributions_dataset.method_names,
             list(maskers.keys()),
             self.activation_fns,
-            dataset.num_samples,
+            attributions_dataset.num_samples,
             num_steps,
         )
 

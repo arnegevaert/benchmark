@@ -1,10 +1,15 @@
-import numpy as np
 import torch
+from attribench.masking import Masker
+from abc import abstractmethod
 
 
 class MinimalSubsetDataset:
     def __init__(
-        self, num_steps, samples: torch.Tensor, attrs: np.ndarray, masker
+        self,
+        num_steps,
+        samples: torch.Tensor,
+        attrs: torch.Tensor,
+        masker: Masker,
     ):
         self.num_steps = num_steps
         self.samples = samples
@@ -21,6 +26,7 @@ class MinimalSubsetDataset:
     def __len__(self):
         return self.num_steps
 
+    @abstractmethod
     def __getitem__(self, item):
         raise NotImplementedError
 

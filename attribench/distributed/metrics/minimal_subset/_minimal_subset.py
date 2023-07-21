@@ -30,7 +30,7 @@ class MinimalSubset(Metric):
     def __init__(
         self,
         model_factory: ModelFactory,
-        dataset: AttributionsDataset,
+        attributions_dataset: AttributionsDataset,
         batch_size: int,
         maskers: Dict[str, Masker],
         mode: str = "deletion",
@@ -45,7 +45,7 @@ class MinimalSubset(Metric):
         model_factory : ModelFactory
             ModelFactory instance or callable that returns a model.
             Used to create a model for each subprocess.
-        dataset : AttributionsDataset
+        attributions_dataset : AttributionsDataset
             Dataset containing the samples and attributions to compute
             the Minimal Subset metric for.
         batch_size : int
@@ -72,19 +72,19 @@ class MinimalSubset(Metric):
             If `mode` is not "deletion" or "insertion".
         """
         super().__init__(
-            model_factory, dataset, batch_size, address, port, devices
+            model_factory, attributions_dataset, batch_size, address, port, devices
         )
-        self.dataset = dataset
+        self.dataset = attributions_dataset
         self.num_steps = num_steps
         if mode not in ["deletion", "insertion"]:
             raise ValueError("Mode must be deletion or insertion. Got:", mode)
         self.mode = mode
         self.maskers = maskers
         self._result = MinimalSubsetResult(
-            dataset.method_names,
+            attributions_dataset.method_names,
             list(maskers.keys()),
             mode,
-            num_samples=dataset.num_samples,
+            num_samples=attributions_dataset.num_samples,
         )
 
     def _create_worker(

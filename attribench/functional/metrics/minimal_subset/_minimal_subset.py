@@ -1,5 +1,4 @@
 from torch.utils.data import DataLoader
-import numpy as np
 from ._dataset import (
     MinimalSubsetDeletionDataset,
     MinimalSubsetInsertionDataset,
@@ -78,8 +77,8 @@ def minimal_subset_batch(
 
 
 def minimal_subset(
-    dataset: AttributionsDataset,
     model: nn.Module,
+    attributions_dataset: AttributionsDataset,
     batch_size: int,
     maskers: Dict[str, Masker],
     mode: str = "deletion",
@@ -102,11 +101,11 @@ def minimal_subset(
 
     Parameters
     ----------
-    dataset : AttributionsDataset
-        Dataset containing the samples and attributions to compute
-        the Minimal Subset metric for.
     model : nn.Module
         Model to compute the Minimal Subset metric for.
+    attributions_dataset : AttributionsDataset
+        Dataset containing the samples and attributions to compute
+        the Minimal Subset metric for.
     batch_size : int
         Batch size to use when computing the Minimal Subset metric.
     maskers : Dict[str, Masker]
@@ -129,14 +128,14 @@ def minimal_subset(
     model.eval()
 
     dataloader = DataLoader(
-        dataset, batch_size=batch_size, num_workers=4, pin_memory=True
+        attributions_dataset, batch_size=batch_size, num_workers=4, pin_memory=True
     )
 
     result = MinimalSubsetResult(
-        dataset.method_names,
+        attributions_dataset.method_names,
         list(maskers.keys()),
         mode,
-        num_samples=len(dataset),
+        num_samples=len(attributions_dataset),
     )
 
     for (

@@ -36,7 +36,7 @@ class MaxSensitivity(Metric):
     def __init__(
         self,
         model_factory: ModelFactory,
-        dataset: AttributionsDataset,
+        attributions_dataset: AttributionsDataset,
         batch_size: int,
         method_factory: MethodFactory,
         num_perturbations: int,
@@ -51,7 +51,7 @@ class MaxSensitivity(Metric):
         model_factory : ModelFactory
             ModelFactory instance or callable that returns a model.
             Used to create a model for each subprocess.
-        dataset : Dataset
+        attributions_dataset : Dataset
             Torch Dataset to use for computing the Max-Sensitivity.
         batch_size : int
             The batch size per subprocess to use for computing the Max-Sensitivity.
@@ -74,7 +74,7 @@ class MaxSensitivity(Metric):
         """
         super().__init__(
             model_factory,
-            dataset,
+            attributions_dataset,
             batch_size,
             address,
             port,
@@ -83,9 +83,9 @@ class MaxSensitivity(Metric):
         self.method_factory = method_factory
         self.num_perturbations = num_perturbations
         self.radius = radius
-        self.dataset = GroupedAttributionsDataset(dataset)
+        self.dataset = GroupedAttributionsDataset(attributions_dataset)
         self._result = MaxSensitivityResult(
-            method_factory.get_method_names(), num_samples=dataset.num_samples
+            method_factory.get_method_names(), num_samples=attributions_dataset.num_samples
         )
 
     def _create_worker(self, worker_config: WorkerConfig) -> MetricWorker:

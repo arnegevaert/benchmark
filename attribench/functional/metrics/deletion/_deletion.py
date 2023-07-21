@@ -35,8 +35,8 @@ def _deletion_batch(
 
 
 def deletion(
-    dataset: AttributionsDataset,
     model: nn.Module,
+    attributions_dataset: AttributionsDataset,
     batch_size: int,
     maskers: Mapping[str, Masker],
     activation_fns: Union[List[str], str] = "linear",
@@ -66,10 +66,10 @@ def deletion(
 
     Parameters
     ----------
-    dataset : AttributionsDataset
-        Dataset of attributions to compute Deletion on.
     model : nn.Module
         Model to compute Deletion on.
+    dataset : AttributionsDataset
+        Dataset of attributions to compute Deletion on.
     batch_size : int
         Batch size to use when computing model predictions on masked samples.
     maskers : Mapping[str, Masker]
@@ -105,15 +105,15 @@ def deletion(
     model.eval()
 
     dataloader = DataLoader(
-        dataset, batch_size=batch_size, num_workers=4, pin_memory=True
+        attributions_dataset, batch_size=batch_size, num_workers=4, pin_memory=True
     )
 
     result = DeletionResult(
-        dataset.method_names,
+        attributions_dataset.method_names,
         list(maskers.keys()),
         activation_fns,
         mode,
-        dataset.num_samples,
+        attributions_dataset.num_samples,
         num_steps,
     )
 

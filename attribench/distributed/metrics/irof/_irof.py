@@ -35,7 +35,7 @@ class Irof(Deletion):
     def __init__(
         self,
         model_factory: ModelFactory,
-        dataset: AttributionsDataset,
+        attributions_dataset: AttributionsDataset,
         batch_size: int,
         maskers: Mapping[str, ImageMasker],
         activation_fns: Union[List[str], str],
@@ -53,7 +53,7 @@ class Irof(Deletion):
         model_factory : ModelFactory
             ModelFactory instance or callable that returns a model.
             Used to create a model for each subprocess.
-        dataset : AttributionsDataset
+        attributions_dataset : AttributionsDataset
             Dataset containing the samples and attributions to compute
             IROF on.
         batch_size : int
@@ -88,7 +88,7 @@ class Irof(Deletion):
         """
         super().__init__(
             model_factory,
-            dataset,
+            attributions_dataset,
             batch_size,
             maskers,
             activation_fns,

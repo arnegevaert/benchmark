@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-from numpy import typing as npt
 from typing import List, Union, Mapping, Dict
 from attribench.masking.image import ImageMasker
 from attribench.functional.metrics.deletion._dataset import IrofDataset
@@ -38,8 +37,8 @@ def _irof_batch(
 
 
 def irof(
-    dataset: AttributionsDataset,
     model: nn.Module,
+    attributions_dataset: AttributionsDataset,
     batch_size: int,
     maskers: Mapping[str, ImageMasker],
     activation_fns: Union[List[str], str] = "linear",
@@ -70,10 +69,10 @@ def irof(
 
     Parameters
     ----------
-    dataset : AttributionsDataset
-        Dataset of attributions to compute IROF on.
     model : nn.Module
         Model to compute IROF on.
+    attributions_dataset : AttributionsDataset
+        Dataset of attributions to compute IROF on.
     batch_size : int
         Batch size to use when computing model predictions on masked samples.
     maskers : Mapping[str, ImageMasker]
@@ -103,15 +102,15 @@ def irof(
     model.eval()
 
     dataloader = DataLoader(
-        dataset, batch_size=batch_size, num_workers=4, pin_memory=True
+        attributions_dataset, batch_size=batch_size, num_workers=4, pin_memory=True
     )
 
     result = DeletionResult(
-        dataset.method_names,
+        attributions_dataset.method_names,
         list(maskers.keys()),
         activation_fns,
         mode,
-        num_samples=dataset.num_samples,
+        num_samples=attributions_dataset.num_samples,
         num_steps=num_steps,
     )
 

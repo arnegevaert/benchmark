@@ -10,8 +10,8 @@ from torch.utils.data import DataLoader
 
 
 def insertion(
-    dataset: AttributionsDataset,
     model: nn.Module,
+    attributions_dataset: AttributionsDataset,
     batch_size: int,
     maskers: Mapping[str, Masker],
     activation_fns: Union[List[str], str] = "linear",
@@ -43,10 +43,10 @@ def insertion(
 
     Parameters
     ----------
-    dataset : AttributionsDataset
-        Dataset of attributions to compute Insertion on.
     model : nn.Module
-        Model to compute Deletion on.
+        Model to compute Insertion on.
+    attributions_dataset : AttributionsDataset
+        Dataset of attributions to compute Insertion on.
     batch_size : int
         Batch size to use when computing model predictions on masked samples.
     maskers : Dict[str, Masker]
@@ -74,8 +74,8 @@ def insertion(
 
     Returns
     -------
-    DeletionResult
-        Result of the Deletion metric.
+    InsertionResult
+        Result of the Insertion metric.
     """
     if device is None:
         device = torch.device("cpu")
@@ -83,15 +83,16 @@ def insertion(
         activation_fns = [activation_fns]
 
     dataloader = DataLoader(
-        dataset, batch_size=batch_size, num_workers=4, pin_memory=True
+        attributions_dataset, batch_size=batch_size, num_workers=4, pin_memory=True
     )
 
     result = InsertionResult(
-        dataset.method_names,
-        tuple(maskers.keys()),
-        tuple(activation_fns),
+        attributions_dataset.method_names,
+        list(maskers.keys()),
+        activation_fns,
         mode,
-        shape=(dataset.num_samples, num_steps),
+        attributions_dataset.num_samples,
+        num_steps,
     )
 
     for (

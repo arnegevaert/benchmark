@@ -35,7 +35,7 @@ class Deletion(Metric):
     def __init__(
         self,
         model_factory: ModelFactory,
-        dataset: AttributionsDataset,
+        attributions_dataset: AttributionsDataset,
         batch_size: int,
         maskers: Mapping[str, Masker],
         activation_fns: Union[List[str], str],
@@ -53,7 +53,7 @@ class Deletion(Metric):
         model_factory : ModelFactory
             ModelFactory instance or callable that returns a model.
             Used to create a model for each subprocess.
-        dataset : AttributionsDataset
+        attributions_dataset : AttributionsDataset
             Dataset containing the samples and attributions to compute
             Deletion on.
         batch_size : int
@@ -87,7 +87,7 @@ class Deletion(Metric):
             Default: None
         """
         super().__init__(
-            model_factory, dataset, batch_size, address, port, devices
+            model_factory, attributions_dataset, batch_size, address, port, devices
         )
         self.num_steps = num_steps
         self.stop = stop
@@ -98,14 +98,14 @@ class Deletion(Metric):
         self.activation_fns: List[str] = activation_fns
         self.maskers = maskers
         self._result = DeletionResult(
-            dataset.method_names,
+            attributions_dataset.method_names,
             list(maskers.keys()),
             self.activation_fns,
             mode,
-            dataset.num_samples,
+            attributions_dataset.num_samples,
             num_steps,
         )
-        self.dataset = dataset
+        self.dataset = attributions_dataset
 
     def _create_worker(self, worker_config: WorkerConfig) -> DeletionWorker:
         return DeletionWorker(

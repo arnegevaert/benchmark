@@ -66,9 +66,9 @@ def _max_sensitivity_batch(
 
 
 def max_sensitivity(
-    dataset: AttributionsDataset,
-    method_dict: Dict[str, AttributionMethod],
+    attributions_dataset: AttributionsDataset,
     batch_size: int,
+    method_dict: Dict[str, AttributionMethod],
     num_perturbations: int,
     radius: float,
     device: torch.device = torch.device("cpu"),
@@ -86,13 +86,13 @@ def max_sensitivity(
 
     Parameters
     ----------
-    dataset : Dataset
+    attributions_dataset : Dataset
         The dataset for which the Max-Sensitivity should be computed.
+    batch_size : int
+        The batch size to use for computing the Max-Sensitivity.
     method_dict : Dict[str, AttributionMethod]
         Dictionary of attribution methods for which the Max-Sensitivity should be
         computed.
-    batch_size : int
-        The batch size to use for computing the Max-Sensitivity.
     num_perturbations : int
         The number of perturbations to use for computing the Max-Sensitivity.
     radius : float
@@ -100,7 +100,7 @@ def max_sensitivity(
     device : torch.device, optional
         Device to use, by default `torch.device("cpu")`.
     """
-    grouped_dataset = GroupedAttributionsDataset(dataset)
+    grouped_dataset = GroupedAttributionsDataset(attributions_dataset)
     dataloader = DataLoader(
         grouped_dataset,
         batch_size=batch_size,

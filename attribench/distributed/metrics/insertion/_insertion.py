@@ -43,7 +43,7 @@ class Insertion(Deletion):
     def __init__(
         self,
         model_factory: ModelFactory,
-        dataset: AttributionsDataset,
+        attributions_dataset: AttributionsDataset,
         batch_size: int,
         maskers: Dict[str, Masker],
         activation_fns: Union[List[str], str],
@@ -61,7 +61,7 @@ class Insertion(Deletion):
         model_factory : ModelFactory
             ModelFactory instance or callable that returns a model.
             Used to create a model for each subprocess.
-        dataset : AttributionsDataset
+        attributions_dataset : AttributionsDataset
             Dataset containing the samples and attributions to compute
             Insertion on.
         batch_size : int
@@ -96,7 +96,7 @@ class Insertion(Deletion):
         """
         super().__init__(
             model_factory,
-            dataset,
+            attributions_dataset,
             batch_size,
             maskers,
             activation_fns,
@@ -109,10 +109,10 @@ class Insertion(Deletion):
             devices,
         )
         self._result = InsertionResult(
-            dataset.method_names,
+            attributions_dataset.method_names,
             list(maskers.keys()),
             list(self.activation_fns),
             mode,
-            num_samples=dataset.num_samples,
+            num_samples=attributions_dataset.num_samples,
             num_steps=num_steps,
         )

@@ -39,7 +39,7 @@ class ImpactCoverage(Metric):
     def __init__(
         self,
         model_factory: ModelFactory,
-        dataset: Dataset,
+        samples_dataset: Dataset,
         batch_size: int,
         method_factory: MethodFactory,
         patch_folder: str,
@@ -72,7 +72,7 @@ class ImpactCoverage(Metric):
             Devices to use. If None, then all available devices are used.
             By default None.
         """
-        index_dataset = IndexDataset(dataset)
+        index_dataset = IndexDataset(samples_dataset)
         super().__init__(
             model_factory,
             index_dataset,
