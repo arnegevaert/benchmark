@@ -6,7 +6,7 @@ from attribench.data.nd_array_tree._random_access_nd_array_tree import (
     RandomAccessNDArrayTree,
 )
 from ._batch_result import BatchResult
-from attribench.distributed import metrics
+from attribench import result
 import pandas as pd
 import os
 import yaml
@@ -145,7 +145,7 @@ class MetricResult:
             with open(os.path.join(path, "metadata.yaml")) as fp:
                 metadata = yaml.safe_load(fp)
             class_name = metadata["type"]
-            class_obj = getattr(metrics, class_name)
+            class_obj = getattr(result, class_name)
             return class_obj._load(path, format="dir")
         # Otherwise, load from HDF5 file
         else:
@@ -153,7 +153,7 @@ class MetricResult:
                 class_name = fp.attrs["type"]
                 if not isinstance(class_name, str):
                     raise ValueError("Invalid type in HDF5 file")
-                class_obj = getattr(metrics, class_name)
+                class_obj = getattr(result, class_name)
                 return class_obj._load(path, format="hdf5")
 
     @abstractmethod

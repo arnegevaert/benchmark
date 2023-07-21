@@ -59,9 +59,9 @@ class SensitivityNResult(GroupedMetricResult):
     def _load(cls, path: str, format="hdf5") -> "SensitivityNResult":
         tree = cls._load_tree(path, format)
         res = SensitivityNResult(
+            tree.levels["method"],
             tree.levels["masker"],
             tree.levels["activation_fn"],
-            tree.levels["method"],
             tree.shape[0],
             tree.shape[1]
         )

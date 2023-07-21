@@ -1,5 +1,4 @@
 import torch
-from numpy import typing as npt
 from typing import Callable, List, Mapping, Dict, Union
 from attribench.masking import Masker
 from attribench.data import AttributionsDataset
