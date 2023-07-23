@@ -1,7 +1,7 @@
 import numpy as np
+from tqdm import tqdm
 import torch
 import random
-from tqdm import trange
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from typing import Optional, Tuple, List
@@ -115,12 +115,13 @@ def _make_patch(
     data_max=None,
     lr=0.05,
 ):
+    print(f"Training patch for label {target_label}...")
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=4,
                             pin_memory=True)
     # patch values will be clipped between data_min and data_max
     # so that patch will be valid image data.
     if data_max is None or data_min is None:
-        for x, _ in dataloader:
+        for x, _ in tqdm(dataloader):
             if data_max is None:
                 data_max = x.max().item()
             if data_min is None:
@@ -148,7 +149,7 @@ def _make_patch(
     min_loss = None
     best_patch = None
 
-    for _ in trange(epochs):
+    for epoch in range(epochs):
         epoch_loss = _train_epoch(
             model,
             patch,
@@ -160,7 +161,7 @@ def _make_patch(
             data_max=data_max,
             device=device,
         )
-        print(epoch_loss)
+        print(f"Patch {target_label} epoch {epoch} loss: {epoch_loss}")
         if min_loss is None or epoch_loss < min_loss:
             min_loss = epoch_loss
             best_patch = patch.cpu()
