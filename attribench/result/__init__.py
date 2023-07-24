@@ -7,3 +7,4 @@ from ._infidelity_result import InfidelityResult
 from ._max_sensitivity_result import MaxSensitivityResult
 from ._minimal_subset_result import MinimalSubsetResult
 from ._sensitivity_n_result import SensitivityNResult
+from ._parameter_randomization_result import ParameterRandomizationResult

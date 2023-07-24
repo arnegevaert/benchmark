@@ -16,12 +16,24 @@ def wilcoxon_tests(df, higher_is_better):
     return effect_sizes, pvalues
 
 
-def corrcoef(a: npt.NDArray, b: npt.NDArray) -> npt.NDArray:
+def rowwise_pearsonr(a: npt.NDArray, b: npt.NDArray) -> npt.NDArray:
     """
     Calculates row-wise correlations between two arrays.
-    :param a: first set of row vectors (shape: [num_rows, num_measurements])
-    :param b: second set of row vectors (shape: [num_rows, num_measurements])
-    :return: row-wise correlations between a and b (shape: [num_rows])
+    This is a faster implementation of scipy.stats.pearsonr,
+    as it only calculates correlation coefficients between corresponding rows,
+    rather than between all pairs of rows.
+
+    Parameters
+    ----------
+    a : npt.NDArray
+        first set of row vectors (shape: [num_rows, num_measurements])
+    b : npt.NDArray
+        second set of row vectors (shape: [num_rows, num_measurements])
+
+    Returns
+    -------
+    npt.NDArray
+        row-wise correlations between a and b (shape: [num_rows])
     """
     # Subtract mean
     # [batch_size, num_observations]
@@ -33,12 +45,40 @@ def corrcoef(a: npt.NDArray, b: npt.NDArray) -> npt.NDArray:
     # Calculate denominator
     # [batch_size]
     denom = np.sqrt((a**2).sum(axis=1)) * np.sqrt((b**2).sum(axis=1))
-    #denom_zero = denom == 0.0
-    #if np.any(denom_zero):
+    # denom_zero = denom == 0.0
+    # if np.any(denom_zero):
     #    warnings.warn(f"Zero standard deviation detected")
-    
+
     # If the denominator is zero, that means one of the series is constant.
     # Correlation is technically undefined in this case, but covariance is 0.
     # We can just set the correlation coefficient to zero in this case.
     corrcoefs = np.divide(cov, denom, out=np.zeros_like(cov), where=denom != 0)
     return corrcoefs
+
+
+def rowwise_spearmanr(a: npt.NDArray, b: npt.NDArray) -> npt.NDArray:
+    """
+    Calculates row-wise Spearman correlations between two arrays.
+    This is a faster implementation of scipy.stats.spearmanr,
+    as it only calculates correlation coefficients between corresponding rows,
+    rather than between all pairs of rows.
+
+    Parameters
+    ----------
+    a : npt.NDArray
+        first set of row vectors (shape: [num_rows, num_measurements])
+    b : npt.NDArray
+        second set of row vectors (shape: [num_rows, num_measurements])
+
+    Returns
+    -------
+    npt.NDArray
+        row-wise Spearman correlations between a and b (shape: [num_rows])
+    """
+    # Calculate rank of each row
+    # [batch_size, num_observations]
+    a_ranks = stats.rankdata(a, axis=1)
+    b_ranks = stats.rankdata(b, axis=1)
+
+    # Spearman rank correlation is simply Pearson correlation of ranks
+    return rowwise_pearsonr(a_ranks, b_ranks)

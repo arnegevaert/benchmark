@@ -24,7 +24,7 @@ def _max_sensitivity_batch(
     num_perturbations: int,
     radius: float,
     device: torch.device,
-):
+) -> Dict[str, torch.Tensor]:
     if set(method_dict.keys()) != set(batch_attr.keys()):
         print(method_dict.keys())
         print(batch_attr.keys())
@@ -75,7 +75,7 @@ def max_sensitivity(
     num_perturbations: int,
     radius: float,
     device: torch.device = torch.device("cpu"),
-):
+) -> MaxSensitivityResult:
     """Computes the Max-Sensitivity metric for a given `Dataset` and attribution
     methods. Max-Sensitivity is computed by adding a small amount of uniform noise
     to the input samples and computing the norm of the difference in attributions
@@ -130,3 +130,4 @@ def max_sensitivity(
             device,
         )
         result.add(GroupedBatchResult(batch_indices, batch_result))
+    return result

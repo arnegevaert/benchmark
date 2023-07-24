@@ -10,7 +10,7 @@ from attribench.data import AttributionsDataset
 from attribench._activation_fns import ACTIVATION_FNS
 from ._dataset import SensitivityNDataset, SegSensNDataset
 from attribench._segmentation import segment_attributions
-from attribench._stat import corrcoef
+from attribench._stat import rowwise_pearsonr
 from attribench.result import SensitivityNResult
 from attribench.result._grouped_batch_result import GroupedBatchResult
 from attribench.data.attributions_dataset._attributions_dataset import (
@@ -113,7 +113,7 @@ def _compute_correlations(
                 # Compute correlation between output difference and
                 # sum of attribution values
                 result[activation_fn][method_name][:, n_idx] = torch.tensor(
-                    corrcoef(n_sum_of_attrs, n_output_diffs)
+                    rowwise_pearsonr(n_sum_of_attrs, n_output_diffs)
                 )
     return result
 
