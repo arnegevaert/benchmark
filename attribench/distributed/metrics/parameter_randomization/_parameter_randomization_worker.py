@@ -1,3 +1,4 @@
+from attribench.distributed._worker import WorkerConfig
 import torch
 from attribench.data.attributions_dataset._attributions_dataset import (
     GroupedAttributionsDataset,
@@ -5,14 +6,14 @@ from attribench.data.attributions_dataset._attributions_dataset import (
 from .._metric_worker import GroupedMetricWorker, WorkerConfig
 from typing import Callable, Dict
 from torch import nn
-from attribench.functional.metrics._max_sensitivity import (
-    _max_sensitivity_batch,
+from attribench.functional.metrics._parameter_randomization import (
+    _parameter_randomization_batch,
 )
 from attribench._method_factory import MethodFactory
 from attribench._model_factory import ModelFactory
 
 
-class MaxSensitivityWorker(GroupedMetricWorker):
+class ParameterRandomizationWorker(GroupedMetricWorker):
     def __init__(
         self,
         worker_config: WorkerConfig,
@@ -20,22 +21,24 @@ class MaxSensitivityWorker(GroupedMetricWorker):
         dataset: GroupedAttributionsDataset,
         batch_size: int,
         method_factory: MethodFactory,
-        num_perturbations: int,
-        radius: float,
+        agg_fn: Callable[
+            [
+                torch.Tensor,
+                int,
+            ],
+            torch.Tensor,
+        ]
+        | None = None,
+        agg_dim: int | None = None,
     ):
-        super().__init__(
-            worker_config,
-            model_factory,
-            dataset,
-            batch_size,
-        )
+        super().__init__(worker_config, model_factory, dataset, batch_size)
         self.method_factory = method_factory
-        self.num_perturbations = num_perturbations
-        self.radius = radius
+        self.agg_fn = agg_fn
+        self.agg_dim = agg_dim
 
     def setup(self):
-        self.model = self._get_model()
-        self.method_dict = self.method_factory(self.model)
+        self.randomized_model = self._get_model()
+        self.method_dict_rand = self.method_factory(self.randomized_model)
 
     def process_batch(
         self,
@@ -43,12 +46,12 @@ class MaxSensitivityWorker(GroupedMetricWorker):
         batch_y: torch.Tensor,
         batch_attr: Dict[str, torch.Tensor],
     ):
-        return _max_sensitivity_batch(
+        return _parameter_randomization_batch(
             batch_x,
             batch_y,
             batch_attr,
-            self.method_dict,
-            self.num_perturbations,
-            self.radius,
+            self.method_dict_rand,
             self.device,
+            self.agg_fn,
+            self.agg_dim,
         )

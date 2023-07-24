@@ -76,7 +76,7 @@ class DeletionResult(MetricResult):
         if format == "hdf5":
             with h5py.File(path, mode="a") as fp:
                 fp.attrs["mode"] = self.mode
-        elif format == "dir":
+        elif format == "csv":
             with open(os.path.join(path, "metadata.yaml"), "r") as fp:
                 metadata = yaml.safe_load(fp)
             metadata["mode"] = self.mode
@@ -95,7 +95,7 @@ class DeletionResult(MetricResult):
             Path to the file or directory.
         format : str, optional
             Format of the saved result.
-            Options: "hdf5", "dir".
+            Options: "hdf5", "csv".
             By default "hdf5".
 
         Returns
@@ -112,7 +112,7 @@ class DeletionResult(MetricResult):
             with h5py.File(path, "r") as fp:
                 tree = RandomAccessNDArrayTree.load_from_hdf(fp)
                 mode = str(fp.attrs["mode"])
-        elif format == "dir":
+        elif format == "csv":
             with open(os.path.join(path, "metadata.yaml"), "r") as fp:
                 metadata = yaml.safe_load(fp)
             tree = RandomAccessNDArrayTree.load_from_dir(path)

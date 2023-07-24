@@ -72,7 +72,44 @@ def parameter_randomization(
     batch_size: int,
     method_factory: MethodFactory,
     device: torch.device = torch.device("cpu"),
-):
+) -> ParameterRandomizationResult:
+    """
+    Computes the Parameter Randomization metric for a given
+    :class:`~attribench.data.AttributionsDataset`.
+
+    The Parameter Randomization metric is computed by randomly re-initializing the
+    parameters of the model and computing an attribution map of the prediction
+    on the re-initialized model. The metric value is the spearman rank correlation
+    between the original attribution map and the attribution map of the
+    re-initialized model. If this value is high, then the attribution method is
+    insensitive to the model parameters, thereby failing the sanity check.
+
+    Source: Adebayo, J., Gilmer, J., Muelly, M., Goodfellow, I.,
+    Hardt, M., & Kim, B. (2018). Sanity checks for saliency maps.
+    Advances in neural information processing systems, 31.
+
+    Parameters
+    ----------
+    model_factory : ModelFactory
+        ModelFactory instance or callable that returns a model.
+        Used to create the original model and a randomized copy.
+    attributions_dataset : AttributionsDataset
+        Dataset containing the samples and attributions to compute
+        the Parameter Randomization metric for.
+    batch_size : int
+        Batch size to use when computing the metric.
+    method_factory : MethodFactory
+        MethodFactory instance or callable that returns a dictionary mapping
+        method names to AttributionMethod objects.
+    device : torch.device, optional
+        Device to use when computing the metric, by default torch.device("cpu")
+
+    Returns
+    -------
+    ParameterRandomizationResult
+        Result of the Parameter Randomization metric computation.
+    """
+    
     randomized_model = _randomize_parameters(model_factory)
     randomized_model.to(device)
     randomized_model.eval()
@@ -95,8 +132,6 @@ def parameter_randomization(
             agg_fn = attributions_dataset.aggregate_fn
             agg_dim = attributions_dataset.aggregate_dim
 
-        batch_x = batch_x.to(device)
-        batch_y = batch_y.to(device)
         batch_result = _parameter_randomization_batch(
             batch_x,
             batch_y,

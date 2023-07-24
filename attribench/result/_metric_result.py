@@ -13,8 +13,8 @@ import yaml
 
 
 class MetricResult:
-    """Abstract class to represent results of distributed metrics.
-    """
+    """Abstract class to represent results of distributed metrics."""
+
     def __init__(
         self,
         method_names: List[str],
@@ -35,7 +35,7 @@ class MetricResult:
             should be ``(100, 10)``.
         levels : Dict[str, Tuple[str, ...] | List[str]]
             Dictionary mapping level names to level values.
-            For example:: 
+            For example::
 
                 {
                     "method": ("a", "b"),
@@ -93,13 +93,13 @@ class MetricResult:
         format : str
             Format to save the result in. Options: hdf5, dir.
             If hdf5, the full result is stored in a single HDF5 file.
-            If dir, the result is stored in a nested directory of CSV files.
+            If csv, the result is stored in a nested directory of CSV files.
         """
         if format == "hdf5":
             with h5py.File(path, mode="x") as fp:
                 fp.attrs["type"] = self.__class__.__name__
                 self.tree.save_to_hdf(fp)
-        elif format == "dir":
+        elif format == "csv":
             os.makedirs(path, exist_ok=True)
             with open(os.path.join(path, "metadata.yaml"), "w") as fp:
                 yaml.dump({"type": self.__class__.__name__}, fp)
@@ -112,7 +112,7 @@ class MetricResult:
         if format == "hdf5":
             with h5py.File(path, "r") as fp:
                 tree = RandomAccessNDArrayTree.load_from_hdf(fp)
-        elif format == "dir":
+        elif format == "csv":
             tree = RandomAccessNDArrayTree.load_from_dir(path)
         else:
             raise ValueError("Invalid format", format)
@@ -146,7 +146,7 @@ class MetricResult:
                 metadata = yaml.safe_load(fp)
             class_name = metadata["type"]
             class_obj = getattr(result, class_name)
-            return class_obj._load(path, format="dir")
+            return class_obj._load(path, format="csv")
         # Otherwise, load from HDF5 file
         else:
             with h5py.File(path, "r") as fp:
