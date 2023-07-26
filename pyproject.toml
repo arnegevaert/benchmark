@@ -35,16 +35,23 @@ dependencies = [
 ]
 requires-python = ">=3.10"
 
+[tool.setuptools]
+packages = ["attribench"]
+
 [project.optional-dependencies]
 dev = [
     "bumpver",
     "pytest"
 ]
 docs = [
-    "sphinx==6.2.1",
+    "sphinx",
     "sphinx-rtd-theme",
     "numpydoc",
     "sphinx-autodoc-typehints",
+    "nbsphinx",
+    "ipython",
+    "jupyter",
+    "ipywidgets",
 ]
 
 [project.urls]
