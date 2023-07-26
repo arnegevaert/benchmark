@@ -1,0 +1,25 @@
+﻿attribench.distributed.SelectSamples
+====================================
+
+.. currentmodule:: attribench.distributed
+
+.. autoclass:: SelectSamples
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~SelectSamples.run
+   
+   
+
+   
+   
+   
