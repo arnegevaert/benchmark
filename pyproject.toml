@@ -37,12 +37,14 @@ requires-python = ">=3.10"
 
 [project.optional-dependencies]
 dev = [
+    "bumpver",
+    "pytest"
+]
+docs = [
     "sphinx==6.2.1",
     "sphinx-rtd-theme",
     "numpydoc",
     "sphinx-autodoc-typehints",
-    "bumpver",
-    "pytest"
 ]
 
 [project.urls]
