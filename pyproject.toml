@@ -1,3 +1,60 @@
+# Based on: https://realpython.com/pypi-publish-python-package/
+
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "attribench"
+version = "0.1.0"
+description = "A benchmark for feature attribution techniques"
+readme = "README.md"
+authors = [
+    { name = "Arne Gevaert", email = "arne.gevaert@ugent.be" }
+    { name = "Axel-Jan Rousseau", email = "axeljan.rousseau@uhasselt.be" } ]
+license = { file = "LICENSE" }
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+]
+keywords = ["attributions", "benchmark", "explanation", "machine learning"]
+dependencies = [
+    "torch>=1.5.0,<2",
+    "torchvision>=0.14.0",
+    "krippendorff>=0.5.0",
+    "opencv-python>=4.7.0.0",
+    "scikit-learn>=1.2.0",
+    "scikit-image>=0.19.0",
+    "seaborn>=0.12.0",
+    "h5py",
+    "tqdm",
+    "pyyaml",
+]
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = [
+    "sphinx==6.2.1",
+    "sphinx-rtd-theme",
+    "numpydoc",
+    "sphinx-autodoc-typehints",
+    "bumpver",
+    "pytest"
+]
+
+[project.urls]
+Homepage = "https://github.com/arnegevaert/benchmark"
+
+[tool.bumpver]
+current_version = "0.1.0"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message = "Bump version {old_version} -> {new_version}"
+commit = true
+tag = true
+push = false
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
+"attribench/__init__.py" = ["{version}"]
