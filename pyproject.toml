@@ -8,10 +8,11 @@ build-backend = "setuptools.build_meta"
 name = "attribench"
 version = "0.1.0"
 description = "A benchmark for feature attribution techniques"
-readme = "README.md"
+readme = "README.rst"
 authors = [
-    { name = "Arne Gevaert", email = "arne.gevaert@ugent.be" }
-    { name = "Axel-Jan Rousseau", email = "axeljan.rousseau@uhasselt.be" } ]
+    { name = "Arne Gevaert", email = "arne.gevaert@ugent.be" },
+    { name = "Axel-Jan Rousseau", email = "axeljan.rousseau@uhasselt.be" }
+]
 license = { file = "LICENSE" }
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -46,13 +47,14 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/arnegevaert/benchmark"
+Documentation = "http://attribench.readthedocs.io/"
 
 [tool.bumpver]
 current_version = "0.1.0"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "Bump version {old_version} -> {new_version}"
 commit = true
-tag = true
+tag = false
 push = false
 
 [tool.bumpver.file_patterns]
