@@ -4,12 +4,13 @@ from ._dataset import (
     MinimalSubsetInsertionDataset,
 )
 from attribench.masking import Masker
-from typing import Callable, Dict
+from typing import Callable, Dict, Mapping
 import torch
 from torch import nn
 from attribench.data import AttributionsDataset
 from attribench.result import MinimalSubsetResult
 from attribench.result._batch_result import BatchResult
+from tqdm import tqdm
 
 
 def minimal_subset_batch(
@@ -17,7 +18,7 @@ def minimal_subset_batch(
     model: Callable,
     attrs: torch.Tensor,
     num_steps: float,
-    maskers: Dict[str, Masker],
+    maskers: Mapping[str, Masker],
     mode: str,
 ) -> Dict[str, torch.Tensor]:
     batch_result: Dict[str, torch.Tensor] = {}
@@ -80,7 +81,7 @@ def minimal_subset(
     model: nn.Module,
     attributions_dataset: AttributionsDataset,
     batch_size: int,
-    maskers: Dict[str, Masker],
+    maskers: Mapping[str, Masker],
     mode: str = "deletion",
     num_steps: int = 100,
     device: torch.device = torch.device("cpu"),
@@ -144,7 +145,7 @@ def minimal_subset(
         _,
         batch_attr,
         method_names,
-    ) in dataloader:
+    ) in tqdm(dataloader):
         batch_x = batch_x.to(device)
         batch_result = minimal_subset_batch(
             batch_x, model, batch_attr, num_steps, maskers, mode

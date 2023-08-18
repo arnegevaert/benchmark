@@ -1,3 +1,4 @@
+from tqdm import tqdm
 from typing import List, Mapping, Optional, Union
 from attribench.masking import Masker
 from attribench.data import AttributionsDataset
@@ -101,14 +102,14 @@ def insertion(
         batch_y,
         batch_attr,
         method_names,
-    ) in dataloader:
+    ) in tqdm(dataloader):
         batch_x = batch_x.to(device)
         batch_y = batch_y.to(device)
         batch_result = _deletion_batch(
             batch_x,
             batch_y,
             model,
-            batch_attr.numpy(),
+            batch_attr,
             maskers,
             activation_fns,
             "morf" if mode == "lerf" else "lerf",  # swap mode

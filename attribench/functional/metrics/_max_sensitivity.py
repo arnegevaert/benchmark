@@ -9,6 +9,7 @@ import torch
 from attribench._attribution_method import AttributionMethod
 from torch.utils.data import DataLoader
 import math
+from tqdm import tqdm
 
 
 def _normalize_attrs(attrs):
@@ -116,7 +117,7 @@ def max_sensitivity(
         method_names,
         num_samples=len(grouped_dataset),
     )
-    for batch_indices, batch_x, batch_y, batch_attr in dataloader:
+    for batch_indices, batch_x, batch_y, batch_attr in tqdm(dataloader):
         batch_x = batch_x.to(device)
         batch_y = batch_y.to(device)
 
