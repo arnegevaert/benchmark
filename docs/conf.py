@@ -14,7 +14,20 @@
 #
 import os
 import sys
+import shutil
 sys.path.insert(0, os.path.abspath('../..'))
+
+# make copy of notebooks in docs folder, as they must be here for sphinx to
+# pick them up properly.
+NOTEBOOKS_DIR = os.path.abspath("notebooks")
+if os.path.exists(NOTEBOOKS_DIR):
+    import warnings
+
+    warnings.warn("example_notebooks directory exists, replacing...")
+    shutil.rmtree(NOTEBOOKS_DIR)
+shutil.copytree(os.path.abspath("../notebooks"), NOTEBOOKS_DIR)
+if os.path.exists(NOTEBOOKS_DIR + "/local_scratch"):
+    shutil.rmtree(NOTEBOOKS_DIR + "/local_scratch")
 
 
 # -- Project information -----------------------------------------------------
@@ -38,6 +51,7 @@ extensions = [
     'sphinx.ext.autosummary',  # Automatic generation of summary tables
     'sphinx.ext.viewcode',  # Add links to source code
     'sphinx_autodoc_typehints',  # Automatically document type hints for cleaner signatures
+    'nbsphinx',  # Jupyter notebook support
 ]
 autoclass_content = 'both'
 autodoc_inherit_docstrings = True

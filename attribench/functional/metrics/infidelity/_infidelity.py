@@ -1,3 +1,4 @@
+from tqdm import tqdm
 from torch import nn
 import torch
 from typing import Dict, List
@@ -152,7 +153,7 @@ def infidelity(
     perturbation_generators: Dict[str, PerturbationGenerator],
     num_perturbations: int,
     device: torch.device = torch.device("cpu"),
-):
+) -> InfidelityResult:
     """Computes the Infidelity metric for a given :class:`~attribench.data.AttributionsDataset` and model.
 
     Infidelity is computed by generating perturbations for each sample in the
@@ -205,7 +206,7 @@ def infidelity(
         activation_fns,
         num_samples=attributions_dataset.num_samples,
     )
-    for batch_indices, batch_x, batch_y, batch_attr in dataloader:
+    for batch_indices, batch_x, batch_y, batch_attr in tqdm(dataloader):
         batch_result = _infidelity_batch(
             model,
             batch_x,
@@ -217,3 +218,4 @@ def infidelity(
             device,
         )
         result.add(GroupedBatchResult(batch_indices, batch_result))
+    return result

@@ -16,6 +16,7 @@ from attribench.result._grouped_batch_result import GroupedBatchResult
 from attribench.data.attributions_dataset._attributions_dataset import (
     GroupedAttributionsDataset,
 )
+from tqdm import tqdm
 
 
 def _get_orig_output(
@@ -260,7 +261,7 @@ def sensitivity_n(
         batch_x,
         batch_y,
         batch_attr,
-    ) in dataloader:
+    ) in tqdm(dataloader):
         batch_x = batch_x.to(device)
         batch_y = batch_y.to(device)
         batch_result = _sens_n_batch(

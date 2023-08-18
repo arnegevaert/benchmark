@@ -45,7 +45,3 @@ class HDF5Dataset(Dataset):
             with h5py.File(self.path, "r") as fp:
                 return len(_check_is_dataset(fp["samples"]))
         return len(_check_is_dataset(self.file["samples"]))
-
-    def __del__(self):
-        if self.file is not None:
-            self.file.close()

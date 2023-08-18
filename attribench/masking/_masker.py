@@ -120,7 +120,7 @@ class Masker:
         raise NotImplementedError
 
     @abstractmethod
-    def _check_attribution_shape(self, samples, attributions):
+    def _check_attribution_shape(self, samples, attributions) -> bool:
         """Check if the attributions have the correct shape."""
         raise NotImplementedError
 

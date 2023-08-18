@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "attribench"
-version = "0.1.1"
+version = "0.1.2"
 description = "A benchmark for feature attribution techniques"
 readme = "README.rst"
 authors = [
@@ -35,16 +35,23 @@ dependencies = [
 ]
 requires-python = ">=3.10"
 
+[tool.setuptools]
+packages = ["attribench"]
+
 [project.optional-dependencies]
 dev = [
     "bumpver",
     "pytest"
 ]
 docs = [
-    "sphinx==6.2.1",
+    "sphinx",
     "sphinx-rtd-theme",
     "numpydoc",
     "sphinx-autodoc-typehints",
+    "nbsphinx",
+    "ipython",
+    "jupyter",
+    "ipywidgets",
 ]
 
 [project.urls]
@@ -52,7 +59,7 @@ Homepage = "https://github.com/arnegevaert/benchmark"
 Documentation = "http://attribench.readthedocs.io/"
 
 [tool.bumpver]
-current_version = "0.1.1"
+current_version = "0.1.2"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "Bump version {old_version} -> {new_version}"
 commit = true

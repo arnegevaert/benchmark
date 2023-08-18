@@ -23,4 +23,5 @@ Contents
    :maxdepth: 2
 
    Getting Started <getting_started>
+   Example Notebooks <example_notebooks>
    API Reference <general_api>

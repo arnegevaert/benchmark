@@ -1,55 +1,78 @@
-from attribench.masking.image import ImageMasker
+from attribench.masking import Masker
 import torch
 import numpy as np
 from typing import List, Union
 
 
-# TODO this should not be a subclass of ImageMasker
-class TabularMasker(ImageMasker):
-    def __init__(self, mask_value: Union[float, List[float]] = 0.0):
-        self.mask_value = mask_value
-        super().__init__("channel")
+class TabularMasker(Masker):
+    """Basic Tabular masking class. Simply masks features by replacing them
+    with a given constant value."""
 
-    def _initialize_baselines(self, samples):
-        mask = torch.tensor(
-            self.mask_value, device=samples.device, dtype=samples.dtype
-        )
+    def __init__(self, mask_value: Union[float, List[float]] = 0.0):
+        """
+        Parameters
+        ----------
+        mask_value : Union[float, List[float]], optional
+            The value to use for masking. By default 0.0.
+        """
+        super().__init__()
+        self.mask_value = mask_value
+
+    def _initialize_baselines(self, samples: torch.Tensor):
         self.baseline = (
             torch.ones(
                 samples.shape, device=samples.device, dtype=samples.dtype
             )
-            * mask
+            * self.mask_value
         )
 
-    def _check_attribution_shape(self, samples, attributions):
-        check1 = super()._check_attribution_shape(samples, attributions)
-        if not isinstance(self.mask_value, float):
-            return check1 and len(self.mask_value) == attributions.shape[-1]
-        else:
-            return check1
+    def set_batch(
+        self, samples: torch.Tensor, attributions: torch.Tensor | None = None
+    ):
+        # Check if attributions and samples are compatible
+        if attributions is not None and not self._check_attribution_shape(
+            samples, attributions
+        ):
+            raise ValueError(
+                "Attributions and samples have incompatible shapes."
+            )
 
-    def _mask(self, indices: np.ndarray):
+        # Set attributes
+        self.samples = samples
+        self.attributions = attributions
+        if attributions is not None:
+            self.sorted_indices = torch.tensor(
+                attributions.cpu()
+                .numpy()
+                .reshape(attributions.shape[0], -1)
+                .argsort()
+            )
+
+        # Init baselines
+        self._initialize_baselines(samples)
+
+    def _check_attribution_shape(self, samples, attributions) -> bool:
+        # For tabular data, attributions and samples should always have the
+        # same shape
+        return samples.shape == attributions.shape
+   
+    def _mask(self, indices: torch.Tensor) -> torch.Tensor:
         if self.baseline is None:
             raise ValueError("Masker was not initialized.")
+
+        assert self.samples is not None
         batch_size = self.samples.shape[0]
         num_indices = indices.shape[1]
         batch_dim = np.tile(range(batch_size), (num_indices, 1)).transpose()
 
-        # to_mask = torch.zeros(samples.shape).flatten(1 if self.feature_level == "channel" else 2)
-        to_mask = np.zeros(self.samples.shape)
-        if self.masking_level == "channel":
-            to_mask = to_mask.reshape((to_mask.shape[0], -1))
-        else:
-            to_mask = to_mask.reshape((to_mask.shape[0], to_mask.shape[1], -1))
-        if self.masking_level == "channel":
-            to_mask[batch_dim, indices] = 1.0
-        else:
-            try:
-                to_mask[batch_dim, :, indices] = 1.0
-            except IndexError:
-                raise ValueError(
-                    "Masking index was out of bounds. "
-                    "Make sure the masking policy is compatible with method output."
-                )
-        to_mask = to_mask.reshape(self.samples.shape)
-        return self._mask_boolean(to_mask)
+        to_mask = torch.zeros(self.samples.shape).flatten(1)
+        to_mask[batch_dim, indices] = 1.0
+        return self._mask_boolean(to_mask.view(self.samples.shape).bool())
+
+    def _mask_boolean(self, bool_mask: torch.Tensor) -> torch.Tensor:
+        assert self.samples is not None
+        return (
+            self.samples
+            - (bool_mask * self.samples)
+            + (bool_mask * self.baseline)
+        )
