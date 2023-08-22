@@ -60,16 +60,15 @@ class AttributionsWorker(Worker):
             batch_x = batch_x.to(device)
             batch_y = batch_y.to(device)
             for method_name, method in method_dict.items():
-                with torch.no_grad():
-                    attrs = method(batch_x, batch_y)
-                    result = AttributionResult(
-                        batch_indices.cpu().numpy(),
-                        attrs.cpu().numpy(),
-                        method_name,
-                    )
-                    self.worker_config.send_result(
-                        PartialResultMessage(self.worker_config.rank, result)
-                    )
+                attrs = method(batch_x, batch_y)
+                result = AttributionResult(
+                    batch_indices.detach().cpu().numpy(),
+                    attrs.detach().cpu().numpy(),
+                    method_name,
+                )
+                self.worker_config.send_result(
+                    PartialResultMessage(self.worker_config.rank, result)
+                )
 
 
 class ComputeAttributions(DistributedComputation):
