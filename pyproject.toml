@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "attribench"
-version = "0.1.2"
+version = "0.1.3"
 description = "A benchmark for feature attribution techniques"
 readme = "README.rst"
 authors = [
@@ -59,7 +59,7 @@ Homepage = "https://github.com/arnegevaert/benchmark"
 Documentation = "http://attribench.readthedocs.io/"
 
 [tool.bumpver]
-current_version = "0.1.2"
+current_version = "0.1.3"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "Bump version {old_version} -> {new_version}"
 commit = true
