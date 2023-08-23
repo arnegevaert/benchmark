@@ -15,12 +15,10 @@ def compute_attributions(
     writer: Optional[AttributionsDatasetWriter] = None,
     device: Optional[torch.device] = None,
 ) -> Optional[Dict[str, torch.Tensor]]:
-    """Compute attributions for a given model and dataset using a dictionary of 
+    """Compute attributions for a given model and dataset using a dictionary of
     attribution methods, and optionally write them to a HDF5 file. If the `writer`
     is `None`, the attributions are simply returned in a dictionary.
     Otherwise, the attributions are written to the HDF5 file and `None` is returned.
-
-    TODO don't write to file, just return the dict
 
     Parameters
     ----------
@@ -57,27 +55,27 @@ def compute_attributions(
         pin_memory=True,
     )
 
-    result_dict: Dict[str, List[torch.Tensor]] = {method_name: [
-        torch.zeros(1) for _ in range(len(index_dataset))
-    ] for method_name in method_dict.keys()}
+    num_samples = len(index_dataset)
+    sample_shape = None
+    result_dict: Dict[str, torch.Tensor] = {}
     for batch_indices, batch_x, batch_y in tqdm(dataloader):
+        if sample_shape is None:
+            sample_shape = batch_x.shape[1:]
+            result_dict = {
+                method_name: torch.zeros(num_samples, *sample_shape)
+                for method_name in method_dict.keys()
+            }
         batch_x = batch_x.to(device)
         batch_y = batch_y.to(device)
         for method_name, method in method_dict.items():
-            with torch.no_grad():
-                attrs = method(batch_x, batch_y)
-                if writer is None:
-                    for idx in batch_indices:
-                        result_dict[method_name][idx] = attrs[idx, ...].cpu()
-                else:
-                    writer.write(
-                        batch_indices.cpu().numpy(),
-                        attrs.cpu().numpy(),
-                        method_name,
-                    )
+            attrs = method(batch_x, batch_y)
+            if writer is None:
+                result_dict[method_name][batch_indices, ...] = attrs.cpu()
+            else:
+                writer.write(
+                    batch_indices.cpu().numpy(),
+                    attrs.cpu().numpy(),
+                    method_name,
+                )
     if writer is None:
-        result_dict_cat = {
-            method_name: torch.cat(attrs_list)
-            for method_name, attrs_list in result_dict.items()
-        }
-        return result_dict_cat
+        return result_dict
