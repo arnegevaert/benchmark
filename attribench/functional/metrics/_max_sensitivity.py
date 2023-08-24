@@ -14,7 +14,8 @@ from tqdm import tqdm
 
 def _normalize_attrs(attrs):
     flattened = attrs.flatten(1)
-    return flattened / torch.norm(flattened, dim=1, p=math.inf, keepdim=True)
+    denom = torch.norm(flattened, dim=1, p=math.inf, keepdim=True) + 1e-8
+    return flattened / denom
 
 
 def _max_sensitivity_batch(
