@@ -8,6 +8,7 @@ from typing import List, Tuple, Optional
 from attribench.data.nd_array_tree._random_access_nd_array_tree import (
     RandomAccessNDArrayTree,
 )
+from attribench.result._metric_result import MetricResult
 from ._metric_result import MetricResult
 import pandas as pd
 
@@ -183,3 +184,12 @@ class DeletionResult(MetricResult):
             )
             df_dict[method] = agg_fns[agg_fn](array, columns)
         return pd.DataFrame.from_dict(df_dict), higher_is_better
+    
+    @override
+    def merge(self, other: MetricResult, level: str, allow_overwrite: bool) -> None:
+        assert isinstance(other, "DeletionResult")
+        if self.mode != other.mode:
+            raise ValueError(
+                f"Cannot merge: mode does not match: {self.mode}, {other.mode}"
+            )
+        super().merge(other, level, allow_overwrite)

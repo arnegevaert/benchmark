@@ -109,3 +109,12 @@ class MinimalSubsetResult(MetricResult):
             for method in methods
         }
         return pd.DataFrame.from_dict(df_dict), higher_is_better
+
+    @override
+    def merge(self, other: MetricResult, level: str, allow_overwrite: bool) -> None:
+        assert isinstance(other, "MinimalSubsetResult")
+        if self.mode != other.mode:
+            raise ValueError(
+                f"Cannot merge: mode does not match: {self.mode}, {other.mode}"
+            )
+        super().merge(other, level, allow_overwrite)
