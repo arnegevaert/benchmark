@@ -187,7 +187,7 @@ class DeletionResult(MetricResult):
     
     @override
     def merge(self, other: MetricResult, level: str, allow_overwrite: bool) -> None:
-        assert isinstance(other, "DeletionResult")
+        assert isinstance(other, DeletionResult)
         if self.mode != other.mode:
             raise ValueError(
                 f"Cannot merge: mode does not match: {self.mode}, {other.mode}"

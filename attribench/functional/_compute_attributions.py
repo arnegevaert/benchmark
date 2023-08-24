@@ -70,11 +70,13 @@ def compute_attributions(
         for method_name, method in method_dict.items():
             attrs = method(batch_x, batch_y)
             if writer is None:
-                result_dict[method_name][batch_indices, ...] = attrs.cpu()
+                result_dict[method_name][
+                    batch_indices, ...
+                ] = attrs.detach().cpu()
             else:
                 writer.write(
-                    batch_indices.cpu().numpy(),
-                    attrs.cpu().numpy(),
+                    batch_indices.detach().cpu().numpy(),
+                    attrs.detach().cpu().numpy(),
                     method_name,
                 )
     if writer is None:
