@@ -285,6 +285,33 @@ class RandomAccessNDArrayTree:
 
         _add_rec(self._data, path)
 
+    def merge(
+        self,
+        other: "RandomAccessNDArrayTree",
+        level: str,
+        allow_overwrite: bool,
+    ) -> None:
+        def _merge_rec(cur_data, other_data, depth=0):
+            level_name = self.level_names[depth]
+            if level_name == level:
+                intersection = set(cur_data.keys()) & set(other_data.keys())
+                if not allow_overwrite and len(intersection) > 0:
+                    raise ValueError(
+                        f"Cannot merge: {level_name} has overlapping entries: "
+                        f"{intersection}. Set allow_overwrite=True to allow "
+                        f"overwriting."
+                    )
+                for key in other_data:
+                    cur_data[key] = other_data[key]
+            else:
+                for key in cur_data:
+                    _merge_rec(cur_data[key], other_data[key], depth + 1)
+
+        _merge_rec(self._data, other._data)
+        self.levels[level] += other.levels[level]
+        # Remove duplicates that might be introduced from overlapping keys
+        self.levels[level] = sorted(list(set(self.levels[level])))
+
     @classmethod
     def load_from_dir(cls, path: str) -> "RandomAccessNDArrayTree":
         # Load metadata

@@ -46,6 +46,10 @@ class MetricResult:
             Order of the levels in the result tree. This should contain all
             the keys in ``levels``.
         """
+        # TODO method_names should be added as the final level here, rather
+        # than in the subclass.
+        # This would improve uniformity between subclasses.
+
         self.shape = shape
         self.method_names = method_names
         self.levels = levels
@@ -164,6 +168,57 @@ class MetricResult:
         These arguments depend on the specific metric.
         """
         raise NotImplementedError
+
+    def merge(
+        self, other: "MetricResult", level: str, allow_overwrite: bool
+    ) -> None:
+        # Types must be equal
+        if type(other) != type(self):
+            raise ValueError(
+                f"Cannot merge: other is of type {type(other)},"
+                f" expected {type(self)}"
+            )
+
+        # Entries for the given merge level must be disjoint in the two results
+        intersection = set(self.levels[level]) & set(other.levels[level])
+        if len(intersection) > 0 and not allow_overwrite:
+            raise ValueError(
+                f"Cannot merge: level {level} has overlapping entries:"
+                f" {intersection}. To merge, set allow_overwrite=True."
+            )
+
+        # Entries for all levels except the given merge level must be equal
+        for l in self.levels:
+            if l != level and self.levels[l] != other.levels[l]:
+                raise ValueError(
+                    f"Cannot merge: level {l} has different entries:"
+                    f" {self.levels[l]}, {other.levels[l]}"
+                )
+
+        # Shapes must be equal
+        if self.shape != other.shape:
+            raise ValueError(
+                f"Cannot merge: shapes do not match: {self.shape}, {other.shape}"
+            )
+
+        # Level orders must be equal
+        if self.level_order != other.level_order:
+            raise ValueError(
+                f"Cannot merge: level orders do not match: {self.level_order},"
+                f" {other.level_order}"
+            )
+
+        # If results are being merged on method level, method_names must be updated.
+        # TODO this will become unnecessary once method_names is added as a
+        # level in the constructor.
+        if level == "method":
+            self.method_names += other.method_names
+
+        # Merge the tree and add the levels
+        self.tree.merge(other.tree, level, allow_overwrite)
+        self.levels[level] += other.levels[level]
+        # Remove duplicates from level entries (in case of overlap)
+        self.levels[level] = list(set(self.levels[level]))
 
     @classmethod
     @abstractmethod
