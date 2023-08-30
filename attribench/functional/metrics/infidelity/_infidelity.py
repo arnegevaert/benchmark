@@ -119,14 +119,14 @@ def _infidelity_batch(
             )  # [num_perturbations, batch_size]
             # Denominator for normalizing constant beta
             beta_denominator = torch.mean(
-                method_dot_products, dim=0, keepdim=True
+                method_dot_products**2, dim=0, keepdim=True
             )  # [1, batch_size]
             for afn in activation_fns:
                 # Numerator for normalizing constant beta depends on
                 # activation function
                 # [1, batch_size]
                 beta_numerator = torch.mean(
-                    tensor_pred_diffs[afn],
+                    method_dot_products * tensor_pred_diffs[afn],
                     dim=0,
                     keepdim=True,
                 )
