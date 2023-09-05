@@ -38,6 +38,9 @@ class ParameterRandomizationWorker(GroupedMetricWorker):
 
     def setup(self):
         self.randomized_model = self._get_model()
+        for layer in self.randomized_model.modules():
+            if hasattr(layer, "reset_parameters"):
+                layer.reset_parameters()
         self.method_dict_rand = self.method_factory(self.randomized_model)
 
     def process_batch(

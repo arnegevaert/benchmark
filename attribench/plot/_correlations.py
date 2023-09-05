@@ -22,6 +22,90 @@ def _create_fig(df, figsize, annot):
     return fig, ax
 
 
+class AvgInterMetricCorrelationPlot:
+    """Heatmap showing Spearman correlations between metrics averaged across
+    multiple datasets."""
+
+    def __init__(self, dfs: Dict[str, Dict[str, Tuple[pd.DataFrame, bool]]]):
+        """
+        Parameters
+        ----------
+        dfs : Dict[str, Dict[str, Tuple[pd.DataFrame, bool]]]
+            A dictionary mapping dataset names to dictionaries mapping metric
+            names to tuples of dataframes and booleans. The boolean indicates
+            whether higher values of the metric are better (``True``) or not
+            (``False``). The dataframes should have the same columns, which are
+            the names of the methods.
+        """
+        self.dfs = dfs
+
+    def render(
+        self,
+        title: str | None = None,
+        figsize: Tuple[int, int] = (20, 20),
+        fontsize: int | None = None,
+        annot: bool = False,
+    ) -> Figure:
+        """Render the plot.
+
+        Parameters
+        ----------
+        title : str | None, optional
+            Title of the figure, by default None
+        figsize : Tuple[int, int], optional
+            Size of the figure, by default (20, 20)
+        fontsize : int | None, optional
+            Font size of x and y axis ticks, by default None
+        annot : bool, optional
+            Whether to annotate the heatmap with the correlation values, by
+            default False
+
+        Returns
+        -------
+        Figure
+            The rendered Matplotlib figure.
+        """
+        dataset_corr_dfs = []
+        for dataset_name in self.dfs.keys():
+            # For each dataset, get correlations between metrics
+            # for all methods and average them
+            dataset_dfs = self.dfs[dataset_name]
+            method_corr_dfs = []
+            methods = list(dataset_dfs.values())[0][0].columns
+            for method_name in methods:
+                data = {}
+                for metric_name, (df, higher_is_better) in dataset_dfs.items():
+                    data[metric_name] = (
+                        -df[method_name].to_numpy()
+                        if not higher_is_better
+                        else df[method_name].to_numpy()
+                    )
+                df = pd.DataFrame(data)
+                method_corr_dfs.append(df.corr(method="spearman"))
+            corr = pd.concat(method_corr_dfs).groupby(level=0).mean()
+            corr = corr.reindex(corr.columns)
+            dataset_corr_dfs.append(corr)
+
+        # Average correlations across datasets
+        corr = pd.concat(dataset_corr_dfs).groupby(level=0).mean()
+        corr = corr.reindex(corr.columns)
+    
+        # Create figure
+        fig, ax = _create_fig(corr, figsize, annot)
+        if title is not None:
+            ax.set_title(title)
+
+        ax.set_xticklabels(
+            ax.get_xticklabels(),
+            rotation=45,
+            ha="right",
+            rotation_mode="anchor",
+            fontsize=fontsize,
+        )
+        ax.set_yticklabels(ax.get_yticklabels(), fontsize=fontsize)
+        return fig
+
+
 class InterMetricCorrelationPlot(Plot):
     """Heatmap showing Spearman correlations between metrics."""
 

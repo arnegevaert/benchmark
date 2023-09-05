@@ -1,6 +1,10 @@
 from ._plot import Plot
 from ._wilcoxon_summary_plot import WilcoxonSummaryPlot
-from ._correlations import InterMetricCorrelationPlot, InterMethodCorrelationPlot
+from ._correlations import (
+    InterMetricCorrelationPlot,
+    InterMethodCorrelationPlot,
+    AvgInterMetricCorrelationPlot,
+)
 from ._convergence_plot import ConvergencePlot
 from ._krippendorff_alpha_plot import KrippendorffAlphaPlot
 from ._cluster_plot import ClusterPlot
