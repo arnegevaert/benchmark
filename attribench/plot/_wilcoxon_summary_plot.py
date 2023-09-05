@@ -14,13 +14,16 @@ class WilcoxonSummaryPlot(Plot):
     Wilcoxon test between a given method and the random baseline on the given
     metric.
     """
+
     def render(
         self,
         title: str | None = None,
         figsize: Tuple[int, int] = (20, 20),
         fontsize: int | None = None,
         glyph_scale: int = 1500,
-        method_order: List[str] | None =None,
+        method_order: List[str] | None = None,
+        alpha=0.01,
+        multiple_testing="bonferroni",
     ) -> Figure:
         """Render the plot.
 
@@ -39,6 +42,13 @@ class WilcoxonSummaryPlot(Plot):
             If None, the order of the keys in the dictionary that was passed to
             the constructor will be used.
             By default None.
+        alpha : float, optional
+            Significance level, by default 0.01
+        multiple_testing : str, optional
+            Multiple testing correction method to use.
+            One of "bonferroni" or "fdr_bh" (Benjamini-Hochberg).
+            If None, no correction will be applied.
+            By default "bonferroni"
 
         Returns
         -------
@@ -47,12 +57,16 @@ class WilcoxonSummaryPlot(Plot):
         """
         pvalues, effect_sizes = {}, {}
         for metric_name, (df, higher_is_better) in self.dfs.items():
-            mes, mpv = wilcoxon_tests(df, higher_is_better)
+            mes, mpv = wilcoxon_tests(
+                df, higher_is_better, alpha, multiple_testing=multiple_testing
+            )
             effect_sizes[metric_name] = mes
             pvalues[metric_name] = mpv
+
+        # Hide effect sizes that are not significant
         pvalues = pd.DataFrame(pvalues)
         effect_sizes = pd.DataFrame(effect_sizes).abs()
-        effect_sizes[pvalues > 0.01] = 0
+        effect_sizes[pvalues > alpha] = 0
 
         # Normalize each column of the effect sizes dataframe
         effect_sizes = effect_sizes / effect_sizes.max()

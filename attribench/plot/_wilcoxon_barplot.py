@@ -47,11 +47,14 @@ class WilcoxonBarPlot(Plot):
     Provides more detailed information about effect size than the summary plot.
     Can get crowded if there are many methods/metrics.
     """
+
     def render(
         self,
         title: str | None = None,
         figsize=(12, 6),
         fontsize: int | None = None,
+        alpha=0.01,
+        multiple_testing="bonferroni"
     ) -> Figure:
         """Render the plot.
 
@@ -69,12 +72,13 @@ class WilcoxonBarPlot(Plot):
         Figure
             Rendered Matplotlib figure.
         """
-        ALPHA = 0.01
         effect_sizes, pvalues = {}, {}
 
         for metric_name, (df, higher_is_better) in self.dfs.items():
             # Compute effect sizes and p-values
-            mes, mpv = wilcoxon_tests(df, higher_is_better)
+            mes, mpv = wilcoxon_tests(
+                df, higher_is_better, alpha, multiple_testing=multiple_testing
+            )
             effect_sizes[metric_name] = mes
             pvalues[metric_name] = mpv
 
@@ -84,7 +88,7 @@ class WilcoxonBarPlot(Plot):
             es_df,
             pv_df,
             self.dfs.keys(),
-            ALPHA,
+            alpha,
             figsize=figsize,
             fontsize=fontsize,
         )

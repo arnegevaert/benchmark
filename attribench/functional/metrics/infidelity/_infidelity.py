@@ -132,8 +132,9 @@ def _infidelity_batch(
                 )
                 beta = beta_numerator / beta_denominator
                 # If attribution map is constant 0,
-                # dot products will be 0 and beta will be nan. Set to 0.
+                # dot products will be 0 and beta will be nan or inf. Set to 0.
                 beta[torch.isnan(beta)] = 0
+                beta[torch.isinf(beta)] = 0
                 # [batch_size, 1]
                 infidelity = torch.mean(
                     (beta * method_dot_products - tensor_pred_diffs[afn]) ** 2,
