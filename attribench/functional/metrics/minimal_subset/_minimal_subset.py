@@ -136,7 +136,7 @@ def minimal_subset(
         attributions_dataset.method_names,
         list(maskers.keys()),
         mode,
-        num_samples=len(attributions_dataset),
+        num_samples=attributions_dataset.num_samples,
     )
 
     for (
