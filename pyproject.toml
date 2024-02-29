@@ -36,8 +36,8 @@ dependencies = [
 ]
 requires-python = ">=3.10"
 
-[tool.setuptools]
-packages = ["attribench"]
+[tool.setuptools.packages.find]
+include = ["attribench.*"]
 
 [project.optional-dependencies]
 dev = [
