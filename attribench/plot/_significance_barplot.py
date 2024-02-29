@@ -1,7 +1,7 @@
 from typing import Dict, Tuple
 from numpy import typing as npt
 import pandas as pd
-from attribench._stat import wilcoxon_tests
+from attribench._stat import significance_tests
 from attribench.plot import Plot
 from matplotlib.figure import Figure
 from matplotlib import pyplot as plt
@@ -39,7 +39,7 @@ def _effect_size_barplot(
     return fig, axs
 
 
-class WilcoxonBarPlot(Plot):
+class SignificanceBarPlot(Plot):
     """
     Alternative to WilcoxonSummaryPlot.
     Shows a bar plot of effect sizes, along with a grid showing statistical
@@ -54,7 +54,8 @@ class WilcoxonBarPlot(Plot):
         figsize=(12, 6),
         fontsize: int | None = None,
         alpha=0.01,
-        multiple_testing="bonferroni"
+        test="wilcoxon",
+        multiple_testing="bonferroni",
     ) -> Figure:
         """Render the plot.
 
@@ -76,8 +77,12 @@ class WilcoxonBarPlot(Plot):
 
         for metric_name, (df, higher_is_better) in self.dfs.items():
             # Compute effect sizes and p-values
-            mes, mpv = wilcoxon_tests(
-                df, higher_is_better, alpha, multiple_testing=multiple_testing
+            mes, mpv = significance_tests(
+                df,
+                alpha,
+                test=test,
+                alternative="greater" if higher_is_better else "less",
+                multiple_testing=multiple_testing,
             )
             effect_sizes[metric_name] = mes
             pvalues[metric_name] = mpv

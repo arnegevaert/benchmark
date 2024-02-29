@@ -6,46 +6,87 @@ import pandas as pd
 from typing import Tuple, Optional
 
 
-def wilcoxon_tests(
-    df: pd.DataFrame,
-    higher_is_better: bool,
-    alpha: float,
-    multiple_testing: Optional[str] = None,
+def _wilcoxon_signed_rank_test(
+    x: npt.NDArray,
+    alternative: str,
 ):
-    """Perform Wilcoxon signed-rank tests on a dataframe of results.
-    The dataframe contains results for each method on a given metric.
-    Contents of the dataframe are interpreted as differences between
-    the method's performance and the random baseline's performance on
-    the metric (i.e. the random baseline must be subtracted from the
-    method's performance before passing the results to this function).
+    _, pvalue = stats.wilcoxon(x, alternative=alternative)
+    return pvalue
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Dataframe of results. Each column is a method and each row is a sample.
-    higher_is_better : bool
-        Whether higher values are better for the metric.
-    alpha : float
-        Significance level.
-    multiple_testing : str
-        Multiple testing correction method to use.
-        One of "bonferroni" or "fdr_bh" (Benjamini-Hochberg).
 
-    Returns
-    -------
-    Tuple[Dict[str, float], Dict[str, float]]
-        Tuple of dictionaries mapping method names to effect sizes and p-values.
+def _t_test(
+    x: npt.NDArray,
+    alternative: str,
+):
+    _, pvalue = stats.ttest_1samp(x, popmean=0, alternative=alternative)
+    return pvalue
+
+
+def _sign_test(
+    x: npt.NDArray,
+    alternative: str,
+):
+    pos = np.sum(x >= 0)
+    neg = np.sum(x <= 0)
+    n = len(x)
+    if alternative == "greater":
+        pvalue = stats.binom_test(pos, n, p=0.5)
+    elif alternative == "less":
+        pvalue = stats.binom_test(neg, n, p=0.5)
+    else:
+        raise ValueError("alternative must be one of 'greater' or 'less'")
+    return pvalue
+
+
+def significance_tests(
+    df: pd.DataFrame,
+    alpha: float,
+    test: str,
+    alternative: str,
+    multiple_testing: Optional[str] = None,
+) -> Tuple[dict[str, float], dict[str, float]]:
+    """
+    Perform significance tests on a DataFrame of method results.
+    The results are assumed to be differences to the baseline method.
+    The function will perform a significance test for each method, comparing
+    the differences to the baseline method to zero. The effect sizes will be
+    calculated as the probability of superiority (i.e. the probability that a
+    random observation from the method is greater than a random observation from
+    the baseline method).
+
+    Args:
+        df (pd.DataFrame): DataFrame containing the method results.
+        higher_is_better (bool): Flag indicating whether higher values are better.
+        alpha (float): Significance level for the tests.
+        test (str): Type of test to perform. Can be one of "wilcoxon", "paired_t_test", or "sign_test".
+        alternative (str): The alternative hypothesis for the test. Can be one of "greater" or "less".
+            Use "greater" if higher values are better, and "less" if lower values are better.
+        multiple_testing (Optional[str], optional): Method for multiple testing correction.
+            Can be one of "bonferroni", "fdr_bh", or None. Defaults to None.
+
+    Returns:
+        Tuple[dict[str, float], dict[str, float]]: A tuple containing two dictionaries.
+            The first dictionary contains the effect sizes for each method.
+            The second dictionary contains the p-values for each method.
+
+    Raises:
+        AssertionError: If `multiple_testing` or `test` is not one of the allowed values.
     """
     assert multiple_testing in ["bonferroni", "fdr_bh", None]
+    assert test in ["wilcoxon", "t_test", "sign_test"]
     pvalues, effect_sizes = {}, {}
     for method_name in df:
         method_results = df[method_name].to_numpy()
-        _, pvalue = stats.wilcoxon(
-            method_results,
-            alternative="greater" if higher_is_better else "less",
-        )
+        if test == "wilcoxon":
+            pvalue = _wilcoxon_signed_rank_test(method_results, alternative)
+        elif test == "t_test":
+            pvalue = _t_test(method_results, alternative)
+        elif test == "sign_test":
+            pvalue = _sign_test(method_results, alternative)
+
         pvalues[method_name] = pvalue
-        effect_sizes[method_name] = np.median(method_results)
+        # Use probability of superiority as effect size
+        effect_sizes[method_name] = np.mean(method_results > 0) if alternative == "greater" else np.mean(method_results < 0)
 
     if multiple_testing is not None:
         # Build list of method names and p-values in the same order
