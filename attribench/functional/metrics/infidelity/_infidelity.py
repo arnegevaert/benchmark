@@ -82,6 +82,10 @@ def _infidelity_batch(
             perturbation_vector = pert_generator.generate_perturbation()
             perturbed_x = batch_x - perturbation_vector
 
+            # Clip perturbed samples to valid values
+            perturbed_x = torch.clamp(perturbed_x, batch_x.min(), batch_x.max())
+            perturbation_vector = batch_x - perturbed_x
+
             # Get output of model on perturbed sample
             with torch.no_grad():
                 perturbed_output = model(perturbed_x)
@@ -91,9 +95,11 @@ def _infidelity_batch(
                 activated_perturbed_output = ACTIVATION_FNS[fn](
                     perturbed_output
                 ).gather(dim=1, index=batch_y.unsqueeze(-1))
-                pred_diffs[fn].append(
-                    torch.squeeze(orig_output[fn] - activated_perturbed_output)
-                )
+                pred_diff = torch.squeeze(orig_output[fn] - activated_perturbed_output)
+                # If batch size is 1, pred_diff will be a scalar tensor.
+                if len(pred_diff.shape) == 0:
+                    pred_diff = pred_diff.unsqueeze(0)
+                pred_diffs[fn].append(pred_diff)
 
             # Compute dot products of perturbation vectors with all
             # attributions for each sample
